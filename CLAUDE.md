@@ -51,7 +51,7 @@ These were settled during scoping. If a request seems to conflict with these, as
 ### Smartsheet
 - **No write-through during transition.** Smartsheet sheets become read-only historical archive on cutover. Do not build dual-write logic.
 
-### Properties (active = 7 — verify if 8th, Jacksonville North 812, is in scope)
+### Properties (active = 8, confirmed 2026-05-21)
 | Property | ID | Short Code |
 |---|---|---|
 | Jacksonville West | 6802 | Jax West |
@@ -202,21 +202,26 @@ When changing scope or architecture: update the relevant doc and add an entry to
 
 ## Current Status (update this section as work progresses)
 
-**As of:** May 15, 2026
-**Phase:** Pre-build planning complete. Awaiting Rob sign-off and developer kickoff.
-**Current week:** Pre-Week-1
-**Last milestone:** Three planning documents (PRD, Architecture, Sprint Plan) finalized.
-**Next milestone:** Week 1 Foundation — repo setup, Vercel deploy, auth, iPhone PWA shell.
+**As of:** May 21, 2026
+**Phase:** Week 1 in progress — scaffold deployed; Phase 0 sign-off deferred, build proceeds
+**Current week:** Week 1 (Mon tasks ~complete)
+**Last milestone:** Next.js 15.5.18 + shadcn/ui scaffold deployed to Vercel preview; `ops.rentstayable.com` domain attached, DNS propagating. JN (812) confirmed as 8th property; MFA on-by-default for managers/corp confirmed.
+**Next milestone:** Neon `DATABASE_URL` + `DIRECT_URL` set in Vercel envs; merge scaffold branch → `main` so production deploys are real; Tue Auth.js v5 work begins (with MFA scaffolding accounted for).
 
 ### Open questions awaiting answer
 1. Can a field user invalidate their own assignment (call in sick) or manager only? — Owner: Rob/Kate — Needed by Week 2
 2. Final list of recurring rules per template per property — Owner: Property Managers — Needed by Week 4
 3. Bonus calculation logic (how does Bonus=1 vs 0 work in new platform?) — Owner: Rob — Needed by Week 3
 4. SLA defaults per issue priority — Owner: Christopher — Needed by Week 4
-5. Final subdomain choice (placeholder: `ops.stayable.com`) — Owner: Kate — Needed by Week 1
-6. Is Jacksonville North (812) in scope? Memory shows 7 properties; PRD includes 8. — Owner: Kate — Needed before Week 2 seed
+5. Rob sign-off on scope + budget — **deferred 2026-05-21**; not blocking Phase 1 execution.
 
 ### Recently resolved decisions
+- Jacksonville North (812) is **in scope** as the 8th property — seed and geofence work plan for 8 (decided 2026-05-21)
+- MFA: **on by default for managers/corporate**; optional/off-by-default for field staff; TOTP via authenticator app (no SMS) (decided 2026-05-21)
+- Rob sign-off on scope + budget: **deferred** — Phase 1 build proceeds without blocking; revisit before any irreversible spend (decided 2026-05-21)
+- Subdomain: **ops.rentstayable.com** (decided 2026-05-20) — added to Vercel project, DNS records added, propagation pending
+- Frontend version pinned: **Next.js 15.5.18** (held the line against just-released Next 16) (decided 2026-05-20)
+- Phase 7 retitled "UI Redesign + Hardening" — Claude Design pass is milestone 1 (decided 2026-05-18)
 - Auth approach: **Email + password for all users** (decided 2026-05-15)
 - Smartsheet sync: **None during transition** (decided 2026-05-15)
 - App naming: **TBD placeholder; subdomain decision deferred** (decided 2026-05-15)

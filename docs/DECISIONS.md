@@ -162,6 +162,52 @@ In scope:
 
 ---
 
+## ADR-007: Jacksonville North (812) is in scope as the 8th property
+
+**Date:** 2026-05-21
+**Status:** Accepted
+
+### Context
+The PRD lists 8 properties but the original CLAUDE.md scope card listed 7, leaving JN (812) ambiguous. The Week 2 seed and the geofence work in Week 6 both need a definitive answer so we are not retrofitting an 8th property mid-build.
+
+### Alternatives Considered
+1. Ship v1 with 7 properties and add JN post-cutover as a v1.5 addition
+2. Include JN in v1 from the start
+
+### Decision
+Include Jacksonville North (812) as the 8th active property. Seed scripts, geofence polygons, recurring rules, training, and provisioning all assume 8 properties.
+
+### Consequences
+- One additional property to configure during Week 8 go-live (users, rooms, geofence polygon, recurring rules)
+- No retrofit work later; cleaner cutover
+- Marginal effort increase in Weeks 5–8; no schema changes required
+
+---
+
+## ADR-008: MFA on-by-default for managers and corporate; optional for field staff
+
+**Date:** 2026-05-21
+**Status:** Accepted
+
+### Context
+The auth design called for MFA but left the default state open: on-by-default vs opt-in for managers/corporate. Field-staff MFA is friction-heavy on shared/older devices and the role rarely sees sensitive cross-property data, so the trade-off is different per role.
+
+### Alternatives Considered
+1. MFA opt-in for all roles
+2. MFA on-by-default for all roles
+3. MFA on-by-default for managers/corporate/admin; optional/off-by-default for field staff
+
+### Decision
+Option 3. MFA is on-by-default for MANAGER, CORPORATE, and ADMIN roles. Field staff (HK, PA, MT) can enable MFA but it is off by default. Implementation is TOTP via authenticator app (Google Authenticator, Authy, 1Password, etc.) — **no SMS**.
+
+### Consequences
+- Week 1 Auth.js scaffolding must include TOTP enrollment + verification flow (not just stub)
+- Manager/corp first-login flow includes a forced MFA enrollment step before reaching the dashboard
+- Recovery codes generated on enrollment; admin can reset MFA via the same one-click flow that resets passwords
+- Field-staff login stays one-step; no friction added to the most common path
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```

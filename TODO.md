@@ -18,10 +18,10 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Architecture finalized | Kate | `docs/ARCHITECTURE.md` |
 | P0 | [x] | 8-week sprint plan finalized | Kate | `docs/SPRINT_PLAN.md` |
 | P0 | [x] | ADRs 001–006 recorded | Kate | `docs/DECISIONS.md` |
-| P0 | [ ] | Rob sign-off on scope + budget | Rob | Required before Week 1 |
-| P0 | [ ] | Resolve: is Jacksonville North (812) in scope? | Kate | PRD says 8, CLAUDE.md says 7 — align before Week 2 seed |
-| P1 | [ ] | Confirm subdomain (placeholder `ops.stayable.com`) | Kate | Needed by Week 1 |
-| P1 | [ ] | Confirm MFA default for managers/corporate (on by default vs opt-in) | Kate | Needed by Week 1 |
+| P0 | [ ] | Rob sign-off on scope + budget | Rob | **Deferred 2026-05-21** — Phase 1 build proceeds without blocking |
+| P0 | [x] | Resolve: is Jacksonville North (812) in scope? | Kate | **YES — 8th property confirmed 2026-05-21**; align seed accordingly |
+| P1 | [x] | Confirm subdomain — **ops.rentstayable.com** (added to Vercel; DNS records added 2026-05-20, propagation pending) | Kate | Resolved 2026-05-20 |
+| P1 | [x] | Confirm MFA default for managers/corporate (on by default vs opt-in) | Kate | **On-by-default for managers/corp; optional for field staff** — resolved 2026-05-21 |
 | P2 | [ ] | Confirm actual Connecteam monthly invoice for savings figure | Kate | Validates ROI in sprint plan |
 
 ---
@@ -33,14 +33,14 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ### Mon — Repo / Vercel / Neon / Next.js
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | `pnpm create next-app` — Next.js 15, TS, App Router, Tailwind, ESLint |
-| P0 | [ ] | Add shadcn/ui (init defaults) |
-| P0 | [ ] | Folder structure: `/app /components /lib /prisma /emails /scripts` |
-| P0 | [ ] | `.env.example` with all vars from ARCHITECTURE §8.3 |
-| P0 | [ ] | `.gitignore` baseline |
-| P0 | [ ] | Initial commit: `chore: initial project scaffold` |
-| P0 | [ ] | Connect GitHub → Vercel project, auto-deploy on push |
-| P0 | [ ] | Create Neon project, set `DATABASE_URL` in Vercel envs |
+| P0 | [x] | `pnpm create next-app` — Next.js 15.5.18, TS, App Router, Tailwind v4, ESLint 9 (commit `233c483`) |
+| P0 | [x] | Add shadcn/ui (init defaults, slate base, `@base-ui/react`) (commit `e22e981`) |
+| P0 | [x] | Folder structure: `/app /components /lib /prisma /emails /scripts` |
+| P0 | [x] | `.env.example` with all vars from ARCHITECTURE §8.3 (+ `DIRECT_URL` for Prisma) |
+| P0 | [x] | `.gitignore` baseline (keeps `.env.example` tracked) |
+| P0 | [x] | Initial commit: `chore: initial project scaffold` |
+| P0 | [x] | Connect GitHub → Vercel project, auto-deploy on push (preview deploy succeeded) |
+| P0 | [~] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — Neon project exists; URLs not yet pasted into Vercel |
 
 ### Tue — Auth.js v5 (Credentials)
 | Pri | Status | Task |
@@ -177,8 +177,21 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 ---
 
-## Phase 7 — Week 7: PDF, Offline, Hardening
+## Phase 7 — Week 7: UI Redesign + PDF + Offline + Hardening
 
+### UI Redesign Pass — Claude Design (runs first, before polish-adjacent work)
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [ ] | Run full app through Claude Design (`document-skills:frontend-design`) — capture screens of every route in current state as baseline |
+| P0 | [ ] | Define visual system: typography scale, color tokens, spacing/density, button hierarchy, form treatment |
+| P0 | [ ] | Redesign field-staff screens: Today view, checklist runtime (11 question types), photo + signature capture, draft + submit confirmation |
+| P0 | [ ] | Redesign manager screens: review queue, review detail, issues list, issue detail, dashboards |
+| P0 | [ ] | Redesign admin screens: user list, user provisioning, properties, templates, recurring rules |
+| P0 | [ ] | Empty / error / loading / offline states for every screen |
+| P0 | [ ] | Side-by-side review with Kate vs functional baseline — approve before merging redesign |
+| P1 | [ ] | Lock visual system into a Tailwind config + shadcn theme so future screens stay consistent |
+
+### PDF, offline, hardening
 | Pri | Status | Task |
 |---|---|---|
 | P0 | [ ] | `@react-pdf/renderer` template matching Connecteam style |
@@ -243,9 +256,9 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Question | Owner | Needed by |
 |---|---|---|---|---|
-| P0 | [ ] | Jacksonville North (812) in scope as 8th property? | Kate | Week 2 |
-| P0 | [ ] | Subdomain final choice | Kate | Week 1 |
-| P0 | [ ] | MFA default for managers/corp | Kate | Week 1 |
+| P0 | [x] | Jacksonville North (812) in scope as 8th property? | Kate | **YES — resolved 2026-05-21** |
+| P0 | [x] | Subdomain final choice | Kate | **ops.rentstayable.com — resolved 2026-05-20** |
+| P0 | [x] | MFA default for managers/corp | Kate | **On-by-default — resolved 2026-05-21** |
 | P0 | [ ] | Field user self-invalidate, or manager only? | Rob/Kate | Week 2 |
 | P0 | [ ] | Bonus calc logic (Bonus=1 vs 0) | Rob | Week 3 |
 | P0 | [ ] | SLA defaults per priority | Christopher | Week 4 |
