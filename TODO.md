@@ -42,6 +42,8 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Connect GitHub → Vercel project, auto-deploy on push (preview deploy succeeded) |
 | P0 | [~] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — Neon `operations` project created 2026-05-21; password rotated; URLs in local `.env.local`; **Vercel paste pending user confirmation** |
 | P0 | [x] | Merge scaffold branch → `main` so production deploys are real (PR #1, merge commit `aa90bfe`, 2026-05-22) |
+| P0 | [ ] | **i18n scaffold (ADR-013):** install `next-intl`, configure middleware-based locale routing, scaffold `messages/en.json` + `messages/es.json`, add locale provider to root layout |
+| P0 | [ ] | **Datetime helper (ADR-013):** `lib/datetime.ts` exposing `formatInET(dt, pattern)` + `etToday()`; ESLint rule blocking direct `toLocaleString` / `Intl.DateTimeFormat` outside this file; install `date-fns-tz` |
 
 ### Tue — Auth.js v5 (Credentials)
 | Pri | Status | Task |
@@ -56,10 +58,10 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ### Wed — Prisma schema + seed
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Prisma schema: `users`, `properties`, `user_properties` (per ARCH §4.1) |
+| P0 | [ ] | Prisma schema: `users` (incl. `locale` enum per ADR-013), `properties`, `user_properties` (per ARCH §4.1) |
 | P0 | [ ] | Migration `0001_init_users_and_properties` |
 | P0 | [ ] | `geofence` as `Json` (GeoJSON) — PostGIS deferred |
-| P0 | [ ] | Seed script: 7 (or 8) properties + admin + 1 MANAGER + 1 HK at Lakeland (4645) |
+| P0 | [ ] | Seed script: 8 properties (all 2-letter short codes per ADR-011) + admin + 1 MANAGER + 1 HK at LL (4645) |
 | P0 | [ ] | Register seed in `package.json` |
 
 ### Thu — PWA shell
@@ -102,12 +104,13 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [ ] | Full schema: `rooms`, `checklist_templates`, `questions`, `recurring_rules`, `checklist_instances`, `responses`, `photos`, `issues`, `audit_log`, `notification_log` |
 | P0 | [ ] | All indexes per ARCH §4.2 |
 | P0 | [ ] | Seed: all 9 templates with real question sets pulled from Connecteam/Smartsheet |
-| P0 | [ ] | Admin UI: list/create/deactivate users, reset password (one-click) |
+| P0 | [ ] | Admin UI: list/create/deactivate users, reset password (one-click), **assign to one or more properties** (ADR-013 multi-property model) |
 | P0 | [ ] | Admin UI: list properties, view geofence placeholder map |
 | P0 | [ ] | Admin UI: list templates + questions (read-only OK for v1) |
-| P0 | [ ] | RBAC middleware: role + property scope per route |
+| P0 | [ ] | RBAC middleware (ADR-013): non-corp/admin users gated by `user_properties` membership on every property-scoped route |
+| P0 | [ ] | Header property picker for users with >1 property assignment; auto-select for single-property users; hidden for CORPORATE/ADMIN (portfolio default) |
 | P1 | [ ] | Switch signup → admin-only provisioning (activation-link flow) |
-| P1 | [ ] | Activation email via Resend (7-day TTL) |
+| P1 | [ ] | Activation email via Resend (7-day TTL); **field-staff recipients get bilingual EN+ES template per ADR-013** |
 | P0 | [ ] | Resolve open: field user self-invalidation vs manager-only |
 
 ---
@@ -116,7 +119,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Field user home: today's assignments list |
+| P0 | [ ] | Field user home: today's assignments list (ET-anchored "today" per ADR-013) |
 | P0 | [ ] | Checklist filling page with ordered questions |
 | P0 | [ ] | All 11 question types render + validate |
 | P0 | [ ] | Conditional logic engine (show_if) |
@@ -125,6 +128,8 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [ ] | Draft auto-save to IndexedDB on every change |
 | P0 | [ ] | Submit pipeline: validate → upload photos → persist responses → SUBMITTED |
 | P1 | [ ] | Confirmation screen + return-to-home |
+| P0 | [ ] | **First-login locale picker (ADR-013):** field staff (HK/PA/MT) prompted to choose EN or ES; saved to `users.locale` |
+| P0 | [ ] | **Spanish translations (ADR-013):** all strings on field-staff surfaces in this phase translated — `messages/es.json` reviewed by bilingual reviewer (owner TBD) before merge |
 
 ---
 
@@ -247,7 +252,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P0 | [ ] | Magic-link token: signed (JWT or HMAC), single-use, 72h TTL, tied to (instance_id, contractor_id) |
 | P0 | [ ] | Replay protection: token consumed on submit, blocked on reuse with clear error |
 | P0 | [ ] | Token regeneration as one-click manager action |
-| P0 | [ ] | Contractor filling UI: opens directly from link, no login screen, same camera/GPS/signature flow as employee |
+| P0 | [ ] | Contractor filling UI: opens directly from link, no login screen, same camera/GPS/signature flow as employee. **Inherits ADR-013 bilingual filling UI**; magic-link URL accepts optional `?lang=es` (manager sets per contractor); default EN when omitted |
 | P0 | [ ] | Manager review queue: submitter column shows contractor name + company for CONTRACTOR instances |
 | P0 | [ ] | Flag → Issue tagged to contractor record (not user) |
 | P0 | [ ] | Seed initial CONTRACTOR-audience templates: Roof PM (contractor variant), Pest Control, HVAC Service, Pressure Washing (contractor variant), Lawn / Landscaping — final list confirmed with Kate during build |

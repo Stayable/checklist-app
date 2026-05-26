@@ -21,6 +21,8 @@ This platform is built as a single Next.js application deployed on Vercel, backe
 | Auth | Auth.js v5 (NextAuth) | Open-source; supports credentials + future SSO | $0 (OSS) |
 | Email | Resend | Existing free tier; developer-friendly; transactional | $0 free / $20 Pro |
 | UI Components | shadcn/ui + Tailwind CSS | Headless, accessible, customizable; works with Claude Code | $0 (OSS) |
+| Localization | next-intl | Server-component-safe i18n for Next.js 15 App Router; bilingual EN+ES field-staff surfaces per ADR-013 | $0 (OSS) |
+| Datetime | date-fns-tz | All UI datetimes formatted in `America/New_York` per ADR-013 | $0 (OSS) |
 | PWA / Offline | Workbox + IndexedDB (idb) | Service worker for offline; queued submissions | $0 (OSS) |
 | Background Jobs | Vercel Cron + Inngest | Recurring checklist generation; async PDF export | $0 free |
 | PDF Generation | @react-pdf/renderer | Generate Connecteam-style PDFs from instance data | $0 (OSS) |
@@ -165,6 +167,7 @@ email           text unique not null
 password_hash   text not null
 name            text not null
 role            enum('HK','PA','MT','MANAGER','CORPORATE','ADMIN')
+locale          enum('en','es') default 'en'  -- ADR-013; field staff prompted on first login
 active          boolean default true
 mfa_enabled     boolean default false
 mfa_secret      text nullable
@@ -179,6 +182,7 @@ user_id         uuid fk → users
 property_id     uuid fk → properties
 primary key (user_id, property_id)
 ```
+RBAC (ADR-013): a user can access property X iff `users.role ∈ {CORPORATE, ADMIN}` OR a `user_properties` row exists for `(user_id, property_id=X)`. Each user has one global role; per-property role overrides are not supported in v1.
 
 #### properties
 ```

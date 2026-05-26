@@ -48,7 +48,7 @@ This document defines the v1 scope. Out-of-scope items (time tracking, payroll, 
 
 ## 3. Users and Roles
 
-The platform supports six user roles. Each role has defined permissions and a tailored interface.
+The platform supports six user roles. Each role has defined permissions and a tailored interface. **Field-staff surfaces (HK / PA / MT) are bilingual English + Spanish** per ADR-013; admin / manager / corporate surfaces are English-only in v1. Users have a `locale` preference (`en` | `es`) — defaulting to `en` for managers/corporate/admin, prompted on first login for field staff.
 
 | Role | Primary Activities | Permissions |
 |---|---|---|

@@ -122,6 +122,33 @@ These were settled during scoping. If a request seems to conflict with these, as
 - "Skip today" on an active rule
 - Manual reassign / invalidate after generation
 
+### Localization (ADR-013)
+- **Field-staff surfaces bilingual EN + ES** (login, password reset, "Today" home, checklist filling, photo / signature capture, submission confirmation, notifications targeting field staff). **Admin / Manager / Corporate stay English-only in v1.**
+- Translation scope follows recipient, not screen — a notification or email sent to a field-staff user is translated regardless of which surface generated it.
+- Library: **`next-intl`** (App Router-native). Locale routing via middleware (no URL prefix).
+- `users.locale` enum (`en` | `es`); default `en` for managers/corp/admin, prompted on first login for field staff. Admin can override.
+- Spanish review owner: TBD — likely Karla or Christopher (open question).
+
+### Multi-Property User Assignment (ADR-013)
+- `user_properties` is many-to-many. **Each user has one global role** (`users.role`) that applies at every property they're tied to.
+- RBAC: a user can access property X iff role ∈ {CORPORATE, ADMIN} OR `(user_id, property_id=X)` exists in `user_properties`.
+- UI: header property picker for users with >1 property; auto-select for single-property users; hidden for CORPORATE/ADMIN (portfolio default).
+- **Per-property role overrides not supported in v1.** Edge case ("MT at LL, Manager at OR") handled via two user records.
+
+### Photo Retention (ADR-013)
+- **Keep all photos forever in v1.** No scheduled deletion job.
+- R2 versioning + 30-day soft-delete retention already configured (RUNBOOK).
+- Cost projection: ~80 GB/year added at full operation; ~$1.20/mo additional storage per year of accumulation.
+- Trigger to revisit: R2 bill > $50/mo, or legal/privacy mandate.
+- Audit log + notification log follow same "keep forever" policy.
+
+### Datetime Display — Always Eastern Time (ADR-013)
+- All timestamps stored as **UTC** in Postgres.
+- All user-facing datetime display formatted in **`America/New_York`** (auto EDT/EST) — every user, regardless of browser locale.
+- "Today" / "Yesterday" / "This Week" anchored to ET.
+- All time labels include `ET` suffix in UI (e.g., "Submitted 5:23 AM ET").
+- Library: `date-fns-tz`. All formatting through `lib/datetime.ts` — never call `toLocaleString` directly. ESLint rule to enforce.
+
 ### Contractor Checklists (ADR-012, Phase 9 = Week 9)
 - **No contractor accounts.** Manager creates a `contractors` record; system issues a **signed, single-use, 72h-TTL magic-link URL** per checklist instance.
 - Contractor opens link → fills checklist → captures photos (same flow as employee) → signs → submits. Token consumed on submit.
@@ -297,12 +324,18 @@ When changing scope or architecture: update the relevant doc and add an entry to
 
 ### Open questions awaiting answer
 1. Can a field user invalidate their own assignment (call in sick) or manager only? — Owner: Rob/Kate — Needed by Week 2
-2. Final list of recurring rules per template per property — Owner: Property Managers — Needed by Week 4
+2. Final list of recurring rules per template per property — Owner: Property Managers — Needed by Week 5 (shifted from Wk 4 by ADR-012)
 3. Bonus calculation logic (how does Bonus=1 vs 0 work in new platform?) — Owner: Rob — Needed by Week 3
 4. SLA defaults per issue priority — Owner: Christopher — Needed by Week 4
-5. Rob sign-off on scope + budget — **deferred 2026-05-21**; not blocking Phase 1 execution.
+5. **Spanish translation reviewer** — Karla / Christopher / external? — Owner: Kate — Needed before Phase 3
+6. **Teams workspace inventory** — 1 corporate + 8 property channels w/ Incoming Webhook URLs — Owner: Kate — Needed by Week 7
+7. **Stayable branding kit** — logo, palette, wordmark "Stayable Operations" — Owner: Kate — Needed by Week 7
+8. **Final CONTRACTOR-audience template list** — Owner: Kate — Needed by Week 9
+9. **Final geofence polygons per property** — Owner: Kate — Needed by Week 6
+10. Rob sign-off on scope + budget — **deferred 2026-05-21**; not blocking Phase 1 execution.
 
 ### Recently resolved decisions
+- **Platform foundation decisions locked** (ADR-013, decided 2026-05-27) — bilingual EN+ES for field-staff surfaces only (admin/manager stay EN); multi-property users via `user_properties` w/ single global role; photos kept forever in v1; all UI datetimes display in ET regardless of user locale
 - **Scope expansion: Contractor Checklists + Quick Tasks added to v1** (ADR-012, decided 2026-05-27). Build extends from 8 → 10 weeks; cutover slips from Week 12 → Week 14. Contractor auth via signed magic links (no accounts); Quick Tasks are lightweight ad-hoc, no review queue. Supersedes ADR-006 for these two modules only.
 - Manager review UI patterns + 2-letter property short codes locked (ADR-011, decided 2026-05-27) — three-column single-submission review + table-with-thumbnails queue ship Phase 4, refined Phase 7; 2-letter codes (JN/JW/KE/KW/LL/OR/SA/DP) canonical everywhere
 - Product name + Teams digest locked (ADR-010, decided 2026-05-27) — end-user name is **"Stayable Operations"**; auto-posted daily 7 AM ET digest to master corporate Teams channel + per-property channels; terse factual tone; Phase 7 priority (post-P0)

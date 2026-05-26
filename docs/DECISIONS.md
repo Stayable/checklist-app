@@ -543,6 +543,83 @@ Option 3. Both modules ship in v1. Build extends from 8 weeks to 10 weeks. Cutov
 
 ---
 
+## ADR-013: Platform foundation — bilingual field UI, multi-property assignment, keep-forever photos, ET display anchor
+
+**Date:** 2026-05-27
+**Status:** Accepted
+
+### Context
+Four architectural questions were not addressed in ADRs 001–012 but materially affect Phase 1–3 code structure:
+
+1. **Localization** — Many FL hospitality HK staff are native Spanish speakers. Connecteam is English-only today. Retrofitting i18n after Phase 3 is expensive (every screen + every notification + every email).
+2. **Multi-property user assignment** — `user_properties` in the schema is many-to-many, but role semantics across multiple properties were never defined. Floating MTs and regional managers exist.
+3. **Photo retention policy** — No policy was defined. R2 storage compounds (~80 GB/year at full operational tempo).
+4. **Time zone display** — All 8 properties operate in Eastern Time; the cron and `rooms.status` logic are ET-anchored (ADR-009). User-facing datetime display was never specified. Kate (UTC+8) and any future cross-timezone reviewer would see drift relative to the cron boundary.
+
+### Decisions
+
+**1. Localization — bilingual for field staff only (v1).**
+
+- Field-staff-facing surfaces are **bilingual English + Spanish**: login, password reset, "Today" home, checklist filling UI (all 11 question types), photo / signature capture prompts, submission confirmation, in-app notifications targeting field staff, email notifications targeting field staff.
+- Admin / Manager / Corporate surfaces stay **English-only in v1**.
+- **Translation scope follows the recipient, not the screen.** If a field-staff user receives an in-app notification or email (flagged submission, assignment notice, password reset, activation), the body is translated. Templates carry both `en` and `es` content.
+- Library: **`next-intl`** (Next.js 15 App Router-native, server-component-safe).
+- Locale routing: middleware-based, no URL prefix. User's preferred locale stored on `users.locale` enum (`en` | `es`); browser `Accept-Language` is only a fallback for unauthenticated routes (login).
+- `users.locale` defaults to `en` for MANAGER / CORPORATE / ADMIN at provisioning; field staff (HK / PA / MT) are prompted on first login to choose. Admin can override.
+- Spanish strings sourced from Kate (or a designated bilingual reviewer — owner TBD).
+- Phase to land: locale infrastructure in Phase 1; Spanish strings populated incrementally as field-staff screens ship (Phases 3, 4, 9).
+
+**2. Multi-property user assignment — many-to-many, single global role.**
+
+- `user_properties` is the source of truth for which properties a non-corporate user can access.
+- Each user has **one global role** in `users.role`. The role applies at every property they're tied to via `user_properties`.
+- RBAC rule: A user can access property X's data iff
+  - role is `CORPORATE` or `ADMIN` (full portfolio access), OR
+  - a `user_properties` row exists for `(user_id, property_id = X)`.
+- UI: a property picker appears in the header for users with > 1 property; auto-selected for single-property users; hidden for CORPORATE/ADMIN (they see portfolio by default with property filters).
+- Per-property role overrides are **not supported in v1.** If someone is genuinely "MT at LL but Manager at OR," create two user records (different emails). This is acceptable because it's an edge case.
+
+**3. Photo retention — keep all photos forever in v1.**
+
+- No scheduled photo deletion job in v1.
+- R2 versioning + 30-day soft-delete retention (already configured per RUNBOOK) remain in place — accidental deletes recoverable.
+- Cost projection: ~80 GB/year added at full operation; ~$1.20/mo additional R2 storage per year of accumulation.
+- **Trigger to revisit:** if R2 monthly bill exceeds $50/mo (~3+ years out) or if a legal / privacy requirement mandates deletion.
+- Audit log + notification log retention follow the same "keep forever" policy in v1.
+
+**4. Datetime display — always Eastern Time.**
+
+- All timestamps stored as UTC in Postgres (default).
+- All user-facing datetime display formatted in `America/New_York` (auto-handles EDT/EST DST) — applies to every user regardless of their browser locale.
+- "Today" / "Yesterday" / "This Week" boundaries in dashboards and queries anchor to ET, not user-local time.
+- Time labels in UI always include the `ET` suffix on times (e.g., "Submitted 5:23 AM ET", "Due by 4:00 PM ET") to make the anchor explicit.
+- Library: **`date-fns-tz`** (or `@internationalized/date`); pick one in Phase 1 implementation. All formatting goes through a `lib/datetime.ts` helper — never call `toLocaleString` directly.
+
+### Consequences
+
+**i18n**
+- Phase 1 must wire next-intl, the locale middleware, and the `users.locale` field before any field-staff UI ships
+- Every PR touching a field-staff screen or notification template carries a small translation burden — must add the Spanish string alongside the English one
+- Risk: Spanish strings rot if no one owns the translation review. Mitigation: assign a single bilingual reviewer (owner TBD — likely Karla or Christopher); reviewer signs off on Phase 3, 4, 9 translations before merge
+- Manager / Corporate screens deliberately stay English-only in v1 — keeps scope contained, defers admin-side translation cost to v1.5+
+
+**Multi-property**
+- Admin user-creation UI in Phase 2 must support assigning users to one *or more* properties
+- RBAC middleware must scope every query by `user_properties` for non-corporate users — straightforward but easy to miss; test coverage required on every property-scoped route
+- Edge case of "different role per property" handled out-of-band via separate user records; explicitly documented as not supported v1
+
+**Photo retention**
+- No engineering cost in v1; storage cost grows linearly
+- Eventual decision point on cold-storage / deletion deferred to v1.5+
+- If a property is offboarded (closed, sold), photos still retained — clean-up policy revisited then
+
+**ET display**
+- All datetime UI components must use the shared helper; ESLint rule recommended to block `Date.toLocaleString` / direct `Intl.DateTimeFormat` calls outside `lib/datetime.ts`
+- Kate (UTC+8) sees "Submitted 5:23 AM ET" instead of "Submitted 6:23 PM" in her local time — initially counter-intuitive but operationally correct
+- DST transitions (2nd Sunday of March, 1st Sunday of November) handled by the timezone library, not manual offset math
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```
