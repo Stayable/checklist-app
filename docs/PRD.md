@@ -28,8 +28,10 @@ This document defines the v1 scope. Out-of-scope items (time tracking, payroll, 
 - Provide a single mobile-and-desktop responsive web application for all operational checklist activities
 - Capture photos with EXIF timestamp and GPS coordinates to verify on-property completion
 - Support recurring and bulk checklist creation
+- Support **Contractor Checklists** (signed magic-link sign-off; no contractor accounts) per ADR-012
+- Support **Quick Tasks** (lightweight ad-hoc tasks; no template, no recurrence, no review queue) per ADR-012
 - Provide real-time dashboards segmented by property, user, role, and checklist type
-- Replace Connecteam's operational functionality for all 7 properties within 8 weeks of v1 launch
+- Replace Connecteam's full operational footprint (Property Checklists, Contractor Checklists, Quick Tasks, Issues, Photos) across all 8 properties within **10 weeks of v1 launch + 4-week parallel run** (cutover Week 14 per ADR-012)
 
 ### 2.2 Non-Goals (v1)
 
@@ -63,18 +65,18 @@ The platform supports six user roles. Each role has defined permissions and a ta
 
 The platform supports all active Stayable properties. Property records include name, internal property ID, street address, room count, and a geofence boundary (GPS polygon) used for photo verification.
 
-| Property | Property ID | Location | Short Code | Active |
+| Property | Property ID | Street Address | Short Code | Active |
 |---|---|---|---|---|
-| Jacksonville West | 6802 | 6802 Commonwealth Ave, Jacksonville FL | Jax West | Yes |
-| Jacksonville North | 812 | Jacksonville FL | Jax N | Verify |
-| St. Augustine | 2535 | St. Augustine FL | St. Aug | Yes |
-| Lakeland | 4645 | 4645 N. Socrum Loop Rd, Lakeland FL | Lakeland | Yes |
-| Orlando OBT | 8700 | Orlando FL | Orlando | Yes |
-| Kissimmee East | 2295 | 2295 E. Irlo Bronson, Kissimmee FL | Kiss E | Yes |
-| Kissimmee West | 5399 | 5399 W. Irlo Bronson, Kissimmee FL | Kiss West | Yes |
-| Davenport | 44199 | 44199 US Hwy 27, Davenport FL | Davenport | Yes |
+| Jacksonville North | 812 | 812 Dunn Avenue, Jacksonville, FL 32218 | JN | Yes |
+| Jacksonville West | 6802 | 910 Suemac Road, Jacksonville, FL 32254 | JW | Yes |
+| Kissimmee East | 2295 | 2295 E. Irlo Bronson Memorial Hwy, Kissimmee, FL 34744 | KE | Yes |
+| Kissimmee West | 5399 | 5399 W. Irlo Bronson Memorial Hwy, Kissimmee, FL 34746 | KW | Yes |
+| Lakeland | 4645 | 4645 N. Socrum Loop Road, Lakeland, FL 33809 | LL | Yes |
+| Orlando OBT | 8700 | 8700 S. Orange Blossom Trail, Orlando, FL 32809 | OR | Yes |
+| St. Augustine | 2535 | 2535 State Road 16, St. Augustine, FL 32092 | SA | Yes |
+| Davenport | 44199 | 44199 US Hwy 27, Davenport, FL 33897 | DP | Yes |
 
-> **Open question:** Jacksonville North (812) appears in Smartsheet Maintenance Report data but is not in the canonical 7-property list. Confirm before Week 2 seed.
+> **Note:** Property IDs are internal identifiers, not street numbers. Jacksonville North (812) is in scope as the 8th property per ADR-007. All 8 addresses confirmed by Kate 2026-05-27.
 
 ---
 
@@ -200,7 +202,46 @@ When a checklist is flagged or when any Pass/Fail question is answered Fail, the
 
 MTs see their assigned issues in a dedicated "My Issues" view. Resolving an issue requires a resolution note and at least one resolution photo.
 
-### 6.7 PDF Export
+### 6.7 Contractor Checklists (ADR-012)
+
+Contractors (vendors, service providers) complete checklists without holding platform accounts. The flow:
+
+1. Manager creates a `contractors` record once per vendor (name, company, contact email/phone, property scope)
+2. Manager creates a checklist instance against a CONTRACTOR-audience template, selecting the contractor record
+3. System generates a **signed, single-use, 72-hour-TTL magic-link URL** tied to that instance
+4. Manager sends the link via email / SMS / in-person QR code
+5. Contractor opens the link, lands directly in the checklist filling UI (no login screen), captures photos and responses with the same camera + GPS flow as employees, signs, and submits
+6. Submission consumes the token (one-time use)
+7. Manager reviews via the standard review queue. Submitter column shows contractor name + company instead of user name. Flag → Issue tagged to the contractor record.
+
+Token regeneration is a single-click manager action if the original link expires or is lost. CONTRACTOR-audience templates are configured separately from EMPLOYEE templates (`checklist_templates.audience` enum).
+
+Initial CONTRACTOR-audience templates (to be finalized by Kate in Phase 9):
+- Roof PM (contractor variant)
+- Pest Control
+- HVAC Service
+- Pressure Washing (contractor variant; employee variant stays)
+- Lawn / Landscaping
+
+### 6.8 Quick Tasks (ADR-012)
+
+Quick Tasks are lightweight, ad-hoc operational tickets. They are intentionally NOT checklists:
+
+- **No question set** — just a title, description, optional photos on completion
+- **No recurrence** — created one-off
+- **No review queue** — manager sees status updates, no formal Approve/Flag step
+- **No PDF export** — operational tickets, not formal artifacts
+
+**Lifecycle:** Manager (or Corporate / Admin) creates a Quick Task → assigns to specific user or role pool → field staff opens → marks IN_PROGRESS → adds completion note + optional photos (max 5) → marks COMPLETED. Manager can CANCEL with a reason.
+
+**Surfaces:**
+- Field staff "My Tasks" appears in the home below today's assigned checklists; sorted by due date asc, then priority desc
+- Manager "Open Tasks" at their property with filters for assignee, priority, status
+- Corporate dashboard shows portfolio rollup of open / overdue Quick Tasks per property
+
+**Not integrated with Issues pipeline.** Issues auto-generate from failed checklist questions or manager flags; Quick Tasks are manually-created. Separate models, separate surfaces.
+
+### 6.9 PDF Export
 
 PDF export is on-demand, not automatic. Available actions:
 

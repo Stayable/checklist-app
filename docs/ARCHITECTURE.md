@@ -185,7 +185,7 @@ primary key (user_id, property_id)
 id              uuid pk
 property_id     text unique (e.g., '6802', '4645')
 name            text
-short_code      text (e.g., 'Jax West')
+short_code      text — 2-letter, e.g., 'JW' (see ADR-011)
 address         text
 geofence        polygon (PostGIS) or jsonb (GeoJSON)
 active          boolean default true

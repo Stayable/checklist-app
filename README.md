@@ -2,7 +2,7 @@
 
 Internal web application replacing Connecteam's operational checklist functionality for RISE8 Companies / Stayable extended-stay hotels.
 
-**Status:** Pre-build planning. Target v1 launch: 8 weeks from kickoff. Cutover from Connecteam: 12 weeks from kickoff.
+**Status:** Pre-build planning. Target v1 launch: **10 weeks** from kickoff. Cutover from Connecteam: **14 weeks** from kickoff (extended per ADR-012 for Contractor Checklists + Quick Tasks).
 
 ---
 
@@ -14,7 +14,10 @@ Internal web application replacing Connecteam's operational checklist functional
 - Real-time dashboards per property, user, role, and checklist type.
 - Photo capture with geofence verification.
 - Recurring and bulk checklist creation.
+- **Contractor Checklists** — magic-link sign-off for vendors/contractors (no accounts needed).
+- **Quick Tasks** — lightweight ad-hoc task assignment.
 - PDF export on demand.
+- Daily Teams digest — auto-posted to master corporate channel + per-property channels.
 
 ## What It Doesn't Do
 
@@ -33,7 +36,7 @@ Start here, in order:
 1. **[CLAUDE.md](./CLAUDE.md)** — Project context, decisions, conventions. Required reading.
 2. **[docs/PRD.md](./docs/PRD.md)** — Product Requirements Document. What we're building.
 3. **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** — Technical Architecture. How we're building it.
-4. **[docs/SPRINT_PLAN.md](./docs/SPRINT_PLAN.md)** — 8-week build plan with milestones.
+4. **[docs/SPRINT_PLAN.md](./docs/SPRINT_PLAN.md)** — 10-week build plan with milestones.
 5. **[docs/DECISIONS.md](./docs/DECISIONS.md)** — Architecture Decision Records (ADRs).
 6. **[docs/RUNBOOK.md](./docs/RUNBOOK.md)** — Operational runbook.
 

@@ -1,14 +1,17 @@
-# RISE8 Operations Platform — 8-Week Sprint Plan
+# RISE8 Operations Platform — 10-Week Sprint Plan
 
-**Version:** 1.0
-**Date:** May 15, 2026
+**Version:** 1.1
+**Date:** May 15, 2026 (v1.0); revised 2026-05-27 (v1.1)
 **Prepared by:** Kate, Director of Asset Management
+
+**Change log**
+- v1.1 (2026-05-27): Build extended from 8 → 10 weeks per ADR-012; new Week 9 (Contractor Checklists) and Week 10 (Quick Tasks); parallel run shifts to Weeks 11–14; cutover moves to Week 14.
 
 ---
 
 ## Overview
 
-This sprint plan outlines an 8-week build schedule for the RISE8 Operations Platform v1, followed by a 4-week parallel run and cutover from Connecteam. Each week has clear deliverables and a definition of done. The plan is designed for one focused developer using Claude Code, with Kate as product owner and Christopher as backup.
+This sprint plan outlines a **10-week build schedule** for the RISE8 Operations Platform v1, followed by a 4-week parallel run and cutover from Connecteam. Each week has clear deliverables and a definition of done. The plan is designed for one focused developer using Claude Code, with Kate as product owner and Christopher as backup.
 
 ### Approach
 
@@ -24,9 +27,12 @@ This sprint plan outlines an 8-week build schedule for the RISE8 Operations Plat
 |---|---|---|
 | End of Week 1 | Foundation | Repo set up, deployed to Vercel, auth working, iPhone PWA shell installable |
 | End of Week 4 | Alpha (internal demo) | Field user can complete and submit a checklist with photos; manager can review |
-| End of Week 6 | Feature complete | All v1 features built; bug fixing only after this point |
-| End of Week 8 | Production ready | Parallel run begins; staff use both Connecteam and new platform |
-| End of Week 12 | Cutover | Connecteam set to read-only; new platform is sole system for operations |
+| End of Week 6 | Property Checklist feature complete | All Property Checklist v1 features built |
+| End of Week 7 | UI Redesign + Hardening complete | Stayable Operations branding applied; PDF export, offline, accessibility, load test |
+| End of Week 8 | Training & provisioning complete | All field staff accounts created; training sessions delivered |
+| End of Week 9 | Contractor Checklists shipped | Magic-link contractor sign-off flow live; CONTRACTOR-audience templates seeded |
+| End of Week 10 | Quick Tasks shipped — **Production ready** | Quick Tasks live across all surfaces; parallel run begins |
+| End of Week 14 | Cutover | Connecteam set to read-only; new platform is sole system for operations |
 
 ---
 
@@ -196,16 +202,19 @@ This sprint plan outlines an 8-week build schedule for the RISE8 Operations Plat
 
 ---
 
-## Week 7 — PDF Export, Testing, Bug Fix
+## Week 7 — UI Redesign + PDF Export + Hardening
 
-**Goal:** PDF parity with Connecteam exports. Hammer the app to find bugs.
+**Goal:** Apply Stayable Operations branding (ADR-010). Ship PDF parity. Hammer the app to find bugs.
 
 ### Deliverables
 
+- **Stayable branding kit sourced from Kate** (logo, palette, wordmark "Stayable Operations")
+- Claude Design pass: visual system (typography, colors, spacing, density), redesigned field / manager / admin screens
+- Empty / error / loading / offline states designed for every screen
+- Side-by-side review with Kate vs functional baseline before merging redesign
 - PDF export via `@react-pdf/renderer` matching Connecteam visual style
 - Single instance PDF export (immediate download)
-- Bulk PDF export (background job, email when ready)
-- Inngest worker for async PDF generation
+- Bulk PDF export (background job via Inngest, email when ready, 7-day link)
 - End-to-end testing on multiple iPhones and Android devices
 - Offline mode tested: capture 3 checklists offline, reconnect, verify queued sync
 - Load test: simulate 30 concurrent users submitting
@@ -221,57 +230,112 @@ This sprint plan outlines an 8-week build schedule for the RISE8 Operations Plat
 
 ---
 
-## Week 8 — Training, Deployment, Parallel Run Begins  [PRODUCTION READY]
+## Week 8 — Training, Provisioning, Daily Digest Wiring
 
-**Goal:** Cut over to parallel run. Real users start submitting in the new system.
+**Goal:** Real users provisioned. Manager and field-staff training delivered. Daily 7 AM PM email digest live.
 
 ### Deliverables
 
+- Production environment fully configured (domain, secrets, monitoring) — partial; Quick Tasks domain bits land in Week 10
+- All field staff provisioned with accounts; activation emails sent
+- Training session per property (1 hour each, recorded for replay)
+- Quick reference card distributed (PDF + printed) for field staff
+- Manager training: full Property-Checklist feature walkthrough (1.5 hours)
+- Runbook documented: how to handle common issues, where logs are, how to reset accounts
+- Daily 7:00 AM ET property-manager email digest live (PRD §8)
+- Support channel established (dedicated Teams channel)
+
+### Definition of Done
+
+1. All field staff have working accounts and can log in on their devices
+2. Training sessions delivered + recordings archived
+3. First production PM email digest delivered to a real manager inbox
+4. Runbook reviewed by Kate
+
+---
+
+## Week 9 — Contractor Checklists (ADR-012)
+
+**Goal:** Ship the Contractor Checklists module. Magic-link sign-off flow live.
+
+### Deliverables
+
+- `contractors` table + admin UI for contractor record management (per property)
+- `checklist_templates.audience` enum (`EMPLOYEE` | `CONTRACTOR`) + UI for tagging templates
+- `checklist_instances.contractor_id` field + creation flow targeting contractor records
+- **Magic-link auth:** signed (JWT or HMAC), single-use, 72h-TTL URL generation tied to instance ID + contractor ID
+- Token regeneration as one-click manager action
+- Contractor-facing filling UI (no login screen, opens directly from link)
+- Manager review queue handles contractor submissions — submitter column shows contractor name + company
+- Flag → Issue tagged to contractor record
+- Initial CONTRACTOR-audience template seeds: Roof PM, Pest Control, HVAC Service, Pressure Washing (contractor variant), Lawn / Landscaping — final list confirmed by Kate during the week
+
+### Definition of Done
+
+1. Manager creates contractor → creates instance → sends link → contractor completes → manager approves, all end-to-end
+2. Token replay attempt is blocked (single-use enforced)
+3. Expired token shows a clear regeneration prompt, not a generic error
+4. Code review pass on magic-link token signing + replay protection
+
+---
+
+## Week 10 — Quick Tasks (ADR-012)  [PRODUCTION READY]
+
+**Goal:** Ship Quick Tasks. Production-ready. Parallel run begins.
+
+### Deliverables
+
+- `quick_tasks` table + photo join table
+- Manager / Corporate / Admin creation surface (title, description, property, assignee or role pool, due date, priority)
+- Field staff "My Tasks" surface in home; sorted by due date asc → priority desc
+- Manager "Open Tasks" view at their property with filters
+- Corporate dashboard rollup of open / overdue Quick Tasks per property
 - Production environment fully configured (domain, secrets, monitoring)
 - Production database seeded with real users, properties, templates, recurring rules
 - All field staff provisioned with accounts; activation emails sent
 - Training session per property (1 hour each, recorded for replay)
 - Quick reference card distributed (PDF + printed) for field staff
-- Manager training: full feature walkthrough (1.5 hours)
-- Runbook documented: how to handle common issues, where logs are, how to reset accounts
-- Support channel established (dedicated Teams channel or email)
+- Manager training: full feature walkthrough including Contractor Checklists + Quick Tasks (2 hours)
+- Runbook documented
+- Support channel established (dedicated Teams channel)
 - Parallel run starts: staff complete checklists in both Connecteam and new platform
 
 ### Definition of Done — PRODUCTION READY
 
 1. All field staff have working accounts
-2. First production submission completed successfully
-3. Daily monitoring report set up (delivered to Kate every morning)
-4. Parallel run officially active
+2. Quick Tasks creation → assignment → completion works end-to-end on mobile
+3. First production submission completed successfully
+4. Daily monitoring report set up (delivered to Kate every morning)
+5. Parallel run officially active
 
 ---
 
-## Weeks 9–12 — Parallel Run and Cutover
+## Weeks 11–14 — Parallel Run and Cutover
 
 **Goal:** Validate new platform parity, fix gaps, cut over from Connecteam.
 
-### Week 9 — Stabilization
+### Week 11 — Stabilization
 - Daily monitoring of completion rates in both systems
 - Triage incoming bug reports from field staff
 - Fix P0 and P1 issues within 24 hours
 - Track feature gaps requested by managers
 
-### Week 10 — Optimization
+### Week 12 — Optimization
 - Performance tuning based on real-world usage data
 - UX refinements based on field staff feedback
 - Add any high-priority missing features identified during parallel run
 
-### Week 11 — Cutover Prep
+### Week 13 — Cutover Prep
 - Compare completion rates: new platform vs Connecteam baseline
-- If parity achieved for 2 consecutive weeks, schedule cutover for end of Week 12
+- If parity achieved for 2 consecutive weeks, schedule cutover for end of Week 14
 - Communicate cutover date 1 week in advance to all staff
 - Final training refresher session for any stragglers
 
-### Week 12 — Cutover
+### Week 14 — Cutover
 - Day-of: Connecteam set to read-only access
 - Karla stops manual PDF uploads to Smartsheet
 - Smartsheet sheets archived (no new rows added; existing data preserved)
-- Cutover retrospective scheduled for Week 13
+- Cutover retrospective scheduled for Week 15
 - New platform is sole system for operations
 
 ---
@@ -280,7 +344,7 @@ This sprint plan outlines an 8-week build schedule for the RISE8 Operations Plat
 
 ### People
 
-- Primary developer: 1 person, full-time, 8 weeks build + 4 weeks parallel run support
+- Primary developer: 1 person, full-time, 10 weeks build + 4 weeks parallel run support
 - Product owner / project lead: Kate (5–10 hours/week)
 - Backup / second pair of eyes: Christopher (2–5 hours/week)
 - Sponsor / decision-maker: Rob (1–2 hours/week)
@@ -318,7 +382,7 @@ This project should be stopped or paused if any of the following occurs. Better 
 
 - **End of Week 1:** iOS PWA cannot reliably capture photos with GPS coordinates. Without this, geofence verification is impossible and the project's value drops significantly.
 - **End of Week 4 (Alpha):** Internal demo fails to complete a full round trip. If alpha doesn't work, weeks 5–8 are building on broken foundation.
-- **End of Week 10 (Parallel run):** New platform completion rate is below 70% of Connecteam baseline. Field staff are rejecting the tool.
+- **End of Week 12 (Parallel run):** New platform completion rate is below 70% of Connecteam baseline. Field staff are rejecting the tool.
 
 ### Pause and Reassess Conditions
 

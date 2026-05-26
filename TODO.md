@@ -1,6 +1,6 @@
 # RISE8 Operations Platform — Task Tracker
 
-Living checklist for the 8-week build + 4-week parallel run. Source of truth for "what's next." Tied to `docs/SPRINT_PLAN.md`.
+Living checklist for the **10-week build + 4-week parallel run** (extended per ADR-012). Source of truth for "what's next." Tied to `docs/SPRINT_PLAN.md`.
 
 **Legend**
 - Priority: `P0` blocker · `P1` must-have · `P2` should-have · `P3` nice-to-have
@@ -40,7 +40,8 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | `.gitignore` baseline (keeps `.env.example` tracked) |
 | P0 | [x] | Initial commit: `chore: initial project scaffold` |
 | P0 | [x] | Connect GitHub → Vercel project, auto-deploy on push (preview deploy succeeded) |
-| P0 | [~] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — Neon project exists; URLs not yet pasted into Vercel |
+| P0 | [~] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — Neon `operations` project created 2026-05-21; password rotated; URLs in local `.env.local`; **Vercel paste pending user confirmation** |
+| P0 | [x] | Merge scaffold branch → `main` so production deploys are real (PR #1, merge commit `aa90bfe`, 2026-05-22) |
 
 ### Tue — Auth.js v5 (Credentials)
 | Pri | Status | Task |
@@ -131,9 +132,9 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Manager review queue (oldest-first) |
-| P0 | [ ] | Review detail: responses + photos + signatures + time-to-complete |
-| P0 | [ ] | Approve / Flag / Request Re-do actions with audit entries |
+| P0 | [ ] | Manager review queue — **table view** (ADR-011): row per submission · Status · User · Date · Unit# · Time-to-complete · inline photo thumbnails per required photo question · row-level Approve/Flag/Re-do |
+| P0 | [ ] | Single-submission review — **three-column layout** (ADR-011): left rail (status + manager note) · center (responses + photos + signatures + time-to-complete header) · right rail (activity timeline w/ actor + timestamp) |
+| P0 | [ ] | Approve / Flag / Request Re-do actions with audit entries (writes to `audit_log` + `notification_log`) |
 | P0 | [ ] | Auto-Issue from PASSFAIL=Fail when `fail_flags_issue=true` |
 | P0 | [ ] | Issues list + detail page |
 | P0 | [ ] | Resolution flow: note + photo required |
@@ -182,6 +183,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ### UI Redesign Pass — Claude Design (runs first, before polish-adjacent work)
 | Pri | Status | Task |
 |---|---|---|
+| P0 | [ ] | Stayable branding kit sourced from Kate — logo, palette, wordmark ("Stayable Operations") |
 | P0 | [ ] | Run full app through Claude Design (`document-skills:frontend-design`) — capture screens of every route in current state as baseline |
 | P0 | [ ] | Define visual system: typography scale, color tokens, spacing/density, button hierarchy, form treatment |
 | P0 | [ ] | Redesign field-staff screens: Today view, checklist runtime (11 question types), photo + signature capture, draft + submit confirmation |
@@ -203,37 +205,99 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P1 | [ ] | API error-handling pass |
 | P0 | [ ] | All P0/P1 bugs from alpha cleared |
 
+### Daily Teams Digest (ADR-010)
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Teams channel inventory: collect 1 corporate + 8 property webhook URLs (Kate) |
+| P1 | [ ] | `property_channels` table + admin UI to manage webhooks |
+| P1 | [ ] | Digest builder: prior-day misses, flagged issues, photo verification anomalies per property |
+| P1 | [ ] | Inngest cron 7:00 AM ET — post master + per-property digests via Incoming Webhooks |
+| P1 | [ ] | `notification_log` entries per channel (success / failed / skipped) |
+| P1 | [ ] | Admin failure surface (which channels failed in the last 7 days) |
+
 ---
 
-## Phase 8 — Week 8: Training & Go-Live  **[PRODUCTION READY]**
+## Phase 8 — Week 8: Training & Provisioning
+
+Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Quick Tasks ship) per ADR-012.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Production domain + secrets + Sentry + Vercel Analytics live |
+| P0 | [ ] | Production domain + secrets + Sentry + Vercel Analytics live (Property Checklist scope) |
 | P0 | [ ] | Prod DB seeded: real users, properties, templates, recurring rules |
 | P0 | [ ] | All field staff provisioned; activation emails sent |
-| P0 | [ ] | Training session per property (1 hr, recorded) |
-| P0 | [ ] | Quick reference card (PDF + printed) |
-| P0 | [ ] | Manager training (1.5 hr) |
+| P0 | [ ] | Training session per property (1 hr, recorded) — Property Checklist walkthrough |
+| P0 | [ ] | Quick reference card v1 (PDF + printed) — Property Checklist focus; updated in Phase 10 to cover Contractor + Quick Tasks |
+| P0 | [ ] | Manager training (1.5 hr) — Property Checklist walkthrough |
 | P0 | [ ] | Runbook reviewed + extended with real ops gotchas |
 | P0 | [ ] | Support channel established (Teams) |
+| P0 | [ ] | Daily 7 AM ET PM email digest live (PRD §8) |
+
+---
+
+## Phase 9 — Week 9: Contractor Checklists (ADR-012)
+
+**Goal:** Magic-link contractor sign-off flow live. CONTRACTOR-audience templates seeded.
+
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [ ] | `contractors` table + admin UI to create/edit/deactivate contractor records per property |
+| P0 | [ ] | `checklist_templates.audience` enum (`EMPLOYEE` \| `CONTRACTOR`) + admin UI to tag templates |
+| P0 | [ ] | `checklist_instances.contractor_id` (nullable FK) + creation flow targeting contractor records |
+| P0 | [ ] | Magic-link token: signed (JWT or HMAC), single-use, 72h TTL, tied to (instance_id, contractor_id) |
+| P0 | [ ] | Replay protection: token consumed on submit, blocked on reuse with clear error |
+| P0 | [ ] | Token regeneration as one-click manager action |
+| P0 | [ ] | Contractor filling UI: opens directly from link, no login screen, same camera/GPS/signature flow as employee |
+| P0 | [ ] | Manager review queue: submitter column shows contractor name + company for CONTRACTOR instances |
+| P0 | [ ] | Flag → Issue tagged to contractor record (not user) |
+| P0 | [ ] | Seed initial CONTRACTOR-audience templates: Roof PM (contractor variant), Pest Control, HVAC Service, Pressure Washing (contractor variant), Lawn / Landscaping — final list confirmed with Kate during build |
+| P0 | [ ] | Code review pass on magic-link token signing + replay protection |
+| P1 | [ ] | Contractor PDF export uses contractor name/company in header instead of employee name |
+
+---
+
+## Phase 10 — Week 10: Quick Tasks (ADR-012)  **[PRODUCTION READY]**
+
+**Goal:** Quick Tasks live across all surfaces. Parallel run begins.
+
+### Quick Tasks build
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [ ] | `quick_tasks` table + `quick_task_photos` join (max 5 photos per task) |
+| P0 | [ ] | Manager / Corporate / Admin creation surface: title, description, property, assignee or role pool, due date, priority |
+| P0 | [ ] | Field staff "My Tasks" surface in home; sorted by due date asc → priority desc |
+| P0 | [ ] | Field staff task detail: mark IN_PROGRESS → add completion note + optional photos → mark COMPLETED |
+| P0 | [ ] | Manager "Open Tasks" view at their property with filters: assignee, priority, status |
+| P0 | [ ] | Corporate dashboard: portfolio rollup of open / overdue Quick Tasks per property |
+| P0 | [ ] | Manager CANCEL action requires a reason in `completion_note` |
+| P0 | [ ] | RBAC: field staff see only their own assigned tasks; managers see their property's tasks |
+| P1 | [ ] | Resist scope creep — no recurrence, no review queue, no PDF export on Quick Tasks |
+
+### Production readiness
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [ ] | Production environment fully configured (domain, secrets, monitoring, Sentry, Vercel Analytics) |
+| P0 | [ ] | Prod DB seeded: real users, properties, templates, recurring rules |
+| P0 | [ ] | First production submission completed successfully |
+| P0 | [ ] | Manager training extended: Contractor Checklists + Quick Tasks walkthrough |
+| P0 | [ ] | Quick reference card updated to cover Contractor + Quick Tasks |
 | P0 | [ ] | Parallel run officially active |
 | P0 | [ ] | Daily monitoring report → Kate every morning |
 
 ---
 
-## Phase 9 — Weeks 9–12: Parallel Run & Cutover
+## Phase 11 — Weeks 11–14: Parallel Run & Cutover
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Week 9: daily parity monitoring + P0/P1 fixes within 24h |
-| P0 | [ ] | Week 10: perf tuning + UX refinements |
-| P0 | [ ] | Week 11: parity check — if ≥ Connecteam baseline for 2 weeks, schedule cutover |
-| P0 | [ ] | Week 11: communicate cutover date (1 week notice) |
-| P0 | [ ] | Week 12: Connecteam → read-only |
-| P0 | [ ] | Week 12: Karla stops manual PDF uploads |
-| P0 | [ ] | Week 12: Smartsheet sheets archived |
-| P0 | [ ] | Cutover retro scheduled for Week 13 |
+| P0 | [ ] | Week 11: daily parity monitoring + P0/P1 fixes within 24h |
+| P0 | [ ] | Week 12: perf tuning + UX refinements |
+| P0 | [ ] | Week 13: parity check — if ≥ Connecteam baseline for 2 weeks, schedule cutover for Week 14 |
+| P0 | [ ] | Week 13: communicate cutover date (1 week notice) |
+| P0 | [ ] | Week 14: Connecteam → read-only |
+| P0 | [ ] | Week 14: Karla stops manual PDF uploads |
+| P0 | [ ] | Week 14: Smartsheet sheets archived |
+| P0 | [ ] | Cutover retro scheduled for Week 15 |
 
 ---
 
