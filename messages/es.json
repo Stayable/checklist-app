@@ -20,7 +20,16 @@
     "signOut": "Cerrar sesión",
     "email": "Correo electrónico",
     "password": "Contraseña",
-    "forgotPassword": "¿Olvidaste tu contraseña?"
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "title": "Inicia sesión en Stayable Operations",
+    "subtitle": "Ingresa tu correo de trabajo y contraseña.",
+    "signingIn": "Iniciando sesión…",
+    "error": "Correo o contraseña inválidos, o tu cuenta está bloqueada temporalmente tras demasiados intentos. Inténtalo más tarde o contacta a tu administrador."
+  },
+  "Home": {
+    "greeting": "Hola, {name}",
+    "role": "Rol",
+    "placeholder": "Tus asignaciones aparecerán aquí."
   },
   "Locale": {
     "english": "Inglés",

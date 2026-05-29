@@ -14,9 +14,11 @@ const PROPERTIES = [
   { propertyId: "44199", shortCode: "DP", name: "Davenport",          address: "44199 US Hwy 27, Davenport, FL 33897" },
 ];
 
-const ADMIN_EMAIL   = "admin@rise8companies.com";
+const ADMIN_EMAIL   = "admin@rentstayable.com";
 const MANAGER_EMAIL = "manager.lakeland@rentstayable.com";
 const HK_EMAIL      = "hk.lakeland@rentstayable.com";
+// Temporary admin password for v1 testing — rotate before production cutover.
+const ADMIN_PASSWORD = "StayableCheck";
 const DEFAULT_PASSWORD = "ChangeMe!2026";
 
 async function main() {
@@ -35,16 +37,17 @@ async function main() {
 
   const lakeland = await db.property.findUniqueOrThrow({ where: { propertyId: "4645" } });
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+  const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
   console.log("Seeding admin…");
   await db.user.upsert({
     where: { email: ADMIN_EMAIL },
-    update: { role: Role.ADMIN, name: "RISE8 Admin", active: true },
+    update: { role: Role.ADMIN, name: "RISE8 Admin", active: true, passwordHash: adminPasswordHash },
     create: {
       email: ADMIN_EMAIL,
       name: "RISE8 Admin",
       role: Role.ADMIN,
-      passwordHash,
+      passwordHash: adminPasswordHash,
       mfaEnabled: false,
     },
   });
@@ -86,7 +89,8 @@ async function main() {
   const propertyCount = await db.property.count();
   const userCount = await db.user.count();
   console.log(`\nSeed complete — properties: ${propertyCount}, users: ${userCount}`);
-  console.log(`Default password for seeded accounts: ${DEFAULT_PASSWORD}  (rotate before production use)`);
+  console.log(`Admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+  console.log(`Default password for other seeded accounts: ${DEFAULT_PASSWORD}  (rotate before production use)`);
 }
 
 main()

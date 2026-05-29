@@ -38,6 +38,10 @@ model User {
   mfaEnabled    Boolean   @default(false) @map("mfa_enabled")
   mfaSecret     String?   @map("mfa_secret")
   lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz
+  // Account lockout (ADR-008): 5 failed attempts within 15 min -> 30 min lock.
+  failedLoginAttempts Int      @default(0) @map("failed_login_attempts")
+  lastFailedLoginAt   DateTime? @map("last_failed_login_at") @db.Timestamptz
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz
   phone         String?
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz

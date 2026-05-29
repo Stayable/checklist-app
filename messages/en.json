@@ -20,7 +20,16 @@
     "signOut": "Sign out",
     "email": "Email",
     "password": "Password",
-    "forgotPassword": "Forgot your password?"
+    "forgotPassword": "Forgot your password?",
+    "title": "Sign in to Stayable Operations",
+    "subtitle": "Enter your work email and password.",
+    "signingIn": "Signing in…",
+    "error": "Invalid email or password, or your account is temporarily locked after too many attempts. Try again later or contact your administrator."
+  },
+  "Home": {
+    "greeting": "Hello, {name}",
+    "role": "Role",
+    "placeholder": "Your assignments will appear here."
   },
   "Locale": {
     "english": "English",
