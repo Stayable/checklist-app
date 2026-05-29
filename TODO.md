@@ -40,20 +40,20 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | `.gitignore` baseline (keeps `.env.example` tracked) |
 | P0 | [x] | Initial commit: `chore: initial project scaffold` |
 | P0 | [x] | Connect GitHub → Vercel project, auto-deploy on push (preview deploy succeeded) |
-| P0 | [~] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — Neon `operations` project created 2026-05-21; password rotated; URLs in local `.env.local`; **Vercel paste pending user confirmation** |
+| P0 | [x] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — **confirmed 2026-05-30 via `vercel env ls`: both present, scoped Production + Preview** (Development not set — fine, local uses `.env.local`) |
 | P0 | [x] | Merge scaffold branch → `main` so production deploys are real (PR #1, merge commit `aa90bfe`, 2026-05-22) |
 | P0 | [x] | **i18n scaffold (ADR-013):** install `next-intl`, configure middleware-based locale routing, scaffold `messages/en.json` + `messages/es.json`, add locale provider to root layout |
 | P0 | [x] | **Datetime helper (ADR-013):** `lib/datetime.ts` exposing `formatInET(dt, pattern)` + `etToday()`; ESLint rule blocking direct `toLocaleString` / `Intl.DateTimeFormat` outside this file; install `date-fns-tz` |
 
-### Tue — Auth.js v5 (Credentials)
+### Tue — Auth.js v5 (Credentials)  *(shipped 2026-05-30, commit `7d81b96`)*
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Auth.js v5 Credentials provider wired up |
-| P0 | [ ] | bcrypt (cost 12), JWT session, 30-day rolling expiry |
-| P0 | [ ] | `/app/login`, `/app/signup`, `/api/auth/[...nextauth]` |
-| P0 | [ ] | `/lib/auth.ts`, `/lib/db.ts` (Prisma singleton) |
-| P1 | [ ] | Account lockout: 5 fails / 15 min / 30 min cooldown |
-| P2 | [ ] | TOTP MFA scaffolding (field + future enable flow) |
+| P0 | [x] | Auth.js v5 Credentials provider wired up (next-auth 5.0.0-beta.31) |
+| P0 | [x] | bcrypt (cost 12), JWT session, 30-day rolling expiry — verified live (session role+locale+30d expiry) |
+| P0 | [x] | `/app/login` (bilingual EN/ES) + `/api/auth/[...nextauth]`. **`/app/signup` intentionally deferred to Phase 2** (admin-provisioning model) |
+| P0 | [x] | `/lib/auth.ts`, `/lib/db.ts` (Prisma singleton) |
+| P1 | [~] | Account lockout 5/15/30 — logic done in pure `lib/auth-throttle.ts` + wired; **full 5-strike lock NOT yet exercised (no Vitest). Add unit test before relying on it** |
+| P2 | [~] | TOTP MFA scaffolding — schema fields (`mfaEnabled`/`mfaSecret`) exist; enable/verify flow deferred |
 
 ### Wed — Prisma schema + seed
 | Pri | Status | Task |
@@ -87,10 +87,11 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [ ] | EXIF read via `exifr` (or `piexifjs`) — pick smaller iOS-safe lib |
 | P0 | [ ] | Test matrix: iPhone PWA, iPhone Safari, Android PWA, Android Chrome, Desktop Chrome |
 | P0 | [ ] | Record results in `docs/PWA_TEST_RESULTS.md` |
-| P0 | [!] | **GO/NO-GO decision: iOS PWA viability** — escalate to Kate if GPS fails |
+| P0 | [~] | Throwaway de-risk spike shipped: `/ios-spike` (standalone manifest + GPS / camera / canvas-compress, no R2). Pushed → on a **Preview** URL. **Awaiting Kate's on-device iPhone test (launch from home screen, confirm Standalone:YES).** |
+| P0 | [!] | **GO/NO-GO decision: iOS PWA viability** — pending the on-device spike result; escalate to Kate if GPS fails in standalone |
 
 ### Week-1 DoD
-- [ ] Sign-up → log-in → "Hello, name" works end-to-end
+- [x] Log-in → "Hello, name" works end-to-end (verified 2026-05-30; sign-up path deferred to Phase 2 admin provisioning)
 - [ ] PWA installs to iPhone + Android home screens
 - [ ] Test photo round-trips through R2 with GPS captured separately
 - [ ] iOS GPS verified (or Capacitor fallback decision escalated)
@@ -310,6 +311,9 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 
 | Pri | Status | Task |
 |---|---|---|
+| P1 | [ ] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — prove 5-strike lock, 15-min window reset, 30-min unlock (logic shipped untested 2026-05-30) |
+| P2 | [ ] | Add `AUTH_SECRET` to Vercel **Preview** if branch-preview login testing is wanted (Production-only per Kate's default-to-Prod rule) |
+| P3 | [ ] | Decide fate of stray `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` (commit as deliverables vs `.gitignore`) |
 | P1 | [ ] | CI: GitHub Actions — lint + typecheck + unit tests on PR |
 | P1 | [ ] | Playwright e2e on login + submit + review |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |
