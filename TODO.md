@@ -52,7 +52,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | bcrypt (cost 12), JWT session, 30-day rolling expiry — verified live (session role+locale+30d expiry) |
 | P0 | [x] | `/app/login` (bilingual EN/ES) + `/api/auth/[...nextauth]`. **`/app/signup` intentionally deferred to Phase 2** (admin-provisioning model) |
 | P0 | [x] | `/lib/auth.ts`, `/lib/db.ts` (Prisma singleton) |
-| P1 | [~] | Account lockout 5/15/30 — logic done in pure `lib/auth-throttle.ts` + wired; **full 5-strike lock NOT yet exercised (no Vitest). Add unit test before relying on it** |
+| P1 | [x] | Account lockout 5/15/30 — pure `lib/auth-throttle.ts` + wired; **now covered by Vitest (9 cases) as of `180b12d`** |
 | P2 | [~] | TOTP MFA scaffolding — schema fields (`mfaEnabled`/`mfaSecret`) exist; enable/verify flow deferred |
 
 ### Wed — Prisma schema + seed
@@ -64,37 +64,37 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Seed script: 8 properties (all 2-letter short codes per ADR-011) + admin + 1 MANAGER + 1 HK at LL (4645) |
 | P0 | [x] | Register seed in `package.json` |
 
-### Thu — PWA shell
+### Thu — PWA shell  *(code shipped 2026-05-30, commit `180b12d`)*
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | `manifest.webmanifest` + placeholder icons (192/512/maskable) |
-| P0 | [ ] | Workbox service worker registered via `/lib/pwa.ts` |
-| P0 | [ ] | `InstallPrompt.tsx` with iOS-specific Add-to-Home-Screen guide |
-| P0 | [ ] | `/app/install` page with screenshots |
-| P0 | [ ] | Online/Offline status indicator in header |
-| P0 | [ ] | Install + verify on real iPhone (iOS 17+) |
-| P0 | [ ] | Install + verify on real Android (Chrome) |
+| P0 | [x] | `app.webmanifest` (scope `/`) + placeholder SVG icons (192/512/maskable). Left `/ios-spike`-scoped `manifest.webmanifest` untouched |
+| P0 | [x] | Service worker registered via `/lib/pwa.ts` (prod-only). **Hand-rolled stand-in** (precache shell + network-first nav + `offline.html`) — swap to Workbox `generateSW` once it plays nice with Turbopack |
+| P0 | [x] | `InstallPrompt.tsx` — Chrome `beforeinstallprompt` + iOS Add-to-Home-Screen guide (bilingual) |
+| P0 | [x] | `/app/install` page (screenshots are placeholder text steps; real screens w/ Phase-7 branding) |
+| P0 | [x] | Online/Offline status indicator in header (`OnlineStatus.tsx`, bilingual) |
+| P0 | [ ] | Install + verify on real iPhone (iOS 17+) — **needs device** |
+| P0 | [ ] | Install + verify on real Android (Chrome) — **needs device** |
 
 ### Fri — Photo capture POC (CRITICAL DE-RISK)
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Cloudflare R2 bucket `rise8-ops-staging` + scoped API tokens |
-| P0 | [ ] | R2 CORS allow PUTs from dev + Vercel preview URLs |
-| P0 | [ ] | `/app/photo-test` page with `input[type=file] capture="environment"` |
-| P0 | [ ] | Independent `navigator.geolocation.getCurrentPosition()` capture |
-| P0 | [ ] | Client-side compress: 1920px long edge, JPEG 85, ~500KB |
-| P0 | [ ] | `/api/photos/presign` + `/api/photos/save` |
-| P0 | [ ] | EXIF read via `exifr` (or `piexifjs`) — pick smaller iOS-safe lib |
-| P0 | [ ] | Test matrix: iPhone PWA, iPhone Safari, Android PWA, Android Chrome, Desktop Chrome |
+| P0 | [!] | Cloudflare R2 bucket `rise8-ops-staging` + scoped API tokens — **blocked: needs user's Cloudflare account** |
+| P0 | [!] | R2 CORS allow PUTs from dev + Vercel preview URLs — **blocked on R2 bucket** |
+| P0 | [x] | `/app/photo-test` page with `input[type=file] capture="environment"` (commit `180b12d`) |
+| P0 | [x] | Independent `navigator.geolocation.getCurrentPosition()` capture (`lib/image.ts`) |
+| P0 | [x] | Client-side compress: 1920px long edge, JPEG 85, ~500KB (`lib/image.ts`, shared w/ spike) |
+| P0 | [!] | `/api/photos/presign` + `/api/photos/save` — **deliberately not written yet; blocked on R2 creds.** Upload button absent from `/photo-test` until R2 lands |
+| P0 | [x] | EXIF read via `exifr` (chosen; confirms iOS strips GPS → separate capture justified) |
+| P0 | [ ] | Test matrix: iPhone PWA, iPhone Safari, Android PWA, Android Chrome, Desktop Chrome — **needs devices + R2** |
 | P0 | [ ] | Record results in `docs/PWA_TEST_RESULTS.md` |
 | P0 | [~] | Throwaway de-risk spike shipped: `/ios-spike` (standalone manifest + GPS / camera / canvas-compress, no R2). Pushed → on a **Preview** URL. **Awaiting Kate's on-device iPhone test (launch from home screen, confirm Standalone:YES).** |
 | P0 | [!] | **GO/NO-GO decision: iOS PWA viability** — pending the on-device spike result; escalate to Kate if GPS fails in standalone |
 
 ### Week-1 DoD
 - [x] Log-in → "Hello, name" works end-to-end (verified 2026-05-30; sign-up path deferred to Phase 2 admin provisioning)
-- [ ] PWA installs to iPhone + Android home screens
-- [ ] Test photo round-trips through R2 with GPS captured separately
-- [ ] iOS GPS verified (or Capacitor fallback decision escalated)
+- [~] PWA installs to iPhone + Android home screens — **shell code shipped + builds; on-device install still to verify**
+- [ ] Test photo round-trips through R2 with GPS captured separately — **blocked on R2; client capture/compress/GPS done**
+- [ ] iOS GPS verified (or Capacitor fallback decision escalated) — pending Kate's `/ios-spike` on-device run
 
 ---
 
@@ -311,7 +311,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 
 | Pri | Status | Task |
 |---|---|---|
-| P1 | [ ] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — prove 5-strike lock, 15-min window reset, 30-min unlock (logic shipped untested 2026-05-30) |
+| P1 | [x] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — 9 cases: 5-strike lock, 15-min window reset + boundary, 30-min unlock, success clear. Shipped 2026-05-30 commit `180b12d` |
 | P2 | [ ] | Add `AUTH_SECRET` to Vercel **Preview** if branch-preview login testing is wanted (Production-only per Kate's default-to-Prod rule) |
 | P3 | [ ] | Decide fate of stray `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` (commit as deliverables vs `.gitignore`) |
 | P1 | [ ] | CI: GitHub Actions — lint + typecheck + unit tests on PR |
