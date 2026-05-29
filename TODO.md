@@ -120,17 +120,17 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Field user home: today's assignments list (ET-anchored "today" per ADR-013) |
-| P0 | [ ] | Checklist filling page with ordered questions |
-| P0 | [ ] | All 11 question types render + validate |
-| P0 | [ ] | Conditional logic engine (show_if) |
-| P0 | [ ] | Multi-photo capture per question, compressed client-side |
-| P0 | [ ] | Signature capture (canvas, touch/stylus) |
-| P0 | [ ] | Draft auto-save to IndexedDB on every change |
-| P0 | [ ] | Submit pipeline: validate → upload photos → persist responses → SUBMITTED |
-| P1 | [ ] | Confirmation screen + return-to-home |
-| P0 | [ ] | **First-login locale picker (ADR-013):** field staff (HK/PA/MT) prompted to choose EN or ES; saved to `users.locale` |
-| P0 | [ ] | **Spanish translations (ADR-013):** all strings on field-staff surfaces in this phase translated — `messages/es.json` reviewed by bilingual reviewer (owner TBD) before merge |
+| P0 | [x] | Field user home: today's assignments list (ET-anchored via `etDateOnly`, status chips) — commit `a6ea416` |
+| P0 | [x] | Checklist filling page with ordered questions (`/checklists/[id]`, assignee/manager-gated) |
+| P0 | [x] | All 11 question types render + validate |
+| P0 | [x] | Conditional logic engine (show_if) — `lib/checklist-logic.ts`, **14 unit tests** (incl. MULTI membership) |
+| P0 | [~] | Multi-photo capture per question, **compressed client-side — capture/compress/preview done; R2 UPLOAD deferred** (PHOTO answer = `{count, pendingUpload:true}`) |
+| P0 | [x] | Signature capture (`SignaturePad`, pointer canvas → PNG data URL; R2 offload later) |
+| P0 | [x] | Draft auto-save to IndexedDB on every change (`lib/draft-store.ts` via `idb`, restored on mount) |
+| P0 | [~] | Submit pipeline: validate (client + server) → persist responses → SUBMITTED + audit. **Photo upload step deferred (R2)** |
+| P1 | [x] | Confirmation screen + return-to-home |
+| P0 | [x] | First-login locale picker (`LocalePrompt`, HK/PA/MT → `users.locale` + cookie) |
+| P0 | [~] | Spanish translations: field-staff strings (Today, filler, statuses, errors) added to `es.json` — **machine-drafted, still pending bilingual reviewer** (open q#5) |
 
 ---
 
