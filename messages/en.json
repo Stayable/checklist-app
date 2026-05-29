@@ -35,5 +35,29 @@
     "english": "English",
     "spanish": "Spanish",
     "choosePrompt": "Choose your language"
+  },
+  "Install": {
+    "ctaTitle": "Install Stayable Operations for faster, full-screen access.",
+    "installButton": "Install app",
+    "iosBanner": "Add Stayable Operations to your Home Screen →",
+    "iosTitle": "Add to Home Screen",
+    "iosStep1": "Tap the Share button in Safari's toolbar.",
+    "iosStep2": "Scroll down and tap \"Add to Home Screen.\"",
+    "iosStep3": "Tap \"Add,\" then open Stayable Operations from your Home Screen.",
+    "pageTitle": "Install the app",
+    "pageSubtitle": "Add Stayable Operations to your device for full-screen access and a Home Screen icon.",
+    "alreadyInstalled": "Already installed? Open Stayable Operations from your Home Screen icon."
+  },
+  "Photo": {
+    "testTitle": "Photo capture test",
+    "testSubtitle": "Take a photo, capture GPS, and compress — same pipeline as a checklist.",
+    "takePhoto": "Take photo",
+    "getLocation": "Get location",
+    "compress": "Compress",
+    "original": "Original",
+    "compressed": "Compressed",
+    "location": "Location",
+    "requesting": "Requesting…",
+    "noPhoto": "No photo captured yet."
   }
 }

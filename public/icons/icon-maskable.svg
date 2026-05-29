@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Stayable Operations">
+  <!-- Full-bleed background; glyph kept inside the central 80% safe zone so any
+       platform mask (circle, squircle, rounded square) never clips it. -->
+  <rect width="512" height="512" fill="#0f172a"/>
+  <text x="256" y="256" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="220" font-weight="700" fill="#f8fafc" text-anchor="middle" dominant-baseline="central">S</text>
+</svg>

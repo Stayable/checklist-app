@@ -35,5 +35,29 @@
     "english": "Inglés",
     "spanish": "Español",
     "choosePrompt": "Elige tu idioma"
+  },
+  "Install": {
+    "ctaTitle": "Instala Stayable Operations para un acceso más rápido y en pantalla completa.",
+    "installButton": "Instalar aplicación",
+    "iosBanner": "Agrega Stayable Operations a tu pantalla de inicio →",
+    "iosTitle": "Agregar a la pantalla de inicio",
+    "iosStep1": "Toca el botón Compartir en la barra de Safari.",
+    "iosStep2": "Desplázate y toca \"Agregar a pantalla de inicio.\"",
+    "iosStep3": "Toca \"Agregar\" y luego abre Stayable Operations desde tu pantalla de inicio.",
+    "pageTitle": "Instalar la aplicación",
+    "pageSubtitle": "Agrega Stayable Operations a tu dispositivo para acceso en pantalla completa y un ícono en la pantalla de inicio.",
+    "alreadyInstalled": "¿Ya la instalaste? Abre Stayable Operations desde el ícono en tu pantalla de inicio."
+  },
+  "Photo": {
+    "testTitle": "Prueba de captura de fotos",
+    "testSubtitle": "Toma una foto, captura el GPS y comprime — el mismo proceso que una lista de verificación.",
+    "takePhoto": "Tomar foto",
+    "getLocation": "Obtener ubicación",
+    "compress": "Comprimir",
+    "original": "Original",
+    "compressed": "Comprimida",
+    "location": "Ubicación",
+    "requesting": "Solicitando…",
+    "noPhoto": "Aún no se ha capturado ninguna foto."
   }
 }
