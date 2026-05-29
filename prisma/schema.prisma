@@ -1,0 +1,443 @@
+// RISE8 Operations Platform — Prisma schema
+// Phase 1 (Wed): users, properties, user_properties (ARCHITECTURE §4.1).
+// Phase 2 (Week 2): rooms, checklist_templates, questions, recurring_rules,
+// checklist_instances, responses, photos, issues, audit_log, notification_log.
+// Contractor + quick-task tables (ADR-012) are intentionally deferred to
+// Phase 9/10 — not modeled here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  HK
+  PA
+  MT
+  MANAGER
+  CORPORATE
+  ADMIN
+}
+
+enum Locale {
+  en
+  es
+}
+
+enum RoomStatus {
+  OCCUPIED
+  VACANT
+  OOO // out of order
+}
+
+enum TemplateScope {
+  PER_ROOM
+  PER_PROPERTY
+  AD_HOC
+}
+
+enum ReviewLevel {
+  NONE
+  MANAGER
+  CORPORATE
+}
+
+// All 11 question types (PRD). SECTION_DIVIDER is presentational only.
+enum QuestionType {
+  SINGLE
+  MULTI
+  YESNO
+  PASSFAIL
+  NUMBER
+  SHORT_TEXT
+  LONG_TEXT
+  PHOTO
+  SIGNATURE
+  DATE
+  SECTION_DIVIDER
+}
+
+enum InstanceStatus {
+  SCHEDULED
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  REVIEWED
+  FLAGGED
+  INVALIDATED
+  EXPIRED
+}
+
+enum GeofenceStatus {
+  VERIFIED
+  OFF_PROPERTY
+  NO_GPS
+}
+
+enum IssueStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  WONT_FIX
+}
+
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  TEAMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// ---------------------------------------------------------------------------
+// Core identity (Phase 1)
+// ---------------------------------------------------------------------------
+
+model User {
+  id                  String    @id @default(uuid()) @db.Uuid
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  name                String
+  role                Role
+  locale              Locale    @default(en)
+  active              Boolean   @default(true)
+  mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret           String?   @map("mfa_secret")
+  lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz
+  // Account lockout (ADR-008): 5 failed attempts within 15 min -> 30 min lock.
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lastFailedLoginAt   DateTime? @map("last_failed_login_at") @db.Timestamptz
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz
+  phone               String?
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  properties        UserProperty[]
+  assignedInstances ChecklistInstance[] @relation("InstanceAssignee")
+  reviewedInstances ChecklistInstance[] @relation("InstanceReviewer")
+  assignedIssues    Issue[]             @relation("IssueAssignee")
+  auditLogs         AuditLog[]
+  notifications     NotificationLog[]
+
+  @@map("users")
+}
+
+model Property {
+  id         String   @id @default(uuid()) @db.Uuid
+  propertyId String   @unique @map("property_id")
+  name       String
+  shortCode  String   @unique @map("short_code") @db.VarChar(2)
+  address    String
+  geofence   Json?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  users          UserProperty[]
+  rooms          Room[]
+  recurringRules RecurringRule[]
+  instances      ChecklistInstance[]
+  issues         Issue[]
+
+  @@map("properties")
+}
+
+model UserProperty {
+  userId     String @map("user_id") @db.Uuid
+  propertyId String @map("property_id") @db.Uuid
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([userId, propertyId])
+  @@index([propertyId])
+  @@map("user_properties")
+}
+
+// ---------------------------------------------------------------------------
+// Properties → rooms (manual occupancy; no PMS integration in v1, ADR-009)
+// ---------------------------------------------------------------------------
+
+model Room {
+  id         String     @id @default(uuid()) @db.Uuid
+  propertyId String     @map("property_id") @db.Uuid
+  roomNumber String     @map("room_number")
+  status     RoomStatus @default(VACANT)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  property  Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  instances ChecklistInstance[]
+  issues    Issue[]
+
+  @@unique([propertyId, roomNumber])
+  @@index([propertyId])
+  @@map("rooms")
+}
+
+// ---------------------------------------------------------------------------
+// Templates + questions
+// ---------------------------------------------------------------------------
+
+model ChecklistTemplate {
+  id          String        @id @default(uuid()) @db.Uuid
+  // ADR-009 templateCode used in the CL-{prop}-{code}-{date}-{seq} system ID.
+  code        String        @unique @db.VarChar(8)
+  name        String
+  version     Int           @default(1)
+  defaultRole Role          @map("default_role")
+  scope       TemplateScope
+  reviewLevel ReviewLevel   @default(MANAGER) @map("review_level")
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  questions      Question[]
+  recurringRules RecurringRule[]
+  instances      ChecklistInstance[]
+
+  @@map("checklist_templates")
+}
+
+model Question {
+  id             String       @id @default(uuid()) @db.Uuid
+  templateId     String       @map("template_id") @db.Uuid
+  orderIndex     Int          @map("order_index")
+  type           QuestionType
+  prompt         String
+  required       Boolean      @default(true)
+  options        Json? // for SINGLE / MULTI
+  photoMin       Int?         @map("photo_min")
+  photoMax       Int?         @map("photo_max")
+  failFlagsIssue Boolean      @default(false) @map("fail_flags_issue") // PASSFAIL
+  conditional    Json? // { show_if: { question_id, value } }
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  template      ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  responses     Response[]
+  sourcedIssues Issue[]           @relation("IssueSourceQuestion")
+
+  @@index([templateId])
+  @@map("questions")
+}
+
+// ---------------------------------------------------------------------------
+// Recurring rules (ADR-009) — generation logic lands Phase 5
+// ---------------------------------------------------------------------------
+
+model RecurringRule {
+  id         String   @id @default(uuid()) @db.Uuid
+  templateId String   @map("template_id") @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  pattern    Json // { type: 'daily'|'weekly'|'monthly'|'quarterly'|'on-demand', ... }
+  assignment Json // { type: 'user'|'role'|'unassigned', target: ... }
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  property Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([propertyId])
+  @@map("recurring_rules")
+}
+
+// ---------------------------------------------------------------------------
+// Checklist instances + responses + photos
+// ---------------------------------------------------------------------------
+
+model ChecklistInstance {
+  id         String  @id @default(uuid()) @db.Uuid
+  // ADR-009 human/system ID CL-{prop}-{code}-{YYYYMMDD}-{seq}; assigned at
+  // generation, hence nullable until then.
+  systemId   String? @unique @map("system_id")
+  templateId String  @map("template_id") @db.Uuid
+  propertyId String  @map("property_id") @db.Uuid
+  roomId     String? @map("room_id") @db.Uuid
+
+  scheduledFor   DateTime       @map("scheduled_for") @db.Date
+  dueAt          DateTime?      @map("due_at") @db.Timestamptz
+  assignedUserId String?        @map("assigned_user_id") @db.Uuid
+  status         InstanceStatus @default(SCHEDULED)
+
+  invalidationReason     String? @map("invalidation_reason")
+  reassignedToInstanceId String? @unique @map("reassigned_to_instance_id") @db.Uuid
+
+  openedAt         DateTime? @map("opened_at") @db.Timestamptz
+  submittedAt      DateTime? @map("submitted_at") @db.Timestamptz
+  reviewedAt       DateTime? @map("reviewed_at") @db.Timestamptz
+  reviewedByUserId String?   @map("reviewed_by_user_id") @db.Uuid
+  bonusEligible    Boolean   @default(true) @map("bonus_eligible")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  template     ChecklistTemplate @relation(fields: [templateId], references: [id])
+  property     Property          @relation(fields: [propertyId], references: [id])
+  room         Room?             @relation(fields: [roomId], references: [id])
+  assignedUser User?             @relation("InstanceAssignee", fields: [assignedUserId], references: [id])
+  reviewedBy   User?             @relation("InstanceReviewer", fields: [reviewedByUserId], references: [id])
+
+  // Self-relation: an invalidated instance points to its replacement.
+  reassignedToInstance ChecklistInstance?  @relation("InstanceReassignment", fields: [reassignedToInstanceId], references: [id])
+  reassignedFrom       ChecklistInstance[] @relation("InstanceReassignment")
+
+  responses     Response[]
+  sourcedIssues Issue[]    @relation("IssueSourceInstance")
+
+  @@index([propertyId, scheduledFor])
+  @@index([assignedUserId, status])
+  @@index([status, dueAt])
+  @@index([templateId])
+  @@index([roomId])
+  @@index([reviewedByUserId])
+  @@map("checklist_instances")
+}
+
+model Response {
+  id          String   @id @default(uuid()) @db.Uuid
+  instanceId  String   @map("instance_id") @db.Uuid
+  questionId  String   @map("question_id") @db.Uuid
+  answer      Json // shape depends on question type
+  notes       String?
+  respondedAt DateTime @default(now()) @map("responded_at") @db.Timestamptz
+
+  instance ChecklistInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  question Question          @relation(fields: [questionId], references: [id])
+  photos   Photo[]
+
+  @@index([instanceId])
+  @@index([questionId])
+  @@map("responses")
+}
+
+model Photo {
+  id             String         @id @default(uuid()) @db.Uuid
+  responseId     String         @map("response_id") @db.Uuid
+  r2Key          String         @map("r2_key")
+  fileSizeBytes  Int            @map("file_size_bytes")
+  exifTimestamp  DateTime?      @map("exif_timestamp") @db.Timestamptz
+  gpsLat         Decimal?       @map("gps_lat") @db.Decimal(9, 6)
+  gpsLng         Decimal?       @map("gps_lng") @db.Decimal(9, 6)
+  geofenceStatus GeofenceStatus @map("geofence_status")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  response Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@index([responseId])
+  // §4.2 wants a PARTIAL index on non-VERIFIED rows; Prisma can't express a
+  // WHERE on @@index, so this is a plain index for now. Convert to partial via
+  // a dedicated raw-SQL migration if/when the anomaly query needs it (table is
+  // empty in v1, so deferred).
+  @@index([geofenceStatus])
+  @@map("photos")
+}
+
+// ---------------------------------------------------------------------------
+// Issues pipeline
+// ---------------------------------------------------------------------------
+
+model Issue {
+  id               String        @id @default(uuid()) @db.Uuid
+  propertyId       String        @map("property_id") @db.Uuid
+  roomId           String?       @map("room_id") @db.Uuid
+  sourceInstanceId String?       @map("source_instance_id") @db.Uuid
+  sourceQuestionId String?       @map("source_question_id") @db.Uuid
+  title            String
+  description      String?
+  status           IssueStatus   @default(OPEN)
+  priority         IssuePriority @default(MEDIUM)
+  assignedUserId   String?       @map("assigned_user_id") @db.Uuid
+  slaTargetAt      DateTime?     @map("sla_target_at") @db.Timestamptz
+  resolvedAt       DateTime?     @map("resolved_at") @db.Timestamptz
+  resolutionNote   String?       @map("resolution_note")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  property       Property           @relation(fields: [propertyId], references: [id])
+  room           Room?              @relation(fields: [roomId], references: [id])
+  sourceInstance ChecklistInstance? @relation("IssueSourceInstance", fields: [sourceInstanceId], references: [id])
+  sourceQuestion Question?          @relation("IssueSourceQuestion", fields: [sourceQuestionId], references: [id])
+  assignedUser   User?              @relation("IssueAssignee", fields: [assignedUserId], references: [id])
+
+  @@index([propertyId, status])
+  @@index([assignedUserId, status])
+  @@index([slaTargetAt])
+  @@index([sourceInstanceId])
+  @@index([sourceQuestionId])
+  @@index([roomId])
+  @@map("issues")
+}
+
+// ---------------------------------------------------------------------------
+// Audit log + notification log (both "keep forever" per ADR-013)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String   @map("actor_user_id") @db.Uuid
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id") @db.Uuid
+  action      String
+  before      Json?
+  after       Json?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  actor User @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorUserId, createdAt])
+  @@map("audit_log")
+}
+
+model NotificationLog {
+  id         String              @id @default(uuid()) @db.Uuid
+  userId     String?             @map("user_id") @db.Uuid // null for channel-only (e.g. Teams)
+  channel    NotificationChannel
+  status     NotificationStatus  @default(PENDING)
+  // Free-text event key, e.g. 'submission', 'flag', 'teams_digest'.
+  event      String
+  title      String
+  body       String?
+  // For Teams per-channel logging (ADR-010): which channel/webhook target.
+  target     String?
+  // Related entity for deep-linking from the in-app notification center.
+  entityType String?             @map("entity_type")
+  entityId   String?             @map("entity_id") @db.Uuid
+  readAt     DateTime?           @map("read_at") @db.Timestamptz // in-app read state
+  error      String? // failure detail when status = FAILED
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([channel, status])
+  @@index([entityType, entityId])
+  @@map("notification_log")
+}

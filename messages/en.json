@@ -1,0 +1,95 @@
+{
+  "App": {
+    "name": "Stayable Operations",
+    "tagline": "Property operations, on every shift."
+  },
+  "Common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "next": "Next",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "Auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot your password?",
+    "title": "Sign in to Stayable Operations",
+    "subtitle": "Enter your work email and password.",
+    "signingIn": "Signing in…",
+    "error": "Invalid email or password, or your account is temporarily locked after too many attempts. Try again later or contact your administrator."
+  },
+  "Home": {
+    "greeting": "Hello, {name}",
+    "role": "Role",
+    "placeholder": "Your assignments will appear here.",
+    "today": "Today",
+    "noAssignments": "No checklists assigned for today.",
+    "reviewComingSoon": "Manager review tools arrive in a later phase.",
+    "status_SCHEDULED": "Scheduled",
+    "status_ASSIGNED": "To do",
+    "status_IN_PROGRESS": "In progress",
+    "status_SUBMITTED": "Submitted",
+    "status_FLAGGED": "Flagged",
+    "status_REVIEWED": "Reviewed",
+    "status_INVALIDATED": "Cancelled",
+    "status_EXPIRED": "Expired"
+  },
+  "Checklist": {
+    "submit": "Submit checklist",
+    "submitting": "Submitting…",
+    "submitted": "Checklist submitted",
+    "returnHome": "Back to Today",
+    "optional": "optional",
+    "yes": "Yes",
+    "no": "No",
+    "pass": "Pass",
+    "fail": "Fail",
+    "clearSignature": "Clear signature",
+    "photoPending": "Photos are saved on this device and will upload once photo storage is enabled.",
+    "errorsSummary": "Some answers are missing or invalid. Check the highlighted questions.",
+    "err_required": "This question is required.",
+    "err_number": "Enter a number.",
+    "err_option": "Choose a valid option.",
+    "err_passfail": "Choose Pass or Fail.",
+    "err_yesno": "Choose Yes or No.",
+    "err_photoMin": "Add more photos.",
+    "err_photoMax": "Too many photos."
+  },
+  "Locale": {
+    "english": "English",
+    "spanish": "Spanish",
+    "choosePrompt": "Choose your language"
+  },
+  "Install": {
+    "ctaTitle": "Install Stayable Operations for faster, full-screen access.",
+    "installButton": "Install app",
+    "iosBanner": "Add Stayable Operations to your Home Screen →",
+    "iosTitle": "Add to Home Screen",
+    "iosStep1": "Tap the Share button in Safari's toolbar.",
+    "iosStep2": "Scroll down and tap \"Add to Home Screen.\"",
+    "iosStep3": "Tap \"Add,\" then open Stayable Operations from your Home Screen.",
+    "pageTitle": "Install the app",
+    "pageSubtitle": "Add Stayable Operations to your device for full-screen access and a Home Screen icon.",
+    "alreadyInstalled": "Already installed? Open Stayable Operations from your Home Screen icon."
+  },
+  "Photo": {
+    "testTitle": "Photo capture test",
+    "testSubtitle": "Take a photo, capture GPS, and compress — same pipeline as a checklist.",
+    "takePhoto": "Take photo",
+    "getLocation": "Get location",
+    "compress": "Compress",
+    "original": "Original",
+    "compressed": "Compressed",
+    "location": "Location",
+    "requesting": "Requesting…",
+    "noPhoto": "No photo captured yet."
+  }
+}

@@ -1,6 +1,6 @@
 # RISE8 Operations Platform — Task Tracker
 
-Living checklist for the 8-week build + 4-week parallel run. Source of truth for "what's next." Tied to `docs/SPRINT_PLAN.md`.
+Living checklist for the **10-week build + 4-week parallel run** (extended per ADR-012). Source of truth for "what's next." Tied to `docs/SPRINT_PLAN.md`.
 
 **Legend**
 - Priority: `P0` blocker · `P1` must-have · `P2` should-have · `P3` nice-to-have
@@ -40,57 +40,61 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | `.gitignore` baseline (keeps `.env.example` tracked) |
 | P0 | [x] | Initial commit: `chore: initial project scaffold` |
 | P0 | [x] | Connect GitHub → Vercel project, auto-deploy on push (preview deploy succeeded) |
-| P0 | [~] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — Neon project exists; URLs not yet pasted into Vercel |
+| P0 | [x] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — **confirmed 2026-05-30 via `vercel env ls`: both present, scoped Production + Preview** (Development not set — fine, local uses `.env.local`) |
+| P0 | [x] | Merge scaffold branch → `main` so production deploys are real (PR #1, merge commit `aa90bfe`, 2026-05-22) |
+| P0 | [x] | **i18n scaffold (ADR-013):** install `next-intl`, configure middleware-based locale routing, scaffold `messages/en.json` + `messages/es.json`, add locale provider to root layout |
+| P0 | [x] | **Datetime helper (ADR-013):** `lib/datetime.ts` exposing `formatInET(dt, pattern)` + `etToday()`; ESLint rule blocking direct `toLocaleString` / `Intl.DateTimeFormat` outside this file; install `date-fns-tz` |
 
-### Tue — Auth.js v5 (Credentials)
+### Tue — Auth.js v5 (Credentials)  *(shipped 2026-05-30, commit `7d81b96`)*
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Auth.js v5 Credentials provider wired up |
-| P0 | [ ] | bcrypt (cost 12), JWT session, 30-day rolling expiry |
-| P0 | [ ] | `/app/login`, `/app/signup`, `/api/auth/[...nextauth]` |
-| P0 | [ ] | `/lib/auth.ts`, `/lib/db.ts` (Prisma singleton) |
-| P1 | [ ] | Account lockout: 5 fails / 15 min / 30 min cooldown |
-| P2 | [ ] | TOTP MFA scaffolding (field + future enable flow) |
+| P0 | [x] | Auth.js v5 Credentials provider wired up (next-auth 5.0.0-beta.31) |
+| P0 | [x] | bcrypt (cost 12), JWT session, 30-day rolling expiry — verified live (session role+locale+30d expiry) |
+| P0 | [x] | `/app/login` (bilingual EN/ES) + `/api/auth/[...nextauth]`. **`/app/signup` intentionally deferred to Phase 2** (admin-provisioning model) |
+| P0 | [x] | `/lib/auth.ts`, `/lib/db.ts` (Prisma singleton) |
+| P1 | [x] | Account lockout 5/15/30 — pure `lib/auth-throttle.ts` + wired; **now covered by Vitest (9 cases) as of `180b12d`** |
+| P2 | [~] | TOTP MFA scaffolding — schema fields (`mfaEnabled`/`mfaSecret`) exist; enable/verify flow deferred |
 
 ### Wed — Prisma schema + seed
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Prisma schema: `users`, `properties`, `user_properties` (per ARCH §4.1) |
-| P0 | [ ] | Migration `0001_init_users_and_properties` |
-| P0 | [ ] | `geofence` as `Json` (GeoJSON) — PostGIS deferred |
-| P0 | [ ] | Seed script: 7 (or 8) properties + admin + 1 MANAGER + 1 HK at Lakeland (4645) |
-| P0 | [ ] | Register seed in `package.json` |
+| P0 | [x] | Prisma schema: `users` (incl. `locale` enum per ADR-013), `properties`, `user_properties` (per ARCH §4.1) |
+| P0 | [x] | Migration `0001_init_users_and_properties` (applied to Neon as `20260527190517_init_users_and_properties`) |
+| P0 | [x] | `geofence` as `Json` (GeoJSON) — PostGIS deferred |
+| P0 | [x] | Seed script: 8 properties (all 2-letter short codes per ADR-011) + admin + 1 MANAGER + 1 HK at LL (4645) |
+| P0 | [x] | Register seed in `package.json` |
 
-### Thu — PWA shell
+### Thu — PWA shell  *(code shipped 2026-05-30, commit `180b12d`)*
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | `manifest.webmanifest` + placeholder icons (192/512/maskable) |
-| P0 | [ ] | Workbox service worker registered via `/lib/pwa.ts` |
-| P0 | [ ] | `InstallPrompt.tsx` with iOS-specific Add-to-Home-Screen guide |
-| P0 | [ ] | `/app/install` page with screenshots |
-| P0 | [ ] | Online/Offline status indicator in header |
-| P0 | [ ] | Install + verify on real iPhone (iOS 17+) |
-| P0 | [ ] | Install + verify on real Android (Chrome) |
+| P0 | [x] | `app.webmanifest` (scope `/`) + placeholder SVG icons (192/512/maskable). Left `/ios-spike`-scoped `manifest.webmanifest` untouched |
+| P0 | [x] | Service worker registered via `/lib/pwa.ts` (prod-only). **Hand-rolled stand-in** (precache shell + network-first nav + `offline.html`) — swap to Workbox `generateSW` once it plays nice with Turbopack |
+| P0 | [x] | `InstallPrompt.tsx` — Chrome `beforeinstallprompt` + iOS Add-to-Home-Screen guide (bilingual) |
+| P0 | [x] | `/app/install` page (screenshots are placeholder text steps; real screens w/ Phase-7 branding) |
+| P0 | [x] | Online/Offline status indicator in header (`OnlineStatus.tsx`, bilingual) |
+| P0 | [ ] | Install + verify on real iPhone (iOS 17+) — **needs device** |
+| P0 | [ ] | Install + verify on real Android (Chrome) — **needs device** |
 
 ### Fri — Photo capture POC (CRITICAL DE-RISK)
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Cloudflare R2 bucket `rise8-ops-staging` + scoped API tokens |
-| P0 | [ ] | R2 CORS allow PUTs from dev + Vercel preview URLs |
-| P0 | [ ] | `/app/photo-test` page with `input[type=file] capture="environment"` |
-| P0 | [ ] | Independent `navigator.geolocation.getCurrentPosition()` capture |
-| P0 | [ ] | Client-side compress: 1920px long edge, JPEG 85, ~500KB |
-| P0 | [ ] | `/api/photos/presign` + `/api/photos/save` |
-| P0 | [ ] | EXIF read via `exifr` (or `piexifjs`) — pick smaller iOS-safe lib |
-| P0 | [ ] | Test matrix: iPhone PWA, iPhone Safari, Android PWA, Android Chrome, Desktop Chrome |
+| P0 | [!] | Cloudflare R2 bucket `rise8-ops-staging` + scoped API tokens — **blocked: needs user's Cloudflare account** |
+| P0 | [!] | R2 CORS allow PUTs from dev + Vercel preview URLs — **blocked on R2 bucket** |
+| P0 | [x] | `/app/photo-test` page with `input[type=file] capture="environment"` (commit `180b12d`) |
+| P0 | [x] | Independent `navigator.geolocation.getCurrentPosition()` capture (`lib/image.ts`) |
+| P0 | [x] | Client-side compress: 1920px long edge, JPEG 85, ~500KB (`lib/image.ts`, shared w/ spike) |
+| P0 | [!] | `/api/photos/presign` + `/api/photos/save` — **deliberately not written yet; blocked on R2 creds.** Upload button absent from `/photo-test` until R2 lands |
+| P0 | [x] | EXIF read via `exifr` (chosen; confirms iOS strips GPS → separate capture justified) |
+| P0 | [ ] | Test matrix: iPhone PWA, iPhone Safari, Android PWA, Android Chrome, Desktop Chrome — **needs devices + R2** |
 | P0 | [ ] | Record results in `docs/PWA_TEST_RESULTS.md` |
-| P0 | [!] | **GO/NO-GO decision: iOS PWA viability** — escalate to Kate if GPS fails |
+| P0 | [~] | Throwaway de-risk spike shipped: `/ios-spike` (standalone manifest + GPS / camera / canvas-compress, no R2). Pushed → on a **Preview** URL. **Awaiting Kate's on-device iPhone test (launch from home screen, confirm Standalone:YES).** |
+| P0 | [!] | **GO/NO-GO decision: iOS PWA viability** — pending the on-device spike result; escalate to Kate if GPS fails in standalone |
 
 ### Week-1 DoD
-- [ ] Sign-up → log-in → "Hello, name" works end-to-end
-- [ ] PWA installs to iPhone + Android home screens
-- [ ] Test photo round-trips through R2 with GPS captured separately
-- [ ] iOS GPS verified (or Capacitor fallback decision escalated)
+- [x] Log-in → "Hello, name" works end-to-end (verified 2026-05-30; sign-up path deferred to Phase 2 admin provisioning)
+- [~] PWA installs to iPhone + Android home screens — **shell code shipped + builds; on-device install still to verify**
+- [ ] Test photo round-trips through R2 with GPS captured separately — **blocked on R2; client capture/compress/GPS done**
+- [ ] iOS GPS verified (or Capacitor fallback decision escalated) — pending Kate's `/ios-spike` on-device run
 
 ---
 
@@ -98,16 +102,17 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Full schema: `rooms`, `checklist_templates`, `questions`, `recurring_rules`, `checklist_instances`, `responses`, `photos`, `issues`, `audit_log`, `notification_log` |
-| P0 | [ ] | All indexes per ARCH §4.2 |
-| P0 | [ ] | Seed: all 9 templates with real question sets pulled from Connecteam/Smartsheet |
-| P0 | [ ] | Admin UI: list/create/deactivate users, reset password (one-click) |
-| P0 | [ ] | Admin UI: list properties, view geofence placeholder map |
-| P0 | [ ] | Admin UI: list templates + questions (read-only OK for v1) |
-| P0 | [ ] | RBAC middleware: role + property scope per route |
-| P1 | [ ] | Switch signup → admin-only provisioning (activation-link flow) |
-| P1 | [ ] | Activation email via Resend (7-day TTL) |
-| P0 | [ ] | Resolve open: field user self-invalidation vs manager-only |
+| P0 | [x] | Full schema: `rooms`, `checklist_templates`, `questions`, `recurring_rules`, `checklist_instances`, `responses`, `photos`, `issues`, `audit_log`, `notification_log` — migration `20260529204724_add_phase2_core_schema`, commit `b366895` |
+| P0 | [x] | All indexes per ARCH §4.2 (photos.geofence_status is plain not partial — Prisma limitation, deferred to raw-SQL migration; table empty in v1) |
+| P0 | [~] | Seed: all 9 templates. **Metadata authoritative; question CONTENT is PLACEHOLDER** (`prisma/templates.ts`, 40 q covering all 11 types). **Real Connecteam/Smartsheet question sets still needed — owner Karla/Christopher before go-live** |
+| P0 | [x] | Admin UI: list/create/deactivate users, one-click password reset, multi-property assignment (`/admin/users`, audit-logged, Zod-validated). Resend deferred → temp password shown once instead of email. Commit `7777710` |
+| P0 | [x] | Admin UI: list properties + geofence-status + map placeholder (`/admin/properties`, read-only) |
+| P0 | [x] | Admin UI: list templates + questions read-only (`/admin/templates`) |
+| P0 | [x] | RBAC (ADR-013): `lib/rbac.ts` guards (`requireAdmin`/`requireManager`/`canAccessProperty`/`accessiblePropertyIds`) — server-component/action level, **not edge middleware** (keeps Prisma off edge, consistent w/ auth decision) |
+| P0 | [x] | Header property picker (`PropertyPicker`, cookie-backed): shown for scoped users w/ >1 property; auto/hidden for single-property; hidden for CORPORATE/ADMIN |
+| P1 | [~] | Admin-only provisioning **done via temp-password** (no public signup ever existed). **Activation-LINK flow specifically deferred** — needs Resend |
+| P1 | [!] | Activation email via Resend (7-day TTL, bilingual EN+ES) — **blocked: no Resend creds / wiring deferred** |
+| P0 | [!] | Resolve open: field user self-invalidation vs manager-only — **blocked: decision owner Rob/Kate** |
 
 ---
 
@@ -115,15 +120,17 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Field user home: today's assignments list |
-| P0 | [ ] | Checklist filling page with ordered questions |
-| P0 | [ ] | All 11 question types render + validate |
-| P0 | [ ] | Conditional logic engine (show_if) |
-| P0 | [ ] | Multi-photo capture per question, compressed client-side |
-| P0 | [ ] | Signature capture (canvas, touch/stylus) |
-| P0 | [ ] | Draft auto-save to IndexedDB on every change |
-| P0 | [ ] | Submit pipeline: validate → upload photos → persist responses → SUBMITTED |
-| P1 | [ ] | Confirmation screen + return-to-home |
+| P0 | [x] | Field user home: today's assignments list (ET-anchored via `etDateOnly`, status chips) — commit `a6ea416` |
+| P0 | [x] | Checklist filling page with ordered questions (`/checklists/[id]`, assignee/manager-gated) |
+| P0 | [x] | All 11 question types render + validate |
+| P0 | [x] | Conditional logic engine (show_if) — `lib/checklist-logic.ts`, **14 unit tests** (incl. MULTI membership) |
+| P0 | [~] | Multi-photo capture per question, **compressed client-side — capture/compress/preview done; R2 UPLOAD deferred** (PHOTO answer = `{count, pendingUpload:true}`) |
+| P0 | [x] | Signature capture (`SignaturePad`, pointer canvas → PNG data URL; R2 offload later) |
+| P0 | [x] | Draft auto-save to IndexedDB on every change (`lib/draft-store.ts` via `idb`, restored on mount) |
+| P0 | [~] | Submit pipeline: validate (client + server) → persist responses → SUBMITTED + audit. **Photo upload step deferred (R2)** |
+| P1 | [x] | Confirmation screen + return-to-home |
+| P0 | [x] | First-login locale picker (`LocalePrompt`, HK/PA/MT → `users.locale` + cookie) |
+| P0 | [~] | Spanish translations: field-staff strings (Today, filler, statuses, errors) added to `es.json` — **machine-drafted, still pending bilingual reviewer** (open q#5) |
 
 ---
 
@@ -131,9 +138,9 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Manager review queue (oldest-first) |
-| P0 | [ ] | Review detail: responses + photos + signatures + time-to-complete |
-| P0 | [ ] | Approve / Flag / Request Re-do actions with audit entries |
+| P0 | [ ] | Manager review queue — **table view** (ADR-011): row per submission · Status · User · Date · Unit# · Time-to-complete · inline photo thumbnails per required photo question · row-level Approve/Flag/Re-do |
+| P0 | [ ] | Single-submission review — **three-column layout** (ADR-011): left rail (status + manager note) · center (responses + photos + signatures + time-to-complete header) · right rail (activity timeline w/ actor + timestamp) |
+| P0 | [ ] | Approve / Flag / Request Re-do actions with audit entries (writes to `audit_log` + `notification_log`) |
 | P0 | [ ] | Auto-Issue from PASSFAIL=Fail when `fail_flags_issue=true` |
 | P0 | [ ] | Issues list + detail page |
 | P0 | [ ] | Resolution flow: note + photo required |
@@ -182,6 +189,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ### UI Redesign Pass — Claude Design (runs first, before polish-adjacent work)
 | Pri | Status | Task |
 |---|---|---|
+| P0 | [ ] | Stayable branding kit sourced from Kate — logo, palette, wordmark ("Stayable Operations") |
 | P0 | [ ] | Run full app through Claude Design (`document-skills:frontend-design`) — capture screens of every route in current state as baseline |
 | P0 | [ ] | Define visual system: typography scale, color tokens, spacing/density, button hierarchy, form treatment |
 | P0 | [ ] | Redesign field-staff screens: Today view, checklist runtime (11 question types), photo + signature capture, draft + submit confirmation |
@@ -203,37 +211,99 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P1 | [ ] | API error-handling pass |
 | P0 | [ ] | All P0/P1 bugs from alpha cleared |
 
+### Daily Teams Digest (ADR-010)
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Teams channel inventory: collect 1 corporate + 8 property webhook URLs (Kate) |
+| P1 | [ ] | `property_channels` table + admin UI to manage webhooks |
+| P1 | [ ] | Digest builder: prior-day misses, flagged issues, photo verification anomalies per property |
+| P1 | [ ] | Inngest cron 7:00 AM ET — post master + per-property digests via Incoming Webhooks |
+| P1 | [ ] | `notification_log` entries per channel (success / failed / skipped) |
+| P1 | [ ] | Admin failure surface (which channels failed in the last 7 days) |
+
 ---
 
-## Phase 8 — Week 8: Training & Go-Live  **[PRODUCTION READY]**
+## Phase 8 — Week 8: Training & Provisioning
+
+Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Quick Tasks ship) per ADR-012.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Production domain + secrets + Sentry + Vercel Analytics live |
+| P0 | [ ] | Production domain + secrets + Sentry + Vercel Analytics live (Property Checklist scope) |
 | P0 | [ ] | Prod DB seeded: real users, properties, templates, recurring rules |
 | P0 | [ ] | All field staff provisioned; activation emails sent |
-| P0 | [ ] | Training session per property (1 hr, recorded) |
-| P0 | [ ] | Quick reference card (PDF + printed) |
-| P0 | [ ] | Manager training (1.5 hr) |
+| P0 | [ ] | Training session per property (1 hr, recorded) — Property Checklist walkthrough |
+| P0 | [ ] | Quick reference card v1 (PDF + printed) — Property Checklist focus; updated in Phase 10 to cover Contractor + Quick Tasks |
+| P0 | [ ] | Manager training (1.5 hr) — Property Checklist walkthrough |
 | P0 | [ ] | Runbook reviewed + extended with real ops gotchas |
 | P0 | [ ] | Support channel established (Teams) |
+| P0 | [ ] | Daily 7 AM ET PM email digest live (PRD §8) |
+
+---
+
+## Phase 9 — Week 9: Contractor Checklists (ADR-012)
+
+**Goal:** Magic-link contractor sign-off flow live. CONTRACTOR-audience templates seeded.
+
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [ ] | `contractors` table + admin UI to create/edit/deactivate contractor records per property |
+| P0 | [ ] | `checklist_templates.audience` enum (`EMPLOYEE` \| `CONTRACTOR`) + admin UI to tag templates |
+| P0 | [ ] | `checklist_instances.contractor_id` (nullable FK) + creation flow targeting contractor records |
+| P0 | [ ] | Magic-link token: signed (JWT or HMAC), single-use, 72h TTL, tied to (instance_id, contractor_id) |
+| P0 | [ ] | Replay protection: token consumed on submit, blocked on reuse with clear error |
+| P0 | [ ] | Token regeneration as one-click manager action |
+| P0 | [ ] | Contractor filling UI: opens directly from link, no login screen, same camera/GPS/signature flow as employee. **Inherits ADR-013 bilingual filling UI**; magic-link URL accepts optional `?lang=es` (manager sets per contractor); default EN when omitted |
+| P0 | [ ] | Manager review queue: submitter column shows contractor name + company for CONTRACTOR instances |
+| P0 | [ ] | Flag → Issue tagged to contractor record (not user) |
+| P0 | [ ] | Seed initial CONTRACTOR-audience templates: Roof PM (contractor variant), Pest Control, HVAC Service, Pressure Washing (contractor variant), Lawn / Landscaping — final list confirmed with Kate during build |
+| P0 | [ ] | Code review pass on magic-link token signing + replay protection |
+| P1 | [ ] | Contractor PDF export uses contractor name/company in header instead of employee name |
+
+---
+
+## Phase 10 — Week 10: Quick Tasks (ADR-012)  **[PRODUCTION READY]**
+
+**Goal:** Quick Tasks live across all surfaces. Parallel run begins.
+
+### Quick Tasks build
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [ ] | `quick_tasks` table + `quick_task_photos` join (max 5 photos per task) |
+| P0 | [ ] | Manager / Corporate / Admin creation surface: title, description, property, assignee or role pool, due date, priority |
+| P0 | [ ] | Field staff "My Tasks" surface in home; sorted by due date asc → priority desc |
+| P0 | [ ] | Field staff task detail: mark IN_PROGRESS → add completion note + optional photos → mark COMPLETED |
+| P0 | [ ] | Manager "Open Tasks" view at their property with filters: assignee, priority, status |
+| P0 | [ ] | Corporate dashboard: portfolio rollup of open / overdue Quick Tasks per property |
+| P0 | [ ] | Manager CANCEL action requires a reason in `completion_note` |
+| P0 | [ ] | RBAC: field staff see only their own assigned tasks; managers see their property's tasks |
+| P1 | [ ] | Resist scope creep — no recurrence, no review queue, no PDF export on Quick Tasks |
+
+### Production readiness
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [ ] | Production environment fully configured (domain, secrets, monitoring, Sentry, Vercel Analytics) |
+| P0 | [ ] | Prod DB seeded: real users, properties, templates, recurring rules |
+| P0 | [ ] | First production submission completed successfully |
+| P0 | [ ] | Manager training extended: Contractor Checklists + Quick Tasks walkthrough |
+| P0 | [ ] | Quick reference card updated to cover Contractor + Quick Tasks |
 | P0 | [ ] | Parallel run officially active |
 | P0 | [ ] | Daily monitoring report → Kate every morning |
 
 ---
 
-## Phase 9 — Weeks 9–12: Parallel Run & Cutover
+## Phase 11 — Weeks 11–14: Parallel Run & Cutover
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Week 9: daily parity monitoring + P0/P1 fixes within 24h |
-| P0 | [ ] | Week 10: perf tuning + UX refinements |
-| P0 | [ ] | Week 11: parity check — if ≥ Connecteam baseline for 2 weeks, schedule cutover |
-| P0 | [ ] | Week 11: communicate cutover date (1 week notice) |
-| P0 | [ ] | Week 12: Connecteam → read-only |
-| P0 | [ ] | Week 12: Karla stops manual PDF uploads |
-| P0 | [ ] | Week 12: Smartsheet sheets archived |
-| P0 | [ ] | Cutover retro scheduled for Week 13 |
+| P0 | [ ] | Week 11: daily parity monitoring + P0/P1 fixes within 24h |
+| P0 | [ ] | Week 12: perf tuning + UX refinements |
+| P0 | [ ] | Week 13: parity check — if ≥ Connecteam baseline for 2 weeks, schedule cutover for Week 14 |
+| P0 | [ ] | Week 13: communicate cutover date (1 week notice) |
+| P0 | [ ] | Week 14: Connecteam → read-only |
+| P0 | [ ] | Week 14: Karla stops manual PDF uploads |
+| P0 | [ ] | Week 14: Smartsheet sheets archived |
+| P0 | [ ] | Cutover retro scheduled for Week 15 |
 
 ---
 
@@ -241,6 +311,9 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
+| P1 | [x] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — 9 cases: 5-strike lock, 15-min window reset + boundary, 30-min unlock, success clear. Shipped 2026-05-30 commit `180b12d` |
+| P2 | [ ] | Add `AUTH_SECRET` to Vercel **Preview** if branch-preview login testing is wanted (Production-only per Kate's default-to-Prod rule) |
+| P3 | [ ] | Decide fate of stray `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` (commit as deliverables vs `.gitignore`) |
 | P1 | [ ] | CI: GitHub Actions — lint + typecheck + unit tests on PR |
 | P1 | [ ] | Playwright e2e on login + submit + review |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |

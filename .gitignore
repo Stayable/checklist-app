@@ -57,3 +57,5 @@ logs/
 
 # sentry
 .sentryclirc
+
+.vercel

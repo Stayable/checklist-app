@@ -19,8 +19,10 @@ It serves field staff (Housekeeping, Property Attendants, Maintenance Technician
 These were settled during scoping. If a request seems to conflict with these, ask for clarification before proceeding — do not silently change direction.
 
 ### Scope
-- **In:** Operational checklists, recurring schedules, bulk creation, photo capture with geofence verification, manager review/approval, issues pipeline, dashboards, PDF export on demand, email notifications
+- **In:** Operational checklists, recurring schedules, bulk creation, photo capture with geofence verification, manager review/approval, issues pipeline, dashboards, PDF export on demand, email notifications, **Contractor Checklists** (ADR-012), **Quick Tasks** (ADR-012)
 - **Out:** Time clock / time tracking (handled by Paycom), payroll/HR (handled by Paycom), shift scheduling (handled by Paycom), chat/messaging, hiring/onboarding, training, knowledge base, surveys, guest-facing features, native iOS/Android apps
+
+**v1 build is 10 weeks** (extended from 8 per ADR-012) + 4-week parallel run. **Cutover target: Week 14.**
 
 ### Architecture
 - **PWA, not native.** Single Next.js app, responsive, installable to home screen. Offline support via service worker + IndexedDB for short outages (not multi-day offline use). Properties have 2Gbps fiber + AP buildout, so offline is an edge case.
@@ -51,17 +53,21 @@ These were settled during scoping. If a request seems to conflict with these, as
 ### Smartsheet
 - **No write-through during transition.** Smartsheet sheets become read-only historical archive on cutover. Do not build dual-write logic.
 
-### Properties (active = 8, confirmed 2026-05-21)
-| Property | ID | Short Code |
-|---|---|---|
-| Jacksonville West | 6802 | Jax West |
-| Jacksonville North | 812 | Jax N |
-| St. Augustine | 2535 | St. Aug |
-| Lakeland | 4645 | Lakeland |
-| Orlando OBT | 8700 | Orlando |
-| Kissimmee East | 2295 | Kiss E |
-| Kissimmee West | 5399 | Kiss West |
-| Davenport | 44199 | Davenport |
+### Properties (active = 8, addresses + short codes confirmed 2026-05-27)
+| Property | ID | Short Code | Street Address |
+|---|---|---|---|
+| Jacksonville North | 812 | JN | 812 Dunn Avenue, Jacksonville, FL 32218 |
+| Jacksonville West | 6802 | JW | 910 Suemac Road, Jacksonville, FL 32254 |
+| Kissimmee East | 2295 | KE | 2295 E. Irlo Bronson Memorial Hwy, Kissimmee, FL 34744 |
+| Kissimmee West | 5399 | KW | 5399 W. Irlo Bronson Memorial Hwy, Kissimmee, FL 34746 |
+| Lakeland | 4645 | LL | 4645 N. Socrum Loop Road, Lakeland, FL 33809 |
+| Orlando OBT | 8700 | OR | 8700 S. Orange Blossom Trail, Orlando, FL 32809 |
+| St. Augustine | 2535 | SA | 2535 State Road 16, St. Augustine, FL 32092 |
+| Davenport | 44199 | DP | 44199 US Hwy 27, Davenport, FL 33897 |
+
+**Notes:**
+- Property IDs are internal identifiers, not street numbers. The previous PRD draft had Jacksonville West at "6802 Commonwealth Ave" — incorrect; the actual address is 910 Suemac Road. Corrected 2026-05-27.
+- **2-letter short codes are canonical across the platform** (UI labels, dashboards, Teams digest, email subjects). They mirror the codes already used by corporate in the manual Teams digest. Long names ("Jacksonville West", "Lakeland") only used in admin / settings detail pages.
 
 ### Checklist Templates (9, migrated from Connecteam)
 1. Arrival Checklist (HK/PA, daily, per room)
@@ -89,6 +95,114 @@ These were settled during scoping. If a request seems to conflict with these, as
 - Geofence check on upload using polygon from `properties.geofence`
 - Status: `VERIFIED` / `OFF_PROPERTY` / `NO_GPS` — informational badge, NOT enforcement
 - 50-meter buffer on geofence for GPS drift
+
+### Recurring Rules & Auto-Creation (ADR-009)
+
+**Who controls recurring rules**
+- **ADMIN** — create / edit / pause / delete at any property
+- **MANAGER** — own property only; all mutations written to `audit_log`
+- **CORPORATE** — read-write across all properties
+- **HK / PA / MT** — no rule access
+
+**Per-rule knobs**
+- Template + Property (locked after create)
+- Pattern: `daily` / `weekly` (DOW) / `monthly` (DOM) / `quarterly` / `on-demand`
+- Scope: `per-room` (filter: occupied / vacant / room list / room range) · `per-property` · `per-area`
+- Assignment policy: specific user · role pool · unassigned
+- Effective date range (default indefinite); Active toggle (pause); Skip days list
+
+**Generation**
+- One global Vercel Cron at **5:00 AM ET** (`America/New_York`, auto EDT/EST). No per-rule time override in v1.
+- Room occupancy source: manual `rooms.status` field. **No PMS integration in v1.**
+- No holiday/blackout calendar in v1 — use "Skip today" or pause the rule.
+
+**Override paths**
+- Bulk create (template + property + date(s) + room range/list)
+- "Force-create today" from a paused rule
+- "Skip today" on an active rule
+- Manual reassign / invalidate after generation
+
+### Localization (ADR-013)
+- **Field-staff surfaces bilingual EN + ES** (login, password reset, "Today" home, checklist filling, photo / signature capture, submission confirmation, notifications targeting field staff). **Admin / Manager / Corporate stay English-only in v1.**
+- Translation scope follows recipient, not screen — a notification or email sent to a field-staff user is translated regardless of which surface generated it.
+- Library: **`next-intl`** (App Router-native). Locale routing via middleware (no URL prefix).
+- `users.locale` enum (`en` | `es`); default `en` for managers/corp/admin, prompted on first login for field staff. Admin can override.
+- Spanish review owner: TBD — likely Karla or Christopher (open question).
+
+### Multi-Property User Assignment (ADR-013)
+- `user_properties` is many-to-many. **Each user has one global role** (`users.role`) that applies at every property they're tied to.
+- RBAC: a user can access property X iff role ∈ {CORPORATE, ADMIN} OR `(user_id, property_id=X)` exists in `user_properties`.
+- UI: header property picker for users with >1 property; auto-select for single-property users; hidden for CORPORATE/ADMIN (portfolio default).
+- **Per-property role overrides not supported in v1.** Edge case ("MT at LL, Manager at OR") handled via two user records.
+
+### Photo Retention (ADR-013)
+- **Keep all photos forever in v1.** No scheduled deletion job.
+- R2 versioning + 30-day soft-delete retention already configured (RUNBOOK).
+- Cost projection: ~80 GB/year added at full operation; ~$1.20/mo additional storage per year of accumulation.
+- Trigger to revisit: R2 bill > $50/mo, or legal/privacy mandate.
+- Audit log + notification log follow same "keep forever" policy.
+
+### Datetime Display — Always Eastern Time (ADR-013)
+- All timestamps stored as **UTC** in Postgres.
+- All user-facing datetime display formatted in **`America/New_York`** (auto EDT/EST) — every user, regardless of browser locale.
+- "Today" / "Yesterday" / "This Week" anchored to ET.
+- All time labels include `ET` suffix in UI (e.g., "Submitted 5:23 AM ET").
+- Library: `date-fns-tz`. All formatting through `lib/datetime.ts` — never call `toLocaleString` directly. ESLint rule to enforce.
+
+### Contractor Checklists (ADR-012, Phase 9 = Week 9)
+- **No contractor accounts.** Manager creates a `contractors` record; system issues a **signed, single-use, 72h-TTL magic-link URL** per checklist instance.
+- Contractor opens link → fills checklist → captures photos (same flow as employee) → signs → submits. Token consumed on submit.
+- `checklist_templates.audience` enum: `EMPLOYEE` | `CONTRACTOR`. `checklist_instances.contractor_id` (nullable FK).
+- Review flow identical to employee submissions; submitter column shows contractor name + company. Flag → Issue tagged to contractor record.
+- Initial templates (Kate to finalize Phase 9): Roof PM (contractor variant), Pest Control, HVAC Service, Pressure Washing (contractor variant), Lawn / Landscaping.
+
+### Quick Tasks (ADR-012, Phase 10 = Week 10)
+- Lightweight ad-hoc tasks. **No question set, no recurrence, no review queue, no PDF.**
+- `quick_tasks` table: `id`, `title`, `description`, `property_id`, `assigned_user_id` (nullable), `assigned_role` (nullable), `created_by_user_id`, `due_date`, `priority` (LOW/MED/HIGH/URGENT, default MED), `status` (OPEN/IN_PROGRESS/COMPLETED/CANCELLED), `completion_note`, photos (max 5), timestamps.
+- Field staff surface: "My Tasks" in home, sorted by due date asc → priority desc.
+- Manager surface: open tasks at their property with assignee/priority/status filters.
+- Corporate dashboard shows portfolio rollup of open / overdue Quick Tasks per property.
+- **Not integrated with Issues pipeline** — Issues come from failed checklist questions or manager flags; Quick Tasks are manually-created.
+
+### Manager Review UI (ADR-011)
+- **Single-submission review** — three-column layout (left: status + manager note; center: responses + photos + signatures + time-to-complete; right: activity timeline w/ actor + timestamp). Ships in Phase 4, refined in Phase 7 redesign.
+- **Submission queue** — table view, one row per submission. Columns: Status · User · Date · Unit# · Time-to-complete · inline photo thumbnails (one per required photo question) · row-level actions (Approve / Flag / Request Re-do). Ships in Phase 4, refined in Phase 7.
+
+### Branding & Product Name (ADR-010)
+- **Internal / dev / repo name:** "RISE8 Operations Platform"
+- **End-user product name:** **"Stayable Operations"** — used in UI, emails, Teams posts, PDFs
+- Phase 7 design pass uses **Stayable branding** (logo, colors, wordmark) — sourced from Kate
+
+### Daily Teams Digest (ADR-010, Phase 7 — lower priority than P0)
+- **Delivery:** Auto-posted 7:00 AM ET each morning to (a) one master RISE8 corporate Teams channel covering all 8 properties, AND (b) per-property Teams channels scoped to that property only
+- **Per-property block:** 2-letter short code header (JN, JW, KE, KW, LL, OR, SA, DP), Misses (template + room#s), Flagged issues (room + 1-line), Photo verification anomaly count; each line links to source instance
+- **Tone:** Terse, factual auto-gen — **not** the empathetic prose of the current human-typed digest. Managers/corporate may reply with custom prose.
+- **Mechanism:** Teams Incoming Webhooks (1 corporate + 8 property), Inngest cron at 7:00 AM ET (`America/New_York`), runs after the 5 AM checklist-gen cron
+- Failure on one channel never blocks others; all attempts logged to `notification_log`
+- **Replaces** Karla/Christopher's ~30–60 min/day manual Teams typing
+- This is **in addition to** the P0 daily PM email digest in Phase 6 (PRD §8)
+
+### Checklist Instance Naming (ADR-009)
+
+**System ID (immutable, used for joins, audit, URLs):**
+`CL-{propertyID}-{templateCode}-{YYYYMMDD}-{seq}`
+- `templateCode`: `ARR` Arrival · `DEP` DueOut/Departure · `HKR` HK Review · `PAR` PA Review · `MGR` Manager Review · `MNT` Maintenance Report · `PWR` Pressure Washing · `RPM` Roof PM · `RIN` Room Inspection
+- `YYYYMMDD` = scheduled date in `America/New_York` (current ET date at generation time)
+- `seq` = zero-padded 3-digit, **restarts at 001 each ET day**
+
+Examples: `CL-4645-ARR-20260526-012`, `CL-6802-PWR-20260526-001`
+
+**Human label (UI, dashboards, email subject lines):**
+`{Template} — {Short Code} — {Scope} — {Date}`
+- `Arrival Checklist — LL — Rm 312 — May 26, 2026`
+- `Pressure Washing — JW — May 2026`
+- `HK Review — KE — Wk of May 25, 2026`
+
+**PDF filename (per project convention `Title_PropertyID_MMDDYY.ext`):**
+- `Arrival_4645_052626_Rm312.pdf`
+- `PressureWashing_6802_052626.pdf`
+- `MaintenanceReport_5399_052626_012.pdf`
+- `HKReview_2295_WkOf052526.pdf`
 
 ---
 
@@ -191,7 +305,7 @@ Production/staging/preview: Vercel environment variables.
 
 - `docs/PRD.md` — Product Requirements Document. Source of truth for what to build.
 - `docs/ARCHITECTURE.md` — Technical Architecture. Source of truth for how to build.
-- `docs/SPRINT_PLAN.md` — 8-week sprint plan. Source of truth for when and in what order.
+- `docs/SPRINT_PLAN.md` — 10-week sprint plan (extended per ADR-012). Source of truth for when and in what order.
 - `docs/DECISIONS.md` — Architecture Decision Records (ADRs). Append-only log of significant decisions and their reasoning.
 - `docs/RUNBOOK.md` — Operational runbook. How to fix common issues, rotate secrets, restore from backup, etc. Built up over time.
 - `docs/CHANGELOG.md` — User-facing change history.
@@ -202,20 +316,34 @@ When changing scope or architecture: update the relevant doc and add an entry to
 
 ## Current Status (update this section as work progresses)
 
-**As of:** May 21, 2026
-**Phase:** Week 1 in progress — scaffold deployed; Phase 0 sign-off deferred, build proceeds
-**Current week:** Week 1 (Mon tasks ~complete)
-**Last milestone:** Next.js 15.5.18 + shadcn/ui scaffold deployed to Vercel preview; `ops.rentstayable.com` domain attached, DNS propagating. JN (812) confirmed as 8th property; MFA on-by-default for managers/corp confirmed.
-**Next milestone:** Neon `DATABASE_URL` + `DIRECT_URL` set in Vercel envs; merge scaffold branch → `main` so production deploys are real; Tue Auth.js v5 work begins (with MFA scaffolding accounted for).
+**As of:** May 30, 2026
+**Phase:** Weeks 1–2 done (writable code) → **Week 3 / Phase 3 (checklist filling) largely shipped**. Filling flow, Today home, conditional+validation engine (tested), drafts, signature, photo capture, locale picker all committed. Remaining blockers: R2 (photo upload), Resend (activation email), question content, one decision.
+**Current week:** Week 3 (Phase 3). Field-staff checklist filling end-to-end except photo upload (R2-gated).
+**Last milestone:** **Phase-3 checklist filling shipped 2026-05-30 (commit `a6ea416`)** — pure logic core `lib/checklist-logic.ts` (conditional `show_if` visibility + per-type validation) with **14 unit tests**; ET-anchored "Today" home (`etDateOnly`); `/checklists/[id]` filler rendering all 11 question types with live conditional visibility, client+server validation, `SignaturePad` (canvas→PNG dataURL), native-camera photo capture + client compress (R2 **upload deferred** → `{count, pendingUpload}`), IndexedDB draft autosave (`idb`), submit action (persist responses → SUBMITTED + audit → confirmation); first-login `LocalePrompt` (HK/PA/MT → `users.locale`); EN+ES strings for all field surfaces (ES machine-drafted, pending reviewer); seed adds 3 ASSIGNED Arrival instances for the LL HK so the flow is demoable pre-cron. **All green: typecheck, lint, 23/23 tests, prod build (11 routes).** *Runtime click-through not yet exercised — login interactive.* *Prior: Phase-2 schema + admin console + RBAC (`b366895`, `7777710`); Week-1 PWA + photo POC + auth tests (`180b12d`).*
+**(superseded) Phase-2 milestone (commits `b366895`, `7777710`)** — (a) **Full schema** (ARCH §4.1/§4.2): 10 new tables (rooms, checklist_templates, questions, recurring_rules, checklist_instances, responses, photos, issues, audit_log, notification_log) + all enums + indexes; `checklist_templates.code` + `checklist_instances.system_id`/self-reassignment per ADR-009; contractor/quick-task tables deliberately deferred to Phase 9/10. Migration `20260529204724_add_phase2_core_schema` applied to Neon. (b) **Seed** extended: 5 Lakeland rooms + 9 templates (authoritative metadata) + **40 PLACEHOLDER questions** covering all 11 types — `prisma/templates.ts`. **Real question content still owed by Karla/Christopher before go-live.** (c) **RBAC** `lib/rbac.ts` (server-guard level, not edge): `requireAdmin/requireManager/canAccessProperty/accessibleProperties`. (d) **Admin console** `/admin/*` (English-only, ADMIN-guarded): Users (create/deactivate/reset-PW/multi-property assign, Zod + audit_log, **temp-password shown once since Resend deferred**), Properties (read-only + geofence placeholder), Templates (read-only). (e) **Header property picker** (cookie-backed, scoped users w/ >1 property only; hidden for portfolio/single). **All green: typecheck, lint, 9/9 tests, prod build (12 routes).** *Runtime click-through of admin UI not yet exercised (login interactive) — verified by build/types only.* *Prior: Week-1 PWA shell + photo POC client + auth tests (`180b12d`); Tue auth (`7d81b96`). Seed admin `admin@rentstayable.com` / `StayableCheck` (rotate before prod).*
+**Next milestone:** **Blocked items** (need user/decision): (1) **R2** bucket + tokens + CORS → `/api/photos/presign` + `/api/photos/save`, wire `/photo-test` AND the checklist filler photo upload (FillClient holds compressed blobs in IndexedDB ready to send); (2) **on-device** PWA install + Kate's `/ios-spike` GPS GO/NO-GO; (3) **Resend creds** → activation-link provisioning + bilingual activation email; (4) **decision** — field self-invalidation (Rob/Kate); (5) **real template question content** (Karla/Christopher); (6) **bilingual reviewer** for `es.json`. **Unblocked next-up:** Phase 4 / Week 4 (ALPHA) — manager review queue (table w/ thumbnails, ADR-011) + three-column single-submission review + Approve/Flag/Re-do with audit + auto-Issue from failed PASSFAIL (`fail_flags_issue`) + Issues list/detail/resolution. Email-on-submit/flag is Resend-gated. Also worth doing: Vitest on `lib/rbac.ts`. **Review checkpoint:** run `pnpm dev`, log in as the LL HK to click through Today → fill an Arrival checklist → submit (see review map I gave Kate).
 
 ### Open questions awaiting answer
 1. Can a field user invalidate their own assignment (call in sick) or manager only? — Owner: Rob/Kate — Needed by Week 2
-2. Final list of recurring rules per template per property — Owner: Property Managers — Needed by Week 4
+2. Final list of recurring rules per template per property — Owner: Property Managers — Needed by Week 5 (shifted from Wk 4 by ADR-012)
 3. Bonus calculation logic (how does Bonus=1 vs 0 work in new platform?) — Owner: Rob — Needed by Week 3
 4. SLA defaults per issue priority — Owner: Christopher — Needed by Week 4
-5. Rob sign-off on scope + budget — **deferred 2026-05-21**; not blocking Phase 1 execution.
+5. **Spanish translation reviewer** — Karla / Christopher / external? — Owner: Kate — Needed before Phase 3
+6. **Teams workspace inventory** — 1 corporate + 8 property channels w/ Incoming Webhook URLs — Owner: Kate — Needed by Week 7
+7. **Stayable branding kit** — logo, palette, wordmark "Stayable Operations" — Owner: Kate — Needed by Week 7
+8. **Final CONTRACTOR-audience template list** — Owner: Kate — Needed by Week 9
+9. **Final geofence polygons per property** — Owner: Kate — Needed by Week 6
+10. Rob sign-off on scope + budget — **deferred 2026-05-21**; not blocking Phase 1 execution.
 
 ### Recently resolved decisions
+- **Auth v1 = login-only** (decided 2026-05-30) — no public `/signup`; admin-initiated provisioning lands Phase 2. Temp admin login `admin@rentstayable.com` / `StayableCheck` (rotate before prod). Resend wiring deferred.
+- **Vercel ops default to Production** unless Kate explicitly says Preview (standing instruction, 2026-05-30)
+- **Platform foundation decisions locked** (ADR-013, decided 2026-05-27) — bilingual EN+ES for field-staff surfaces only (admin/manager stay EN); multi-property users via `user_properties` w/ single global role; photos kept forever in v1; all UI datetimes display in ET regardless of user locale
+- **Scope expansion: Contractor Checklists + Quick Tasks added to v1** (ADR-012, decided 2026-05-27). Build extends from 8 → 10 weeks; cutover slips from Week 12 → Week 14. Contractor auth via signed magic links (no accounts); Quick Tasks are lightweight ad-hoc, no review queue. Supersedes ADR-006 for these two modules only.
+- Manager review UI patterns + 2-letter property short codes locked (ADR-011, decided 2026-05-27) — three-column single-submission review + table-with-thumbnails queue ship Phase 4, refined Phase 7; 2-letter codes (JN/JW/KE/KW/LL/OR/SA/DP) canonical everywhere
+- Product name + Teams digest locked (ADR-010, decided 2026-05-27) — end-user name is **"Stayable Operations"**; auto-posted daily 7 AM ET digest to master corporate Teams channel + per-property channels; terse factual tone; Phase 7 priority (post-P0)
+- All 8 property street addresses confirmed by Kate (2026-05-27); previous PRD address for Jacksonville West (6802 Commonwealth) was wrong — actual is 910 Suemac Road
+- Recurring-rule control model + checklist instance naming locked (ADR-009, decided 2026-05-26) — Manager can create rules at own property w/ audit log; manual `rooms.status` for occupancy; no holiday calendar; one global 5 AM ET cron; ET-anchored daily sequence; system ID `CL-{propID}-{tmplCode}-{YYYYMMDD}-{seq}`
 - Jacksonville North (812) is **in scope** as the 8th property — seed and geofence work plan for 8 (decided 2026-05-21)
 - MFA: **on by default for managers/corporate**; optional/off-by-default for field staff; TOTP via authenticator app (no SMS) (decided 2026-05-21)
 - Rob sign-off on scope + budget: **deferred** — Phase 1 build proceeds without blocking; revisit before any irreversible spend (decided 2026-05-21)
