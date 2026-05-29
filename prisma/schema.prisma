@@ -1,0 +1,78 @@
+// RISE8 Operations Platform — Prisma schema
+// Scope: Phase 1 / Wed — users, properties, user_properties (ARCHITECTURE §4.1).
+// Remaining tables (rooms, templates, questions, rules, instances, responses,
+// photos, issues, audit_log, notification_log) land in Phase 2.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  HK
+  PA
+  MT
+  MANAGER
+  CORPORATE
+  ADMIN
+}
+
+enum Locale {
+  en
+  es
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  name          String
+  role          Role
+  locale        Locale    @default(en)
+  active        Boolean   @default(true)
+  mfaEnabled    Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret     String?   @map("mfa_secret")
+  lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz
+  phone         String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  properties UserProperty[]
+
+  @@map("users")
+}
+
+model Property {
+  id         String   @id @default(uuid()) @db.Uuid
+  propertyId String   @unique @map("property_id")
+  name       String
+  shortCode  String   @unique @map("short_code") @db.VarChar(2)
+  address    String
+  geofence   Json?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  users UserProperty[]
+
+  @@map("properties")
+}
+
+model UserProperty {
+  userId     String @map("user_id") @db.Uuid
+  propertyId String @map("property_id") @db.Uuid
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([userId, propertyId])
+  @@index([propertyId])
+  @@map("user_properties")
+}
