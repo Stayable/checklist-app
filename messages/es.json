@@ -1,0 +1,30 @@
+{
+  "App": {
+    "name": "Stayable Operations",
+    "tagline": "Operaciones de la propiedad, en cada turno."
+  },
+  "Common": {
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "submit": "Enviar",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "yes": "Sí",
+    "no": "No",
+    "online": "En línea",
+    "offline": "Sin conexión"
+  },
+  "Auth": {
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?"
+  },
+  "Locale": {
+    "english": "Inglés",
+    "spanish": "Español",
+    "choosePrompt": "Elige tu idioma"
+  }
+}

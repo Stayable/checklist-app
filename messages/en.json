@@ -1,0 +1,30 @@
+{
+  "App": {
+    "name": "Stayable Operations",
+    "tagline": "Property operations, on every shift."
+  },
+  "Common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "next": "Next",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "Auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot your password?"
+  },
+  "Locale": {
+    "english": "English",
+    "spanish": "Spanish",
+    "choosePrompt": "Choose your language"
+  }
+}
