@@ -1,5 +1,6 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, Role, RoomStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { TEMPLATES } from "./templates";
 
 const db = new PrismaClient();
 
@@ -86,9 +87,60 @@ async function main() {
     create: { userId: hk.id, propertyId: lakeland.id },
   });
 
+  console.log("Seeding a few Lakeland rooms…");
+  for (let n = 101; n <= 105; n++) {
+    const roomNumber = String(n);
+    await db.room.upsert({
+      where: { propertyId_roomNumber: { propertyId: lakeland.id, roomNumber } },
+      update: {},
+      create: { propertyId: lakeland.id, roomNumber, status: RoomStatus.VACANT },
+    });
+  }
+
+  console.log("Seeding checklist templates + questions (PLACEHOLDER content)…");
+  for (const tmpl of TEMPLATES) {
+    const template = await db.checklistTemplate.upsert({
+      where: { code: tmpl.code },
+      update: {
+        name: tmpl.name,
+        defaultRole: tmpl.defaultRole,
+        scope: tmpl.scope,
+        reviewLevel: tmpl.reviewLevel,
+        active: true,
+      },
+      create: {
+        code: tmpl.code,
+        name: tmpl.name,
+        defaultRole: tmpl.defaultRole,
+        scope: tmpl.scope,
+        reviewLevel: tmpl.reviewLevel,
+      },
+    });
+    // Replace questions wholesale so re-seeding tracks edits to templates.ts.
+    await db.question.deleteMany({ where: { templateId: template.id } });
+    await db.question.createMany({
+      data: tmpl.questions.map((qn) => ({
+        templateId: template.id,
+        orderIndex: qn.orderIndex,
+        type: qn.type,
+        prompt: qn.prompt,
+        required: qn.required ?? true,
+        options: qn.options ? qn.options : undefined,
+        photoMin: qn.photoMin ?? null,
+        photoMax: qn.photoMax ?? null,
+        failFlagsIssue: qn.failFlagsIssue ?? false,
+      })),
+    });
+  }
+
   const propertyCount = await db.property.count();
   const userCount = await db.user.count();
-  console.log(`\nSeed complete — properties: ${propertyCount}, users: ${userCount}`);
+  const templateCount = await db.checklistTemplate.count();
+  const questionCount = await db.question.count();
+  console.log(
+    `\nSeed complete — properties: ${propertyCount}, users: ${userCount}, templates: ${templateCount}, questions: ${questionCount}`,
+  );
+  console.log("⚠️  Template QUESTION content is PLACEHOLDER — replace with real Connecteam/Smartsheet questions before go-live.");
   console.log(`Admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
   console.log(`Default password for other seeded accounts: ${DEFAULT_PASSWORD}  (rotate before production use)`);
 }
