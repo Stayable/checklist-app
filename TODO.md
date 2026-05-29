@@ -307,11 +307,25 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 
 ---
 
+## Deployment & Ops (2026-05-30 — app is LIVE in prod)
+
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [x] | **Deployed Weeks 1–3 to production** — live at https://ops.rentstayable.com (merged to `main`, commit `1555776`; custom domain + DNS attached) |
+| P0 | [x] | **Fixed prod login outage** — Vercel Prod `DATABASE_URL`/`DIRECT_URL` were empty strings → Prisma threw → NextAuth `Configuration`. Set to Neon conn via `vercel env add --force`, redeployed; login verified |
+| P0 | [x] | **Applied Stayable brand foundation** (rentstayable.com) — Roboto + Quicksand fonts, navy/blue/sky/gold tokens; primary surfaces recolored. Live + verified |
+| P1 | [!] | **Vercel git auto-deploy is flaky** — a `git push origin main` produced no deployment; deploying via `vercel --prod --yes` CLI meanwhile. Check the Vercel↔GitHub integration |
+| P1 | [ ] | **Rotate temp admin password** (`StayableCheck`) — live on the public domain |
+| P1 | [ ] | **Authorize Adobe Urbane Rounded** for ops.rentstayable.com (kit `dsq0zcq`) → swap Quicksand → real brand font (1-line change) |
+| P2 | [ ] | Decide prod/dev DB split — prod currently shares the dev Neon DB w/ seeded test data; needs a clean prod DB before real go-live |
+| P1 | [ ] | **Decide branch workflow** — commit to `main` (CLI-deploy each time) vs resume feature branch + merge-to-deploy |
+
 ## Cross-Cutting Backlog
 
 | Pri | Status | Task |
 |---|---|---|
 | P1 | [x] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — 9 cases: 5-strike lock, 15-min window reset + boundary, 30-min unlock, success clear. Shipped 2026-05-30 commit `180b12d` |
+| P1 | [x] | **Vitest for `lib/checklist-logic.ts`** — 14 cases: conditional `show_if` (incl. MULTI), per-type validation, validateAll. Commit `a6ea416` |
 | P2 | [ ] | Add `AUTH_SECRET` to Vercel **Preview** if branch-preview login testing is wanted (Production-only per Kate's default-to-Prod rule) |
 | P3 | [ ] | Decide fate of stray `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` (commit as deliverables vs `.gitignore`) |
 | P1 | [ ] | CI: GitHub Actions — lint + typecheck + unit tests on PR |
