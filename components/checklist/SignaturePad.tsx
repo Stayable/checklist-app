@@ -32,7 +32,7 @@ export function SignaturePad({
     ctx.scale(ratio, ratio);
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#0f172a";
+    ctx.strokeStyle = "#041e42"; // Stayable navy
     if (value) {
       const img = new Image();
       img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);

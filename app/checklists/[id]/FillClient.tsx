@@ -139,7 +139,7 @@ export function FillClient({
         <div className="text-5xl">✓</div>
         <h1 className="text-xl font-bold text-slate-900">{t("submitted")}</h1>
         <p className="text-sm text-slate-500">{label}</p>
-        <Link href="/" className="mt-2 rounded-lg bg-slate-900 px-5 py-3 text-base font-semibold text-white">
+        <Link href="/" className="mt-2 rounded-lg bg-navy px-5 py-3 text-base font-semibold text-white">
           {t("returnHome")}
         </Link>
       </main>
@@ -172,7 +172,7 @@ export function FillClient({
           <button
             onClick={onSubmit}
             disabled={pending}
-            className="w-full rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+            className="w-full rounded-lg bg-navy px-4 py-3 text-base font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
           >
             {pending ? t("submitting") : t("submit")}
           </button>
@@ -208,7 +208,7 @@ function QuestionField({
 
   const input = "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base text-slate-900 focus:border-slate-900 focus:outline-none";
   const chip = (active: boolean) =>
-    `rounded-lg border px-4 py-2.5 text-sm font-semibold ${active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-600"}`;
+    `rounded-lg border px-4 py-2.5 text-sm font-semibold ${active ? "border-slate-900 bg-navy text-white" : "border-slate-300 text-slate-600"}`;
 
   return (
     <div className="flex flex-col gap-2">
@@ -285,7 +285,7 @@ function QuestionField({
                 <button
                   type="button"
                   onClick={() => onRemovePhoto(i)}
-                  className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-slate-900 text-xs text-white"
+                  className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-navy text-xs text-white"
                 >
                   ×
                 </button>

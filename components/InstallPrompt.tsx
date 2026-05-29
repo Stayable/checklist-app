@@ -75,7 +75,7 @@ export function InstallPrompt({ variant = "banner" }: { variant?: "banner" | "fu
         <button
           type="button"
           onClick={install}
-          className="mt-3 w-full rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white hover:bg-slate-800"
+          className="mt-3 w-full rounded-lg bg-navy px-4 py-3 text-base font-semibold text-white hover:bg-navy/90"
         >
           {t("installButton")}
         </button>
