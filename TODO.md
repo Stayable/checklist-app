@@ -42,8 +42,8 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Connect GitHub → Vercel project, auto-deploy on push (preview deploy succeeded) |
 | P0 | [~] | Create Neon project, set `DATABASE_URL` + `DIRECT_URL` in Vercel envs — Neon `operations` project created 2026-05-21; password rotated; URLs in local `.env.local`; **Vercel paste pending user confirmation** |
 | P0 | [x] | Merge scaffold branch → `main` so production deploys are real (PR #1, merge commit `aa90bfe`, 2026-05-22) |
-| P0 | [ ] | **i18n scaffold (ADR-013):** install `next-intl`, configure middleware-based locale routing, scaffold `messages/en.json` + `messages/es.json`, add locale provider to root layout |
-| P0 | [ ] | **Datetime helper (ADR-013):** `lib/datetime.ts` exposing `formatInET(dt, pattern)` + `etToday()`; ESLint rule blocking direct `toLocaleString` / `Intl.DateTimeFormat` outside this file; install `date-fns-tz` |
+| P0 | [x] | **i18n scaffold (ADR-013):** install `next-intl`, configure middleware-based locale routing, scaffold `messages/en.json` + `messages/es.json`, add locale provider to root layout |
+| P0 | [x] | **Datetime helper (ADR-013):** `lib/datetime.ts` exposing `formatInET(dt, pattern)` + `etToday()`; ESLint rule blocking direct `toLocaleString` / `Intl.DateTimeFormat` outside this file; install `date-fns-tz` |
 
 ### Tue — Auth.js v5 (Credentials)
 | Pri | Status | Task |
@@ -58,11 +58,11 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ### Wed — Prisma schema + seed
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Prisma schema: `users` (incl. `locale` enum per ADR-013), `properties`, `user_properties` (per ARCH §4.1) |
-| P0 | [ ] | Migration `0001_init_users_and_properties` |
-| P0 | [ ] | `geofence` as `Json` (GeoJSON) — PostGIS deferred |
-| P0 | [ ] | Seed script: 8 properties (all 2-letter short codes per ADR-011) + admin + 1 MANAGER + 1 HK at LL (4645) |
-| P0 | [ ] | Register seed in `package.json` |
+| P0 | [x] | Prisma schema: `users` (incl. `locale` enum per ADR-013), `properties`, `user_properties` (per ARCH §4.1) |
+| P0 | [x] | Migration `0001_init_users_and_properties` (applied to Neon as `20260527190517_init_users_and_properties`) |
+| P0 | [x] | `geofence` as `Json` (GeoJSON) — PostGIS deferred |
+| P0 | [x] | Seed script: 8 properties (all 2-letter short codes per ADR-011) + admin + 1 MANAGER + 1 HK at LL (4645) |
+| P0 | [x] | Register seed in `package.json` |
 
 ### Thu — PWA shell
 | Pri | Status | Task |

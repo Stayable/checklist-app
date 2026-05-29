@@ -316,11 +316,11 @@ When changing scope or architecture: update the relevant doc and add an entry to
 
 ## Current Status (update this section as work progresses)
 
-**As of:** May 27, 2026
-**Phase:** Week 1 in progress — scaffold now on `main`; production deploy path unblocked
-**Current week:** Week 1 (Mon tasks essentially complete; Tue Auth.js + MFA build is next)
-**Last milestone:** PR #1 (`chore: initial scaffold + Phase 0 close-out`) merged to `main` 2026-05-22; merge commit `aa90bfe`; feature branch deleted. Neon `operations` project created; password rotated; pooled + direct URLs saved to local `.env.local`. GitHub CLI installed + authenticated on the dev workstation. ADR-009 (recurring-rule control model + naming) recorded 2026-05-26. ADR-010 (Teams digest + product name "Stayable Operations") + 8-property addresses confirmed 2026-05-27.
-**Next milestone:** (1) Confirm `DATABASE_URL` + `DIRECT_URL` are set in Vercel envs (all 3 environments) and that the post-merge production build for `aa90bfe` succeeds; (2) start Tue Auth.js v5 + full MFA implementation per ADR-008.
+**As of:** May 28, 2026
+**Phase:** Week 1 in progress — Wed (Prisma schema) and Mon (i18n + datetime) shipped; auth + PWA remain
+**Current week:** Week 1 (Wed schema + seed live in Neon; Mon i18n + datetime scaffolding live; Tue Auth.js + MFA build is next; Thu PWA shell + Fri photo POC still ahead)
+**Last milestone:** Phase 1 Wed + Mon shipped 2026-05-28 — Prisma 6.19.3 schema with User/Property/UserProperty + Role/Locale enums; migration `20260527190517_init_users_and_properties` applied to Neon; seed populated 8 properties + admin + Lakeland MGR + Lakeland HK; `lib/db.ts` Prisma singleton; `dotenv-cli` wraps `db:*` scripts so they read `.env.local`. **i18n:** `next-intl` 4.12 wired with no URL prefix (cookie-based `NEXT_LOCALE`), `middleware.ts` sets default from `Accept-Language`, `messages/en.json` + `messages/es.json` seeded, root layout wraps in `NextIntlClientProvider`. **Datetime:** `lib/datetime.ts` exposes `formatInET` / `formatDateInET` / `etToday` / `etYYYYMMDD` via `date-fns-tz` (`America/New_York`, `ET` suffix); ESLint `no-restricted-syntax` blocks `toLocaleString` / `toLocaleDateString` / `toLocaleTimeString` / `new Intl.DateTimeFormat` outside `lib/datetime.ts`. `pnpm build` + `pnpm lint` + `pnpm typecheck` all clean. **Prisma pinned to 6.x** — Prisma 7 (released late 2025) requires adapter rewiring and moves all URLs to `prisma.config.ts`; deferred for v1.
+**Next milestone:** (1) Tue Auth.js v5 Credentials + bcrypt + JWT 30-day rolling + lockout (5/15/30) + TOTP MFA scaffolding per ADR-008; (2) Thu PWA shell (manifest, Workbox SW, install prompt, online/offline indicator) + iPhone/Android install verification; (3) Fri photo POC + iOS GPS GO/NO-GO (requires R2 bucket + tokens + CORS from user); (4) Confirm `DATABASE_URL` + `DIRECT_URL` set in Vercel envs (all 3 environments); (5) decide PR strategy for the spec branch.
 
 ### Open questions awaiting answer
 1. Can a field user invalidate their own assignment (call in sick) or manager only? — Owner: Rob/Kate — Needed by Week 2
