@@ -102,17 +102,17 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Full schema: `rooms`, `checklist_templates`, `questions`, `recurring_rules`, `checklist_instances`, `responses`, `photos`, `issues`, `audit_log`, `notification_log` |
-| P0 | [ ] | All indexes per ARCH §4.2 |
-| P0 | [ ] | Seed: all 9 templates with real question sets pulled from Connecteam/Smartsheet |
-| P0 | [ ] | Admin UI: list/create/deactivate users, reset password (one-click), **assign to one or more properties** (ADR-013 multi-property model) |
-| P0 | [ ] | Admin UI: list properties, view geofence placeholder map |
-| P0 | [ ] | Admin UI: list templates + questions (read-only OK for v1) |
-| P0 | [ ] | RBAC middleware (ADR-013): non-corp/admin users gated by `user_properties` membership on every property-scoped route |
-| P0 | [ ] | Header property picker for users with >1 property assignment; auto-select for single-property users; hidden for CORPORATE/ADMIN (portfolio default) |
-| P1 | [ ] | Switch signup → admin-only provisioning (activation-link flow) |
-| P1 | [ ] | Activation email via Resend (7-day TTL); **field-staff recipients get bilingual EN+ES template per ADR-013** |
-| P0 | [ ] | Resolve open: field user self-invalidation vs manager-only |
+| P0 | [x] | Full schema: `rooms`, `checklist_templates`, `questions`, `recurring_rules`, `checklist_instances`, `responses`, `photos`, `issues`, `audit_log`, `notification_log` — migration `20260529204724_add_phase2_core_schema`, commit `b366895` |
+| P0 | [x] | All indexes per ARCH §4.2 (photos.geofence_status is plain not partial — Prisma limitation, deferred to raw-SQL migration; table empty in v1) |
+| P0 | [~] | Seed: all 9 templates. **Metadata authoritative; question CONTENT is PLACEHOLDER** (`prisma/templates.ts`, 40 q covering all 11 types). **Real Connecteam/Smartsheet question sets still needed — owner Karla/Christopher before go-live** |
+| P0 | [x] | Admin UI: list/create/deactivate users, one-click password reset, multi-property assignment (`/admin/users`, audit-logged, Zod-validated). Resend deferred → temp password shown once instead of email. Commit `7777710` |
+| P0 | [x] | Admin UI: list properties + geofence-status + map placeholder (`/admin/properties`, read-only) |
+| P0 | [x] | Admin UI: list templates + questions read-only (`/admin/templates`) |
+| P0 | [x] | RBAC (ADR-013): `lib/rbac.ts` guards (`requireAdmin`/`requireManager`/`canAccessProperty`/`accessiblePropertyIds`) — server-component/action level, **not edge middleware** (keeps Prisma off edge, consistent w/ auth decision) |
+| P0 | [x] | Header property picker (`PropertyPicker`, cookie-backed): shown for scoped users w/ >1 property; auto/hidden for single-property; hidden for CORPORATE/ADMIN |
+| P1 | [~] | Admin-only provisioning **done via temp-password** (no public signup ever existed). **Activation-LINK flow specifically deferred** — needs Resend |
+| P1 | [!] | Activation email via Resend (7-day TTL, bilingual EN+ES) — **blocked: no Resend creds / wiring deferred** |
+| P0 | [!] | Resolve open: field user self-invalidation vs manager-only — **blocked: decision owner Rob/Kate** |
 
 ---
 
