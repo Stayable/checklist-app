@@ -1,6 +1,7 @@
-import { PrismaClient, Role, RoomStatus } from "@prisma/client";
+import { InstanceStatus, PrismaClient, Role, RoomStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { TEMPLATES } from "./templates";
+import { etDateOnly, etYYYYMMDD } from "../lib/datetime";
 
 const db = new PrismaClient();
 
@@ -133,12 +134,41 @@ async function main() {
     });
   }
 
+  console.log("Seeding today's Arrival checklists for the Lakeland HK…");
+  // Until the Phase-5 generation cron exists, hand-seed a few ASSIGNED Arrival
+  // instances so the Phase-3 "Today" home + filling flow have real data.
+  const arr = await db.checklistTemplate.findUniqueOrThrow({ where: { code: "ARR" } });
+  const ymd = etYYYYMMDD();
+  const today = etDateOnly();
+  let seq = 0;
+  for (const roomNumber of ["101", "102", "103"]) {
+    seq += 1;
+    const room = await db.room.findUniqueOrThrow({
+      where: { propertyId_roomNumber: { propertyId: lakeland.id, roomNumber } },
+    });
+    const systemId = `CL-${lakeland.propertyId}-ARR-${ymd}-${String(seq).padStart(3, "0")}`;
+    await db.checklistInstance.upsert({
+      where: { systemId },
+      update: { status: InstanceStatus.ASSIGNED, assignedUserId: hk.id },
+      create: {
+        systemId,
+        templateId: arr.id,
+        propertyId: lakeland.id,
+        roomId: room.id,
+        scheduledFor: today,
+        assignedUserId: hk.id,
+        status: InstanceStatus.ASSIGNED,
+      },
+    });
+  }
+
   const propertyCount = await db.property.count();
   const userCount = await db.user.count();
   const templateCount = await db.checklistTemplate.count();
   const questionCount = await db.question.count();
+  const instanceCount = await db.checklistInstance.count();
   console.log(
-    `\nSeed complete — properties: ${propertyCount}, users: ${userCount}, templates: ${templateCount}, questions: ${questionCount}`,
+    `\nSeed complete — properties: ${propertyCount}, users: ${userCount}, templates: ${templateCount}, questions: ${questionCount}, instances: ${instanceCount}`,
   );
   console.log("⚠️  Template QUESTION content is PLACEHOLDER — replace with real Connecteam/Smartsheet questions before go-live.");
   console.log(`Admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
