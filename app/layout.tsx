@@ -1,23 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto, Quicksand, Geist_Mono } from "next/font/google";
+import { Nunito, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
-// Body font — matches rentstayable.com (Roboto). Headings use Quicksand as a
-// rounded-geometric stand-in for the brand's Adobe "Urbane Rounded" until that
-// domain-locked kit is authorized for ops.rentstayable.com.
-const roboto = Roboto({
-  variable: "--font-roboto",
+// Brand font — Nunito, a free rounded-geometric sans that matches the
+// rentstayable.com brand look (the brand's Adobe "Urbane Rounded" is
+// domain-locked and can't load on ops.rentstayable.com). Used for both body
+// and headings; weight carries the hierarchy. Geist Mono kept for code.
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
-});
-
-const quicksand = Quicksand({
-  variable: "--font-quicksand",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -60,7 +55,7 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body
-        className={`${roboto.variable} ${quicksand.variable} ${geistMono.variable} antialiased`}
+        className={`${nunito.variable} ${geistMono.variable} antialiased`}
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
