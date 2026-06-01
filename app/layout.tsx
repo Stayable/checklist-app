@@ -53,10 +53,8 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
-      <body
-        className={`${nunito.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang={locale} className={`${nunito.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
         </NextIntlClientProvider>
