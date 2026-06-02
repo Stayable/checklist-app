@@ -147,7 +147,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [ ] | Resend: email on submission to manager |
 | P0 | [ ] | Resend: email on flag to submitter |
 | P0 | [ ] | Alpha demo recorded + shared with Rob |
-| P0 | [ ] | Resolve open: SLA defaults per priority (Christopher) |
+| P0 | [ ] | SLA defaults: build as admin-editable settings, seed placeholders (URGENT 4h / HIGH 24h / MED 72h / LOW 7d) — **not blocking**; Christopher confirms/corrects values |
 | P0 | [x] | Resolve open: bonus rule logic — **SCRAPPED from v1 scope 2026-06-02 (ADR-014)** |
 
 ---
@@ -335,7 +335,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P0 | [x] | MFA default for managers/corp | Kate | **On-by-default — resolved 2026-05-21** |
 | P0 | [x] | Field user self-invalidate, or manager only? | Rob/Kate | **Resolved 2026-06-02 (ADR-014): request w/ note → manager/admin approval** |
 | P0 | [x] | Bonus calc logic (Bonus=1 vs 0) | Rob | **Scrapped 2026-06-02 (ADR-014)** |
-| P0 | [ ] | SLA defaults per priority | Christopher | Week 4 |
+| P0 | [ ] | SLA defaults per priority — placeholders shipping (4h/24h/72h/7d, admin-editable); Christopher to confirm/correct | Christopher | Week 4, non-blocking |
 | P0 | [ ] | Recurring rules per template per property | PMs | Week 4 |
 | P0 | [ ] | Final geofence polygons per property | Kate | Week 5 |
 
