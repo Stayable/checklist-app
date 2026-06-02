@@ -138,16 +138,16 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Manager review queue — **table view** (ADR-011): row per submission · Status · User · Date · Unit# · Time-to-complete · inline photo thumbnails per required photo question · row-level Approve/Flag/Re-do |
-| P0 | [ ] | Single-submission review — **three-column layout** (ADR-011): left rail (status + manager note) · center (responses + photos + signatures + time-to-complete header) · right rail (activity timeline w/ actor + timestamp) |
-| P0 | [ ] | Approve / Flag / Request Re-do actions with audit entries (writes to `audit_log` + `notification_log`) |
-| P0 | [ ] | Auto-Issue from PASSFAIL=Fail when `fail_flags_issue=true` |
-| P0 | [ ] | Issues list + detail page |
-| P0 | [ ] | Resolution flow: note + photo required |
-| P0 | [ ] | Resend: email on submission to manager |
-| P0 | [ ] | Resend: email on flag to submitter |
+| P0 | [x] | Manager review queue — **table view** (ADR-011): row per submission · Status · User · Date · Unit# · Time-to-complete · photo slots (R2-pending placeholders) · row-level Approve/Flag/Re-do — commit `6cfd803` |
+| P0 | [x] | Single-submission review — **three-column layout** (ADR-011): left rail (status + manager note + actions) · center (all 11 response types incl. signature) · right rail (audit timeline w/ actor + ET timestamp) |
+| P0 | [x] | Approve / Flag / Request Re-do actions with audit entries (`audit_log` + `notification_log`; EMAIL rows SKIPPED until Resend, IN_APP rows PENDING for Phase-6 center) |
+| P0 | [x] | Auto-Issue from PASSFAIL=Fail when `fail_flags_issue=true` — at submit, visibility-aware, deduped per (instance, question) vs open issues |
+| P0 | [x] | Issues list + detail page (status/priority filters, SLA-breach highlight, assign/status/priority controls) |
+| P0 | [~] | Resolution flow: **note required ✓**; photo requirement **R2-gated** — enforce once photo upload lands |
+| P0 | [!] | Resend: email on submission to manager — **blocked: Resend creds** (notification_log rows already written as SKIPPED) |
+| P0 | [!] | Resend: email on flag to submitter — **blocked: Resend creds** (same) |
 | P0 | [ ] | Alpha demo recorded + shared with Rob |
-| P0 | [ ] | SLA defaults: build as admin-editable settings, seed placeholders (URGENT 4h / HIGH 24h / MED 72h / LOW 7d) — **not blocking**; Christopher confirms/corrects values |
+| P0 | [x] | SLA defaults: admin-editable `/admin/sla` + `sla_defaults` table, seeded placeholders (URGENT 4h / HIGH 24h / MED 72h / LOW 168h) — Christopher confirms/corrects values |
 | P0 | [x] | Resolve open: bonus rule logic — **SCRAPPED from v1 scope 2026-06-02 (ADR-014)** |
 
 ---
