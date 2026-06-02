@@ -293,6 +293,9 @@ model ChecklistInstance {
   submittedAt      DateTime? @map("submitted_at") @db.Timestamptz
   reviewedAt       DateTime? @map("reviewed_at") @db.Timestamptz
   reviewedByUserId String?   @map("reviewed_by_user_id") @db.Uuid
+  // Manager note from the review left rail (ADR-011); set on approve/flag/redo.
+  managerNote      String?   @map("manager_note")
+  // Dead field — bonus logic scrapped from v1 per ADR-014. Drop in a later migration.
   bonusEligible    Boolean   @default(true) @map("bonus_eligible")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -393,6 +396,18 @@ model Issue {
   @@index([sourceQuestionId])
   @@index([roomId])
   @@map("issues")
+}
+
+// SLA defaults per issue priority (Phase 4). Admin-editable placeholders until
+// Christopher confirms real values (ADR-014 follow-up); issue.slaTargetAt =
+// issue.createdAt + hours at creation time. Editing a default does NOT
+// retroactively move existing issues' targets.
+model SlaDefault {
+  priority  IssuePriority @id
+  hours     Int
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("sla_defaults")
 }
 
 // ---------------------------------------------------------------------------

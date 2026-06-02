@@ -125,7 +125,21 @@ export default async function Home() {
       </section>
 
       {isManagerOrAbove(user.role) && (
-        <p className="text-center text-xs text-slate-400">{t("reviewComingSoon")}</p>
+        // Manager surface — English-only in v1 (ADR-013).
+        <div className="flex flex-col gap-2">
+          <Link
+            href="/review"
+            className="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Review queue →
+          </Link>
+          <Link
+            href="/issues"
+            className="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Issues →
+          </Link>
+        </div>
       )}
 
       <InstallPrompt />

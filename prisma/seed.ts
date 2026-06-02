@@ -1,7 +1,8 @@
-import { InstanceStatus, PrismaClient, Role, RoomStatus } from "@prisma/client";
+import { InstanceStatus, IssuePriority, PrismaClient, Role, RoomStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { TEMPLATES } from "./templates";
 import { etDateOnly, etYYYYMMDD } from "../lib/datetime";
+import { SLA_PLACEHOLDER_HOURS } from "../lib/review";
 
 const db = new PrismaClient();
 
@@ -159,6 +160,78 @@ async function main() {
         assignedUserId: hk.id,
         status: InstanceStatus.ASSIGNED,
       },
+    });
+  }
+
+  console.log("Seeding SLA defaults (placeholders, ADR-014)…");
+  for (const priority of Object.values(IssuePriority)) {
+    await db.slaDefault.upsert({
+      where: { priority },
+      update: {}, // don't clobber admin-edited values on re-seed
+      create: { priority, hours: SLA_PLACEHOLDER_HOURS[priority] },
+    });
+  }
+
+  console.log("Seeding a SUBMITTED Arrival checklist so the review queue is demoable…");
+  // Rooms 104/105: one clean submission, one with a FAILED flagged PASSFAIL.
+  // Until R2 lands, PHOTO answers carry { count, pendingUpload: true } and
+  // SIGNATURE is a tiny placeholder data URL.
+  const SIG_DATA_URL =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  const arrQuestions = await db.question.findMany({
+    where: { templateId: arr.id },
+    orderBy: { orderIndex: "asc" },
+  });
+  const answerFor = (type: string, fail: boolean): unknown => {
+    switch (type) {
+      case "PASSFAIL": return fail ? "FAIL" : "PASS";
+      case "YESNO": return true;
+      case "SINGLE": return "Acceptable";
+      case "MULTI": return [];
+      case "NUMBER": return 0;
+      case "SHORT_TEXT": return "Seed data";
+      case "LONG_TEXT": return fail ? "Seeded failure for review-queue demo." : "All good.";
+      case "PHOTO": return { count: 1, pendingUpload: true };
+      case "SIGNATURE": return SIG_DATA_URL;
+      case "DATE": return etYYYYMMDD().replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
+      default: return null;
+    }
+  };
+  const submittedSpecs = [
+    { roomNumber: "104", seq: 4, fail: false },
+    { roomNumber: "105", seq: 5, fail: true },
+  ];
+  for (const spec of submittedSpecs) {
+    const room = await db.room.findUniqueOrThrow({
+      where: { propertyId_roomNumber: { propertyId: lakeland.id, roomNumber: spec.roomNumber } },
+    });
+    const systemId = `CL-${lakeland.propertyId}-ARR-${ymd}-${String(spec.seq).padStart(3, "0")}`;
+    const openedAt = new Date(Date.now() - 45 * 60_000);
+    const submittedAt = new Date(Date.now() - 20 * 60_000);
+    const instance = await db.checklistInstance.upsert({
+      where: { systemId },
+      update: { status: InstanceStatus.SUBMITTED, assignedUserId: hk.id, openedAt, submittedAt },
+      create: {
+        systemId,
+        templateId: arr.id,
+        propertyId: lakeland.id,
+        roomId: room.id,
+        scheduledFor: today,
+        assignedUserId: hk.id,
+        status: InstanceStatus.SUBMITTED,
+        openedAt,
+        submittedAt,
+      },
+    });
+    await db.response.deleteMany({ where: { instanceId: instance.id } });
+    await db.response.createMany({
+      data: arrQuestions
+        .filter((q) => q.type !== "SECTION_DIVIDER")
+        .map((q) => ({
+          instanceId: instance.id,
+          questionId: q.id,
+          answer: answerFor(q.type, spec.fail) as object,
+        })),
     });
   }
 
