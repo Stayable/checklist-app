@@ -112,7 +112,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Header property picker (`PropertyPicker`, cookie-backed): shown for scoped users w/ >1 property; auto/hidden for single-property; hidden for CORPORATE/ADMIN |
 | P1 | [~] | Admin-only provisioning **done via temp-password** (no public signup ever existed). **Activation-LINK flow specifically deferred** — needs Resend |
 | P1 | [!] | Activation email via Resend (7-day TTL, bilingual EN+ES) — **blocked: no Resend creds / wiring deferred** |
-| P0 | [!] | Resolve open: field user self-invalidation vs manager-only — **blocked: decision owner Rob/Kate** |
+| P0 | [x] | Resolve open: field user self-invalidation vs manager-only — **RESOLVED 2026-06-02 (ADR-014): field can request w/ required note → manager/admin approval** |
 
 ---
 
@@ -130,7 +130,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [~] | Submit pipeline: validate (client + server) → persist responses → SUBMITTED + audit. **Photo upload step deferred (R2)** |
 | P1 | [x] | Confirmation screen + return-to-home |
 | P0 | [x] | First-login locale picker (`LocalePrompt`, HK/PA/MT → `users.locale` + cookie) |
-| P0 | [~] | Spanish translations: field-staff strings (Today, filler, statuses, errors) added to `es.json` — **machine-drafted, still pending bilingual reviewer** (open q#5) |
+| P0 | [x] | Spanish translations: field-staff strings (Today, filler, statuses, errors) added to `es.json` — machine-drafted ES ships as-is; **human review moved to Phase 8 per ADR-014** |
 
 ---
 
@@ -148,7 +148,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [ ] | Resend: email on flag to submitter |
 | P0 | [ ] | Alpha demo recorded + shared with Rob |
 | P0 | [ ] | Resolve open: SLA defaults per priority (Christopher) |
-| P0 | [ ] | Resolve open: bonus rule logic (Rob) |
+| P0 | [x] | Resolve open: bonus rule logic — **SCRAPPED from v1 scope 2026-06-02 (ADR-014)** |
 
 ---
 
@@ -162,7 +162,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [ ] | Bulk-create UI: template + property + date(s) + room range/list |
 | P0 | [ ] | Assignment: specific user OR role pool OR unassigned |
 | P0 | [ ] | Unassigned-queue digest email (7am ET) |
-| P0 | [ ] | Invalidation flow with reason + reassignment audit chain |
+| P0 | [ ] | Invalidation flow (ADR-014): field-initiated request w/ required note → pending state → manager/admin approve/reject; reason + reassignment audit chain |
 | P0 | [ ] | Resolve open: final recurring rules list per property (PMs) |
 
 ---
@@ -232,6 +232,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P0 | [ ] | Production domain + secrets + Sentry + Vercel Analytics live (Property Checklist scope) |
 | P0 | [ ] | Prod DB seeded: real users, properties, templates, recurring rules |
 | P0 | [ ] | All field staff provisioned; activation emails sent |
+| P0 | [ ] | **Spanish translation review + sign-off** — full `es.json` pass by bilingual reviewer (TBD: Karla/Christopher/external) **before field-staff training** (moved here per ADR-014) |
 | P0 | [ ] | Training session per property (1 hr, recorded) — Property Checklist walkthrough |
 | P0 | [ ] | Quick reference card v1 (PDF + printed) — Property Checklist focus; updated in Phase 10 to cover Contractor + Quick Tasks |
 | P0 | [ ] | Manager training (1.5 hr) — Property Checklist walkthrough |
@@ -332,8 +333,8 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P0 | [x] | Jacksonville North (812) in scope as 8th property? | Kate | **YES — resolved 2026-05-21** |
 | P0 | [x] | Subdomain final choice | Kate | **ops.rentstayable.com — resolved 2026-05-20** |
 | P0 | [x] | MFA default for managers/corp | Kate | **On-by-default — resolved 2026-05-21** |
-| P0 | [ ] | Field user self-invalidate, or manager only? | Rob/Kate | Week 2 |
-| P0 | [ ] | Bonus calc logic (Bonus=1 vs 0) | Rob | Week 3 |
+| P0 | [x] | Field user self-invalidate, or manager only? | Rob/Kate | **Resolved 2026-06-02 (ADR-014): request w/ note → manager/admin approval** |
+| P0 | [x] | Bonus calc logic (Bonus=1 vs 0) | Rob | **Scrapped 2026-06-02 (ADR-014)** |
 | P0 | [ ] | SLA defaults per priority | Christopher | Week 4 |
 | P0 | [ ] | Recurring rules per template per property | PMs | Week 4 |
 | P0 | [ ] | Final geofence polygons per property | Kate | Week 5 |

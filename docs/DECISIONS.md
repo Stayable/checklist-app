@@ -620,6 +620,42 @@ Four architectural questions were not addressed in ADRs 001–012 but materially
 
 ---
 
+## ADR-014: Open-question resolutions — self-invalidation approval flow, bonus logic scrapped, Spanish review deferred to Phase 8
+
+**Date:** 2026-06-02
+**Status:** Accepted
+
+### Context
+Three open questions (PRD §12 / CLAUDE.md open-questions list) were resolved by Kate on 2026-06-02:
+
+1. **#1 Field self-invalidation** — Can a field user invalidate their own assignment (e.g., called in sick), or is invalidation manager-only? Was blocking the Phase 5 invalidation-flow design.
+2. **#3 Bonus calculation logic** — How does Bonus=1 vs 0 carry into the new platform? Owner was Rob; due Week 3.
+3. **#5 Spanish translation reviewer** — Who reviews the machine-drafted `es.json` strings? Was nominally "needed before Phase 3," but Phase 3 shipped with machine-drafted ES.
+
+### Decisions
+
+**1. Self-invalidation = field-initiated request + manager/admin approval.**
+- A field user (HK/PA/MT) can initiate invalidation of their own assignment and **must attach a note** (reason).
+- The instance does **not** invalidate immediately — it enters a pending-invalidation state requiring approval by a **MANAGER** (own property) or **ADMIN** account.
+- On approval: instance invalidated, reassignment per the existing Phase 5 audit chain. On rejection: instance returns to ASSIGNED, requester notified.
+- Both request and decision are written to `audit_log`.
+
+**2. Bonus calculation logic — scrapped from v1 scope.**
+- No Bonus field, no Bonus=1/0 logic, no bonus reporting in the platform. Question closed, not deferred.
+- If bonus tracking returns later, it's a new scoped request (v1.5+), not a reopened question.
+
+**3. Spanish strings ship machine-drafted; human review moves to Phase 8.**
+- We keep building bilingual EN+ES per ADR-013 — every field-staff surface continues to get ES strings as it ships.
+- The **human review/sign-off pass moves to Phase 8** (Week 8), as a gate before field-staff training and provisioning — the last point before real field users see ES in production.
+- Reviewer still TBD (Karla / Christopher / external). Machine-drafted ES is acceptable for dev/alpha/internal demo use until then.
+
+### Consequences
+- Phase 5 invalidation flow gains a small approval sub-flow (pending state + approve/reject actions + two audit events) instead of a single manager-only action. Slightly more build, but matches how call-ins actually happen.
+- One less open question chasing Rob (bonus). Any Connecteam bonus-report parity expectation should be checked at parallel-run parity review (Week 13) so it doesn't resurface as a surprise.
+- ES review compresses into Phase 8 — single batch review of all strings rather than per-phase sign-off (changes ADR-013's per-phase reviewer mitigation). Risk: a large review batch late; acceptable because the string surface is small and field-staff-only.
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```
