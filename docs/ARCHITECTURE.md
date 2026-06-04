@@ -448,7 +448,7 @@ Web Push API for Android and iOS 16.4+. Requires user permission. Not in v1 scop
 
 - Neon Pro: 7-day point-in-time recovery included
 - Daily logical backup to R2 via `pg_dump` (Vercel Cron job)
-- R2: versioned bucket, 30-day retention on deleted objects
+- R2: **no object versioning (R2 doesn't offer it — corrected 2026-06-05, see RUNBOOK §Backup)**; deletion protection = keep-forever policy (ADR-013) + object-scoped tokens; evaluate Bucket Lock for prod at Phase 8
 - Recovery test performed monthly
 
 ---

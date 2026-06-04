@@ -286,7 +286,7 @@ All secrets are in Vercel environment variables. Rotate annually or immediately 
 ### What's Backed Up
 
 - **Database:** Neon Pro PITR (7 days) + nightly logical dump to R2 (30-day retention)
-- **R2 (photos/PDFs):** Versioned bucket, 30-day retention on deleted objects
+- **R2 (photos/PDFs):** **No object versioning — R2 does not offer it** (confirmed against live bucket settings 2026-06-05; only lifecycle option is the default multipart-abort rule). The earlier "versioned bucket, 30-day soft-delete" line was written assuming S3 semantics and was wrong. Actual protections: (a) keep-forever policy (ADR-013) — production code never deletes photos; (b) object-scoped API token, staging bucket only; (c) R2 **Bucket Lock rules** (none configured yet) can enforce WORM retention — evaluate for the prod bucket at Phase 8, and verify prefix scoping first so cleanup crons aren't blocked
 - **Source code:** GitHub (assumed durable)
 - **Environment variables:** Documented in `docs/RUNBOOK.md` (this file) with values stored in Vercel
 
@@ -299,9 +299,7 @@ All secrets are in Vercel environment variables. Rotate annually or immediately 
 4. Promote branch to primary (planned outage required)
 
 #### Restore a deleted photo
-1. R2 dashboard → Bucket → Versions → Find deleted object
-2. Restore version
-3. Update DB record if necessary
+**Not possible — R2 has no versioning, so a deleted object is gone.** Prevention is the control: production code paths never delete photos (ADR-013 keep-forever); the only delete paths are `/photo-test` throwaway objects and the (future, P2) orphaned-photo cleanup cron, which must be prefix-restricted and reviewed before it ships. For belt-and-braces on prod, consider Bucket Lock (above) and/or the post-launch cross-account backup copy.
 
 #### Full disaster recovery (account compromised, everything wiped)
 1. Restore from R2 backup bucket (separate Cloudflare account or AWS S3 cross-region copy — set up post-launch)

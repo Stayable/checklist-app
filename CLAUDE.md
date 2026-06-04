@@ -137,7 +137,7 @@ These were settled during scoping. If a request seems to conflict with these, as
 
 ### Photo Retention (ADR-013)
 - **Keep all photos forever in v1.** No scheduled deletion job.
-- R2 versioning + 30-day soft-delete retention already configured (RUNBOOK).
+- **No R2 versioning — R2 doesn't offer it** (confirmed against live bucket 2026-06-05). Deletion protection = keep-forever policy + object-scoped tokens; evaluate Bucket Lock for the prod bucket at Phase 8 (RUNBOOK §Backup).
 - Cost projection: ~80 GB/year added at full operation; ~$1.20/mo additional storage per year of accumulation.
 - Trigger to revisit: R2 bill > $50/mo, or legal/privacy mandate.
 - Audit log + notification log follow same "keep forever" policy.
