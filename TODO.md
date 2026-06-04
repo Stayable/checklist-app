@@ -78,12 +78,12 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ### Fri — Photo capture POC (CRITICAL DE-RISK)
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [!] | Cloudflare R2 bucket `rise8-ops-staging` + scoped API tokens — **blocked: needs user's Cloudflare account** |
-| P0 | [!] | R2 CORS allow PUTs from dev + Vercel preview URLs — **blocked on R2 bucket** |
+| P0 | [x] | Cloudflare R2 bucket `rise8-ops-staging` + scoped API tokens — **live 2026-06-05** (object-scoped token; R2 has NO versioning — ADR-015; Bucket Lock for prod = Phase 8) |
+| P0 | [x] | R2 CORS allow PUTs from dev + Vercel preview URLs — set 2026-06-05 (localhost:3000 + ops.rentstayable.com + *.vercel.app) |
 | P0 | [x] | `/app/photo-test` page with `input[type=file] capture="environment"` (commit `180b12d`) |
 | P0 | [x] | Independent `navigator.geolocation.getCurrentPosition()` capture (`lib/image.ts`) |
 | P0 | [x] | Client-side compress: 1920px long edge, JPEG 85, ~500KB (`lib/image.ts`, shared w/ spike) |
-| P0 | [!] | `/api/photos/presign` + `/api/photos/save` — **deliberately not written yet; blocked on R2 creds.** Upload button absent from `/photo-test` until R2 lands |
+| P0 | [x] | `/api/photos/presign` shipped (test + response scopes, auth/RBAC-gated). No separate `/save` route — photos persist inside the submit action (ADR-015). `/photo-test` round trip verified in browser 2026-06-05 |
 | P0 | [x] | EXIF read via `exifr` (chosen; confirms iOS strips GPS → separate capture justified) |
 | P0 | [ ] | Test matrix: iPhone PWA, iPhone Safari, Android PWA, Android Chrome, Desktop Chrome — **needs devices + R2** |
 | P0 | [ ] | Record results in `docs/PWA_TEST_RESULTS.md` |
@@ -93,7 +93,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ### Week-1 DoD
 - [x] Log-in → "Hello, name" works end-to-end (verified 2026-05-30; sign-up path deferred to Phase 2 admin provisioning)
 - [~] PWA installs to iPhone + Android home screens — **shell code shipped + builds; on-device install still to verify**
-- [ ] Test photo round-trips through R2 with GPS captured separately — **blocked on R2; client capture/compress/GPS done**
+- [x] Test photo round-trips through R2 with GPS captured separately — **desktop Chrome verified 2026-06-05**; phone matrix still open (needs devices)
 - [ ] iOS GPS verified (or Capacitor fallback decision escalated) — pending Kate's `/ios-spike` on-device run
 
 ---
@@ -124,10 +124,10 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Checklist filling page with ordered questions (`/checklists/[id]`, assignee/manager-gated) |
 | P0 | [x] | All 11 question types render + validate |
 | P0 | [x] | Conditional logic engine (show_if) — `lib/checklist-logic.ts`, **14 unit tests** (incl. MULTI membership) |
-| P0 | [~] | Multi-photo capture per question, **compressed client-side — capture/compress/preview done; R2 UPLOAD deferred** (PHOTO answer = `{count, pendingUpload:true}`) |
+| P0 | [x] | Multi-photo capture per question, compressed client-side, **uploaded to R2 at submit via presigned PUTs** (ADR-015); GPS captured per batch, travels with the draft; answer = `{count, photos:[{key,lat,lng,accuracy,sizeBytes}]}` |
 | P0 | [x] | Signature capture (`SignaturePad`, pointer canvas → PNG data URL; R2 offload later) |
 | P0 | [x] | Draft auto-save to IndexedDB on every change (`lib/draft-store.ts` via `idb`, restored on mount) |
-| P0 | [~] | Submit pipeline: validate (client + server) → persist responses → SUBMITTED + audit. **Photo upload step deferred (R2)** |
+| P0 | [x] | Submit pipeline: validate (client + server) → upload photos → persist responses + `photos` rows w/ server-computed geofence status → SUBMITTED + audit (ADR-015) |
 | P1 | [x] | Confirmation screen + return-to-home |
 | P0 | [x] | First-login locale picker (`LocalePrompt`, HK/PA/MT → `users.locale` + cookie) |
 | P0 | [x] | Spanish translations: field-staff strings (Today, filler, statuses, errors) added to `es.json` — machine-drafted ES ships as-is; **human review moved to Phase 8 per ADR-014** |
@@ -143,7 +143,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Approve / Flag / Request Re-do actions with audit entries (`audit_log` + `notification_log`; EMAIL rows SKIPPED until Resend, IN_APP rows PENDING for Phase-6 center) |
 | P0 | [x] | Auto-Issue from PASSFAIL=Fail when `fail_flags_issue=true` — at submit, visibility-aware, deduped per (instance, question) vs open issues |
 | P0 | [x] | Issues list + detail page (status/priority filters, SLA-breach highlight, assign/status/priority controls) |
-| P0 | [~] | Resolution flow: **note required ✓**; photo requirement **R2-gated** — enforce once photo upload lands |
+| P0 | [~] | Resolution flow: **note required ✓**; photo requirement **no longer R2-blocked but needs schema design** — `photos` is response-keyed; issue photos need their own linkage (next chunk) |
 | P0 | [!] | Resend: email on submission to manager — **blocked: Resend creds** (notification_log rows already written as SKIPPED) |
 | P0 | [!] | Resend: email on flag to submitter — **blocked: Resend creds** (same) |
 | P0 | [ ] | Alpha demo recorded + shared with Rob |
@@ -179,7 +179,8 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [ ] | In-app notification center + unread badge |
 | P0 | [ ] | Geofence polygon editor (Leaflet draw + save) |
 | P0 | [ ] | All 7 (or 8) property polygons configured (final coords from Kate) |
-| P0 | [ ] | Geofence verification on photo upload (ST_Contains or in-app PIP) |
+| P0 | [x] | Geofence verification on photo upload — **shipped early w/ ADR-015** (`lib/geofence.ts` in-app PIP + 50m buffer, computed at submit) |
+| P0 | [ ] | Backfill UNVERIFIED photo geofence statuses once polygons are configured (ADR-015 — reuse `lib/geofence.ts`) |
 | P0 | [ ] | 7:00 AM daily PM digest email |
 
 ---
@@ -319,7 +320,9 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P1 | [ ] | Playwright e2e on login + submit + review |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |
 | P2 | [ ] | Sentry alerts wired per RUNBOOK §Monitoring |
-| P2 | [ ] | Weekly orphaned-photo cleanup cron |
+| P2 | [ ] | Weekly orphaned-photo cleanup cron (redo-flow resubmits orphan prior R2 objects — ADR-015; must be prefix-restricted, R2 has no undelete) |
+| P1 | [ ] | Issue resolution photos: design linkage (photos table is response-keyed) + capture UI on `/issues/[id]` close flow |
+| P0 | [ ] | Add R2 env vars (4) to Vercel **Production BEFORE merging this branch to main** — prod shares the Neon DB, so photo rows exist; `/review` SSR will throw on presign without them |
 | P3 | [ ] | M365 SSO provider (future, additive — does not break field login) |
 | P3 | [ ] | Web Push notifications (iOS 16.4+) |
 | P3 | [ ] | Capacitor wrapper (only if iOS PWA fails Week 1) |
