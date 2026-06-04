@@ -90,6 +90,10 @@
     "compressed": "Compressed",
     "location": "Location",
     "requesting": "Requesting…",
-    "noPhoto": "No photo captured yet."
+    "noPhoto": "No photo captured yet.",
+    "upload": "Upload to storage",
+    "uploading": "Uploading…",
+    "uploaded": "Uploaded — image below was fetched back from storage",
+    "loginRequired": "Log in first — upload requires a session."
   }
 }

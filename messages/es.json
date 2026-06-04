@@ -90,6 +90,10 @@
     "compressed": "Comprimida",
     "location": "Ubicación",
     "requesting": "Solicitando…",
-    "noPhoto": "Aún no se ha capturado ninguna foto."
+    "noPhoto": "Aún no se ha capturado ninguna foto.",
+    "upload": "Subir al almacenamiento",
+    "uploading": "Subiendo…",
+    "uploaded": "Subida completada — la imagen de abajo se recuperó del almacenamiento",
+    "loginRequired": "Inicia sesión primero — la subida requiere una sesión."
   }
 }

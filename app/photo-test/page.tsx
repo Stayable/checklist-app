@@ -11,10 +11,10 @@ import {
 } from "@/lib/image";
 
 // Photo capture POC (TODO.md Phase 1, Fri). Exercises the real checklist photo
-// pipeline end-to-end EXCEPT the R2 round-trip: native camera → compress →
-// separate GPS → EXIF read. The upload step (presign + save to R2) is blocked on
-// the R2 bucket + scoped tokens + CORS, so the "Upload" action is intentionally
-// absent here; wire /api/photos/presign + /api/photos/save once R2 exists.
+// pipeline end-to-end: native camera → compress → separate GPS → EXIF read →
+// R2 round-trip via /api/photos/presign (presigned PUT, then re-fetched through
+// a presigned GET to prove the object landed). Requires a logged-in session —
+// the presign API is auth-gated.
 
 function kb(bytes: number): string {
   return `${(bytes / 1024).toFixed(0)} KB`;
@@ -29,6 +29,9 @@ export default function PhotoTestPage() {
   const [position, setPosition] = useState<Position | null>(null);
   const [gpsState, setGpsState] = useState<string>("—");
   const [exif, setExif] = useState<string>("—");
+  const [uploading, setUploading] = useState(false);
+  const [uploadState, setUploadState] = useState<string | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
 
   const onPhoto = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -52,6 +55,41 @@ export default function PhotoTestPage() {
     const result = await compressImage(original);
     setCompressed({ ...result, url: URL.createObjectURL(result.blob) });
   }, [original]);
+
+  const onUpload = useCallback(async () => {
+    if (!compressed) return;
+    setUploading(true);
+    setUploadState(null);
+    setUploadedUrl(null);
+    try {
+      const presignRes = await fetch("/api/photos/presign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ scope: "test" }),
+      });
+      if (presignRes.status === 401) throw new Error(t("loginRequired"));
+      if (!presignRes.ok) throw new Error(`presign ${presignRes.status}`);
+      const { uploadUrl, downloadUrl } = (await presignRes.json()) as {
+        uploadUrl: string;
+        downloadUrl: string;
+      };
+
+      const putRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "content-type": "image/jpeg" },
+        body: compressed.blob,
+      });
+      if (!putRes.ok) throw new Error(`PUT ${putRes.status}`);
+
+      // Re-fetch through the presigned GET to prove the object round-trips.
+      setUploadedUrl(downloadUrl);
+      setUploadState(`✅ ${t("uploaded")} (${kb(compressed.compressedBytes)})`);
+    } catch (err) {
+      setUploadState(`❌ ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setUploading(false);
+    }
+  }, [compressed, t]);
 
   const onLocate = useCallback(async () => {
     setGpsState(t("requesting"));
@@ -111,6 +149,23 @@ export default function PhotoTestPage() {
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={compressed.url} alt="compressed" className="mt-2 max-h-56 rounded object-contain" />
+        </div>
+      )}
+
+      <button className={btn} onClick={onUpload} disabled={!compressed || uploading}>
+        {uploading ? t("uploading") : t("upload")}
+      </button>
+      {uploadState && (
+        <div className={card}>
+          <p className="font-mono text-sm text-slate-600 break-all">{uploadState}</p>
+          {uploadedUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={uploadedUrl}
+              alt="fetched back from R2"
+              className="mt-2 max-h-56 rounded object-contain"
+            />
+          )}
         </div>
       )}
 

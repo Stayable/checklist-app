@@ -20,6 +20,8 @@
     "seed": "dotenv -e .env.local -- tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1060.0",
+    "@aws-sdk/s3-request-presigner": "^3.1060.0",
     "@base-ui/react": "^1.4.1",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
