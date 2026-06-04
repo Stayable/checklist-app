@@ -1,18 +1,44 @@
 "use server";
 
-import { InstanceStatus, Prisma, QuestionType } from "@prisma/client";
+import { GeofenceStatus, InstanceStatus, Prisma, QuestionType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser, isManagerOrAbove } from "@/lib/rbac";
-import { isVisible, validateAll, type AnswerMap, type QuestionLike } from "@/lib/checklist-logic";
+import {
+  isVisible,
+  validateAll,
+  type AnswerMap,
+  type AnswerValue,
+  type PhotoRef,
+  type QuestionLike,
+} from "@/lib/checklist-logic";
+import { geofenceStatusFor } from "@/lib/geofence";
 import { createIssue, slaHoursByPriority } from "@/lib/issues.server";
 
-// Submit pipeline (Phase 3 + Phase 4 auto-Issue): validate → persist responses
-// → mark SUBMITTED → open an Issue for each visible PASSFAIL=FAIL answer whose
-// question has fail_flags_issue (deduped on redo → resubmit). Photo BYTES are
-// not uploaded here — the R2 path is deferred, so PHOTO answers carry
-// { count, pendingUpload: true } and no Photo rows are written yet.
+// Submit pipeline (Phase 3 + Phase 4 auto-Issue + ADR-015 photos): validate →
+// persist responses + Photo rows → mark SUBMITTED → open an Issue for each
+// visible PASSFAIL=FAIL answer whose question has fail_flags_issue (deduped on
+// redo → resubmit). Photo BYTES were already PUT to R2 by the client via
+// presigned URLs; the answer carries {count, photos: PhotoRef[]} and this
+// action validates each key's prefix and writes photos rows with a
+// server-computed geofence status. Legacy {count, pendingUpload} answers (old
+// on-device drafts) are still accepted and simply produce no Photo rows.
 
 export type SubmitResult = { ok: true } | { ok: false; error: string };
+
+// R2 keys are server-minted (lib/r2.ts responsePhotoKey) — anything else is a
+// forged reference. UUID filename under the instance+question prefix only.
+function isValidPhotoKey(key: string, instanceId: string, questionId: string): boolean {
+  return new RegExp(
+    `^instances/${instanceId}/${questionId}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.jpg$`,
+  ).test(key);
+}
+
+/** Extract uploaded PhotoRefs from a PHOTO answer; [] for legacy/empty shapes. */
+function photoRefsOf(value: AnswerValue): PhotoRef[] {
+  if (typeof value !== "object" || value === null || !("photos" in value)) return [];
+  if (!Array.isArray(value.photos)) return [];
+  return value.photos;
+}
 
 export async function submitChecklist(
   instanceId: string,
@@ -24,7 +50,7 @@ export async function submitChecklist(
     where: { id: instanceId },
     include: {
       template: { include: { questions: { orderBy: { orderIndex: "asc" } } } },
-      property: { select: { shortCode: true } },
+      property: { select: { shortCode: true, geofence: true } },
       room: { select: { roomNumber: true } },
     },
   });
@@ -61,11 +87,55 @@ export async function submitChecklist(
   }
 
   const answerableIds = new Set(questions.map((q) => q.id));
+  const questionById = new Map(questions.map((q) => [q.id, q]));
   const now = new Date();
+
+  // Photo rows from uploaded PhotoRefs on visible PHOTO questions (ADR-015).
+  // Key prefixes are strictly validated so a client can only reference objects
+  // presigned for THIS instance+question. Geofence status is computed here, not
+  // trusted from the client. (Object existence in R2 is not re-checked — a
+  // forged-but-well-formed key only breaks the submitter's own photo.)
+  type PhotoRow = {
+    questionId: string;
+    r2Key: string;
+    fileSizeBytes: number;
+    gpsLat: number | null;
+    gpsLng: number | null;
+    geofenceStatus: GeofenceStatus;
+  };
+  const photoRows: PhotoRow[] = [];
+  for (const q of instance.template.questions) {
+    if (q.type !== QuestionType.PHOTO) continue;
+    const ql = questionById.get(q.id);
+    if (!ql || !isVisible(ql, answers)) continue;
+    for (const ref of photoRefsOf(answers[q.id])) {
+      if (
+        typeof ref !== "object" ||
+        ref === null ||
+        typeof ref.key !== "string" ||
+        !isValidPhotoKey(ref.key, instanceId, q.id) ||
+        typeof ref.sizeBytes !== "number"
+      ) {
+        return { ok: false, error: "Invalid photo reference. Re-add the photos and try again." };
+      }
+      const lat = typeof ref.lat === "number" ? ref.lat : null;
+      const lng = typeof ref.lng === "number" ? ref.lng : null;
+      photoRows.push({
+        questionId: q.id,
+        r2Key: ref.key,
+        fileSizeBytes: Math.round(ref.sizeBytes),
+        gpsLat: lat,
+        gpsLng: lng,
+        geofenceStatus: geofenceStatusFor(
+          lat !== null && lng !== null ? { lat, lng } : null,
+          instance.property.geofence,
+        ),
+      });
+    }
+  }
 
   // Auto-Issue (Phase 4): visible PASSFAIL=FAIL answers on fail_flags_issue
   // questions open an Issue. SLA hours read outside the transaction.
-  const questionById = new Map(questions.map((q) => [q.id, q]));
   const failedFlagged = instance.template.questions.filter((q) => {
     if (q.type !== QuestionType.PASSFAIL || !q.failFlagsIssue) return false;
     if (answers[q.id] !== "FAIL") return false;
@@ -75,7 +145,9 @@ export async function submitChecklist(
   const slaHours = failedFlagged.length > 0 ? await slaHoursByPriority() : {};
 
   await db.$transaction(async (tx) => {
-    // Replace any prior draft responses, then write the submitted set.
+    // Replace any prior draft responses, then write the submitted set. The
+    // delete cascades to photos rows from a prior submit (redo flow); the old
+    // R2 objects stay put (keep-forever, ADR-013 — orphan cleanup is a P2 cron).
     await tx.response.deleteMany({ where: { instanceId } });
     await tx.response.createMany({
       data: Object.entries(answers)
@@ -86,6 +158,26 @@ export async function submitChecklist(
           answer: (value ?? null) as Prisma.InputJsonValue,
         })),
     });
+
+    // Photo rows hang off the just-created responses (ADR-015).
+    if (photoRows.length > 0) {
+      const photoQids = [...new Set(photoRows.map((r) => r.questionId))];
+      const created = await tx.response.findMany({
+        where: { instanceId, questionId: { in: photoQids } },
+        select: { id: true, questionId: true },
+      });
+      const responseIdByQuestion = new Map(created.map((r) => [r.questionId, r.id]));
+      await tx.photo.createMany({
+        data: photoRows.map((r) => ({
+          responseId: responseIdByQuestion.get(r.questionId)!,
+          r2Key: r.r2Key,
+          fileSizeBytes: r.fileSizeBytes,
+          gpsLat: r.gpsLat,
+          gpsLng: r.gpsLng,
+          geofenceStatus: r.geofenceStatus,
+        })),
+      });
+    }
     await tx.checklistInstance.update({
       where: { id: instanceId },
       data: {

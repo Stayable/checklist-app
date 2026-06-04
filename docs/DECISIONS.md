@@ -656,6 +656,30 @@ Three open questions (PRD §12 / CLAUDE.md open-questions list) were resolved by
 
 ---
 
+## ADR-015: Photo pipeline — upload-at-submit, UNVERIFIED geofence status, no R2 versioning
+
+**Date:** 2026-06-05
+**Status:** Accepted
+
+### Context
+R2 went live (bucket `rise8-ops-staging`, object-scoped token, CORS). Wiring the real photo path surfaced three calls:
+1. *When* do photo bytes leave the device — at capture or at submit?
+2. The `GeofenceStatus` enum (VERIFIED / OFF_PROPERTY / NO_GPS) has no honest value for "GPS captured, but the property has no polygon configured yet" — and **no property has a polygon until Phase 6** (Kate owes coords).
+3. The RUNBOOK/ARCH claim "R2 versioned bucket, 30-day soft-delete" turned out to be wrong — R2 offers no object versioning at all (confirmed against the live bucket).
+
+### Decision
+1. **Upload at submit, not at capture.** Photos stay as compressed blobs in the IndexedDB draft until the user hits Submit; the client then mints presigned PUTs (`/api/photos/presign`, `response` scope) and uploads directly to R2, then passes `{key, gps, size}` per photo in the answer payload. Server validates key prefixes (`instances/{instanceId}/{questionId}/`) and writes `photos` rows inside the submit transaction. Rationale: drafts/offline keep working unchanged; retakes never orphan R2 objects; one failure path (submit) instead of two.
+2. **GPS is captured per photo batch at capture time** (position travels with the draft) — submit-time GPS would record where the user *submitted*, not where they *photographed*.
+3. **`GeofenceStatus.UNVERIFIED` added** (migration `20260604171417`): GPS present, polygon absent/invalid. Phase 6 backfills UNVERIFIED → VERIFIED/OFF_PROPERTY once polygons are drawn. Verification logic is pure (`lib/geofence.ts`: ray-cast + 50m edge buffer) so the backfill job reuses it.
+4. **No R2 versioning** — deletion protection = keep-forever policy (ADR-013) + object-scoped tokens; evaluate R2 Bucket Lock (WORM) for the prod bucket at Phase 8.
+
+### Consequences
+- Submit round-trips grow by one presign POST + one PUT per photo; acceptable on property fiber, and the draft survives any mid-upload failure.
+- PHOTO answer JSON shape changes from `{count, pendingUpload}` to `{count, photos: [{key, lat, lng, accuracy, sizeBytes}]}` — review surfaces must tolerate both (seeded/legacy rows keep the old shape).
+- Every photo row lands UNVERIFIED until Phase 6 polygons exist — dashboards must not read UNVERIFIED as an anomaly, only OFF_PROPERTY.
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```

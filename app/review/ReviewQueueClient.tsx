@@ -19,7 +19,7 @@ export type QueueRow = {
   date: string;
   unit: string | null;
   minutes: number | null;
-  photoSlots: { prompt: string; count: number }[];
+  photoSlots: { prompt: string; count: number; thumbUrl: string | null }[];
 };
 
 type DialogState =
@@ -102,19 +102,30 @@ export function ReviewQueueClient({ rows, filter }: { rows: QueueRow[]; filter: 
                   {row.photoSlots.length === 0 ? (
                     <span className="text-xs text-slate-400">—</span>
                   ) : (
-                    row.photoSlots.map((slot, i) => (
-                      <span
-                        key={i}
-                        title={`${slot.prompt} — ${slot.count} captured (upload pending R2)`}
-                        className={`flex h-9 w-9 items-center justify-center rounded border text-[10px] font-semibold ${
-                          slot.count > 0
-                            ? "border-slate-300 bg-slate-100 text-slate-600"
-                            : "border-dashed border-slate-300 text-slate-300"
-                        }`}
-                      >
-                        {slot.count > 0 ? `📷${slot.count}` : "—"}
-                      </span>
-                    ))
+                    row.photoSlots.map((slot, i) =>
+                      slot.thumbUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- presigned R2 URL, not an optimizable asset
+                        <img
+                          key={i}
+                          src={slot.thumbUrl}
+                          alt={slot.prompt}
+                          title={`${slot.prompt} — ${slot.count} photo${slot.count === 1 ? "" : "s"}`}
+                          className="h-9 w-9 rounded border border-slate-200 object-cover"
+                        />
+                      ) : (
+                        <span
+                          key={i}
+                          title={`${slot.prompt} — ${slot.count} captured${slot.count > 0 ? " (no upload — legacy)" : ""}`}
+                          className={`flex h-9 w-9 items-center justify-center rounded border text-[10px] font-semibold ${
+                            slot.count > 0
+                              ? "border-slate-300 bg-slate-100 text-slate-600"
+                              : "border-dashed border-slate-300 text-slate-300"
+                          }`}
+                        >
+                          {slot.count > 0 ? `📷${slot.count}` : "—"}
+                        </span>
+                      ),
+                    )
                   )}
                 </div>
               </td>

@@ -9,16 +9,22 @@ import {
   validateAll,
   type AnswerMap,
   type AnswerValue,
+  type PhotoRef,
   type QuestionLike,
 } from "@/lib/checklist-logic";
-import { compressImage } from "@/lib/image";
+import { compressImage, getCurrentPosition, type Position } from "@/lib/image";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-store";
 import { SignaturePad } from "@/components/checklist/SignaturePad";
 import { submitChecklist } from "./actions";
 
 export type FillQuestion = QuestionLike & { prompt: string };
 
-type PhotoState = Record<string, { blobs: Blob[]; urls: string[] }>;
+// One captured photo: compressed bytes, preview URL, and the GPS fix taken with
+// its batch (ADR-015 — GPS travels with capture, not submit).
+type PhotoItem = { blob: Blob; url: string; position: Position | null };
+type PhotoState = Record<string, PhotoItem[]>;
+
+const GPS_TIMEOUT_MS = 10_000;
 
 export function FillClient({
   instanceId,
@@ -52,7 +58,12 @@ export function FillClient({
         setAnswers((prev) => ({ ...prev, ...draft.answers }));
         const restored: PhotoState = {};
         for (const [qid, blobs] of Object.entries(draft.photos)) {
-          restored[qid] = { blobs, urls: blobs.map((b) => URL.createObjectURL(b)) };
+          const positions = draft.photoPositions?.[qid] ?? [];
+          restored[qid] = blobs.map((b, i) => ({
+            blob: b,
+            url: URL.createObjectURL(b),
+            position: positions[i] ?? null,
+          }));
         }
         setPhotos(restored);
       }
@@ -73,8 +84,12 @@ export function FillClient({
       }
     }
     const photoBlobs: Record<string, Blob[]> = {};
-    for (const [qid, p] of Object.entries(photos)) photoBlobs[qid] = p.blobs;
-    void saveDraft({ instanceId, answers, photos: photoBlobs, signatures });
+    const photoPositions: Record<string, (Position | null)[]> = {};
+    for (const [qid, items] of Object.entries(photos)) {
+      photoBlobs[qid] = items.map((it) => it.blob);
+      photoPositions[qid] = items.map((it) => it.position);
+    }
+    void saveDraft({ instanceId, answers, photos: photoBlobs, photoPositions, signatures });
   }, [answers, photos, questions, instanceId, submitted]);
 
   const setAnswer = useCallback((qid: string, value: AnswerValue) => {
@@ -84,17 +99,31 @@ export function FillClient({
   const addPhotos = useCallback(
     async (q: FillQuestion, files: FileList) => {
       const max = q.photoMax ?? 10;
-      const current = photos[q.id]?.blobs ?? [];
+      const current = photos[q.id] ?? [];
       const room = Math.max(0, max - current.length);
       const picked = Array.from(files).slice(0, room);
       const compressed = await Promise.all(picked.map((f) => compressImage(f)));
-      setPhotos((prev) => {
-        const existing = prev[q.id] ?? { blobs: [], urls: [] };
-        const blobs = [...existing.blobs, ...compressed.map((c) => c.blob)];
-        const urls = [...existing.urls, ...compressed.map((c) => URL.createObjectURL(c.blob))];
-        return { ...prev, [q.id]: { blobs, urls } };
-      });
-      setAnswer(q.id, { count: current.length + picked.length, pendingUpload: true });
+      const items: PhotoItem[] = compressed.map((c) => ({
+        blob: c.blob,
+        url: URL.createObjectURL(c.blob),
+        position: null,
+      }));
+      setPhotos((prev) => ({ ...prev, [q.id]: [...(prev[q.id] ?? []), ...items] }));
+      setAnswer(q.id, { count: current.length + items.length, pendingUpload: true });
+
+      // GPS is captured with the batch but never blocks the preview — attach
+      // the fix to these items when (if) it resolves. No fix → position stays
+      // null → photo lands NO_GPS, which is informational, not enforcement.
+      getCurrentPosition(GPS_TIMEOUT_MS)
+        .then((pos) => {
+          setPhotos((prev) => ({
+            ...prev,
+            [q.id]: (prev[q.id] ?? []).map((it) =>
+              items.includes(it) ? { ...it, position: pos } : it,
+            ),
+          }));
+        })
+        .catch(() => {});
     },
     [photos, setAnswer],
   );
@@ -102,16 +131,61 @@ export function FillClient({
   const removePhoto = useCallback(
     (q: FillQuestion, index: number) => {
       setPhotos((prev) => {
-        const existing = prev[q.id];
-        if (!existing) return prev;
-        const blobs = existing.blobs.filter((_, i) => i !== index);
-        const urls = existing.urls.filter((_, i) => i !== index);
-        setAnswer(q.id, { count: blobs.length, pendingUpload: true });
-        return { ...prev, [q.id]: { blobs, urls } };
+        const items = (prev[q.id] ?? []).filter((_, i) => i !== index);
+        setAnswer(q.id, { count: items.length, pendingUpload: true });
+        return { ...prev, [q.id]: items };
       });
     },
     [setAnswer],
   );
+
+  // Upload photo blobs for visible PHOTO questions via presigned PUTs and
+  // return answers with {count, photos: PhotoRef[]} substituted in (ADR-015).
+  // Throws on any failure — the draft is untouched, so retry is safe.
+  async function uploadPhotoAnswers(visibleQuestions: FillQuestion[]): Promise<AnswerMap> {
+    const finalAnswers: AnswerMap = { ...answers };
+    for (const q of visibleQuestions) {
+      if (q.type !== QuestionType.PHOTO) continue;
+      const items = photos[q.id] ?? [];
+      if (items.length === 0) continue;
+
+      const presignRes = await fetch("/api/photos/presign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          scope: "response",
+          instanceId,
+          questionId: q.id,
+          count: items.length,
+        }),
+      });
+      if (!presignRes.ok) throw new Error(`presign ${presignRes.status}`);
+      const { uploads } = (await presignRes.json()) as {
+        uploads: { key: string; uploadUrl: string }[];
+      };
+
+      await Promise.all(
+        items.map(async (it, i) => {
+          const put = await fetch(uploads[i].uploadUrl, {
+            method: "PUT",
+            headers: { "content-type": "image/jpeg" },
+            body: it.blob,
+          });
+          if (!put.ok) throw new Error(`PUT ${put.status}`);
+        }),
+      );
+
+      const refs: PhotoRef[] = items.map((it, i) => ({
+        key: uploads[i].key,
+        lat: it.position?.latitude ?? null,
+        lng: it.position?.longitude ?? null,
+        accuracy: it.position?.accuracy ?? null,
+        sizeBytes: it.blob.size,
+      }));
+      finalAnswers[q.id] = { count: refs.length, photos: refs };
+    }
+    return finalAnswers;
+  }
 
   function onSubmit() {
     const visibleQuestions = questions.filter((q) => isVisible(q, answers));
@@ -123,7 +197,14 @@ export function FillClient({
     }
     setSubmitError(null);
     startTransition(async () => {
-      const res = await submitChecklist(instanceId, answers);
+      let finalAnswers: AnswerMap;
+      try {
+        finalAnswers = await uploadPhotoAnswers(visibleQuestions);
+      } catch {
+        setSubmitError(t("photoUploadFailed"));
+        return;
+      }
+      const res = await submitChecklist(instanceId, finalAnswers);
       if (res.ok) {
         await clearDraft(instanceId);
         setDone(true);
@@ -159,7 +240,7 @@ export function FillClient({
           q={q}
           value={answers[q.id]}
           error={errors[q.id]}
-          photos={photos[q.id]?.urls ?? []}
+          photos={(photos[q.id] ?? []).map((it) => it.url)}
           onChange={(v) => setAnswer(q.id, v)}
           onAddPhotos={(files) => void addPhotos(q, files)}
           onRemovePhoto={(i) => removePhoto(q, i)}

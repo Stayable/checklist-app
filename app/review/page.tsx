@@ -5,6 +5,7 @@ import { accessiblePropertyIds, requireManager } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { formatDateInET } from "@/lib/datetime";
 import { timeToCompleteMinutes } from "@/lib/review";
+import { presignDownload } from "@/lib/r2";
 import { ReviewQueueClient, type QueueRow } from "./ReviewQueueClient";
 
 // Manager review queue (ADR-011): table view, one row per submission.
@@ -57,29 +58,46 @@ export default async function ReviewQueuePage({
       property: { select: { shortCode: true } },
       room: { select: { roomNumber: true } },
       assignedUser: { select: { name: true } },
-      responses: { select: { questionId: true, answer: true } },
+      responses: {
+        select: {
+          questionId: true,
+          answer: true,
+          // First stored photo per response drives the row thumbnail (ADR-011/015).
+          photos: { orderBy: { createdAt: "asc" }, take: 1, select: { r2Key: true } },
+        },
+      },
     },
   });
 
-  const rows: QueueRow[] = instances.map((i) => ({
-    id: i.id,
-    status: i.status,
-    template: i.template.name,
-    shortCode: i.property.shortCode,
-    user: i.assignedUser?.name ?? "—",
-    date: i.submittedAt
-      ? formatDateInET(i.submittedAt)
-      : formatDateInET(i.scheduledFor),
-    unit: i.room?.roomNumber ?? null,
-    minutes: timeToCompleteMinutes(i.openedAt, i.submittedAt),
-    // One thumbnail slot per required PHOTO question (ADR-011). Photo bytes are
-    // R2-gated, so render captured counts as pending-upload placeholders.
-    photoSlots: i.template.questions.map((q) => {
-      const resp = i.responses.find((r) => r.questionId === q.id);
-      const answer = resp?.answer as { count?: number } | null;
-      return { prompt: q.prompt, count: answer?.count ?? 0 };
-    }),
-  }));
+  // One thumbnail slot per required PHOTO question (ADR-011): real presigned
+  // thumbnail when a Photo row exists (ADR-015); count-only badge for legacy
+  // pre-R2 submissions that recorded counts without bytes.
+  const rows: QueueRow[] = await Promise.all(
+    instances.map(async (i) => ({
+      id: i.id,
+      status: i.status,
+      template: i.template.name,
+      shortCode: i.property.shortCode,
+      user: i.assignedUser?.name ?? "—",
+      date: i.submittedAt
+        ? formatDateInET(i.submittedAt)
+        : formatDateInET(i.scheduledFor),
+      unit: i.room?.roomNumber ?? null,
+      minutes: timeToCompleteMinutes(i.openedAt, i.submittedAt),
+      photoSlots: await Promise.all(
+        i.template.questions.map(async (q) => {
+          const resp = i.responses.find((r) => r.questionId === q.id);
+          const answer = resp?.answer as { count?: number } | null;
+          const firstKey = resp?.photos[0]?.r2Key;
+          return {
+            prompt: q.prompt,
+            count: answer?.count ?? 0,
+            thumbUrl: firstKey ? await presignDownload(firstKey) : null,
+          };
+        }),
+      ),
+    })),
+  );
 
   const counts = await db.checklistInstance.groupBy({
     by: ["status"],

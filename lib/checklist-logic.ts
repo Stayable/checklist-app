@@ -12,16 +12,29 @@ import { QuestionType } from "@prisma/client";
 //   NUMBER          number
 //   SHORT_TEXT      string
 //   LONG_TEXT       string
-//   PHOTO           { count: number; pendingUpload: boolean }  (R2 upload deferred)
+//   PHOTO           { count, photos: PhotoRef[] } once uploaded (ADR-015);
+//                   { count, pendingUpload: true } while filling locally and in
+//                   pre-ADR-015 seeded/legacy rows
 //   SIGNATURE       string (data URL)  (R2 offload deferred)
 //   DATE            string (yyyy-MM-dd)
 //   SECTION_DIVIDER never answered (presentational)
+
+/** One uploaded photo inside a PHOTO answer (ADR-015). GPS nullable — iOS may deny. */
+export type PhotoRef = {
+  key: string; // R2 object key, instances/{instanceId}/{questionId}/{uuid}.jpg
+  lat: number | null;
+  lng: number | null;
+  accuracy: number | null;
+  sizeBytes: number;
+};
+
 export type AnswerValue =
   | string
   | string[]
   | boolean
   | number
   | { count: number; pendingUpload: boolean }
+  | { count: number; photos: PhotoRef[] }
   | null
   | undefined;
 

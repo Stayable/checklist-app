@@ -1,16 +1,20 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { AnswerMap } from "@/lib/checklist-logic";
+import type { Position } from "@/lib/image";
 
 // Offline draft storage for in-progress checklists (ARCHITECTURE §5.2). Answers
 // auto-save to IndexedDB on every change so a dropped connection or closed tab
-// never loses work. Photo blobs are held here too until the R2 upload path
-// exists (deferred), keyed by question id. Browser-only.
+// never loses work. Photo blobs (plus the GPS captured with each batch, ADR-015)
+// are held here until upload at submit, keyed by question id. Browser-only.
 
 export type ChecklistDraft = {
   instanceId: string;
   answers: AnswerMap;
-  // Compressed photo blobs awaiting upload, per photo question.
+  // Compressed photo blobs awaiting upload-at-submit, per photo question.
   photos: Record<string, Blob[]>;
+  // GPS captured at photo time, parallel to `photos` arrays (null = no fix).
+  // Optional because pre-ADR-015 drafts lack it.
+  photoPositions?: Record<string, (Position | null)[]>;
   // Signature data URLs, per signature question.
   signatures: Record<string, string>;
   updatedAt: number;

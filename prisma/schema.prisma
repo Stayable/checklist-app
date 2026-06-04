@@ -81,6 +81,9 @@ enum GeofenceStatus {
   VERIFIED
   OFF_PROPERTY
   NO_GPS
+  // GPS captured but the property has no polygon configured yet — re-evaluate
+  // in Phase 6 once polygons are drawn (lib/geofence.ts).
+  UNVERIFIED
 }
 
 enum IssueStatus {
