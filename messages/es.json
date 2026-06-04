@@ -24,6 +24,8 @@
     "title": "Inicia sesión en Stayable Operations",
     "subtitle": "Ingresa tu correo de trabajo y contraseña.",
     "signingIn": "Iniciando sesión…",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
     "error": "Correo o contraseña inválidos, o tu cuenta está bloqueada temporalmente tras demasiados intentos. Inténtalo más tarde o contacta a tu administrador."
   },
   "Home": {

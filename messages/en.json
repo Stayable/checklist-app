@@ -24,6 +24,8 @@
     "title": "Sign in to Stayable Operations",
     "subtitle": "Enter your work email and password.",
     "signingIn": "Signing in…",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "error": "Invalid email or password, or your account is temporarily locked after too many attempts. Try again later or contact your administrator."
   },
   "Home": {
