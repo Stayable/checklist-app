@@ -82,7 +82,7 @@ export function UsersClient({
       <div>
         <button
           onClick={() => setShowCreate((s) => !s)}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy/90"
         >
           {showCreate ? "Cancel" : "+ Add user"}
         </button>
@@ -202,7 +202,7 @@ function CreateUserForm({
       <button
         type="submit"
         disabled={pending}
-        className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+        className="mt-4 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
       >
         Create user
       </button>
@@ -273,7 +273,7 @@ function UserRow({
           <td colSpan={6} className="bg-slate-50 px-4 py-3">
             <PropertyCheckboxes properties={properties} selected={draft} onChange={setDraft} />
             <button
-              className="mt-2 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+              className="mt-2 rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
               disabled={pending}
               onClick={() => onSaveProps(draft)}
             >
@@ -304,7 +304,7 @@ function PropertyCheckboxes({
         <label
           key={p.id}
           className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${
-            selected.includes(p.id) ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-600"
+            selected.includes(p.id) ? "border-slate-900 bg-navy text-white" : "border-slate-300 text-slate-600"
           }`}
         >
           <input type="checkbox" className="hidden" checked={selected.includes(p.id)} onChange={() => toggle(p.id)} />

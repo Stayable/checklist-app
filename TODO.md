@@ -311,13 +311,28 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 
 ---
 
+## Deployment & Ops (2026-05-30 — app is LIVE in prod)
+
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [x] | **Deployed Weeks 1–3 to production** — live at https://ops.rentstayable.com (merged to `main`, commit `1555776`; custom domain + DNS attached) |
+| P0 | [x] | **Fixed prod login outage** — Vercel Prod `DATABASE_URL`/`DIRECT_URL` were empty strings → Prisma threw → NextAuth `Configuration`. Set to Neon conn via `vercel env add --force`, redeployed; login verified |
+| P0 | [x] | **Applied Stayable brand foundation** (rentstayable.com) — navy/blue/sky/gold tokens; primary surfaces recolored. Live + verified |
+| P0 | [x] | **Fixed fonts never rendering** (2026-06-02, commits `e12ce23`+`605105b`) — root cause: next/font CSS var was on `<body>` but `font-family` is applied on `<html>` (`html{@apply font-sans}`), so the var was undefined at `<html>` → whole app fell back to browser **serif**. Fix: moved font var classes to `<html>`, `font-sans` to `<body>`. Also swapped Roboto+Quicksand → **Nunito** (free rounded-geometric Urbane Rounded match, body+headings). Verified via local prod server + live HTML/CSS |
+| P1 | [x] | **Vercel git auto-deploy** — worked cleanly this session (both `git push origin main` → auto prod deploy, no CLI needed). Earlier flakiness not reproduced; watch but likely OK |
+| P1 | [ ] | **Rotate temp admin password** (`StayableCheck`) — live on the public domain |
+| P1 | [ ] | **Authorize Adobe Urbane Rounded** for ops.rentstayable.com (kit `dsq0zcq`) → swap Nunito → real brand font (1-line change). Optional — Nunito is a close free stand-in |
+| P2 | [ ] | Decide prod/dev DB split — prod currently shares the dev Neon DB w/ seeded test data; needs a clean prod DB before real go-live |
+| P1 | [ ] | **Decide branch workflow** — de-facto this session: commit straight to `main`, auto-deploys to prod. Feature branch `claude/rise8-operations-platform-rv9B6` is now **behind `main`** (missing branding/font commits) — branch fresh off `main` next session or fast-forward it |
+
 ## Cross-Cutting Backlog
 
 | Pri | Status | Task |
 |---|---|---|
 | P1 | [x] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — 9 cases: 5-strike lock, 15-min window reset + boundary, 30-min unlock, success clear. Shipped 2026-05-30 commit `180b12d` |
+| P1 | [x] | **Vitest for `lib/checklist-logic.ts`** — 14 cases: conditional `show_if` (incl. MULTI), per-type validation, validateAll. Commit `a6ea416` |
 | P2 | [ ] | Add `AUTH_SECRET` to Vercel **Preview** if branch-preview login testing is wanted (Production-only per Kate's default-to-Prod rule) |
-| P3 | [ ] | Decide fate of stray `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` (commit as deliverables vs `.gitignore`) |
+| P3 | [ ] | Decide fate of stray untracked files: `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` + `Screenshot 2026-06-02 042054.png` (commit as deliverables vs `.gitignore` vs delete) |
 | P1 | [ ] | CI: GitHub Actions — lint + typecheck + unit tests on PR |
 | P1 | [ ] | Playwright e2e on login + submit + review |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |

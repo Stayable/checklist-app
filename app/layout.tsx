@@ -1,14 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Nunito, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Brand font — Nunito, a free rounded-geometric sans that matches the
+// rentstayable.com brand look (the brand's Adobe "Urbane Rounded" is
+// domain-locked and can't load on ops.rentstayable.com). Used for both body
+// and headings; weight carries the hierarchy. Geist Mono kept for code.
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -49,10 +54,8 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang={locale} className={`${nunito.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
           <AppNav />

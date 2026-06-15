@@ -48,7 +48,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => switchLocale(l)}
               className={`rounded px-2 py-1 text-xs font-semibold uppercase ${
-                l === locale ? "bg-slate-900 text-white" : "text-slate-400 hover:text-slate-700"
+                l === locale ? "bg-navy text-white" : "text-slate-400 hover:text-slate-700"
               }`}
             >
               {l}
@@ -103,7 +103,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded-lg bg-slate-900 px-4 py-3 text-base font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+            className="mt-2 rounded-lg bg-navy px-4 py-3 text-base font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
           >
             {loading ? t("signingIn") : t("signIn")}
           </button>
