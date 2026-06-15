@@ -45,10 +45,10 @@ export function BottomNav({ role }: { role: Role }) {
               key={tab.href}
               href={tab.href}
               className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-semibold ${
-                active ? "text-slate-900" : "text-slate-400"
+                active ? "text-navy" : "text-slate-400"
               }`}
             >
-              <span className={active ? "text-slate-900" : "text-slate-400"}>{tab.icon}</span>
+              <span className={active ? "text-navy" : "text-slate-400"}>{tab.icon}</span>
               {tab.label}
             </Link>
           );

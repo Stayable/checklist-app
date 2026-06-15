@@ -71,8 +71,8 @@ export default async function Home() {
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-slate-50 pb-24">
-      {/* Navy header band (Stayable skin). */}
-      <header className="bg-slate-900 px-5 pb-10 pt-6 text-white">
+      {/* Navy header band (Stayable brand token). */}
+      <header className="bg-navy px-5 pb-10 pt-6 text-white">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-bold">{t("greeting", { name: user.name })}</h1>
