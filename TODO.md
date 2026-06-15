@@ -143,7 +143,7 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 | P0 | [x] | Approve / Flag / Request Re-do actions with audit entries (`audit_log` + `notification_log`; EMAIL rows SKIPPED until Resend, IN_APP rows PENDING for Phase-6 center) |
 | P0 | [x] | Auto-Issue from PASSFAIL=Fail when `fail_flags_issue=true` — at submit, visibility-aware, deduped per (instance, question) vs open issues |
 | P0 | [x] | Issues list + detail page (status/priority filters, SLA-breach highlight, assign/status/priority controls) |
-| P0 | [~] | Resolution flow: **note required ✓**; photo requirement **no longer R2-blocked but needs schema design** — `photos` is response-keyed; issue photos need their own linkage (next chunk) |
+| P0 | [x] | Resolution flow: note required ✓; **resolution photos shipped** (ADR-016) — `Photo` dual-owner (nullable `issueId`), presign `issue` scope (cap 5), capture UI on close + geofence-badged display on closed issues. Migration `20260615135350` |
 | P0 | [!] | Resend: email on submission to manager — **blocked: Resend creds** (notification_log rows already written as SKIPPED) |
 | P0 | [!] | Resend: email on flag to submitter — **blocked: Resend creds** (same) |
 | P0 | [ ] | Alpha demo recorded + shared with Rob |
@@ -188,6 +188,8 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 ## Phase 7 — Week 7: UI Redesign + PDF + Offline + Hardening
 
 ### UI Redesign Pass — Claude Design (runs first, before polish-adjacent work)
+**Direction (ADR-017):** mirror Connecteam's layout / IA (field-staff familiarity) in **Stayable branding** — not a Connecteam visual clone. Structural/IA work can start before Kate's branding kit; full polish waits on the kit.
+**Structural pass started 2026-06-15:** Today/home rebuilt as a Connecteam-style feed (navy header band, progress summary, big touch-target task cards) + role-aware bottom tab bar for managers (`components/BottomNav.tsx` + `AppNav.tsx`: Today/Review/Issues). Deep visual polish deferred to the Claude Design pass (per Kyle). Still to restructure: checklist runtime, review queue/detail, issues, admin.
 | Pri | Status | Task |
 |---|---|---|
 | P0 | [ ] | Stayable branding kit sourced from Kate — logo, palette, wordmark ("Stayable Operations") |
@@ -321,7 +323,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |
 | P2 | [ ] | Sentry alerts wired per RUNBOOK §Monitoring |
 | P2 | [ ] | Weekly orphaned-photo cleanup cron (redo-flow resubmits orphan prior R2 objects — ADR-015; must be prefix-restricted, R2 has no undelete) |
-| P1 | [ ] | Issue resolution photos: design linkage (photos table is response-keyed) + capture UI on `/issues/[id]` close flow |
+| P1 | [x] | Issue resolution photos: dual-owner `Photo` linkage (ADR-016) + capture UI on `/issues/[id]` close flow — shipped 2026-06-15 |
 | P0 | [ ] | Add R2 env vars (4) to Vercel **Production BEFORE merging this branch to main** — prod shares the Neon DB, so photo rows exist; `/review` SSR will throw on presign without them |
 | P3 | [ ] | M365 SSO provider (future, additive — does not break field login) |
 | P3 | [ ] | Web Push notifications (iOS 16.4+) |

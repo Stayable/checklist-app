@@ -110,7 +110,7 @@ export default async function ReviewQueuePage({
   const countOf = (s: InstanceStatus) => counts.find((c) => c.status === s)?._count ?? 0;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 p-6">
+    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 p-6 pb-24">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Review queue</h1>

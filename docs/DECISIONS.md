@@ -680,6 +680,47 @@ R2 went live (bucket `rise8-ops-staging`, object-scoped token, CORS). Wiring the
 
 ---
 
+## ADR-016: Issue resolution photos reuse the Photo table (nullable dual-owner FK)
+
+**Date:** 2026-06-15
+**Status:** Accepted
+
+### Context
+Closing an Issue (RESOLVED / WONT_FIX) needed optional evidence photos. The `Photo` table was hard-keyed to a checklist `Response` (`response_id` NOT NULL) — issue photos have no response. Needed a linkage without re-implementing R2 + geofence handling.
+
+### Alternatives Considered
+1. **Separate `issue_photos` table** — keeps `Photo` clean but forks the R2 key/geofence/presign logic into a parallel path and duplicates the review-side display code.
+2. **Make `Photo` dual-owner** — `response_id` and `issue_id` both nullable, app enforces exactly-one-set. Reuses `lib/geofence.ts`, `lib/r2.ts`, presign route, and the photo-grid render verbatim.
+
+### Decision
+Took (2). `Photo.responseId` is now nullable; added nullable `Photo.issueId` FK (`onDelete: Cascade`) + index. Migration `20260615135350_add_issue_resolution_photos` is additive/nullable → safe on the shared Neon DB. New presign scope `issue` (manager+ of the property, issue must be open, cap 5). `closeIssue` accepts an optional `photos: PhotoRef[]`, strictly validates the `issues/{issueId}/{uuid}.jpg` key prefix, computes geofence server-side, and writes issue-keyed `Photo` rows in the close transaction. Closed-issue panel displays them with the same geofence badge as review.
+
+### Consequences
+- No DB CHECK enforces exactly-one-owner (Prisma can't express it); both write paths are server-only and validated, so the invariant holds in practice.
+- **Quick Tasks photos (Phase 10) should follow this same dual-owner pattern** (add a third nullable FK) rather than the `quick_task_photos` join table sketched in CLAUDE.md — revisit that note when Phase 10 lands.
+- Orphan-cleanup cron (P2 backlog) must now also sweep the `issues/` prefix.
+
+---
+
+## ADR-017: Phase-7 redesign direction — Connecteam familiarity, Stayable skin
+
+**Date:** 2026-06-15
+**Status:** Accepted (amends ADR-010)
+**Decided by:** Kyle (2026-06-15)
+
+### Context
+Request came in to "make it look like Connecteam." That cut against ADR-010 (Phase-7 design pass = *Stayable* branding) and the standing "hold UI-shape work until layout feedback lands" note. Connecteam is the product being replaced; a literal visual clone carries IP risk and contradicts the Stayable-branding decision.
+
+### Decision
+Phase-7 redesign **mirrors Connecteam's layout / information architecture** (the navigation and screen structure field staff already know) but renders it in **Stayable branding** (colors, wordmark "Stayable Operations") — not Connecteam's visual identity. This keeps the muscle-memory benefit for field staff while honoring ADR-010. Full visual polish still depends on Kate's branding kit (open question, owner: Kate, needed Week 7); structural/IA work can begin before the kit lands.
+
+### Consequences
+- Does **not** pull the redesign earlier than Phase 7 as a whole; it scopes *how* the redesign looks.
+- ADR-010's "Stayable branding" clause stands; this only fixes the layout/IA reference point.
+- IP risk avoided: we copy structure (uncopyrightable IA), not Connecteam's look.
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,6 +55,7 @@ export default async function RootLayout({
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
+          <AppNav />
         </NextIntlClientProvider>
         <ServiceWorkerRegister />
       </body>

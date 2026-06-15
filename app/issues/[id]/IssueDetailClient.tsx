@@ -1,16 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { IssuePriority, IssueStatus, Role } from "@prisma/client";
+import type { PhotoRef } from "@/lib/checklist-logic";
+import { compressImage, getCurrentPosition, type Position } from "@/lib/image";
 import { closeIssue, updateIssue } from "../actions";
 
 // Open-issue controls: assignee / status / priority + the resolution flow.
-// Resolution photo capture is R2-gated — note-only until upload lands.
+// Resolution evidence photos are optional, captured + uploaded at close
+// (ADR-015): same compress + per-batch GPS flow as the checklist filler.
 
 type Assignee = { id: string; name: string; role: Role };
+type PhotoItem = { blob: Blob; url: string; position: Position | null };
 
 const OPEN_STATUSES = [IssueStatus.OPEN, IssueStatus.ASSIGNED, IssueStatus.IN_PROGRESS];
+const PHOTO_MAX = 5;
+const GPS_TIMEOUT_MS = 10_000;
 
 export function IssueDetailClient({
   issueId,
@@ -30,6 +36,8 @@ export function IssueDetailClient({
   const [error, setError] = useState<string | null>(null);
   const [resolveNote, setResolveNote] = useState("");
   const [closing, setClosing] = useState<"RESOLVED" | "WONT_FIX" | null>(null);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const fileInput = useRef<HTMLInputElement | null>(null);
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>) => {
     setError(null);
@@ -39,6 +47,79 @@ export function IssueDetailClient({
       else router.refresh();
     });
   };
+
+  const addPhotos = async (files: FileList) => {
+    const room = Math.max(0, PHOTO_MAX - photos.length);
+    const picked = Array.from(files).slice(0, room);
+    const compressed = await Promise.all(picked.map((f) => compressImage(f)));
+    const items: PhotoItem[] = compressed.map((c) => ({
+      blob: c.blob,
+      url: URL.createObjectURL(c.blob),
+      position: null,
+    }));
+    setPhotos((prev) => [...prev, ...items]);
+    // GPS captured with the batch, never blocks the preview.
+    getCurrentPosition(GPS_TIMEOUT_MS)
+      .then((pos) => {
+        setPhotos((prev) =>
+          prev.map((it) => (items.includes(it) ? { ...it, position: pos } : it)),
+        );
+      })
+      .catch(() => {});
+  };
+
+  // Upload any captured photos via presigned PUTs, returning their PhotoRefs.
+  // Throws on failure so the close is aborted and the photos stay for retry.
+  async function uploadPhotos(): Promise<PhotoRef[]> {
+    if (photos.length === 0) return [];
+    const presignRes = await fetch("/api/photos/presign", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scope: "issue", issueId, count: photos.length }),
+    });
+    if (!presignRes.ok) throw new Error(`presign ${presignRes.status}`);
+    const { uploads } = (await presignRes.json()) as {
+      uploads: { key: string; uploadUrl: string }[];
+    };
+    await Promise.all(
+      photos.map(async (it, i) => {
+        const put = await fetch(uploads[i].uploadUrl, {
+          method: "PUT",
+          headers: { "content-type": "image/jpeg" },
+          body: it.blob,
+        });
+        if (!put.ok) throw new Error(`PUT ${put.status}`);
+      }),
+    );
+    return photos.map((it, i) => ({
+      key: uploads[i].key,
+      lat: it.position?.latitude ?? null,
+      lng: it.position?.longitude ?? null,
+      accuracy: it.position?.accuracy ?? null,
+      sizeBytes: it.blob.size,
+    }));
+  }
+
+  function onClose(target: "RESOLVED" | "WONT_FIX") {
+    setError(null);
+    setClosing(target);
+    startTransition(async () => {
+      let refs: PhotoRef[];
+      try {
+        refs = await uploadPhotos();
+      } catch {
+        setError("Photo upload failed. Try again.");
+        return;
+      }
+      const result = await closeIssue(issueId, {
+        status: target === "RESOLVED" ? IssueStatus.RESOLVED : IssueStatus.WONT_FIX,
+        note: resolveNote,
+        photos: refs,
+      });
+      if (!result.ok) setError(result.error ?? "Action failed.");
+      else router.refresh();
+    });
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -109,26 +190,62 @@ export function IssueDetailClient({
           placeholder="Resolution note (required)"
           className="w-full rounded-lg border border-slate-300 p-2 text-sm"
         />
-        <p className="mt-1 text-xs text-amber-600">
-          Resolution photo capture lands with R2 — note-only for now.
-        </p>
+
+        <div className="mt-3">
+          <p className="mb-1 text-xs font-medium text-slate-600">
+            Resolution photos (optional, up to {PHOTO_MAX})
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {photos.map((it, i) => (
+              <div key={i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={it.url} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-slate-900 text-xs text-white disabled:opacity-50"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {photos.length < PHOTO_MAX && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => fileInput.current?.click()}
+                className="h-20 w-20 rounded-lg border-2 border-dashed border-slate-300 text-2xl text-slate-400 disabled:opacity-50"
+              >
+                +
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) void addPhotos(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
         <div className="mt-3 flex gap-2">
           <button
             disabled={pending || resolveNote.trim().length === 0}
-            onClick={() => {
-              setClosing("RESOLVED");
-              run(() => closeIssue(issueId, { status: IssueStatus.RESOLVED, note: resolveNote }));
-            }}
+            onClick={() => onClose("RESOLVED")}
             className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
           >
             {pending && closing === "RESOLVED" ? "Resolving…" : "Mark resolved"}
           </button>
           <button
             disabled={pending || resolveNote.trim().length === 0}
-            onClick={() => {
-              setClosing("WONT_FIX");
-              run(() => closeIssue(issueId, { status: IssueStatus.WONT_FIX, note: resolveNote }));
-            }}
+            onClick={() => onClose("WONT_FIX")}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
           >
             {pending && closing === "WONT_FIX" ? "Closing…" : "Won't fix"}

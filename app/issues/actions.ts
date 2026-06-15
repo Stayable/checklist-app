@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
+  GeofenceStatus,
   IssuePriority,
   IssueStatus,
   NotificationChannel,
@@ -11,12 +12,14 @@ import {
 } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canAccessProperty, requireManager } from "@/lib/rbac";
+import { geofenceStatusFor } from "@/lib/geofence";
 import { slaHoursByPriority } from "@/lib/issues.server";
 import { slaTargetAt } from "@/lib/review";
 
 // Issue pipeline actions (Phase 4). Open-state edits via updateIssue; closing
-// (RESOLVED / WONT_FIX) goes through closeIssue and requires a resolution note.
-// Resolution PHOTO requirement is R2-gated — enforced once photo upload lands.
+// (RESOLVED / WONT_FIX) goes through closeIssue and requires a resolution note
+// and accepts optional resolution-evidence photos (ADR-015 — uploaded to R2 by
+// the client via presigned PUTs, persisted as issue-keyed Photo rows here).
 
 export type IssueResult = { ok: true } | { ok: false; error: string };
 
@@ -34,6 +37,7 @@ async function loadGuarded(issueId: string) {
       assignedUserId: true,
       createdAt: true,
       title: true,
+      property: { select: { geofence: true } },
     },
   });
   if (!issue) return { ok: false as const, error: "Issue not found." };
@@ -154,10 +158,31 @@ export async function updateIssue(issueId: string, input: unknown): Promise<Issu
   return { ok: true };
 }
 
+const ISSUE_PHOTO_MAX = 5; // mirrors the presign "issue" scope cap
+
+// Resolution-evidence photo refs. Bytes were already PUT to R2 by the client
+// via presigned URLs; we validate the key prefix and compute geofence here.
+const photoRefSchema = z.object({
+  key: z.string(),
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
+  accuracy: z.number().nullable(),
+  sizeBytes: z.number(),
+});
+
 const closeSchema = z.object({
   status: z.enum([IssueStatus.RESOLVED, IssueStatus.WONT_FIX]),
   note: z.string().trim().min(1, "A resolution note is required.").max(2000),
+  photos: z.array(photoRefSchema).max(ISSUE_PHOTO_MAX).optional(),
 });
+
+// R2 keys are server-minted (lib/r2.ts issuePhotoKey) — a UUID filename under
+// the issues/{issueId}/ prefix only. Anything else is a forged reference.
+function isValidIssuePhotoKey(key: string, issueId: string): boolean {
+  return new RegExp(
+    `^issues/${issueId}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.jpg$`,
+  ).test(key);
+}
 
 export async function closeIssue(issueId: string, input: unknown): Promise<IssueResult> {
   if (!idSchema.safeParse(issueId).success) return { ok: false, error: "Invalid id." };
@@ -170,13 +195,37 @@ export async function closeIssue(issueId: string, input: unknown): Promise<Issue
   const { user, issue } = loaded;
 
   if (CLOSED.includes(issue.status)) return { ok: false, error: "Already closed." };
-  const { status, note } = parsed.data;
+  const { status, note, photos } = parsed.data;
+
+  // Validate + build issue-keyed Photo rows; geofence computed server-side
+  // against the property polygon, never trusted from the client (ADR-015).
+  const photoRows = (photos ?? []).map((ref) => {
+    if (!isValidIssuePhotoKey(ref.key, issueId)) return null;
+    return {
+      r2Key: ref.key,
+      fileSizeBytes: Math.round(ref.sizeBytes),
+      gpsLat: ref.lat,
+      gpsLng: ref.lng,
+      geofenceStatus:
+        ref.lat !== null && ref.lng !== null
+          ? geofenceStatusFor({ lat: ref.lat, lng: ref.lng }, issue.property.geofence)
+          : GeofenceStatus.NO_GPS,
+    };
+  });
+  if (photoRows.some((r) => r === null)) {
+    return { ok: false, error: "Invalid photo reference. Re-add the photos and try again." };
+  }
 
   await db.$transaction(async (tx) => {
     await tx.issue.update({
       where: { id: issueId },
       data: { status, resolvedAt: new Date(), resolutionNote: note },
     });
+    if (photoRows.length > 0) {
+      await tx.photo.createMany({
+        data: photoRows.map((r) => ({ issueId, ...r! })),
+      });
+    }
     await tx.auditLog.create({
       data: {
         actorUserId: user.id,
@@ -184,7 +233,7 @@ export async function closeIssue(issueId: string, input: unknown): Promise<Issue
         entityId: issueId,
         action: status === IssueStatus.RESOLVED ? "resolve" : "wont_fix",
         before: { status: issue.status },
-        after: { status, note },
+        after: { status, note, photoCount: photoRows.length },
       },
     });
   });

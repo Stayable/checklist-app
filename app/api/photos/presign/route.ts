@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { InstanceStatus, QuestionType } from "@prisma/client";
+import { InstanceStatus, IssueStatus, QuestionType, Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isManagerOrAbove } from "@/lib/rbac";
-import { presignUpload, presignDownload, photoTestKey, responsePhotoKey } from "@/lib/r2";
+import {
+  presignUpload,
+  presignDownload,
+  photoTestKey,
+  responsePhotoKey,
+  issuePhotoKey,
+} from "@/lib/r2";
 
 // POST /api/photos/presign — mint presigned PUTs (and matching GETs) for
 // client-side direct uploads to R2 (ARCH §2.2.1 step 5, ADR-015). Auth
@@ -15,8 +21,11 @@ import { presignUpload, presignDownload, photoTestKey, responsePhotoKey } from "
 //   - "response": checklist filler upload at submit — caller must be the
 //     instance assignee or a manager of its property, the instance must still
 //     be fillable, and the question must be a PHOTO question on its template.
+//   - "issue": resolution-evidence upload at close — caller must be a manager+
+//     of the issue's property and the issue must still be open.
 
 const MAX_BATCH = 10; // hard ceiling; per-question photoMax also applies
+const ISSUE_PHOTO_MAX = 5; // resolution evidence cap
 
 const bodySchema = z.discriminatedUnion("scope", [
   z.object({ scope: z.literal("test") }),
@@ -25,6 +34,11 @@ const bodySchema = z.discriminatedUnion("scope", [
     instanceId: z.string().uuid(),
     questionId: z.string().uuid(),
     count: z.number().int().min(1).max(MAX_BATCH),
+  }),
+  z.object({
+    scope: z.literal("issue"),
+    issueId: z.string().uuid(),
+    count: z.number().int().min(1).max(ISSUE_PHOTO_MAX),
   }),
 ]);
 
@@ -49,6 +63,39 @@ export async function POST(req: Request) {
       presignDownload(key),
     ]);
     return NextResponse.json({ key, uploadUrl, downloadUrl });
+  }
+
+  if (body.scope === "issue") {
+    const issue = await db.issue.findUnique({
+      where: { id: body.issueId },
+      select: { status: true, propertyId: true },
+    });
+    if (!issue) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+    // Closing an issue is a manager+ action (mirrors closeIssue / requireManager).
+    const canManage =
+      isManagerOrAbove(session.user.role) &&
+      (session.user.role === Role.CORPORATE ||
+        session.user.role === Role.ADMIN ||
+        (await db.userProperty.findUnique({
+          where: {
+            userId_propertyId: { userId: session.user.id, propertyId: issue.propertyId },
+          },
+          select: { userId: true },
+        })) !== null);
+    if (!canManage) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+    if (issue.status === IssueStatus.RESOLVED || issue.status === IssueStatus.WONT_FIX) {
+      return NextResponse.json({ error: "already closed" }, { status: 409 });
+    }
+
+    const uploads = await Promise.all(
+      Array.from({ length: body.count }, async () => {
+        const key = issuePhotoKey(body.issueId);
+        return { key, uploadUrl: await presignUpload(key, "image/jpeg") };
+      }),
+    );
+    return NextResponse.json({ uploads });
   }
 
   // scope === "response"
