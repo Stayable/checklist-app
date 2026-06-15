@@ -10,6 +10,41 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 ---
 
+## Near-Term Execution Plan (as of 2026-06-16)
+
+Tactical sequence layered on top of the numbered phases below. `🧑 You` = needs the user. Update each session.
+
+### Phase A — Verify & merge this branch (`claude/rise8-operations-platform-rv9B6`)
+| Status | Item |
+|---|---|
+| [x] | Issue resolution photos (ADR-016) — dual-owner `Photo`, presign `issue` scope, capture + display |
+| [x] | Connecteam-familiar UI structural pass (ADR-017) + re-skin to brand `navy` token |
+| [x] | Merge `origin/main` → branch (branding/fonts/login fix); CLAUDE.md conflict resolved |
+| [x] | Build fix: `prisma generate` in build script (commit `8e64cfa`) — stale-cache type errors |
+| [x] | Preview build READY + `/login` serves 200 with brand navy + Nunito (verified 2026-06-16) |
+| [ ] | Click-through Preview of authed routes — needs `DATABASE_URL`/`R2_*`/`AUTH_SECRET` in **Preview** env (or skip straight to prod) |
+| [!] | 🧑 You: add 4 `R2_*` vars to Vercel **Production** (standing merge gate) |
+| [ ] | Merge branch → `main` → production deploy (gated on R2 vars) |
+
+### Phase B — Close Phase 4 (ALPHA exit)
+| Status | Item |
+|---|---|
+| [!] | 🧑 You: Resend creds → submit/flag/activation emails (plumbing in place) |
+| [ ] | 🧑 You: record alpha demo for Rob |
+| [ ] | Extend structural redesign: checklist runtime → review → issues → admin |
+
+### Phase C — Field-team interview (Kyle) — unblocks content/decisions
+| Status | Item |
+|---|---|
+| [ ] | Template question content · recurring-rules matrix · SLA confirm · ES reviewer — **hold Phase 5 build until done** (guide: `ChecklistTeamInterviewGuide_RISE8_060526.md`) |
+
+### Phases D–F → the numbered phases below
+- **D** = Phase 5 (recurrence / bulk / assignment / ADR-014 invalidation)
+- **E** = Phases 6–7 (feature-complete + **deep Claude Design polish pass** + PDF/offline/hardening/Teams digest)
+- **F** = Phases 8–11 (training → contractor checklists → quick tasks → parallel run → **cutover Week 14**)
+
+---
+
 ## Phase 0 — Pre-Build Sign-off (NOW)
 
 | Pri | Status | Task | Owner | Notes |

@@ -324,6 +324,7 @@ When changing scope or architecture: update the relevant doc and add an entry to
 - **R2 envs:** the 4 `R2_*` vars are **local-only** — must be in the target Vercel env (Production for go-live; Preview for branch testing) or `/review`, `/issues`, `/` SSR throws on presign. Standing merge gate before `main`.
 - **Login outage fix (2026-05-30):** prod `DATABASE_URL`/`DIRECT_URL` were empty → Prisma threw → NextAuth `Configuration` error. Set via `vercel env add ... production --force`. Sensitive vars read back as `""` — normal.
 - **Verify via Vercel deploys, not `pnpm dev`** (standing preference 2026-06-15). Push → feature branch = Preview, `main` = Production.
+- **Build runs `prisma generate` (fixed 2026-06-15, commit `8e64cfa`):** Vercel restores a stale build cache and won't regenerate the Prisma client on its own, so builds type-checked against an outdated client and failed (`_count.rooms`, and would have broken `Photo.issueId` at runtime). `build` script now prefixes `prisma generate`. Don't remove it.
 - **Temp admin `admin@rentstayable.com` / `StayableCheck` is LIVE on the public domain — rotate before sharing.**
 - Vercel team `team_Z3BElgYbbdVXocdCUDBwjD9F`, project `prj_XffrGVTq0KRSwWi36Wav6Sr3KkZt`.
 - **Brand foundation (commit `1555776`):** palette tokens navy `#041E42` / blue `#0091F5` / sky `#91D1FA` / gold `#FDDA24` in `globals.css @theme`; Nunito font (free stand-in for domain-locked Adobe Urbane Rounded; swap if Adobe kit `dsq0zcq` authorized).
