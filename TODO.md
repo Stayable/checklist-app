@@ -22,9 +22,9 @@ Tactical sequence layered on top of the numbered phases below. `🧑 You` = need
 | [x] | Merge `origin/main` → branch (branding/fonts/login fix); CLAUDE.md conflict resolved |
 | [x] | Build fix: `prisma generate` in build script (commit `8e64cfa`) — stale-cache type errors |
 | [x] | Preview build READY + `/login` serves 200 with brand navy + Nunito (verified 2026-06-16) |
-| [ ] | Click-through Preview of authed routes — needs `DATABASE_URL`/`R2_*`/`AUTH_SECRET` in **Preview** env (or skip straight to prod) |
-| [x] | 🧑 You: add 4 `R2_*` vars to Vercel **Production** — **confirmed present 2026-06-20 via `vercel env ls production`** (all 4 + DB/AUTH; gate CLOSED) |
-| [ ] | Merge branch → `main` → production deploy (gate cleared — ready to proceed) |
+| [x] | ~~Click-through Preview of authed routes~~ — skipped Preview; went straight to prod per Kate's default-to-Prod rule |
+| [x] | 🧑 You: add 4 `R2_*` vars to Vercel **Production** — **done 2026-06-19** via `vercel env add` (piped from `.env.local`; Production only, all 4 Encrypted). **Re-verified present 2026-06-20** via `vercel env ls production` |
+| [x] | Merge branch → `main` → production deploy — **done 2026-06-19**. FF merge `d274e1e..26cdc36`; local prod build passed (16 routes); prod deploy Ready; `/login` 200, `/review`+`/issues` 307 (auth redirect, no 500s). Phase 4 + photos + UI shell now LIVE |
 
 ### Phase B — Close Phase 4 (ALPHA exit)
 | Status | Item |
@@ -355,7 +355,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P0 | [x] | **Applied Stayable brand foundation** (rentstayable.com) — navy/blue/sky/gold tokens; primary surfaces recolored. Live + verified |
 | P0 | [x] | **Fixed fonts never rendering** (2026-06-02, commits `e12ce23`+`605105b`) — root cause: next/font CSS var was on `<body>` but `font-family` is applied on `<html>` (`html{@apply font-sans}`), so the var was undefined at `<html>` → whole app fell back to browser **serif**. Fix: moved font var classes to `<html>`, `font-sans` to `<body>`. Also swapped Roboto+Quicksand → **Nunito** (free rounded-geometric Urbane Rounded match, body+headings). Verified via local prod server + live HTML/CSS |
 | P1 | [x] | **Vercel git auto-deploy** — worked cleanly this session (both `git push origin main` → auto prod deploy, no CLI needed). Earlier flakiness not reproduced; watch but likely OK |
-| P1 | [ ] | **Rotate temp admin password** (`StayableCheck`) — live on the public domain |
+| P1 | [ ] | **Rotate temp admin password** (`StayableCheck`) — live on the public domain. **Consciously deferred 2026-06-19** (acceptable for alpha demo); MUST rotate before onboarding real staff. Easiest path: log into admin UI → one-click reset |
 | P1 | [ ] | **Authorize Adobe Urbane Rounded** for ops.rentstayable.com (kit `dsq0zcq`) → swap Nunito → real brand font (1-line change). Optional — Nunito is a close free stand-in |
 | P2 | [ ] | Decide prod/dev DB split — prod currently shares the dev Neon DB w/ seeded test data; needs a clean prod DB before real go-live |
 | P1 | [ ] | **Decide branch workflow** — de-facto this session: commit straight to `main`, auto-deploys to prod. Feature branch `claude/rise8-operations-platform-rv9B6` is now **behind `main`** (missing branding/font commits) — branch fresh off `main` next session or fast-forward it |
@@ -374,7 +374,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P2 | [ ] | Sentry alerts wired per RUNBOOK §Monitoring |
 | P2 | [ ] | Weekly orphaned-photo cleanup cron (redo-flow resubmits orphan prior R2 objects — ADR-015; must be prefix-restricted, R2 has no undelete) |
 | P1 | [x] | Issue resolution photos: dual-owner `Photo` linkage (ADR-016) + capture UI on `/issues/[id]` close flow — shipped 2026-06-15 |
-| P0 | [x] | Add R2 env vars (4) to Vercel **Production** — **confirmed present 2026-06-20 via `vercel env ls production`** (added ~5h prior). Merge gate cleared |
+| P0 | [x] | Add R2 env vars (4) to Vercel **Production** — **done 2026-06-19**, then merged branch → main. Prod `/review`/`/issues` no longer at risk of presign throw. **Re-verified present 2026-06-20** via `vercel env ls production` |
 | P3 | [ ] | M365 SSO provider (future, additive — does not break field login) |
 | P3 | [ ] | Web Push notifications (iOS 16.4+) |
 | P3 | [ ] | Capacitor wrapper (only if iOS PWA fails Week 1) |
