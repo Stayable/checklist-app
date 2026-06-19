@@ -23,8 +23,8 @@ Tactical sequence layered on top of the numbered phases below. `🧑 You` = need
 | [x] | Build fix: `prisma generate` in build script (commit `8e64cfa`) — stale-cache type errors |
 | [x] | Preview build READY + `/login` serves 200 with brand navy + Nunito (verified 2026-06-16) |
 | [ ] | Click-through Preview of authed routes — needs `DATABASE_URL`/`R2_*`/`AUTH_SECRET` in **Preview** env (or skip straight to prod) |
-| [!] | 🧑 You: add 4 `R2_*` vars to Vercel **Production** (standing merge gate) |
-| [ ] | Merge branch → `main` → production deploy (gated on R2 vars) |
+| [x] | 🧑 You: add 4 `R2_*` vars to Vercel **Production** — **confirmed present 2026-06-20 via `vercel env ls production`** (all 4 + DB/AUTH; gate CLOSED) |
+| [ ] | Merge branch → `main` → production deploy (gate cleared — ready to proceed) |
 
 ### Phase B — Close Phase 4 (ALPHA exit)
 | Status | Item |
@@ -374,7 +374,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P2 | [ ] | Sentry alerts wired per RUNBOOK §Monitoring |
 | P2 | [ ] | Weekly orphaned-photo cleanup cron (redo-flow resubmits orphan prior R2 objects — ADR-015; must be prefix-restricted, R2 has no undelete) |
 | P1 | [x] | Issue resolution photos: dual-owner `Photo` linkage (ADR-016) + capture UI on `/issues/[id]` close flow — shipped 2026-06-15 |
-| P0 | [ ] | Add R2 env vars (4) to Vercel **Production BEFORE merging this branch to main** — prod shares the Neon DB, so photo rows exist; `/review` SSR will throw on presign without them |
+| P0 | [x] | Add R2 env vars (4) to Vercel **Production** — **confirmed present 2026-06-20 via `vercel env ls production`** (added ~5h prior). Merge gate cleared |
 | P3 | [ ] | M365 SSO provider (future, additive — does not break field login) |
 | P3 | [ ] | Web Push notifications (iOS 16.4+) |
 | P3 | [ ] | Capacitor wrapper (only if iOS PWA fails Week 1) |
