@@ -22,6 +22,7 @@ function managerTabs(): Tab[] {
     { href: "/", label: "Today", match: (p) => p === "/", icon: <HomeIcon /> },
     { href: "/review", label: "Review", match: (p) => p.startsWith("/review"), icon: <ClipboardIcon /> },
     { href: "/issues", label: "Issues", match: (p) => p.startsWith("/issues"), icon: <FlagIcon /> },
+    { href: "/rules", label: "Rules", match: (p) => p.startsWith("/rules"), icon: <RepeatIcon /> },
   ];
 }
 
@@ -84,6 +85,17 @@ function FlagIcon() {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 21V4" />
       <path d="M5 4h12l-2 4 2 4H5" />
+    </svg>
+  );
+}
+
+function RepeatIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m17 2 4 4-4 4" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d="m7 22-4-4 4-4" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
     </svg>
   );
 }

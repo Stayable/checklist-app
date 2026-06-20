@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildHumanLabel,
   buildSystemId,
+  describePattern,
+  describeScope,
   expandRooms,
   shouldGenerateOn,
   type RecurrencePattern,
@@ -114,6 +116,28 @@ describe("buildSystemId", () => {
   it("formats CL-{prop}-{code}-{ymd}-{seq} with zero-padded 3-digit seq", () => {
     expect(buildSystemId("4645", "ARR", "20260526", 12)).toBe("CL-4645-ARR-20260526-012");
     expect(buildSystemId("6802", "PWR", "20260526", 1)).toBe("CL-6802-PWR-20260526-001");
+  });
+});
+
+describe("describePattern", () => {
+  it("summarizes each pattern type", () => {
+    expect(describePattern({ type: "daily" })).toBe("Daily");
+    expect(describePattern({ type: "weekly", daysOfWeek: [5, 1, 3] })).toBe("Weekly · Mon, Wed, Fri");
+    expect(describePattern({ type: "monthly", dayOfMonth: 1 })).toBe("Monthly · 1st");
+    expect(describePattern({ type: "monthly", dayOfMonth: 22 })).toBe("Monthly · 22nd");
+    expect(describePattern({ type: "quarterly", dayOfMonth: 3 })).toBe(
+      "Quarterly · 3rd (Jan/Apr/Jul/Oct)",
+    );
+    expect(describePattern({ type: "on-demand" })).toBe("On-demand");
+  });
+});
+
+describe("describeScope", () => {
+  it("summarizes room filters and defaults null to all rooms", () => {
+    expect(describeScope(null)).toBe("All rooms");
+    expect(describeScope({ kind: "occupied" })).toBe("Occupied rooms");
+    expect(describeScope({ kind: "list", roomNumbers: ["101", "102"] })).toBe("Rooms 101, 102");
+    expect(describeScope({ kind: "range", from: "100", to: "150" })).toBe("Rooms 100–150");
   });
 });
 

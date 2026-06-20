@@ -24,11 +24,22 @@ export type GenerateResult = {
 
 type RuleAssignment = { type: "user" | "role" | "unassigned"; userId?: string; role?: string };
 
+export type GenerateOptions = {
+  // Restrict to specific rules (used by "force-create today" from one rule).
+  ruleIds?: string[];
+  // Include paused rules and bypass the pattern check — for an explicit manual
+  // force-create from a paused/non-firing rule (ADR-009 override path).
+  force?: boolean;
+};
+
 /**
  * Generate checklist instances for every active rule that fires on `target`
  * (an ET calendar date as a UTC-midnight Date; defaults to today ET).
  */
-export async function generateForDate(target: Date = etDateOnly()): Promise<GenerateResult> {
+export async function generateForDate(
+  target: Date = etDateOnly(),
+  opts: GenerateOptions = {},
+): Promise<GenerateResult> {
   const ymd = etYYYYMMDD(target);
   const result: GenerateResult = {
     date: ymd,
@@ -40,7 +51,14 @@ export async function generateForDate(target: Date = etDateOnly()): Promise<Gene
   };
 
   const rules = await db.recurringRule.findMany({
-    where: { active: true, template: { active: true }, property: { active: true } },
+    where: {
+      // A forced single-rule run still requires the rule itself; the active
+      // gate is lifted only when force is set.
+      active: opts.force ? undefined : true,
+      template: { active: true },
+      property: { active: true },
+      ...(opts.ruleIds ? { id: { in: opts.ruleIds } } : {}),
+    },
     include: { template: true, property: true },
   });
   result.rulesEvaluated = rules.length;
@@ -48,11 +66,13 @@ export async function generateForDate(target: Date = etDateOnly()): Promise<Gene
   for (const rule of rules) {
     try {
       const pattern = rule.pattern as RecurrencePattern;
-      const fires = shouldGenerateOn(pattern, target, {
-        effectiveFrom: rule.effectiveFrom,
-        effectiveTo: rule.effectiveTo,
-        skipDays: (rule.skipDays as string[] | null) ?? null,
-      });
+      const fires =
+        opts.force ||
+        shouldGenerateOn(pattern, target, {
+          effectiveFrom: rule.effectiveFrom,
+          effectiveTo: rule.effectiveTo,
+          skipDays: (rule.skipDays as string[] | null) ?? null,
+        });
       if (!fires) continue;
       result.rulesFired++;
 

@@ -142,6 +142,49 @@ export function buildSystemId(
   return `CL-${propertyCode}-${templateCode}-${ymd}-${String(seq).padStart(3, "0")}`;
 }
 
+const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
+
+/** Human-readable cadence summary for a rule's pattern (UI list rows). */
+export function describePattern(pattern: RecurrencePattern): string {
+  switch (pattern.type) {
+    case "daily":
+      return "Daily";
+    case "weekly": {
+      const days = [...pattern.daysOfWeek].sort((a, b) => a - b).map((d) => DOW_LABELS[d]);
+      return days.length ? `Weekly · ${days.join(", ")}` : "Weekly";
+    }
+    case "monthly":
+      return `Monthly · ${ordinal(pattern.dayOfMonth)}`;
+    case "quarterly":
+      return `Quarterly · ${ordinal(pattern.dayOfMonth)} (Jan/Apr/Jul/Oct)`;
+    case "on-demand":
+      return "On-demand";
+  }
+}
+
+/** Human-readable scope summary for a PER_ROOM rule's room filter. */
+export function describeScope(filter: RoomFilter | null | undefined): string {
+  if (!filter) return "All rooms";
+  switch (filter.kind) {
+    case "all":
+      return "All rooms";
+    case "occupied":
+      return "Occupied rooms";
+    case "vacant":
+      return "Vacant rooms";
+    case "list":
+      return `Rooms ${filter.roomNumbers.join(", ")}`;
+    case "range":
+      return `Rooms ${filter.from}–${filter.to}`;
+  }
+}
+
 /**
  * ADR-009 human label: "{Template} — {Short Code} — {Scope} — {Date}".
  * `scope` is the per-instance scope text (e.g. "Rm 312", "May 2026") or null
