@@ -191,14 +191,14 @@ Tactical sequence layered on top of the numbered phases below. `🧑 You` = need
 
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [ ] | Recurring rules UI (admin/manager) per template per property |
-| P0 | [ ] | Rule patterns: daily / weekly / monthly / quarterly / on-demand |
-| P0 | [ ] | Vercel Cron 5:00 AM ET: `/api/cron/generate-checklists` |
-| P0 | [ ] | Bulk-create UI: template + property + date(s) + room range/list |
-| P0 | [ ] | Assignment: specific user OR role pool OR unassigned |
-| P0 | [ ] | Unassigned-queue digest email (7am ET) |
-| P0 | [ ] | Invalidation flow (ADR-014): field-initiated request w/ required note → pending state → manager/admin approve/reject; reason + reassignment audit chain |
-| P0 | [ ] | Resolve open: final recurring rules list per property (PMs) |
+| P0 | [x] | Recurring rules UI (admin/manager) per template per property — **`/rules`** (manager-or-above, property-scoped): list + create form + Pause/Activate/Force-create/Delete, all audit-logged. Commit `8ee7b07` |
+| P0 | [x] | Rule patterns: daily / weekly / monthly / quarterly / on-demand — pure engine `lib/recurrence.ts` (`shouldGenerateOn` w/ effective-window + skip-days + month-length clamp; `expandRooms`; ADR-009 ID/label builders). **17 tests**. Commit `db6a03c` |
+| P0 | [x] | Vercel Cron 5:00 AM ET: `/api/cron/generate-checklists` + `vercel.json` (`0 9 * * *` = 5 AM EDT/4 AM EST; CRON_SECRET bearer auth). `lib/recurrence.server.ts generateForDate()` idempotent per (template,property,room,date); smoke-tested live. Commit `d3bec23`. **⚠ set `CRON_SECRET` in Vercel Production before merge — route is open without it** |
+| P0 | [ ] | Bulk-create UI: template + property + date(s) + room range/list — **not started** |
+| P0 | [x] | Assignment: specific user OR role pool OR unassigned — in rule create form + `generateForDate` (user pins assignee; role/unassigned → unassigned queue, no `assignedRole` column in v1) |
+| P0 | [!] | Unassigned-queue digest email (7am ET) — **blocked: Resend creds** |
+| P0 | [ ] | Invalidation flow (ADR-014): field-initiated request w/ required note → pending state → manager/admin approve/reject; reason + reassignment audit chain — **not started** (instance schema fields `invalidationReason`/`reassignedToInstanceId` already exist) |
+| P0 | [ ] | Resolve open: final recurring rules list per property (PMs) — blocked on field-team interview |
 
 ---
 
