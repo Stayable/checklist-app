@@ -143,6 +143,7 @@ model User {
   assignedIssues    Issue[]             @relation("IssueAssignee")
   auditLogs         AuditLog[]
   notifications     NotificationLog[]
+  createdRules      RecurringRule[]     @relation("RuleCreatedBy")
 
   @@map("users")
 }
@@ -259,15 +260,27 @@ model RecurringRule {
   propertyId String   @map("property_id") @db.Uuid
   pattern    Json // { type: 'daily'|'weekly'|'monthly'|'quarterly'|'on-demand', ... }
   assignment Json // { type: 'user'|'role'|'unassigned', target: ... }
+  // ADR-009 per-room scope filter for PER_ROOM templates:
+  // { kind: 'all'|'occupied'|'vacant'|'list'|'range', roomNumbers?, from?, to? }.
+  // Null = 'all' for PER_ROOM; ignored for PER_PROPERTY / AD_HOC.
+  scope         Json?
+  // ADR-009 effective window (inclusive ET dates) + skip-day list (yyyyMMdd[]).
+  effectiveFrom DateTime? @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+  skipDays      Json?     @map("skip_days")
+  // Creator for audit context (manager mutations also written to audit_log).
+  createdByUserId String? @map("created_by_user_id") @db.Uuid
   active     Boolean  @default(true)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  property Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  template  ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  property  Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdBy User?             @relation("RuleCreatedBy", fields: [createdByUserId], references: [id])
 
   @@index([templateId])
   @@index([propertyId])
+  @@index([propertyId, active])
   @@map("recurring_rules")
 }
 
