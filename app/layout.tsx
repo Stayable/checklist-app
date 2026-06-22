@@ -3,7 +3,7 @@ import { Nunito, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
-import { AppNav } from "@/components/AppNav";
+import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
 // Brand font — Nunito, a free rounded-geometric sans that matches the
@@ -57,8 +57,7 @@ export default async function RootLayout({
     <html lang={locale} className={`${nunito.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
-          <AppNav />
+          <AppShell>{children}</AppShell>
         </NextIntlClientProvider>
         <ServiceWorkerRegister />
       </body>
