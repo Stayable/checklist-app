@@ -35,6 +35,7 @@ Non-goals: changing the recurrence cron model (stays 5 AM ET global, ADR-009); c
 | Admin account | `admin@rentstayable.com`, password `StayableAdmin` (rotated from `StayableCheck`). |
 | Template perms | Create/edit/delete templates = **ADMIN only**. Revisit other perms later. |
 | Template cleanup | **Hard-delete** the 9 placeholders — scripted, row-count-confirmed, run **last**. |
+| Property scope | Active property is a **global filter** in the shell header; templates declare which properties they apply to (specific list **or** "All"). Extends ADR-013. |
 
 ---
 
@@ -57,6 +58,21 @@ Non-goals: changing the recurrence cron model (stays 5 AM ET global, ADR-009); c
 **Width standardization:** content area capped consistently (target `max-w-6xl` for lists/tables, narrower inner constraints for forms). Removes the current spread of `max-w-md / 3xl / 4xl / 5xl / 6xl`.
 
 **Affected files:** `app/layout.tsx` (mount AppShell), delete custom header in `app/admin/layout.tsx`, strip the inline navy header from `app/page.tsx`, and have each page render content only (shell provides chrome). `BottomNav.tsx` folds into the shell's mobile branch.
+
+---
+
+## 3.5. Property scope (the global filter)
+
+Kate's "Community" concept = **property scope.** A user belongs to one or more properties and sees only that property's data; the header picker switches the active one. This **extends ADR-013** (it does not reopen it) — `user_properties`, single global role, and RBAC (`canAccessProperty` / `accessiblePropertyIds`) already exist.
+
+**Already works:** admin assigns single/multiple properties to a user (`/admin/users`); a single-property user is RBAC-limited to that property; the header `PropertyPicker` + `current-property` cookie exist for multi-property users.
+
+**New work:**
+- **Make the active property a consistent global filter** living in the shell header. Drives what every surface shows: Today, Completed, manual-create template options, and (new) the template list.
+- Behavior by role: single-property user → auto-scoped, no picker; multi-property user → picker switches context; CORPORATE/ADMIN → default to portfolio (all), may filter to one.
+- Existing instance-bound surfaces (Review, Issues) already filter by `accessiblePropertyIds`; ensure they also honor the *active* property selection for multi-property users.
+
+**Templates become property-scoped** — see §6a (new `template_properties` association + "All properties" option).
 
 ---
 
@@ -97,7 +113,8 @@ Non-goals: changing the recurrence cron model (stays 5 AM ET global, ADR-009); c
 
 ### 6a. Template Builder (`/admin/templates`, ADMIN-only)
 Turn the read-only template view editable.
-- **Template fields:** Title (required), default assignee or role, scope (per-room / per-property / ad-hoc), review level.
+- **Template fields:** Title (required), default assignee or role, scope (per-room / per-property / ad-hoc), review level, **Available at properties** (multi-select of properties **OR "All properties"** — standardized checklists like Arrival/DueOut use "All").
+- **Property association:** new `template_properties` join (template_id, property_id). An "All properties" template has no rows (or a boolean `allProperties` flag) and is offered everywhere. Manual-create and the template list filter by the active property against this association.
 - **Questions** (ordered, add/remove/reorder), each with a type mapped to the existing `QuestionType` enum:
   - checkbox (multiple) → `MULTI`
   - radio (one) → `SINGLE`
@@ -144,9 +161,9 @@ Turn the read-only template view editable.
 
 ## 8. Build order
 
-1. **AppShell** (foundation — everything renders inside it).
+1. **AppShell** (foundation — everything renders inside it) **+ property scope as the global header filter** (§3.5).
 2. **Auth / OTP + user delete + admin password** (needs `RESEND_API_KEY`).
-3. **Template Builder + Manual create** (with empty states).
+3. **Template Builder** (incl. Available-at-properties) **+ Manual create** (with empty states).
 4. **Completed view + Home revamp + mark-opened/resume.**
 5. **Recurring-rules polish** (after Kate reviews `/rules`).
 6. **Template hard-delete** (gated on row-count confirmation).
@@ -157,7 +174,7 @@ Turn the read-only template view editable.
 
 - **ADR-018 — Unified responsive AppShell.** Left-sidebar desktop / bottom-bar mobile; single role-aware nav; standardized widths; supersedes the split nav from ADR-017's structural pass.
 - **ADR-019 — Email OTP + 30-day trusted device.** Supersedes the TOTP-authenticator MFA plan for v1; password + email OTP for all users via Resend.
-- **ADR-020 — Template authoring in v1.** Reverses "template editing out of scope"; admin-only template builder + manual instance creation.
+- **ADR-020 — Template authoring + property-scoped templates in v1.** Reverses "template editing out of scope"; admin-only template builder + manual instance creation; templates declare applicable properties (specific list or "All"). Property scope as a global filter extends ADR-013.
 
 ---
 
@@ -167,4 +184,5 @@ Turn the read-only template view editable.
 - Template **code** auto-derivation algorithm — finalize in the plan.
 - User hard-delete dependency rule (block vs reassign vs cascade) — finalize in the plan.
 - Confirm whether managers may *manual-create* from templates (assumed yes) vs ADMIN-only like authoring (authoring is admin-only; instance creation assumed manager+).
+- Confirm template→property model: multi-select properties **+ "All properties"** option (assumed). Implementation via `template_properties` join + `allProperties` flag — finalize in the plan.
 - Exact prod row counts for the template delete — captured at delete time.
