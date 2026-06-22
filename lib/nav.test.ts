@@ -1,0 +1,72 @@
+import { describe, expect, it } from "vitest";
+import { Role } from "@prisma/client";
+import {
+  navItemsForRole,
+  isNavItemActive,
+  shouldHideShell,
+} from "./nav";
+
+describe("navItemsForRole", () => {
+  it("field staff get only Today", () => {
+    for (const r of [Role.HK, Role.PA, Role.MT]) {
+      const items = navItemsForRole(r);
+      expect(items.map((i) => i.href)).toEqual(["/"]);
+    }
+  });
+
+  it("manager and corporate get the management surfaces, no admin group", () => {
+    for (const r of [Role.MANAGER, Role.CORPORATE]) {
+      const hrefs = navItemsForRole(r).map((i) => i.href);
+      expect(hrefs).toEqual(["/", "/review", "/issues", "/rules"]);
+      expect(navItemsForRole(r).some((i) => i.group === "admin")).toBe(false);
+    }
+  });
+
+  it("admin gets management surfaces plus the admin group", () => {
+    const items = navItemsForRole(Role.ADMIN);
+    const hrefs = items.map((i) => i.href);
+    expect(hrefs).toEqual([
+      "/",
+      "/review",
+      "/issues",
+      "/rules",
+      "/admin/users",
+      "/admin/templates",
+      "/admin/sla",
+      "/admin/properties",
+    ]);
+    expect(items.filter((i) => i.group === "admin")).toHaveLength(4);
+  });
+});
+
+describe("isNavItemActive", () => {
+  it("Today is active only on exact root", () => {
+    expect(isNavItemActive("/", "/")).toBe(true);
+    expect(isNavItemActive("/", "/review")).toBe(false);
+  });
+
+  it("section items match by prefix", () => {
+    expect(isNavItemActive("/review", "/review")).toBe(true);
+    expect(isNavItemActive("/review", "/review/abc123")).toBe(true);
+    expect(isNavItemActive("/issues", "/review/abc123")).toBe(false);
+  });
+
+  it("admin sub-items match their own prefix, not the whole /admin tree", () => {
+    expect(isNavItemActive("/admin/users", "/admin/users")).toBe(true);
+    expect(isNavItemActive("/admin/templates", "/admin/users")).toBe(false);
+  });
+});
+
+describe("shouldHideShell", () => {
+  it("hides on auth/standalone routes", () => {
+    for (const p of ["/login", "/install", "/ios-spike", "/photo-test", "/checklists/abc"]) {
+      expect(shouldHideShell(p)).toBe(true);
+    }
+  });
+
+  it("shows on app routes", () => {
+    for (const p of ["/", "/review", "/issues", "/rules", "/admin/users"]) {
+      expect(shouldHideShell(p)).toBe(false);
+    }
+  });
+});
