@@ -17,7 +17,7 @@ distinguishes new work from polish.
 2. **Checklist authoring** — let admins build checklist templates (field types, title, assignee), create checklists manually (immediate) or via the existing recurring rules (5 AM ET cron), browse completed checklists, and resume in-progress ones.
 3. **Auth hardening** — password + email OTP for all users, with a 30-day trusted-device window, delivered via the existing Resend account.
 
-Non-goals: changing the recurrence cron model (stays 5 AM ET global, ADR-009); cross-device resume; per-property template permissions (admin-only for now).
+Non-goals: changing the recurrence cron model (stays 5 AM ET global, ADR-009); cross-device resume; per-property *role* overrides (ADR-013 unchanged — one global role per user).
 
 ---
 
@@ -33,9 +33,14 @@ Non-goals: changing the recurrence cron model (stays 5 AM ET global, ADR-009); c
 | Resume | Same-device only (already works via IndexedDB draft). Add a "mark-opened" step. |
 | OTP | Password + email OTP for **all** users; **30-day trusted-device** window skips OTP on a known device. |
 | Admin account | `admin@rentstayable.com`, password `StayableAdmin` (rotated from `StayableCheck`). |
-| Template perms | Create/edit/delete templates = **ADMIN only**. Revisit other perms later. |
+| Template perms | Template **CRUD = ADMIN (all properties) + MANAGER (their properties only)**. *(Revised 2026-06-23 — was ADMIN-only.)* |
 | Template cleanup | **Hard-delete** the 9 placeholders — scripted, row-count-confirmed, run **last**. |
 | Property scope | Active property is a **global filter** in the shell header; templates declare which properties they apply to (specific list **or** "All"). Extends ADR-013. |
+| Review → issues | Reviewer reviews completed checklists and **notes issues found** (flag → Issue + manager note — exists). |
+| Reports | **Daily completeness report** (complete / incomplete / with-issues / %) + **issues-found report**, per property, ET-anchored. |
+| Manager dashboard | Alerts surface: **incomplete checklists** + **checklists with issues** (+ unassigned). Pulled forward from Phase 6. |
+| PDF export | Completed checklists **and** reports exportable to PDF. Pulled forward from Phase 7. |
+| Photo metadata | Every checklist photo carries **timestamp + geolocation**, shown on the photo in review / completed / PDF. |
 
 ---
 
@@ -111,8 +116,8 @@ Kate's "Community" concept = **property scope.** A user belongs to one or more p
 
 ## 6. Component 4 — Checklist authoring
 
-### 6a. Template Builder (`/admin/templates`, ADMIN-only)
-Turn the read-only template view editable.
+### 6a. Template Builder (`/templates`, ADMIN + MANAGER)
+Turn the read-only template view editable. **Access (revised 2026-06-23):** ADMIN gets full CRUD across all properties; MANAGER gets CRUD on templates **available at their own properties** (a manager can't touch a template scoped only to a property they don't belong to). Moves out of `/admin` since managers now use it. All mutations audit-logged.
 - **Template fields:** Title (required), default assignee or role, scope (per-room / per-property / ad-hoc), review level, **Available at properties** (multi-select of properties **OR "All properties"** — standardized checklists like Arrival/DueOut use "All").
 - **Property association:** new `template_properties` join (template_id, property_id). An "All properties" template has no rows (or a boolean `allProperties` flag) and is offered everywhere. Manual-create and the template list filter by the active property against this association.
 - **Questions** (ordered, add/remove/reorder), each with a type mapped to the existing `QuestionType` enum:
@@ -147,11 +152,38 @@ Turn the read-only template view editable.
 ### 6f. Home revamp (`app/page.tsx`)
 - Split today's assignments into **To do today** and **Done today**.
 - Add a **Recently completed** section below (last N completed, ET-anchored).
-- For managers/corp, scope = their own assignments (portfolio rollups stay on dashboards, Phase 6).
+- For managers/corp, scope = their own assignments (portfolio rollups live on the manager dashboard, §6h).
+
+### 6g. Photo metadata — timestamp + geolocation (per your 2026-06-23 ask)
+- **Geolocation: already captured** — `gpsLat` / `gpsLng` / `geofenceStatus` per photo (ADR-015), with geofence badges on display.
+- **Timestamp: make it reliable.** `Photo.exifTimestamp` exists but iOS strips EXIF, so it's usually null. Capture a **client-side capture time** at photo time (same mechanism that already captures GPS per batch) and persist it.
+- **Display:** show timestamp (ET) + lat/lng (or geofence badge) on every photo in the review detail, completed view, and PDF export.
 
 ---
 
-## 7. Component 5 — Template hard-delete (LAST)
+## 6.5. Component 6 — Review, reports & manager dashboard (expanded 2026-06-23)
+
+### 6h. Review → issues (mostly exists)
+- Phase-4 review already lets a reviewer Approve / Flag / Request Re-do with a manager note; **Flag creates an Issue** (and failed pass/fail questions auto-create Issues). "Reviewer notes issues found" = this existing flow — reinforced, not rebuilt.
+- Each reviewed checklist surfaces its attached issues inline.
+
+### 6i. Reports (new)
+Two report views, both ET-anchored, property-scoped, **PDF-exportable** (§6k):
+- **Daily completeness report** — per property per day: total scheduled, completed, incomplete/missing, submitted-with-issues, # complete, % complete. The "overall report for completeness of daily checklist."
+- **Issues-found report** — issues raised from checklist review, filterable by property / date / status / priority, grouped by checklist; the "report of issues found."
+
+### 6j. Manager dashboard (`/dashboard`, MANAGER+) (new — pulled forward from Phase 6)
+- Alerts surface scoped to the manager's active property: **incomplete checklists** (today + overdue), **checklists with issues**, unassigned queue, completion %.
+- Each alert links to the source checklist / issue.
+
+### 6k. PDF export (new — pulled forward from Phase 7)
+- **Single completed checklist → PDF** — responses, photos (with timestamp + geo, §6g), signatures, start/complete times. Uses `@react-pdf/renderer`.
+- **Reports → PDF** — daily completeness + issues-found.
+- Bulk export deferred unless you want it now.
+
+---
+
+## 7. Component 7 — Template hard-delete (LAST)
 
 - Runs only after real templates exist (else manual/auto create have nothing to use; empty states cover the gap if Kate wants it earlier).
 - Script: count and display affected rows — templates, questions, dependent `checklist_instances`, `responses`, `photos`, `recurring_rules` — **pause for confirmation**, then delete in dependency order inside a transaction.
@@ -163,10 +195,11 @@ Turn the read-only template view editable.
 
 1. **AppShell** (foundation — everything renders inside it) **+ property scope as the global header filter** (§3.5).
 2. **Auth / OTP + user delete + admin password** (needs `RESEND_API_KEY`).
-3. **Template Builder** (incl. Available-at-properties) **+ Manual create** (with empty states).
-4. **Completed view + Home revamp + mark-opened/resume.**
-5. **Recurring-rules polish** (after Kate reviews `/rules`).
-6. **Template hard-delete** (gated on row-count confirmation).
+3. **Template Builder** (ADMIN+MANAGER, incl. Available-at-properties) **+ Manual create** (with empty states).
+4. **Completed view + Home revamp + mark-opened/resume + photo timestamp/geo** (§6g).
+5. **Manager dashboard + reports** (completeness + issues-found) **+ PDF export** (§6h–k).
+6. **Recurring-rules polish** (after Kate reviews `/rules`).
+7. **Template hard-delete** (gated on row-count confirmation).
 
 ---
 
@@ -174,7 +207,8 @@ Turn the read-only template view editable.
 
 - **ADR-018 — Unified responsive AppShell.** Left-sidebar desktop / bottom-bar mobile; single role-aware nav; standardized widths; supersedes the split nav from ADR-017's structural pass.
 - **ADR-019 — Email OTP + 30-day trusted device.** Supersedes the TOTP-authenticator MFA plan for v1; password + email OTP for all users via Resend.
-- **ADR-020 — Template authoring + property-scoped templates in v1.** Reverses "template editing out of scope"; admin-only template builder + manual instance creation; templates declare applicable properties (specific list or "All"). Property scope as a global filter extends ADR-013.
+- **ADR-020 — Template authoring + property-scoped templates in v1.** Reverses "template editing out of scope"; template builder (**ADMIN + MANAGER**, manager scoped to own properties) + manual instance creation; templates declare applicable properties (specific list or "All"). Property scope as a global filter extends ADR-013.
+- **ADR-021 — Reports, manager dashboard & PDF pulled into this epic.** Daily completeness report + issues-found report, manager alert dashboard (incomplete / with-issues), and PDF export — originally Phases 6–7 — are delivered as part of this build. Photos carry timestamp + geolocation on all surfaces.
 
 ---
 
@@ -183,6 +217,7 @@ Turn the read-only template view editable.
 - **BLOCKING (Component 4 auth):** `RESEND_API_KEY` + verified from-address — not yet in env.
 - Template **code** auto-derivation algorithm — finalize in the plan.
 - User hard-delete dependency rule (block vs reassign vs cascade) — finalize in the plan.
-- Confirm whether managers may *manual-create* from templates (assumed yes) vs ADMIN-only like authoring (authoring is admin-only; instance creation assumed manager+).
+- Manager template CRUD is scoped to their properties; confirm a manager may create a *new* template and which properties they can attach it to (assumed: only their own).
+- Reports/dashboard scope: per-property + per-day assumed; confirm whether corporate needs a portfolio rollup view now or later.
 - Confirm template→property model: multi-select properties **+ "All properties"** option (assumed). Implementation via `template_properties` join + `allProperties` flag — finalize in the plan.
 - Exact prod row counts for the template delete — captured at delete time.
