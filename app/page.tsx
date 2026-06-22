@@ -1,18 +1,13 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { InstanceStatus } from "@prisma/client";
-import { SignOutButton } from "@/components/SignOutButton";
-import { OnlineStatus } from "@/components/OnlineStatus";
 import { InstallPrompt } from "@/components/InstallPrompt";
-import { PropertyPicker } from "@/components/PropertyPicker";
 import { LocalePrompt } from "@/components/LocalePrompt";
+import { PageHeader } from "@/components/shell/PageHeader";
 import {
-  accessibleProperties,
   isAdmin,
-  isPortfolioRole,
   requireUser,
 } from "@/lib/rbac";
-import { getCurrentPropertyId } from "@/lib/current-property";
 import { db } from "@/lib/db";
 import { etDateOnly, formatDateInET } from "@/lib/datetime";
 
@@ -21,12 +16,6 @@ import { etDateOnly, formatDateInET } from "@/lib/datetime";
 export default async function Home() {
   const user = await requireUser();
   const t = await getTranslations("Home");
-
-  const properties = await accessibleProperties(user);
-  const showPicker = !isPortfolioRole(user.role) && properties.length > 1;
-  const currentPropertyId = showPicker
-    ? await getCurrentPropertyId(properties.map((p) => p.id))
-    : null;
 
   // Today's assignments (ET-anchored, ADR-013) for whoever is assigned.
   const today = etDateOnly();
@@ -70,43 +59,31 @@ export default async function Home() {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-slate-50 pb-24">
-      {/* Navy header band (Stayable brand token). */}
-      <header className="bg-navy px-5 pb-10 pt-6 text-white">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold">{t("greeting", { name: user.name })}</h1>
-            <p className="text-sm text-slate-300">{formatDateInET(today)}</p>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <OnlineStatus />
-            {showPicker && <PropertyPicker properties={properties} current={currentPropertyId} />}
-            <SignOutButton />
-          </div>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        title={t("greeting", { name: user.name })}
+        subtitle={formatDateInET(today)}
+      />
 
       <LocalePrompt role={user.role} />
 
-      {/* Progress summary card, overlapping the band. */}
-      <div className="-mt-6 px-5">
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-bold uppercase tracking-wide text-slate-500">
-              {t("today")}
-            </span>
-            <span className="text-sm font-semibold text-slate-900">
-              {doneCount}/{total}
-            </span>
-          </div>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
-          </div>
+      {/* Progress summary card */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm font-bold uppercase tracking-wide text-slate-500">
+            {t("today")}
+          </span>
+          <span className="text-sm font-semibold text-slate-900">
+            {doneCount}/{total}
+          </span>
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
       {isAdmin(user.role) && (
-        <div className="px-5 pt-4">
+        <div className="pt-4">
           <Link
             href="/admin/users"
             className="block rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -116,7 +93,7 @@ export default async function Home() {
         </div>
       )}
 
-      <section className="px-5 pt-5">
+      <section className="pt-5">
         {total === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400">
             {t("noAssignments")}
@@ -151,9 +128,9 @@ export default async function Home() {
         )}
       </section>
 
-      <div className="px-5 pt-5">
+      <div className="pt-5">
         <InstallPrompt />
       </div>
-    </div>
+    </>
   );
 }
