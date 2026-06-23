@@ -10,6 +10,23 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 ---
 
+## 🆕 EPIC: Shell + Auth/OTP + Checklist Authoring (started 2026-06-23)
+
+Spec: `docs/superpowers/specs/2026-06-22-ops-shell-and-checklist-authoring-design.md` · 7 sequential plans (build order = spec §8). New ADRs 018–021 (not yet in DECISIONS.md).
+
+| Plan | Status | What |
+|---|---|---|
+| 1 — AppShell + property scope | [x] | **DONE 2026-06-23** — `lib/nav.ts` + `lib/property-scope.ts` (tested); `components/shell/{AppShell,ShellChrome,PageHeader}`; root-layout mount; Home/admin/review/issues/rules migrated; AppNav/BottomNav deleted. 73/73 tests, build 19 routes. Branch HEAD `c8d88bf`. Plan: `docs/superpowers/plans/2026-06-23-plan1-appshell-and-property-scope.md` |
+| 1 — merge gate | [!] | 🧑 You: add to Vercel **Preview** scope `AUTH_SECRET`/`DATABASE_URL`/`DIRECT_URL` (+ 4× `R2_*` for /review+/issues), then ping → I re-trigger Preview build → you sign off → merge to main. **Preview can't show the authed shell until these are set.** |
+| 2 — Auth/OTP + user delete + admin pw | [!] | **Blocked: `RESEND_API_KEY` + verified from-address.** Password + email OTP for all users, 30-day trusted device; user hard-delete; set `admin@rentstayable.com` pw `StayableAdmin` |
+| 3 — Template builder + manual create | [ ] | ADMIN+MANAGER builder (`/templates`, mgr scoped to own props); field types map to existing QuestionType enum; manual create = immediate, required title override, fork-to-builder; empty-state → builder |
+| 4 — Completed view + home revamp + resume + photo meta | [ ] | `/completed` (filter property/date/assignee); home to-do/done/recently-completed; mark-opened stamps `openedAt`+IN_PROGRESS; reliable photo capture-timestamp + show timestamp/geo |
+| 5 — Manager dashboard + reports + PDF | [ ] | `/dashboard` (incomplete + with-issues alerts); daily completeness report + issues-found report; PDF export of checklists + reports |
+| 6 — Recurrence polish | [ ] | After Kate reviews `/rules` (auto-create already ~built Phase 5) |
+| 7 — Template hard-delete | [ ] | 🧑 You confirm: hard-delete 9 placeholders + dependents, **row-count-confirmed first**, run LAST (after real templates exist) |
+
+---
+
 ## Near-Term Execution Plan (as of 2026-06-16)
 
 Tactical sequence layered on top of the numbered phases below. `🧑 You` = needs the user. Update each session.
