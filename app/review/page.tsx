@@ -3,6 +3,7 @@ import { InstanceStatus, QuestionType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { accessiblePropertyIds, requireManager } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
+import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { formatDateInET } from "@/lib/datetime";
 import { timeToCompleteMinutes } from "@/lib/review";
 import { presignDownload } from "@/lib/r2";
@@ -33,7 +34,7 @@ export default async function ReviewQueuePage({
 
   const propertyIds = await accessiblePropertyIds(user);
   const currentPropertyId = await getCurrentPropertyId(propertyIds);
-  const scopeIds = currentPropertyId ? [currentPropertyId] : propertyIds;
+  const scopeIds = resolveScopedPropertyIds(propertyIds, currentPropertyId);
 
   const instances = await db.checklistInstance.findMany({
     where: { propertyId: { in: scopeIds }, status: { in: [...FILTERS[filter]] } },
@@ -110,7 +111,7 @@ export default async function ReviewQueuePage({
   const countOf = (s: InstanceStatus) => counts.find((c) => c.status === s)?._count ?? 0;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 p-6 pb-24">
+    <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Review queue</h1>
@@ -152,6 +153,6 @@ export default async function ReviewQueuePage({
       </nav>
 
       <ReviewQueueClient rows={rows} filter={filter} />
-    </main>
+    </div>
   );
 }

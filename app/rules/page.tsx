@@ -64,7 +64,7 @@ export default async function RulesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 pb-24">
+    <div className="flex flex-col gap-6">
       <header className="mb-5">
         <h1 className="text-xl font-bold text-navy">Recurring Rules</h1>
         <p className="text-sm text-slate-500">

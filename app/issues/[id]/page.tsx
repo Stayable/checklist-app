@@ -72,7 +72,7 @@ export default async function IssueDetailPage({
   const breached = isSlaBreached(issue.slaTargetAt, issue.resolvedAt, new Date());
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-6 pb-24">
+    <div className="flex flex-col gap-6">
       <header>
         <Link href="/issues" className="text-sm text-slate-500 hover:underline">
           ← Issues
@@ -172,6 +172,6 @@ export default async function IssueDetailPage({
           </ol>
         )}
       </div>
-    </main>
+    </div>
   );
 }

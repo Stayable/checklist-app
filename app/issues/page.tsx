@@ -3,6 +3,7 @@ import { IssuePriority, IssueStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { accessiblePropertyIds, requireManager } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
+import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { formatInET } from "@/lib/datetime";
 import { isSlaBreached } from "@/lib/review";
 
@@ -33,7 +34,7 @@ export default async function IssuesPage({
 
   const propertyIds = await accessiblePropertyIds(user);
   const currentPropertyId = await getCurrentPropertyId(propertyIds);
-  const scopeIds = currentPropertyId ? [currentPropertyId] : propertyIds;
+  const scopeIds = resolveScopedPropertyIds(propertyIds, currentPropertyId);
 
   const issues = await db.issue.findMany({
     where: {
@@ -67,7 +68,7 @@ export default async function IssuesPage({
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 p-6 pb-24">
+    <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Issues</h1>
@@ -167,6 +168,6 @@ export default async function IssuesPage({
           </table>
         </div>
       )}
-    </main>
+    </div>
   );
 }

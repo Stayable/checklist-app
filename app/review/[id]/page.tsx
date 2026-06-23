@@ -153,7 +153,7 @@ export default async function ReviewDetailPage({
     instance.status === InstanceStatus.SUBMITTED || instance.status === InstanceStatus.FLAGGED;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 p-6 pb-24">
+    <div className="flex flex-col gap-6">
       <header className="flex items-start justify-between">
         <div>
           <Link href="/review" className="text-sm text-slate-500 hover:underline">
@@ -267,6 +267,6 @@ export default async function ReviewDetailPage({
           </div>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }
