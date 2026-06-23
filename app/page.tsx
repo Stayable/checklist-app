@@ -6,6 +6,7 @@ import { LocalePrompt } from "@/components/LocalePrompt";
 import { PageHeader } from "@/components/shell/PageHeader";
 import {
   isAdmin,
+  isFieldStaff,
   requireUser,
 } from "@/lib/rbac";
 import { db } from "@/lib/db";
@@ -128,9 +129,12 @@ export default async function Home() {
         )}
       </section>
 
-      <div className="pt-5">
-        <InstallPrompt />
-      </div>
+      {/* PWA install nudge: field staff (phone-first) only, and never on desktop. */}
+      {isFieldStaff(user.role) && (
+        <div className="pt-5 lg:hidden">
+          <InstallPrompt />
+        </div>
+      )}
     </>
   );
 }

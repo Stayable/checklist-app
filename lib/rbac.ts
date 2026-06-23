@@ -26,6 +26,11 @@ export function isManagerOrAbove(role: Role): boolean {
   return role === Role.MANAGER || isPortfolioRole(role);
 }
 
+/** Field staff (HK, PA, MT) — phone-first fill surfaces; the PWA-install audience. */
+export function isFieldStaff(role: Role): boolean {
+  return !isManagerOrAbove(role);
+}
+
 /**
  * Current session user, or redirect to /login. Use at the top of any protected
  * server component or server action.
