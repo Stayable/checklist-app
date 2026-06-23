@@ -45,6 +45,6 @@ export const SHELL_HIDE_PREFIXES = [
 
 export function shouldHideShell(pathname: string): boolean {
   return SHELL_HIDE_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p),
+    (p) => pathname === p || pathname.startsWith(p + "/"),
   );
 }
