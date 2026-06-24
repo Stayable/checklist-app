@@ -144,6 +144,7 @@ model User {
   auditLogs         AuditLog[]
   notifications     NotificationLog[]
   createdRules      RecurringRule[]     @relation("RuleCreatedBy")
+  loginOtps         LoginOtp[]
 
   @@map("users")
 }
@@ -181,6 +182,21 @@ model UserProperty {
   @@id([userId, propertyId])
   @@index([propertyId])
   @@map("user_properties")
+}
+
+model LoginOtp {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("login_otps")
 }
 
 // ---------------------------------------------------------------------------
