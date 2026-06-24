@@ -85,7 +85,7 @@ export default async function Home() {
 
   // CTA label for to-do items: Resume if already opened, Open otherwise.
   const ctaLabel = (s: InstanceStatus) =>
-    s === InstanceStatus.IN_PROGRESS ? "Resume" : "Open";
+    s === InstanceStatus.IN_PROGRESS ? t("ctaResume") : t("ctaOpen");
 
   const chevron = (
     <svg
@@ -142,11 +142,11 @@ export default async function Home() {
       {/* ── To do today ── */}
       <section className="pt-5">
         <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-500">
-          To do today
+          {t("toDoHeading")}
         </h2>
         {todoItems.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
-            {t("noAssignments")}
+            {t("allCaughtUp")}
           </div>
         ) : (
           <ul className="flex flex-col gap-2.5">
@@ -182,7 +182,7 @@ export default async function Home() {
       {doneItems.length > 0 && (
         <section className="pt-5">
           <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-500">
-            Done today
+            {t("doneHeading")}
           </h2>
           <ul className="flex flex-col gap-2.5">
             {doneItems.map((a) => (
@@ -217,7 +217,7 @@ export default async function Home() {
       {recentlyCompleted.length > 0 && (
         <section className="pt-5">
           <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-500">
-            Recently completed
+            {t("recentlyCompletedHeading")}
           </h2>
           <ul className="flex flex-col gap-2">
             {recentlyCompleted.map((r) => (
