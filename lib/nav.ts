@@ -43,7 +43,11 @@ export const SHELL_HIDE_PREFIXES = [
   "/checklists",
 ];
 
+// Routes under /checklists that render with the shell (management surfaces).
+const SHELL_SHOW_EXACT = new Set(["/checklists/new"]);
+
 export function shouldHideShell(pathname: string): boolean {
+  if (SHELL_SHOW_EXACT.has(pathname)) return false;
   return SHELL_HIDE_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
