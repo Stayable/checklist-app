@@ -159,11 +159,12 @@ model Property {
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  users          UserProperty[]
-  rooms          Room[]
-  recurringRules RecurringRule[]
-  instances      ChecklistInstance[]
-  issues         Issue[]
+  users              UserProperty[]
+  rooms              Room[]
+  recurringRules     RecurringRule[]
+  instances          ChecklistInstance[]
+  issues             Issue[]
+  templateProperties TemplateProperty[]
 
   @@map("properties")
 }
@@ -216,13 +217,15 @@ model ChecklistTemplate {
   defaultRole Role          @map("default_role")
   scope       TemplateScope
   reviewLevel ReviewLevel   @default(MANAGER) @map("review_level")
-  active      Boolean       @default(true)
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  active         Boolean       @default(true)
+  allProperties  Boolean       @default(false) @map("all_properties")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
   questions      Question[]
   recurringRules RecurringRule[]
   instances      ChecklistInstance[]
+  properties     TemplateProperty[]
 
   @@map("checklist_templates")
 }
@@ -248,6 +251,19 @@ model Question {
 
   @@index([templateId])
   @@map("questions")
+}
+
+model TemplateProperty {
+  id         String @id @default(uuid()) @db.Uuid
+  templateId String @map("template_id") @db.Uuid
+  propertyId String @map("property_id") @db.Uuid
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  property Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, propertyId])
+  @@index([propertyId])
+  @@map("template_properties")
 }
 
 // ---------------------------------------------------------------------------
@@ -293,6 +309,7 @@ model ChecklistInstance {
   // ADR-009 human/system ID CL-{prop}-{code}-{YYYYMMDD}-{seq}; assigned at
   // generation, hence nullable until then.
   systemId   String? @unique @map("system_id")
+  title      String?
   templateId String  @map("template_id") @db.Uuid
   propertyId String  @map("property_id") @db.Uuid
   roomId     String? @map("room_id") @db.Uuid

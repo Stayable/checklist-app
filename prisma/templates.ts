@@ -30,6 +30,7 @@ export type SeedTemplate = {
   defaultRole: Role;
   scope: TemplateScope;
   reviewLevel: ReviewLevel;
+  allProperties: boolean;
   // Cadence is informational here; real recurrence lives in recurring_rules (Phase 5).
   cadence: string;
   questions: SeedQuestion[];
@@ -49,6 +50,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.HK,
     scope: TemplateScope.PER_ROOM,
     reviewLevel: ReviewLevel.MANAGER,
+    allProperties: true,
     cadence: "daily / per room",
     questions: [
       q(0, QuestionType.SECTION_DIVIDER, "Room condition", { required: false }),
@@ -67,6 +69,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.HK,
     scope: TemplateScope.PER_ROOM,
     reviewLevel: ReviewLevel.MANAGER,
+    allProperties: true,
     cadence: "daily / per room",
     questions: [
       q(0, QuestionType.MULTI, "[placeholder] Items requiring restock", { required: false, options: ["Coffee", "Toiletries", "Towels", "Trash liners"] }),
@@ -82,6 +85,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.MANAGER,
     scope: TemplateScope.PER_PROPERTY,
     reviewLevel: ReviewLevel.CORPORATE,
+    allProperties: true,
     cadence: "weekly / per property",
     questions: [
       q(0, QuestionType.NUMBER, "[placeholder] Rooms inspected this week"),
@@ -95,6 +99,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.MANAGER,
     scope: TemplateScope.PER_PROPERTY,
     reviewLevel: ReviewLevel.CORPORATE,
+    allProperties: true,
     cadence: "weekly / per property",
     questions: [
       q(0, QuestionType.PASSFAIL, "[placeholder] Common areas meet standard"),
@@ -108,6 +113,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.MANAGER,
     scope: TemplateScope.PER_PROPERTY,
     reviewLevel: ReviewLevel.CORPORATE,
+    allProperties: true,
     cadence: "weekly / per property",
     questions: [
       q(0, QuestionType.DATE, "[placeholder] Week ending"),
@@ -122,6 +128,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.MT,
     scope: TemplateScope.AD_HOC,
     reviewLevel: ReviewLevel.MANAGER,
+    allProperties: true,
     cadence: "daily / per task or area",
     questions: [
       q(0, QuestionType.SHORT_TEXT, "[placeholder] Task / area"),
@@ -138,6 +145,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.MT,
     scope: TemplateScope.PER_PROPERTY,
     reviewLevel: ReviewLevel.MANAGER,
+    allProperties: true,
     cadence: "monthly / per property",
     questions: [
       q(0, QuestionType.MULTI, "[placeholder] Areas washed", { options: ["Sidewalks", "Breezeways", "Stairs", "Parking", "Dumpster pad"] }),
@@ -151,6 +159,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.MT,
     scope: TemplateScope.PER_PROPERTY,
     reviewLevel: ReviewLevel.MANAGER,
+    allProperties: true,
     cadence: "quarterly / per property",
     questions: [
       q(0, QuestionType.PASSFAIL, "[placeholder] Roof free of visible damage", { failFlagsIssue: true }),
@@ -165,6 +174,7 @@ export const TEMPLATES: SeedTemplate[] = [
     defaultRole: Role.MANAGER,
     scope: TemplateScope.PER_ROOM,
     reviewLevel: ReviewLevel.NONE,
+    allProperties: true,
     cadence: "ad-hoc / per room",
     questions: [
       q(0, QuestionType.PASSFAIL, "[placeholder] Room passes inspection", { failFlagsIssue: true }),

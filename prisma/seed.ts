@@ -108,6 +108,7 @@ async function main() {
         defaultRole: tmpl.defaultRole,
         scope: tmpl.scope,
         reviewLevel: tmpl.reviewLevel,
+        allProperties: tmpl.allProperties,
         active: true,
       },
       create: {
@@ -116,6 +117,7 @@ async function main() {
         defaultRole: tmpl.defaultRole,
         scope: tmpl.scope,
         reviewLevel: tmpl.reviewLevel,
+        allProperties: tmpl.allProperties,
       },
     });
     // Replace questions wholesale so re-seeding tracks edits to templates.ts.
