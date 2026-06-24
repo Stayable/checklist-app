@@ -15,7 +15,7 @@ const MAIN_MANAGER: NavItem[] = [
 
 const ADMIN_GROUP: NavItem[] = [
   { href: "/admin/users", label: "Users", group: "admin" },
-  { href: "/admin/templates", label: "Templates", group: "admin" },
+  { href: "/templates", label: "Templates", group: "admin" },
   { href: "/admin/sla", label: "SLA", group: "admin" },
   { href: "/admin/properties", label: "Properties", group: "admin" },
 ];
