@@ -3,3 +3,4 @@
 // server modules into the browser bundle.
 
 export const CURRENT_PROPERTY_COOKIE = "CURRENT_PROPERTY";
+export const TRUSTED_DEVICE_COOKIE = "TRUSTED_DEVICE";
