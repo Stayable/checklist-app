@@ -20,34 +20,58 @@ export default async function Home() {
 
   // Today's assignments (ET-anchored, ADR-013) for whoever is assigned.
   const today = etDateOnly();
-  const assignments = await db.checklistInstance.findMany({
-    where: {
-      assignedUserId: user.id,
-      scheduledFor: today,
-      status: {
-        in: [
-          InstanceStatus.SCHEDULED,
-          InstanceStatus.ASSIGNED,
-          InstanceStatus.IN_PROGRESS,
-          InstanceStatus.SUBMITTED,
-          InstanceStatus.FLAGGED,
-        ],
+  const [assignments, recentlyCompleted] = await Promise.all([
+    db.checklistInstance.findMany({
+      where: {
+        assignedUserId: user.id,
+        scheduledFor: today,
+        status: {
+          in: [
+            InstanceStatus.SCHEDULED,
+            InstanceStatus.ASSIGNED,
+            InstanceStatus.IN_PROGRESS,
+            InstanceStatus.SUBMITTED,
+            InstanceStatus.FLAGGED,
+          ],
+        },
       },
-    },
-    orderBy: { systemId: "asc" },
-    select: {
-      id: true,
-      status: true,
-      template: { select: { name: true } },
-      property: { select: { shortCode: true } },
-      room: { select: { roomNumber: true } },
-    },
-  });
+      orderBy: { systemId: "asc" },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        openedAt: true,
+        template: { select: { name: true } },
+        property: { select: { shortCode: true } },
+        room: { select: { roomNumber: true } },
+      },
+    }),
+    db.checklistInstance.findMany({
+      where: {
+        assignedUserId: user.id,
+        status: { in: [InstanceStatus.SUBMITTED, InstanceStatus.REVIEWED] },
+      },
+      orderBy: { submittedAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        submittedAt: true,
+        template: { select: { name: true } },
+        property: { select: { shortCode: true } },
+        room: { select: { roomNumber: true } },
+      },
+    }),
+  ]);
 
   const isDone = (s: InstanceStatus) =>
     s === InstanceStatus.SUBMITTED || s === InstanceStatus.REVIEWED;
 
-  const doneCount = assignments.filter((a) => isDone(a.status)).length;
+  // Partition today's items into two buckets (no overlap).
+  const todoItems = assignments.filter((a) => !isDone(a.status));
+  const doneItems = assignments.filter((a) => isDone(a.status));
+
+  const doneCount = doneItems.length;
   const total = assignments.length;
   const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
 
@@ -59,6 +83,24 @@ export default async function Home() {
     return "bg-slate-100 text-slate-600";
   };
 
+  // CTA label for to-do items: Resume if already opened, Open otherwise.
+  const ctaLabel = (s: InstanceStatus) =>
+    s === InstanceStatus.IN_PROGRESS ? "Resume" : "Open";
+
+  const chevron = (
+    <svg
+      className="h-5 w-5 shrink-0 text-slate-300"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+
   return (
     <>
       <PageHeader
@@ -68,7 +110,7 @@ export default async function Home() {
 
       <LocalePrompt role={user.role} />
 
-      {/* Progress summary card */}
+      {/* Progress summary card — counts all of today's items */}
       <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-bold uppercase tracking-wide text-slate-500">
@@ -79,7 +121,10 @@ export default async function Home() {
           </span>
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all"
+            style={{ width: `${pct}%` }}
+          />
         </div>
       </div>
 
@@ -94,14 +139,18 @@ export default async function Home() {
         </div>
       )}
 
+      {/* ── To do today ── */}
       <section className="pt-5">
-        {total === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400">
+        <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+          To do today
+        </h2>
+        {todoItems.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
             {t("noAssignments")}
           </div>
         ) : (
           <ul className="flex flex-col gap-2.5">
-            {assignments.map((a) => (
+            {todoItems.map((a) => (
               <li key={a.id}>
                 <Link
                   href={`/checklists/${a.id}`}
@@ -109,25 +158,93 @@ export default async function Home() {
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold text-slate-900">
-                      {a.template.name}
+                      {a.title ?? a.template.name}
                     </span>
                     <span className="text-xs text-slate-500">
                       {a.property.shortCode}
                       {a.room ? ` · Rm ${a.room.roomNumber}` : ""}
                     </span>
                   </span>
-                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pill(a.status)}`}>
-                    {t(`status_${a.status}` as never)}
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pill(a.status)}`}
+                  >
+                    {ctaLabel(a.status)}
                   </span>
-                  <svg className="h-5 w-5 shrink-0 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
+                  {chevron}
                 </Link>
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {/* ── Done today ── */}
+      {doneItems.length > 0 && (
+        <section className="pt-5">
+          <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+            Done today
+          </h2>
+          <ul className="flex flex-col gap-2.5">
+            {doneItems.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={`/checklists/${a.id}`}
+                  className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition active:scale-[0.99] hover:bg-slate-50"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold text-slate-900">
+                      {a.title ?? a.template.name}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {a.property.shortCode}
+                      {a.room ? ` · Rm ${a.room.roomNumber}` : ""}
+                    </span>
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pill(a.status)}`}
+                  >
+                    {t(`status_${a.status}` as never)}
+                  </span>
+                  {chevron}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ── Recently completed (last 5, any date) ── */}
+      {recentlyCompleted.length > 0 && (
+        <section className="pt-5">
+          <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+            Recently completed
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {recentlyCompleted.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/checklists/${r.id}`}
+                  className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-slate-900">
+                      {r.title ?? r.template.name}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {r.property.shortCode}
+                      {r.room ? ` · Rm ${r.room.roomNumber}` : ""}
+                      {r.submittedAt
+                        ? ` · ${formatDateInET(r.submittedAt)}`
+                        : ""}
+                    </span>
+                  </span>
+                  {chevron}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* PWA install nudge: field staff (phone-first) only, and never on desktop. */}
       {isFieldStaff(user.role) && (
