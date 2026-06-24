@@ -5,6 +5,8 @@ import { z } from "zod";
 import { type Role, type Locale } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isLocked, registerFailure, registerSuccess } from "@/lib/auth-throttle";
+import { parseTrustedToken, TRUSTED_MAX_AGE_MS } from "@/lib/trusted-device";
+import { verifyOtpHash, isExpired, MAX_OTP_ATTEMPTS } from "@/lib/otp";
 
 // Auth.js v5 — Credentials provider, login-only for v1 (admin-initiated
 // provisioning lands in Phase 2). JWT sessions, 30-day rolling expiry. Account
@@ -17,6 +19,8 @@ const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days, rolling
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  otp: z.string().optional(),
+  trustedToken: z.string().optional(),
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -59,6 +63,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { id: user.id },
           data: { ...registerSuccess(), lastLoginAt: now },
         });
+
+        // Second factor (ADR-019): require a valid trusted-device token OR a
+        // verified, unexpired, unconsumed OTP. This gate runs AFTER password
+        // success and lockout-clear. OTP failures increment only the OTP row's
+        // attempts counter — they do NOT call registerFailure so the password
+        // lockout is never tripped by a bad code.
+        const secret = process.env.AUTH_SECRET ?? "";
+        const trusted =
+          typeof parsed.data.trustedToken === "string" && parsed.data.trustedToken.length > 0
+            ? parseTrustedToken(parsed.data.trustedToken, secret, now, TRUSTED_MAX_AGE_MS)
+            : null;
+        const trustedOk = trusted !== null && trusted.userId === user.id;
+
+        if (!trustedOk) {
+          // No valid trusted-device token — require a valid OTP.
+          const code = typeof parsed.data.otp === "string" ? parsed.data.otp : "";
+          if (!code) return null;
+          const otpRow = await db.loginOtp.findFirst({
+            where: { userId: user.id, consumedAt: null },
+            orderBy: { createdAt: "desc" },
+          });
+          if (!otpRow) return null;
+          if (isExpired(otpRow.expiresAt, now) || otpRow.attempts >= MAX_OTP_ATTEMPTS) return null;
+          const pepper = secret;
+          if (!verifyOtpHash(code, pepper, otpRow.codeHash)) {
+            await db.loginOtp.update({
+              where: { id: otpRow.id },
+              data: { attempts: { increment: 1 } },
+            });
+            return null;
+          }
+          await db.loginOtp.update({
+            where: { id: otpRow.id },
+            data: { consumedAt: now },
+          });
+        }
 
         return {
           id: user.id,
