@@ -160,8 +160,12 @@ export default async function ReviewDetailPage({
             ← Review queue
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">
-            {instance.template.name} — {instance.property.shortCode}
-            {instance.room ? ` — Rm ${instance.room.roomNumber}` : ""}
+            {instance.title ?? (
+              <>
+                {instance.template.name} — {instance.property.shortCode}
+                {instance.room ? ` — Rm ${instance.room.roomNumber}` : ""}
+              </>
+            )}
           </h1>
           <p className="text-sm text-slate-500">
             {instance.systemId ?? instance.id} · {instance.assignedUser?.name ?? "Unassigned"} ·{" "}

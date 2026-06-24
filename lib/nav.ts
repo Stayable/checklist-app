@@ -11,11 +11,11 @@ const MAIN_MANAGER: NavItem[] = [
   { href: "/review", label: "Review", group: "main" },
   { href: "/issues", label: "Issues", group: "main" },
   { href: "/rules", label: "Rules", group: "main" },
+  { href: "/templates", label: "Templates", group: "main" },
 ];
 
 const ADMIN_GROUP: NavItem[] = [
   { href: "/admin/users", label: "Users", group: "admin" },
-  { href: "/templates", label: "Templates", group: "admin" },
   { href: "/admin/sla", label: "SLA", group: "admin" },
   { href: "/admin/properties", label: "Properties", group: "admin" },
 ];

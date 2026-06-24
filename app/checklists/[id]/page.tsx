@@ -54,9 +54,10 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
     initialAnswers[r.questionId] = r.answer as AnswerValue;
   }
 
-  // ADR-009 human label: {Template} — {Short Code} — {Scope} — {Date}.
+  // ADR-009 human label: prefer stored title (set on manual-create); fall back
+  // to the ADR-009 computed pattern {Template} — {Short Code} — {Scope} — {Date}.
   const scope = instance.room ? `Rm ${instance.room.roomNumber}` : null;
-  const label = [
+  const generatedLabel = [
     instance.template.name,
     instance.property.shortCode,
     scope,
@@ -64,6 +65,7 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
   ]
     .filter(Boolean)
     .join(" — ");
+  const label = instance.title ?? generatedLabel;
 
   const submitted =
     instance.status === InstanceStatus.SUBMITTED || instance.status === InstanceStatus.REVIEWED;

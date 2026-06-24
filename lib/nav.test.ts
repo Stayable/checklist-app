@@ -17,7 +17,7 @@ describe("navItemsForRole", () => {
   it("manager and corporate get the management surfaces, no admin group", () => {
     for (const r of [Role.MANAGER, Role.CORPORATE]) {
       const hrefs = navItemsForRole(r).map((i) => i.href);
-      expect(hrefs).toEqual(["/", "/review", "/issues", "/rules"]);
+      expect(hrefs).toEqual(["/", "/review", "/issues", "/rules", "/templates"]);
       expect(navItemsForRole(r).some((i) => i.group === "admin")).toBe(false);
     }
   });
@@ -30,12 +30,30 @@ describe("navItemsForRole", () => {
       "/review",
       "/issues",
       "/rules",
+      "/templates",
       "/admin/users",
-      "/admin/templates",
       "/admin/sla",
       "/admin/properties",
     ]);
-    expect(items.filter((i) => i.group === "admin")).toHaveLength(4);
+    expect(items.filter((i) => i.group === "admin")).toHaveLength(3);
+  });
+
+  it("MANAGER sees Templates", () => {
+    expect(navItemsForRole(Role.MANAGER).some((n) => n.href === "/templates")).toBe(true);
+  });
+
+  it("ADMIN no longer points at /admin/templates", () => {
+    expect(navItemsForRole(Role.ADMIN).some((n) => n.href === "/admin/templates")).toBe(false);
+    expect(navItemsForRole(Role.ADMIN).some((n) => n.href === "/templates")).toBe(true);
+  });
+
+  it("field staff do NOT see Templates", () => {
+    expect(navItemsForRole(Role.HK).some((n) => n.href === "/templates")).toBe(false);
+  });
+
+  it("ADMIN sees /templates exactly once", () => {
+    const adminHrefs = navItemsForRole(Role.ADMIN).map((i) => i.href);
+    expect(adminHrefs.filter((h) => h === "/templates")).toHaveLength(1);
   });
 });
 
@@ -68,5 +86,13 @@ describe("shouldHideShell", () => {
     for (const p of ["/", "/review", "/issues", "/rules", "/admin/users"]) {
       expect(shouldHideShell(p)).toBe(false);
     }
+  });
+
+  it("hides shell on the fill runtime", () => {
+    expect(shouldHideShell("/checklists/abc-123")).toBe(true);
+  });
+
+  it("SHOWS shell on manual create", () => {
+    expect(shouldHideShell("/checklists/new")).toBe(false);
   });
 });
