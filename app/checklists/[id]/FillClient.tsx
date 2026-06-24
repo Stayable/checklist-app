@@ -16,6 +16,7 @@ import { compressImage, getCurrentPosition, type Position } from "@/lib/image";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-store";
 import { SignaturePad } from "@/components/checklist/SignaturePad";
 import { submitChecklist } from "./actions";
+import { markOpened } from "./mark-opened.action";
 
 export type FillQuestion = QuestionLike & { prompt: string };
 
@@ -91,6 +92,12 @@ export function FillClient({
     }
     void saveDraft({ instanceId, answers, photos: photoBlobs, photoPositions, signatures });
   }, [answers, photos, questions, instanceId, submitted]);
+
+  // Stamp openedAt + flip to IN_PROGRESS on first open. Fire-and-forget; the
+  // server action is a no-op for non-assignees (managers, wrong user, already opened).
+  useEffect(() => {
+    void markOpened(instanceId);
+  }, [instanceId]);
 
   const setAnswer = useCallback((qid: string, value: AnswerValue) => {
     setAnswers((prev) => ({ ...prev, [qid]: value }));
