@@ -1,0 +1,213 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { Prisma, QuestionType, Role, ReviewLevel, TemplateScope } from "@prisma/client";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
+import { deriveTemplateCode } from "@/lib/template-code";
+import { canManageTemplate } from "@/lib/template-access";
+
+export type ActionResult =
+  | { ok: true; id?: string; message?: string }
+  | { ok: false; error: string };
+
+const questionSchema = z.object({
+  type: z.nativeEnum(QuestionType),
+  prompt: z.string().trim().min(1, "Each question needs a prompt"),
+  required: z.boolean().default(true),
+  photoMax: z.number().int().min(1).max(10).nullable().optional(),
+  failFlagsIssue: z.boolean().default(false),
+});
+
+const templateSchema = z.object({
+  name: z.string().trim().min(1, "Title is required"),
+  defaultRole: z.nativeEnum(Role),
+  scope: z.nativeEnum(TemplateScope),
+  reviewLevel: z.nativeEnum(ReviewLevel).default(ReviewLevel.MANAGER),
+  allProperties: z.boolean().default(false),
+  propertyIds: z.array(z.string().uuid()).default([]),
+  questions: z.array(questionSchema).min(1, "Add at least one question"),
+});
+
+async function writeAudit(
+  actorUserId: string,
+  entityId: string,
+  action: string,
+  after?: Prisma.InputJsonValue,
+) {
+  await db.auditLog.create({
+    data: { actorUserId, entityType: "template", entityId, action, after: after ?? undefined },
+  });
+}
+
+// Authorization for the *requested* scope (create/update target state):
+// ADMIN unrestricted; MANAGER/CORPORATE may only target a non-all-properties
+// template fully within their accessible properties.
+function assertCanTarget(
+  role: Role,
+  accessible: string[],
+  allProperties: boolean,
+  propertyIds: string[],
+): string | null {
+  if (canManageTemplate(role, accessible, { allProperties, propertyIds })) return null;
+  if (role === Role.ADMIN) return null;
+  return "Managers can only manage templates scoped to their own properties (not All-properties).";
+}
+
+export async function createTemplate(input: unknown): Promise<ActionResult> {
+  const user = await requireManager();
+  const parsed = templateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const { name, defaultRole, scope, reviewLevel, allProperties, propertyIds, questions } =
+    parsed.data;
+
+  if (!allProperties && propertyIds.length === 0) {
+    return { ok: false, error: "Choose at least one property, or mark it All properties." };
+  }
+  const accessible = await accessiblePropertyIds(user);
+  const denied = assertCanTarget(user.role, accessible, allProperties, propertyIds);
+  if (denied) return { ok: false, error: denied };
+
+  const existing = await db.checklistTemplate.findMany({ select: { code: true } });
+  const code = deriveTemplateCode(name, existing.map((t) => t.code));
+
+  const created = await db.$transaction(async (tx) => {
+    const t = await tx.checklistTemplate.create({
+      data: {
+        code,
+        name,
+        defaultRole,
+        scope,
+        reviewLevel,
+        allProperties,
+        properties: allProperties
+          ? undefined
+          : { create: propertyIds.map((propertyId) => ({ propertyId })) },
+        questions: {
+          create: questions.map((q, i) => ({
+            orderIndex: i,
+            type: q.type,
+            prompt: q.prompt,
+            required: q.required,
+            photoMax: q.type === QuestionType.PHOTO ? q.photoMax ?? 1 : null,
+            failFlagsIssue: q.type === QuestionType.PASSFAIL ? q.failFlagsIssue : false,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+    return t;
+  });
+
+  await writeAudit(user.id, created.id, "create", { name, code });
+  revalidatePath("/templates");
+  return { ok: true, id: created.id, message: `Created "${name}".` };
+}
+
+export async function updateTemplate(id: string, input: unknown): Promise<ActionResult> {
+  const user = await requireManager();
+  const parsed = templateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const { name, defaultRole, scope, reviewLevel, allProperties, propertyIds, questions } =
+    parsed.data;
+  if (!allProperties && propertyIds.length === 0) {
+    return { ok: false, error: "Choose at least one property, or mark it All properties." };
+  }
+
+  const current = await db.checklistTemplate.findUnique({
+    where: { id },
+    select: { allProperties: true, properties: { select: { propertyId: true } } },
+  });
+  if (!current) return { ok: false, error: "Template not found." };
+
+  const accessible = await accessiblePropertyIds(user);
+  // Must be allowed to manage BOTH the current state and the requested state.
+  const deniedCurrent = assertCanTarget(
+    user.role,
+    accessible,
+    current.allProperties,
+    current.properties.map((p) => p.propertyId),
+  );
+  const deniedNext = assertCanTarget(user.role, accessible, allProperties, propertyIds);
+  if (deniedCurrent || deniedNext) {
+    return { ok: false, error: deniedCurrent ?? deniedNext! };
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.checklistTemplate.update({
+      where: { id },
+      data: { name, defaultRole, scope, reviewLevel, allProperties },
+    });
+    // Replace property associations.
+    await tx.templateProperty.deleteMany({ where: { templateId: id } });
+    if (!allProperties && propertyIds.length > 0) {
+      await tx.templateProperty.createMany({
+        data: propertyIds.map((propertyId) => ({ templateId: id, propertyId })),
+      });
+    }
+    // Replace questions (simplest correct approach; instances keep their own
+    // responses, which reference question ids — see note below).
+    await tx.question.deleteMany({ where: { templateId: id } });
+    await tx.question.createMany({
+      data: questions.map((q, i) => ({
+        templateId: id,
+        orderIndex: i,
+        type: q.type,
+        prompt: q.prompt,
+        required: q.required,
+        photoMax: q.type === QuestionType.PHOTO ? q.photoMax ?? 1 : null,
+        failFlagsIssue: q.type === QuestionType.PASSFAIL ? q.failFlagsIssue : false,
+      })),
+    });
+  });
+
+  await writeAudit(user.id, id, "update", { name });
+  revalidatePath("/templates");
+  revalidatePath(`/templates/${id}`);
+  return { ok: true, id, message: `Saved "${name}".` };
+}
+
+export async function deleteTemplate(id: string): Promise<ActionResult> {
+  const user = await requireManager();
+  const t = await db.checklistTemplate.findUnique({
+    where: { id },
+    select: {
+      name: true,
+      allProperties: true,
+      properties: { select: { propertyId: true } },
+      _count: { select: { instances: true } },
+    },
+  });
+  if (!t) return { ok: false, error: "Template not found." };
+
+  const accessible = await accessiblePropertyIds(user);
+  const denied = assertCanTarget(
+    user.role,
+    accessible,
+    t.allProperties,
+    t.properties.map((p) => p.propertyId),
+  );
+  if (denied) return { ok: false, error: denied };
+
+  if (t._count.instances > 0) {
+    return {
+      ok: false,
+      error: `Can't delete — ${t._count.instances} checklist(s) use this template. Deactivate it instead.`,
+    };
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.templateProperty.deleteMany({ where: { templateId: id } });
+    await tx.question.deleteMany({ where: { templateId: id } });
+    await tx.checklistTemplate.delete({ where: { id } });
+  });
+
+  await writeAudit(user.id, id, "delete", { name: t.name });
+  revalidatePath("/templates");
+  return { ok: true, message: `Deleted "${t.name}".` };
+}
