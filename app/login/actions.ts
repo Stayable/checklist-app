@@ -14,7 +14,7 @@ import {
   parseTrustedToken,
   TRUSTED_MAX_AGE_MS,
 } from "@/lib/trusted-device";
-import { isLocked } from "@/lib/auth-throttle";
+import { isLocked, registerFailure } from "@/lib/auth-throttle";
 import { TRUSTED_DEVICE_COOKIE } from "@/lib/cookies";
 
 export type LoginResult =
@@ -29,6 +29,17 @@ export type LoginResult =
 /** Generic pre-check: find the user and validate password + lockout.
  *  Returns the user row on success, or null for any failure.
  *  Intentionally does NOT reveal which check failed (no enumeration).
+ *
+ *  On a wrong password this function calls registerFailure and persists the
+ *  updated throttle state to the DB — identical to what authorize does — so
+ *  that wrong-password attempts via requestLogin/resendOtp trip the lockout
+ *  even though they never reach signIn → authorize.
+ *
+ *  No-double-count guarantee: the wrong-password path returns null here, so
+ *  signIn is never called and authorize never runs — registerFailure fires
+ *  exactly once per attempt. The correct-password path returns the user without
+ *  touching the counter; authorize then calls registerSuccess only after the
+ *  2FA gate passes — no double increment.
  */
 async function preCheck(email: string, password: string) {
   const user = await db.user.findUnique({
@@ -40,7 +51,18 @@ async function preCheck(email: string, password: string) {
   if (isLocked(user, now)) return null;
 
   const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return null;
+  if (!ok) {
+    const next = registerFailure(
+      {
+        failedLoginAttempts: user.failedLoginAttempts,
+        lastFailedLoginAt: user.lastFailedLoginAt,
+        lockedUntil: user.lockedUntil,
+      },
+      now,
+    );
+    await db.user.update({ where: { id: user.id }, data: next });
+    return null;
+  }
 
   return user;
 }
@@ -55,6 +77,10 @@ async function issueOtp(
   userLocale: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const secret = process.env.AUTH_SECRET ?? "";
+  // Fail closed: an empty secret means OTP hashes have no pepper and would be
+  // trivially reversible. Refuse to generate or send a code — mirrors the
+  // `if (!secret) return null` guard in authorize.
+  if (!secret) return { ok: false, error: "email_failed" };
   const code = generateOtpCode();
   const codeHash = hashOtp(code, secret);
   const now = new Date();
@@ -131,9 +157,9 @@ async function setTrustedCookie(userId: string, existingDeviceId?: string): Prom
 /**
  * Step 1: password check + trusted-device or OTP gate.
  *
- * - Pre-validates password + lockout (UX guard; authoritative check also runs
- *   inside `authorize` — we deliberately do NOT call registerFailure here to
- *   avoid double-tripping the lockout counter).
+ * - Pre-validates password + lockout (authoritative check; wrong-password
+ *   attempts call registerFailure and persist throttle state so the 5/15/30
+ *   lockout fires even without reaching authorize).
  * - If a valid trusted-device cookie for this user exists → calls `signIn` with
  *   { email, password, trustedToken } and refreshes the cookie.
  * - If no valid trusted cookie → issues an OTP, emails it, returns `{ ok: "otp" }`.
