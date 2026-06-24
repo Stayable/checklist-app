@@ -51,7 +51,7 @@ function assertCanTarget(
   propertyIds: string[],
 ): string | null {
   if (canManageTemplate(role, accessible, { allProperties, propertyIds })) return null;
-  if (role === Role.ADMIN) return null;
+  // canManageTemplate already grants ADMIN; this error is for scoped managers/corporate.
   return "Managers can only manage templates scoped to their own properties (not All-properties).";
 }
 
@@ -166,7 +166,7 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
     });
   });
 
-  await writeAudit(user.id, id, "update", { name });
+  await writeAudit(user.id, id, "update", { name, allProperties, propertyIds, scope });
   revalidatePath("/templates");
   revalidatePath(`/templates/${id}`);
   return { ok: true, id, message: `Saved "${name}".` };
