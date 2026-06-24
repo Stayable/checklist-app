@@ -17,7 +17,7 @@ describe("navItemsForRole", () => {
   it("manager and corporate get the management surfaces, no admin group", () => {
     for (const r of [Role.MANAGER, Role.CORPORATE]) {
       const hrefs = navItemsForRole(r).map((i) => i.href);
-      expect(hrefs).toEqual(["/", "/dashboard", "/review", "/issues", "/rules", "/templates", "/completed"]);
+      expect(hrefs).toEqual(["/", "/dashboard", "/review", "/issues", "/rules", "/templates", "/completed", "/reports/completeness"]);
       expect(navItemsForRole(r).some((i) => i.group === "admin")).toBe(false);
     }
   });
@@ -33,6 +33,7 @@ describe("navItemsForRole", () => {
       "/rules",
       "/templates",
       "/completed",
+      "/reports/completeness",
       "/admin/users",
       "/admin/sla",
       "/admin/properties",
@@ -59,6 +60,14 @@ describe("navItemsForRole", () => {
 
   it("field staff do NOT see Completed", () => {
     expect(navItemsForRole(Role.HK).some((n) => n.href === "/completed")).toBe(false);
+  });
+
+  it("MANAGER sees Reports", () => {
+    expect(navItemsForRole(Role.MANAGER).some((n) => n.href === "/reports/completeness")).toBe(true);
+  });
+
+  it("field staff do NOT see Reports", () => {
+    expect(navItemsForRole(Role.HK).some((n) => n.href === "/reports/completeness")).toBe(false);
   });
 
   it("MANAGER sees Dashboard", () => {

@@ -14,6 +14,7 @@ const MAIN_MANAGER: NavItem[] = [
   { href: "/rules", label: "Rules", group: "main" },
   { href: "/templates", label: "Templates", group: "main" },
   { href: "/completed", label: "Completed", group: "main" },
+  { href: "/reports/completeness", label: "Reports", group: "main" },
 ];
 
 const ADMIN_GROUP: NavItem[] = [
