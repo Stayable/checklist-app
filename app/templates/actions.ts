@@ -12,13 +12,23 @@ export type ActionResult =
   | { ok: true; id?: string; message?: string }
   | { ok: false; error: string };
 
-const questionSchema = z.object({
-  type: z.nativeEnum(QuestionType),
-  prompt: z.string().trim().min(1, "Each question needs a prompt"),
-  required: z.boolean().default(true),
-  photoMax: z.number().int().min(1).max(10).nullable().optional(),
-  failFlagsIssue: z.boolean().default(false),
-});
+const questionSchema = z
+  .object({
+    type: z.nativeEnum(QuestionType),
+    prompt: z.string().trim(),
+    required: z.boolean().default(true),
+    photoMax: z.number().int().min(1).max(10).nullable().optional(),
+    failFlagsIssue: z.boolean().default(false),
+  })
+  .superRefine((q, ctx) => {
+    if (q.type !== QuestionType.SECTION_DIVIDER && q.prompt.length < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["prompt"],
+        message: "Each question needs a prompt",
+      });
+    }
+  });
 
 const templateSchema = z.object({
   name: z.string().trim().min(1, "Title is required"),
@@ -121,7 +131,15 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
 
   const current = await db.checklistTemplate.findUnique({
     where: { id },
-    select: { allProperties: true, properties: { select: { propertyId: true } } },
+    select: {
+      allProperties: true,
+      properties: { select: { propertyId: true } },
+      _count: { select: { instances: true } },
+      questions: {
+        orderBy: { orderIndex: "asc" },
+        select: { type: true, prompt: true, required: true, photoMax: true, failFlagsIssue: true },
+      },
+    },
   });
   if (!current) return { ok: false, error: "Template not found." };
 
@@ -138,6 +156,41 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
     return { ok: false, error: deniedCurrent ?? deniedNext! };
   }
 
+  // Normalize a question to a comparable signature (apples-to-apples with createMany logic).
+  type QSig = { type: QuestionType; prompt: string; required: boolean; photoMax: number | null; failFlagsIssue: boolean };
+  function normalizeQ(q: { type: QuestionType; prompt: string; required: boolean; photoMax?: number | null; failFlagsIssue?: boolean | null }): QSig {
+    return {
+      type: q.type,
+      prompt: q.prompt,
+      required: q.required,
+      photoMax: q.type === QuestionType.PHOTO ? (q.photoMax ?? 1) : null,
+      failFlagsIssue: q.type === QuestionType.PASSFAIL ? (q.failFlagsIssue ?? false) : false,
+    };
+  }
+
+  const existingNorm = current.questions.map(normalizeQ);
+  const incomingNorm = questions.map((q) => normalizeQ({ ...q, photoMax: q.photoMax ?? null, failFlagsIssue: q.failFlagsIssue }));
+  const questionsChanged =
+    existingNorm.length !== incomingNorm.length ||
+    existingNorm.some((eq, i) => {
+      const iq = incomingNorm[i]!;
+      return (
+        eq.type !== iq.type ||
+        eq.prompt !== iq.prompt ||
+        eq.required !== iq.required ||
+        eq.photoMax !== iq.photoMax ||
+        eq.failFlagsIssue !== iq.failFlagsIssue
+      );
+    });
+
+  if (current._count.instances > 0 && questionsChanged) {
+    return {
+      ok: false,
+      error:
+        "This template already has checklists created from it — questions can't be changed. Duplicate the template instead.",
+    };
+  }
+
   await db.$transaction(async (tx) => {
     await tx.checklistTemplate.update({
       where: { id },
@@ -150,20 +203,22 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
         data: propertyIds.map((propertyId) => ({ templateId: id, propertyId })),
       });
     }
-    // Replace questions (simplest correct approach; instances keep their own
-    // responses, which reference question ids — see note below).
-    await tx.question.deleteMany({ where: { templateId: id } });
-    await tx.question.createMany({
-      data: questions.map((q, i) => ({
-        templateId: id,
-        orderIndex: i,
-        type: q.type,
-        prompt: q.prompt,
-        required: q.required,
-        photoMax: q.type === QuestionType.PHOTO ? q.photoMax ?? 1 : null,
-        failFlagsIssue: q.type === QuestionType.PASSFAIL ? q.failFlagsIssue : false,
-      })),
-    });
+    // Replace questions only when the template has no instances yet.
+    // If instances exist, questionsChanged is false (guarded above), so skip.
+    if (current._count.instances === 0) {
+      await tx.question.deleteMany({ where: { templateId: id } });
+      await tx.question.createMany({
+        data: questions.map((q, i) => ({
+          templateId: id,
+          orderIndex: i,
+          type: q.type,
+          prompt: q.prompt,
+          required: q.required,
+          photoMax: q.type === QuestionType.PHOTO ? q.photoMax ?? 1 : null,
+          failFlagsIssue: q.type === QuestionType.PASSFAIL ? q.failFlagsIssue : false,
+        })),
+      });
+    }
   });
 
   await writeAudit(user.id, id, "update", { name, allProperties, propertyIds, scope });

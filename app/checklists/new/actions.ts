@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { InstanceStatus, TemplateScope } from "@prisma/client";
-import type { Prisma } from "@prisma/client";
+import { InstanceStatus, Prisma, TemplateScope } from "@prisma/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireManager, canAccessProperty } from "@/lib/rbac";
@@ -85,26 +84,57 @@ export async function createInstanceManually(
 
   // ADR-009 seq: per (property, template, ET day), restart at 001, continue
   // past pre-existing instances — same logic as generateForDate().
-  const existingCount = await db.checklistInstance.count({
-    where: { propertyId, templateId, scheduledFor: target },
-  });
-  const seq = existingCount + 1;
+  // Wrapped in try/catch to handle P2002 unique-constraint collisions from
+  // concurrent creates or races with the 5 AM cron.
+  async function attemptCreate(retrying = false): Promise<{ id: string }> {
+    const existingCount = await db.checklistInstance.count({
+      where: { propertyId, templateId, scheduledFor: target },
+    });
+    const seq = existingCount + 1;
+    try {
+      return await db.checklistInstance.create({
+        data: {
+          systemId: buildSystemId(property!.propertyId, template!.code, ymd, seq),
+          title,
+          templateId,
+          propertyId,
+          roomId: effectiveRoomId,
+          scheduledFor: target,
+          assignedUserId: assignedUserId ?? null,
+          status: assignedUserId
+            ? InstanceStatus.ASSIGNED
+            : InstanceStatus.SCHEDULED,
+        },
+        select: { id: true },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        !retrying
+      ) {
+        // Race on systemId — recompute seq and retry once.
+        return attemptCreate(true);
+      }
+      throw err;
+    }
+  }
 
-  const created = await db.checklistInstance.create({
-    data: {
-      systemId: buildSystemId(property.propertyId, template.code, ymd, seq),
-      title,
-      templateId,
-      propertyId,
-      roomId: effectiveRoomId,
-      scheduledFor: target,
-      assignedUserId: assignedUserId ?? null,
-      status: assignedUserId
-        ? InstanceStatus.ASSIGNED
-        : InstanceStatus.SCHEDULED,
-    },
-    select: { id: true },
-  });
+  let created: { id: string };
+  try {
+    created = await attemptCreate();
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      return {
+        ok: false,
+        error: "That checklist number was just taken — please try again.",
+      };
+    }
+    throw err;
+  }
 
   await db.auditLog.create({
     data: {
