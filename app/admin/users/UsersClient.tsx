@@ -6,6 +6,7 @@ import { Locale, Role } from "@prisma/client";
 import { formatInET } from "@/lib/datetime";
 import {
   createUser,
+  deleteUser,
   resetPassword,
   setUserActive,
   setUserProperties,
@@ -31,9 +32,11 @@ const isPortfolio = (r: Role) => r === Role.CORPORATE || r === Role.ADMIN;
 export function UsersClient({
   initialUsers,
   properties,
+  currentUserId,
 }: {
   initialUsers: AdminUser[];
   properties: Prop[];
+  currentUserId: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -123,9 +126,14 @@ export function UsersClient({
                 shortCode={shortCode}
                 pending={pending}
                 editing={editing === u.id}
+                isSelf={u.id === currentUserId}
                 onToggleEdit={() => setEditing(editing === u.id ? null : u.id)}
                 onReset={() => run(() => resetPassword(u.id))}
                 onToggleActive={() => run(() => setUserActive(u.id, !u.active))}
+                onDelete={() => {
+                  if (!confirm(`Permanently delete ${u.email}? This can't be undone.`)) return;
+                  run(() => deleteUser(u.id));
+                }}
                 onSaveProps={(ids) =>
                   run(async () => {
                     const res = await setUserProperties({ userId: u.id, propertyIds: ids });
@@ -216,9 +224,11 @@ function UserRow({
   shortCode,
   pending,
   editing,
+  isSelf,
   onToggleEdit,
   onReset,
   onToggleActive,
+  onDelete,
   onSaveProps,
 }: {
   user: AdminUser;
@@ -226,9 +236,11 @@ function UserRow({
   shortCode: (id: string) => string;
   pending: boolean;
   editing: boolean;
+  isSelf: boolean;
   onToggleEdit: () => void;
   onReset: () => void;
   onToggleActive: () => void;
+  onDelete: () => void;
   onSaveProps: (ids: string[]) => void;
 }) {
   const [draft, setDraft] = useState<string[]>(user.propertyIds);
@@ -265,6 +277,15 @@ function UserRow({
             <button className={action} disabled={pending} onClick={onToggleActive}>
               {user.active ? "Deactivate" : "Reactivate"}
             </button>
+            {!isSelf && (
+              <button
+                className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-40"
+                disabled={pending}
+                onClick={onDelete}
+              >
+                Delete
+              </button>
+            )}
           </div>
         </td>
       </tr>

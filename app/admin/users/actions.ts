@@ -105,6 +105,33 @@ const propsSchema = z.object({
   propertyIds: z.array(z.string().uuid()),
 });
 
+export async function deleteUser(userId: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (admin.id === userId) return { ok: false, error: "You can't delete your own account." };
+
+  const [auditCount, assigned, reviewed, issues, rules, notifs] = await Promise.all([
+    db.auditLog.count({ where: { actorUserId: userId } }),
+    db.checklistInstance.count({ where: { assignedUserId: userId } }),
+    db.checklistInstance.count({ where: { reviewedByUserId: userId } }),
+    db.issue.count({ where: { assignedUserId: userId } }),
+    db.recurringRule.count({ where: { createdByUserId: userId } }),
+    db.notificationLog.count({ where: { userId } }),
+  ]);
+  const history = auditCount + assigned + reviewed + issues + rules + notifs;
+  if (history > 0) {
+    return { ok: false, error: "This user has activity history — deactivate them instead of deleting." };
+  }
+
+  const target = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
+  if (!target) return { ok: false, error: "User not found." };
+
+  // No history → user_properties cascade-deletes; safe hard delete.
+  await db.user.delete({ where: { id: userId } });
+  await writeAudit(admin.id, userId, "delete", { email: target.email });
+  revalidatePath("/admin/users");
+  return { ok: true, message: `Deleted ${target.email}.` };
+}
+
 export async function setUserProperties(input: unknown): Promise<ActionResult> {
   const admin = await requireAdmin();
   const parsed = propsSchema.safeParse(input);

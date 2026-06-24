@@ -6,7 +6,7 @@ import { UsersClient } from "./UsersClient";
 // password reset / multi-property assignment (ADR-013). Server-fetches and hands
 // off to the client component for the interactive bits.
 export default async function AdminUsersPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const [users, properties] = await Promise.all([
     db.user.findMany({
@@ -47,7 +47,7 @@ export default async function AdminUsersPage() {
         Provision and manage accounts. Email delivery is deferred, so new accounts
         and resets show a one-time temporary password to share securely.
       </p>
-      <UsersClient initialUsers={initialUsers} properties={properties} />
+      <UsersClient initialUsers={initialUsers} properties={properties} currentUserId={admin.id} />
     </div>
   );
 }
