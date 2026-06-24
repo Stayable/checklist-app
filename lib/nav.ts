@@ -8,6 +8,7 @@ export type NavItem = { href: string; label: string; group: "main" | "admin" };
 
 const MAIN_MANAGER: NavItem[] = [
   { href: "/", label: "Today", group: "main" },
+  { href: "/dashboard", label: "Dashboard", group: "main" },
   { href: "/review", label: "Review", group: "main" },
   { href: "/issues", label: "Issues", group: "main" },
   { href: "/rules", label: "Rules", group: "main" },
