@@ -15,6 +15,10 @@ export type ChecklistDraft = {
   // GPS captured at photo time, parallel to `photos` arrays (null = no fix).
   // Optional because pre-ADR-015 drafts lack it.
   photoPositions?: Record<string, (Position | null)[]>;
+  // Client capture time (epoch ms) per photo, parallel to `photos` arrays.
+  // Optional because older drafts lack it. iOS strips EXIF, so this is the
+  // reliable capture time (ADR-021 photo metadata).
+  photoTimestamps?: Record<string, (number | null)[]>;
   // Signature data URLs, per signature question.
   signatures: Record<string, string>;
   updatedAt: number;

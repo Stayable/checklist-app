@@ -19,13 +19,16 @@ import { QuestionType } from "@prisma/client";
 //   DATE            string (yyyy-MM-dd)
 //   SECTION_DIVIDER never answered (presentational)
 
-/** One uploaded photo inside a PHOTO answer (ADR-015). GPS nullable — iOS may deny. */
+/** One uploaded photo inside a PHOTO answer (ADR-015 + ADR-021 photo metadata). GPS and
+ * capturedAt are nullable — iOS strips EXIF so capturedAt is the only reliable capture
+ * time; older clients / legacy answers omit it (backward-compat: treat as null). */
 export type PhotoRef = {
   key: string; // R2 object key, instances/{instanceId}/{questionId}/{uuid}.jpg
   lat: number | null;
   lng: number | null;
   accuracy: number | null;
   sizeBytes: number;
+  capturedAt?: number | null; // epoch ms, recorded client-side at capture
 };
 
 export type AnswerValue =

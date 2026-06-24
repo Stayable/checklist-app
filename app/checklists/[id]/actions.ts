@@ -102,6 +102,7 @@ export async function submitChecklist(
     gpsLat: number | null;
     gpsLng: number | null;
     geofenceStatus: GeofenceStatus;
+    capturedAt: Date | null;
   };
   const photoRows: PhotoRow[] = [];
   for (const q of instance.template.questions) {
@@ -120,6 +121,10 @@ export async function submitChecklist(
       }
       const lat = typeof ref.lat === "number" ? ref.lat : null;
       const lng = typeof ref.lng === "number" ? ref.lng : null;
+      // capturedAt is optional/nullable for backward-compat with legacy clients
+      // that do not send it (pre-ADR-021). Treat absence or 0 as null.
+      const capturedAtMs =
+        typeof ref.capturedAt === "number" && ref.capturedAt > 0 ? ref.capturedAt : null;
       photoRows.push({
         questionId: q.id,
         r2Key: ref.key,
@@ -130,6 +135,7 @@ export async function submitChecklist(
           lat !== null && lng !== null ? { lat, lng } : null,
           instance.property.geofence,
         ),
+        capturedAt: capturedAtMs ? new Date(capturedAtMs) : null,
       });
     }
   }
@@ -175,6 +181,7 @@ export async function submitChecklist(
           gpsLat: r.gpsLat,
           gpsLng: r.gpsLng,
           geofenceStatus: r.geofenceStatus,
+          capturedAt: r.capturedAt,
         })),
       });
     }

@@ -20,9 +20,11 @@ import { markOpened } from "./mark-opened.action";
 
 export type FillQuestion = QuestionLike & { prompt: string };
 
-// One captured photo: compressed bytes, preview URL, and the GPS fix taken with
-// its batch (ADR-015 — GPS travels with capture, not submit).
-type PhotoItem = { blob: Blob; url: string; position: Position | null };
+// One captured photo: compressed bytes, preview URL, GPS fix taken with its
+// batch, and the client-side capture timestamp (ADR-015 + ADR-021 photo metadata).
+// capturedAt is epoch ms recorded once per batch — iOS strips EXIF so this is
+// the only reliable capture time.
+type PhotoItem = { blob: Blob; url: string; position: Position | null; capturedAt: number };
 type PhotoState = Record<string, PhotoItem[]>;
 
 const GPS_TIMEOUT_MS = 10_000;
@@ -60,10 +62,14 @@ export function FillClient({
         const restored: PhotoState = {};
         for (const [qid, blobs] of Object.entries(draft.photos)) {
           const positions = draft.photoPositions?.[qid] ?? [];
+          const timestamps = draft.photoTimestamps?.[qid] ?? [];
           restored[qid] = blobs.map((b, i) => ({
             blob: b,
             url: URL.createObjectURL(b),
             position: positions[i] ?? null,
+            // Legacy drafts lack photoTimestamps — fall back to now so the field
+            // is always a valid epoch ms (informational only, not enforcement).
+            capturedAt: timestamps[i] ?? Date.now(),
           }));
         }
         setPhotos(restored);
@@ -86,11 +92,13 @@ export function FillClient({
     }
     const photoBlobs: Record<string, Blob[]> = {};
     const photoPositions: Record<string, (Position | null)[]> = {};
+    const photoTimestamps: Record<string, (number | null)[]> = {};
     for (const [qid, items] of Object.entries(photos)) {
       photoBlobs[qid] = items.map((it) => it.blob);
       photoPositions[qid] = items.map((it) => it.position);
+      photoTimestamps[qid] = items.map((it) => it.capturedAt);
     }
-    void saveDraft({ instanceId, answers, photos: photoBlobs, photoPositions, signatures });
+    void saveDraft({ instanceId, answers, photos: photoBlobs, photoPositions, photoTimestamps, signatures });
   }, [answers, photos, questions, instanceId, submitted]);
 
   // Stamp openedAt + flip to IN_PROGRESS on first open. Fire-and-forget; the
@@ -110,10 +118,14 @@ export function FillClient({
       const room = Math.max(0, max - current.length);
       const picked = Array.from(files).slice(0, room);
       const compressed = await Promise.all(picked.map((f) => compressImage(f)));
+      // One timestamp for the batch — the moment addPhotos runs is the capture
+      // instant. Recorded before any async work so it is not skewed by compress time.
+      const capturedAt = Date.now();
       const items: PhotoItem[] = compressed.map((c) => ({
         blob: c.blob,
         url: URL.createObjectURL(c.blob),
         position: null,
+        capturedAt,
       }));
       setPhotos((prev) => ({ ...prev, [q.id]: [...(prev[q.id] ?? []), ...items] }));
       setAnswer(q.id, { count: current.length + items.length, pendingUpload: true });
@@ -188,6 +200,7 @@ export function FillClient({
         lng: it.position?.longitude ?? null,
         accuracy: it.position?.accuracy ?? null,
         sizeBytes: it.blob.size,
+        capturedAt: it.capturedAt,
       }));
       finalAnswers[q.id] = { count: refs.length, photos: refs };
     }
