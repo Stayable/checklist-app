@@ -165,6 +165,12 @@ export default async function ReviewDetailPage({
             · Time to complete: {formatMinutes(minutes)}
           </p>
         </div>
+        <a
+          href={`/api/checklists/${id}/pdf`}
+          className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          Export PDF
+        </a>
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr_280px]">
