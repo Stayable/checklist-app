@@ -56,7 +56,11 @@ export default async function IssuesReport({
   const codeById = new Map(properties.map((p) => [p.id, p.shortCode]));
 
   const from = parseDateParam(sp.from);
-  const to = parseDateParam(sp.to);
+  const toMidnight = parseDateParam(sp.to);
+  // Use an exclusive next-day upper bound so the entire selected end day is included.
+  const toExclusive = toMidnight
+    ? new Date(toMidnight.getTime() + 24 * 60 * 60 * 1000)
+    : null;
   const statusFilter =
     sp.status && sp.status in IssueStatus ? (sp.status as IssueStatus) : null;
   const priorityFilter =
@@ -67,11 +71,11 @@ export default async function IssuesReport({
   const issues = await db.issue.findMany({
     where: {
       propertyId: { in: scopeIds },
-      ...(from || to
+      ...(from || toExclusive
         ? {
             createdAt: {
               ...(from ? { gte: from } : {}),
-              ...(to ? { lte: to } : {}),
+              ...(toExclusive ? { lt: toExclusive } : {}),
             },
           }
         : {}),

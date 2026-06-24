@@ -106,7 +106,9 @@ export async function GET(
     // review page: `answer.startsWith("data:image")`). Render as image; no text.
     const isSignature = q.type === "SIGNATURE";
     const sigUrl =
-      isSignature && typeof r?.answer === "string" ? (r.answer as string) : null;
+      isSignature && typeof r?.answer === "string" && r.answer.startsWith("data:image")
+        ? (r.answer as string)
+        : null;
 
     responses.push({
       prompt: q.prompt,

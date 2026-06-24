@@ -5,6 +5,7 @@ export type IssuePdfRow = {
   title: string;
   checklist: string;
   property: string;
+  room: string;
   priority: string;
   status: string;
   created: string;
@@ -23,7 +24,7 @@ export function IssuesPdf({
       <Page size="A4" style={styles.page} orientation="landscape">
         <Text style={styles.h1}>{title}</Text>
         <View style={styles.tableHead}>
-          {["Issue", "Checklist", "Property", "Priority", "Status", "Created", "SLA"].map((h) => (
+          {["Issue", "From checklist", "Property", "Room", "Priority", "Status", "Created", "SLA"].map((h) => (
             <Text key={h} style={styles.cell}>{h}</Text>
           ))}
         </View>
@@ -32,6 +33,7 @@ export function IssuesPdf({
             <Text style={styles.cell}>{r.title}</Text>
             <Text style={styles.cell}>{r.checklist}</Text>
             <Text style={styles.cell}>{r.property}</Text>
+            <Text style={styles.cell}>{r.room}</Text>
             <Text style={styles.cell}>{r.priority}</Text>
             <Text style={styles.cell}>{r.status}</Text>
             <Text style={styles.cell}>{r.created}</Text>

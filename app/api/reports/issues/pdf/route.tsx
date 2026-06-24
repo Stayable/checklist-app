@@ -33,7 +33,11 @@ export async function GET(req: NextRequest) {
 
   const sp = req.nextUrl.searchParams;
   const from = parseDateParam(sp.get("from"));
-  const to = parseDateParam(sp.get("to"));
+  const toMidnight = parseDateParam(sp.get("to"));
+  // Use an exclusive next-day upper bound so the entire selected end day is included.
+  const toExclusive = toMidnight
+    ? new Date(toMidnight.getTime() + 24 * 60 * 60 * 1000)
+    : null;
   const statusParam = sp.get("status");
   const priorityParam = sp.get("priority");
 
@@ -48,11 +52,11 @@ export async function GET(req: NextRequest) {
   const issues = await db.issue.findMany({
     where: {
       propertyId: { in: scopeIds },
-      ...(from || to
+      ...(from || toExclusive
         ? {
             createdAt: {
               ...(from ? { gte: from } : {}),
-              ...(to ? { lte: to } : {}),
+              ...(toExclusive ? { lt: toExclusive } : {}),
             },
           }
         : {}),
@@ -70,6 +74,7 @@ export async function GET(req: NextRequest) {
       resolvedAt: true,
       createdAt: true,
       propertyId: true,
+      room: { select: { roomNumber: true } },
       sourceInstance: {
         select: {
           id: true,
@@ -91,6 +96,7 @@ export async function GET(req: NextRequest) {
       title: issue.title,
       checklist,
       property: codeById.get(issue.propertyId) ?? issue.propertyId,
+      room: issue.room?.roomNumber ?? "—",
       priority: issue.priority,
       status: issue.status.replace(/_/g, " "),
       created: formatDateInET(issue.createdAt),
