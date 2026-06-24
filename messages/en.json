@@ -26,7 +26,15 @@
     "signingIn": "Signing in…",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "error": "Invalid email or password, or your account is temporarily locked after too many attempts. Try again later or contact your administrator."
+    "error": "Invalid email or password, or your account is temporarily locked after too many attempts. Try again later or contact your administrator.",
+    "otpTitle": "Enter your code",
+    "otpSubtitle": "We emailed a 6-digit code. It expires in 10 minutes.",
+    "otpLabel": "6-digit code",
+    "otpVerify": "Verify",
+    "otpResend": "Resend code",
+    "otpError": "That code is invalid or expired. Try again or resend.",
+    "otpSent": "Code sent.",
+    "emailFailed": "We couldn't send your code. Try again or contact your administrator."
   },
   "Home": {
     "greeting": "Hello, {name}",

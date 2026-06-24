@@ -17,8 +17,6 @@ import {
 import { isLocked } from "@/lib/auth-throttle";
 import { TRUSTED_DEVICE_COOKIE } from "@/lib/cookies";
 
-export { TRUSTED_DEVICE_COOKIE };
-
 export type LoginResult =
   | { ok: true; redirect: string }
   | { ok: "otp" }

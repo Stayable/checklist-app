@@ -26,7 +26,15 @@
     "signingIn": "Iniciando sesión…",
     "showPassword": "Mostrar contraseña",
     "hidePassword": "Ocultar contraseña",
-    "error": "Correo o contraseña inválidos, o tu cuenta está bloqueada temporalmente tras demasiados intentos. Inténtalo más tarde o contacta a tu administrador."
+    "error": "Correo o contraseña inválidos, o tu cuenta está bloqueada temporalmente tras demasiados intentos. Inténtalo más tarde o contacta a tu administrador.",
+    "otpTitle": "Ingresa tu código",
+    "otpSubtitle": "Te enviamos un código de 6 dígitos. Caduca en 10 minutos.",
+    "otpLabel": "Código de 6 dígitos",
+    "otpVerify": "Verificar",
+    "otpResend": "Reenviar código",
+    "otpError": "Ese código no es válido o caducó. Intenta de nuevo o reenvía.",
+    "otpSent": "Código enviado.",
+    "emailFailed": "No pudimos enviar tu código. Intenta de nuevo o contacta a tu administrador."
   },
   "Home": {
     "greeting": "Hola, {name}",
