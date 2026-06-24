@@ -1,29 +1,23 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { GeofenceStatus, InstanceStatus, QuestionType } from "@prisma/client";
+import { InstanceStatus, QuestionType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canAccessProperty, requireManager } from "@/lib/rbac";
 import { formatDateInET, formatInET } from "@/lib/datetime";
 import { formatMinutes, timeToCompleteMinutes } from "@/lib/review";
 import { presignDownload } from "@/lib/r2";
 import { ReviewActions } from "./ReviewActions";
+import { PhotoFigure } from "@/components/review/PhotoFigure";
+import type { PhotoFigureProps } from "@/components/review/PhotoFigure";
 
 // Single-submission review (ADR-011): three-column layout.
 //   left   — status + manager note + Approve / Flag / Re-do
 //   center — responses + photos + signatures, time-to-complete in the header
 //   right  — activity timeline (audit_log) with actor + timestamp
 // English-only manager surface (ADR-013). Photos render from R2 via 1-hour
-// presigned GETs with a per-photo geofence badge (ADR-015).
+// presigned GETs with a per-photo geofence badge + capture time + coords (ADR-015).
 
-type PhotoView = { url: string; geofenceStatus: GeofenceStatus };
-
-const GEOFENCE_BADGE: Record<GeofenceStatus, { label: string; cls: string }> = {
-  [GeofenceStatus.VERIFIED]: { label: "On property", cls: "bg-emerald-50 text-emerald-700" },
-  [GeofenceStatus.OFF_PROPERTY]: { label: "Off property", cls: "bg-red-50 text-red-700" },
-  [GeofenceStatus.NO_GPS]: { label: "No GPS", cls: "bg-slate-100 text-slate-500" },
-  // Informational, not an anomaly — no polygon configured yet (ADR-015).
-  [GeofenceStatus.UNVERIFIED]: { label: "No geofence set", cls: "bg-amber-50 text-amber-700" },
-};
+type PhotoView = Omit<PhotoFigureProps, "url"> & { url: string };
 
 function AnswerView({
   type,
@@ -68,21 +62,7 @@ function AnswerView({
       return (
         <div className="flex flex-wrap gap-3">
           {photos.map((p, i) => (
-            <figure key={i} className="flex flex-col gap-1">
-              <a href={p.url} target="_blank" rel="noreferrer">
-                {/* eslint-disable-next-line @next/next/no-img-element -- presigned R2 URL, not an optimizable asset */}
-                <img
-                  src={p.url}
-                  alt={`Photo ${i + 1}`}
-                  className="h-32 w-32 rounded-lg border border-slate-200 object-cover"
-                />
-              </a>
-              <figcaption
-                className={`self-start rounded-full px-2 py-0.5 text-xs font-semibold ${GEOFENCE_BADGE[p.geofenceStatus].cls}`}
-              >
-                {GEOFENCE_BADGE[p.geofenceStatus].label}
-              </figcaption>
-            </figure>
+            <PhotoFigure key={i} {...p} />
           ))}
         </div>
       );
@@ -117,7 +97,14 @@ export default async function ReviewDetailPage({
       room: { select: { roomNumber: true } },
       assignedUser: { select: { name: true } },
       reviewedBy: { select: { name: true } },
-      responses: { include: { photos: { orderBy: { createdAt: "asc" } } } },
+      responses: {
+        include: {
+          photos: {
+            orderBy: { createdAt: "asc" },
+            select: { r2Key: true, geofenceStatus: true, capturedAt: true, gpsLat: true, gpsLng: true },
+          },
+        },
+      },
       sourcedIssues: { select: { id: true, title: true, status: true } },
     },
   });
@@ -136,6 +123,9 @@ export default async function ReviewDetailPage({
         r.photos.map(async (p) => ({
           url: await presignDownload(p.r2Key),
           geofenceStatus: p.geofenceStatus,
+          capturedAt: p.capturedAt ? formatInET(p.capturedAt) : null,
+          gpsLat: p.gpsLat?.toString() ?? null,
+          gpsLng: p.gpsLng?.toString() ?? null,
         })),
       ),
     );
