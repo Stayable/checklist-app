@@ -17,7 +17,7 @@ describe("navItemsForRole", () => {
   it("manager and corporate get the management surfaces, no admin group", () => {
     for (const r of [Role.MANAGER, Role.CORPORATE]) {
       const hrefs = navItemsForRole(r).map((i) => i.href);
-      expect(hrefs).toEqual(["/", "/review", "/issues", "/rules", "/templates"]);
+      expect(hrefs).toEqual(["/", "/review", "/issues", "/rules", "/templates", "/completed"]);
       expect(navItemsForRole(r).some((i) => i.group === "admin")).toBe(false);
     }
   });
@@ -31,6 +31,7 @@ describe("navItemsForRole", () => {
       "/issues",
       "/rules",
       "/templates",
+      "/completed",
       "/admin/users",
       "/admin/sla",
       "/admin/properties",
@@ -49,6 +50,14 @@ describe("navItemsForRole", () => {
 
   it("field staff do NOT see Templates", () => {
     expect(navItemsForRole(Role.HK).some((n) => n.href === "/templates")).toBe(false);
+  });
+
+  it("MANAGER sees Completed", () => {
+    expect(navItemsForRole(Role.MANAGER).some((n) => n.href === "/completed")).toBe(true);
+  });
+
+  it("field staff do NOT see Completed", () => {
+    expect(navItemsForRole(Role.HK).some((n) => n.href === "/completed")).toBe(false);
   });
 
   it("ADMIN sees /templates exactly once", () => {
