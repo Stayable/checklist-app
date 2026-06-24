@@ -59,17 +59,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        await db.user.update({
-          where: { id: user.id },
-          data: { ...registerSuccess(), lastLoginAt: now },
-        });
-
         // Second factor (ADR-019): require a valid trusted-device token OR a
         // verified, unexpired, unconsumed OTP. This gate runs AFTER password
         // success and lockout-clear. OTP failures increment only the OTP row's
         // attempts counter — they do NOT call registerFailure so the password
         // lockout is never tripped by a bad code.
         const secret = process.env.AUTH_SECRET ?? "";
+        if (!secret) return null;
+
         const trusted =
           typeof parsed.data.trustedToken === "string" && parsed.data.trustedToken.length > 0
             ? parseTrustedToken(parsed.data.trustedToken, secret, now, TRUSTED_MAX_AGE_MS)
@@ -99,6 +96,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             data: { consumedAt: now },
           });
         }
+
+        // Write success state only after 2FA gate has passed.
+        await db.user.update({
+          where: { id: user.id },
+          data: { ...registerSuccess(), lastLoginAt: now },
+        });
 
         return {
           id: user.id,
