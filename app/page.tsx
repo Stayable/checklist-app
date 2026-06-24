@@ -168,7 +168,9 @@ export default async function Home() {
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pill(a.status)}`}
                   >
-                    {ctaLabel(a.status)}
+                    {a.status === InstanceStatus.FLAGGED
+                      ? t("status_FLAGGED")
+                      : ctaLabel(a.status)}
                   </span>
                   {chevron}
                 </Link>
