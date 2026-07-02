@@ -10,6 +10,27 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 ---
 
+## 🆕 EPIC: StayCheck v1.1 (scoped 2026-07-02)
+
+Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts `StayCheckPRD_RISE8_070126.md` onto the live platform. **Forks settled (Kate):** Cloudbeds in-scope (manual-first + per-property adapter, ADR-022); 3-role *display* mapping keeps 6-role DB (ADR-023); rename to **StayCheck** (ADR-024, supersedes ADR-010). ✅ **ADRs 022–024 now recorded in DECISIONS.md** (S0, 2026-07-02).
+
+**Blocked-on-Kate:** (a) Cloudbeds per-property read-only API keys → unblocks S3; (b) **maintenance ticketing `.md` incoming** → unblocks S7 detail; (c) structured-flags modeling call; (d) prod/dev DB split (hard-block for S3 cron).
+
+| Phase | Pri | Status | What |
+|---|---|---|---|
+| S0 — Foundations & rename | P1 | [~] | **Code DONE + committed 2026-07-02** (`ee31c09`): ADRs 022–024 in DECISIONS.md; `lib/role-display.ts` (6→3-role display map, tested, label-only-not-authz); StayCheck rename across all user-facing surfaces (message catalogs, page titles, manifest, offline page, icon labels, shell wordmark — `/ios-spike` left as throwaway); `bonusEligible` dropped from schema. 129/129 tests, clean types+lint, build 30 routes. **🧑 REMAINING:** (a) apply migration `20260702221150_drop_bonus_eligible` via `prisma migrate deploy` (col DROP on shared prod/dev DB — not run unattended); (b) **prod/dev DB split** (still blocked-on-you); PDF wordmark rename deferred until PDF templates exist |
+| S1 — Review workflow upgrade | P1 | [ ] | Completion Check Pass/Fail · Verified-by-PM · immutability-after-verify (+audit) · structured submission flags (notify corp / return deposit / items to replace / place OOO) · review-note → staff notification · free-text room on instance |
+| S2 — Room lifecycle (manual-first) | P1 | [ ] | 9-state derived room lifecycle · **Room Status Board** · **Checkout Queue** (manual entry) · OOO wiring from checklist flags |
+| S3 — Cloudbeds sync adapter | P1 | [!] | `CloudbedsConnection` + `lib/cloudbeds/` · webhook/poll → checkout queue + arrivals trigger · room-reassignment rules · per-property isolation. **Blocked: API keys + DB split** |
+| S4 — Preventive Maintenance | P1 | [ ] | `Asset` registry · interval-from-last-completion scheduling · `CONDITION` question type · PM submission fields · corrective-action → Issue bridge · PM compliance dashboard |
+| S5 — Staff Performance & Quality Score | P1 | [ ] | Quality Score (pass÷verified) + Completion Rate (submitted÷assigned) · per-staff cards · leaderboard · benchmarks · consistency score · staff self-view · outlier flags |
+| S6 — Insights engine | P2 | [ ] | Recurring issues · failure patterns · timing anomalies (auto-flag) · property health trend · shift coverage gaps · PM insights |
+| S7 — **Maintenance Ticketing / Work Orders** | P1 | [!] | Extends `Issue`: target date · lifecycle · required closing photo · recurrence auto-flag. **Blocked: Kate's ticketing `.md`** (spec §Ticketing has the frame) |
+| S8 — Reports + export + photo tooling | P2 | [ ] | Report suite · Smartsheet column-parity CSV export · before/after compare · per-room photo gallery · PDF parity |
+| S9 — Offline + push + versioning + library | P2 | [ ] | Full offline sync + conflict notice · push notifications · template version-snapshot · starter template library · Lease-Flip type · AM/PM shift |
+
+---
+
 ## 🆕 EPIC: Shell + Auth/OTP + Checklist Authoring (started 2026-06-23)
 
 Spec: `docs/superpowers/specs/2026-06-22-ops-shell-and-checklist-authoring-design.md` · 7 sequential plans (build order = spec §8). New ADRs 018–021 (not yet in DECISIONS.md).
@@ -46,7 +67,7 @@ Tactical sequence layered on top of the numbered phases below. `🧑 You` = need
 ### Phase B — Close Phase 4 (ALPHA exit)
 | Status | Item |
 |---|---|
-| [~] | Resend creds NOW IN PROD (set 2026-06-27, OTP send validated). **Still TODO:** wire actual sends for submit/flag/activation/unassigned-digest — these currently write `notification_log` rows as SKIPPED (`resend_deferred`); only the OTP path sends. Swap SKIPPED→real `sendEmail` calls now that creds exist |
+| [~] | **Review + issue-assignment emails wired 2026-07-02** (`0130c3b`): the 4 events that had SKIPPED rows now send via Resend — `review_approved/flagged/redo` → submitter + `issue_assigned` → assignee. `lib/email.ts sendEmail()` + `lib/notify-copy.ts` (bilingual, ADR-013) + `lib/notify.server.ts` (post-commit deliver, settles EMAIL row SENT/FAILED/SKIPPED, never fails the action). **Scope correction:** submit→manager notification, activation email, unassigned-queue digest are **net-new** (not logged today / temp-pw model / cron-side) — NOT flips. Decide if submit→manager is worth building next |
 | [ ] | 🧑 You: record alpha demo for Rob |
 | [ ] | Extend structural redesign: checklist runtime → review → issues → admin |
 
