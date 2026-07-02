@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
 export const metadata: Metadata = {
-  title: "Install — Stayable Operations",
+  title: "Install — StayCheck",
 };
 
 // Dedicated install guide. Field-staff surface, so bilingual (ADR-013). Linked

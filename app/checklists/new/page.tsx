@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { ManualCreateClient } from "./ManualCreateClient";
 
 export const metadata: Metadata = {
-  title: "Create Checklist — Stayable Operations",
+  title: "Create Checklist — StayCheck",
 };
 
 // Manual checklist creation (ADR-009 seq, ADR-020 property scope).

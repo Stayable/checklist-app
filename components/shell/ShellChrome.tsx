@@ -39,8 +39,8 @@ export function ShellChrome({
     <div className="min-h-screen bg-slate-50 lg:flex">
       {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col bg-navy px-4 py-6 text-white lg:flex lg:fixed lg:inset-y-0">
-        <div className="px-2 text-lg font-extrabold tracking-tight">Stayable</div>
-        <p className="mt-1 px-2 text-xs text-slate-300">Operations</p>
+        <div className="px-2 text-lg font-extrabold tracking-tight">StayCheck</div>
+        <p className="mt-1 px-2 text-xs text-slate-300">Stayable</p>
 
         <nav className="mt-8 flex flex-1 flex-col gap-1">
           {mainItems.map((item) => (
@@ -74,7 +74,7 @@ export function ShellChrome({
       <div className="flex min-h-screen w-full flex-col lg:pl-60">
         {/* Mobile top bar (picker + sign out live here on small screens) */}
         <div className="flex items-center justify-between gap-2 px-4 py-3 lg:hidden">
-          <span className="text-base font-extrabold text-navy">Stayable</span>
+          <span className="text-base font-extrabold text-navy">StayCheck</span>
           <div className="flex items-center gap-2">
             <OnlineStatus />
             {showPicker && (

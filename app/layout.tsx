@@ -22,13 +22,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stayable Operations",
+  title: "StayCheck",
   description: "Property operations platform for RISE8 Companies.",
   manifest: "/app.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Stayable Ops",
+    title: "StayCheck",
   },
   icons: {
     // Placeholder SVG icons; PNG apple-touch-icons land with the Phase-7

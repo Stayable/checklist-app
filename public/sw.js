@@ -1,4 +1,4 @@
-// Stayable Operations — minimal hand-rolled service worker (Week-1 PWA shell).
+// StayCheck — minimal hand-rolled service worker (Week-1 PWA shell).
 //
 // NOTE (ADR/stack): CLAUDE.md names Workbox for the SW layer. A full Workbox
 // `generateSW` build step does not yet play cleanly with Next 15 + Turbopack, so

@@ -721,6 +721,73 @@ Phase-7 redesign **mirrors Connecteam's layout / information architecture** (the
 
 ---
 
+## ADR-022: Cloudbeds PMS in scope — manual-first room model with Cloudbeds as a pluggable sync adapter
+
+**Date:** 2026-07-02
+**Status:** Accepted (reverses "no PMS in v1" clause of ADR-009)
+**Decided by:** Kate (2026-07-02)
+
+### Context
+The StayCheck v1.1 PRD (Kate, 2026-07-01) requires room-lifecycle awareness — checkout queue, cleaning/arrival triggers, room-status board. ADR-009 deferred all PMS integration ("manual `rooms.status`, no PMS integration in v1"). Kate now wants Cloudbeds pulled in. Each Stayable property is its own Cloudbeds property/account, so credentials are issued per property.
+
+### Alternatives Considered
+1. **PMS-first** — make Cloudbeds the source of truth for room state. Rejected: couples core room logic to a vendor feed, untestable without live keys, one property's outage stalls the board.
+2. **Manual-only (status quo)** — keep manual `rooms.status`. Rejected: does not meet the checkout-queue / arrival-trigger requirement.
+3. **Manual-first + Cloudbeds as a pluggable input adapter** — chosen.
+
+### Decision
+Build the manual room-status model (S2) as the source of truth. Cloudbeds is a **read-only, per-property sync adapter** (`lib/cloudbeds/`) that feeds internal `CheckoutQueueEntry` / arrival events. Read-only keys only — StayCheck never writes back to Cloudbeds. Per-property failure is isolated and logged to `notification_log`. Webhooks preferred over polling.
+
+### Consequences
+- Room-lifecycle logic is unit-testable without the vendor (manual entry path).
+- One property's key failing never blocks the others or the manual board.
+- Requires per-property API keys from Kate (blocking S3 only, not S2).
+- **Hard prerequisite:** split prod/dev DB before any Cloudbeds cron writes (prod still shares the dev Neon DB).
+
+---
+
+## ADR-023: Keep the 6-value Role enum; add a 3-role display grouping
+
+**Date:** 2026-07-02
+**Status:** Accepted
+**Decided by:** Kate (2026-07-02)
+
+### Context
+The StayCheck PRD speaks in three roles — Staff / Manager / Admin. The live system has a 6-value `Role` enum (HK/PA/MT/MANAGER/CORPORATE/ADMIN) woven through RBAC (`lib/rbac.ts`), `user_properties`, and property scope. Collapsing to three would force a migration and an RBAC rewrite.
+
+### Alternatives Considered
+1. **Migrate to 3 roles** — rejected: destructive migration, RBAC rewrite, loses the PA/HK distinction that AM/PM shift logic (PRD §Shift) needs.
+2. **Keep 6, map to 3 for display only** — chosen.
+
+### Decision
+The PRD's three roles are a **display grouping**, not a data model. Keep the 6-value DB enum. `lib/role-display.ts` maps `HK|PA|MT → Staff`, `MANAGER → Manager`, `CORPORATE|ADMIN → Admin`. The mapping is a label only and must never be used for authorization — RBAC continues to key off the raw enum.
+
+### Consequences
+- No migration, no RBAC rewrite.
+- PA stays distinct from HK for shift logic.
+- One helper file to keep in sync if the enum grows (test enforces total coverage).
+
+---
+
+## ADR-024: Rename end-user product to "StayCheck"
+
+**Date:** 2026-07-02
+**Status:** Accepted (supersedes ADR-010's product-name clause)
+**Decided by:** Kate (2026-07-02)
+
+### Context
+ADR-010 set the end-user product name to "Stayable Operations." Kate has renamed the product to **StayCheck** for the v1.1 era.
+
+### Decision
+End-user product name is **StayCheck**. All user-facing surfaces — UI wordmark/titles, transactional email (subjects + From name), PDF headers — use "StayCheck." The internal repo / dev name ("RISE8 Operations Platform") is unchanged.
+
+### Consequences
+- Supersedes the naming clause of ADR-010 only; ADR-010's Teams-digest decisions stand.
+- Rename sweep across `messages/{en,es}.json`, page `<title>`s, `lib/email.ts`, and (when built) PDF templates.
+- `RESEND_FROM_EMAIL` default string updated; if the env var is set in Vercel it overrides — verify the live value reads "StayCheck."
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```

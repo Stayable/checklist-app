@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/rbac";
 
 export const metadata: Metadata = {
-  title: "Admin — Stayable Operations",
+  title: "Admin — StayCheck",
 };
 
 // Admin console shell. English-only (ADR-013). Guards ADMIN at the layout level

@@ -344,8 +344,6 @@ model ChecklistInstance {
   reviewedByUserId String?   @map("reviewed_by_user_id") @db.Uuid
   // Manager note from the review left rail (ADR-011); set on approve/flag/redo.
   managerNote      String?   @map("manager_note")
-  // Dead field — bonus logic scrapped from v1 per ADR-014. Drop in a later migration.
-  bonusEligible    Boolean   @default(true) @map("bonus_eligible")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz

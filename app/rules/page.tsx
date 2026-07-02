@@ -6,7 +6,7 @@ import { RulesManager, type RuleRow } from "./RulesManager";
 import type { RecurrencePattern, RoomFilter } from "@/lib/recurrence";
 
 export const metadata: Metadata = {
-  title: "Recurring Rules — Stayable Operations",
+  title: "Recurring Rules — StayCheck",
 };
 
 // Recurring-rule management (ADR-009, Phase 5). Manager-or-above; scoped to the

@@ -1,6 +1,6 @@
 {
   "App": {
-    "name": "Stayable Operations",
+    "name": "StayCheck",
     "tagline": "Property operations, on every shift."
   },
   "Common": {
@@ -21,7 +21,7 @@
     "email": "Email",
     "password": "Password",
     "forgotPassword": "Forgot your password?",
-    "title": "Sign in to Stayable Operations",
+    "title": "Sign in to StayCheck",
     "subtitle": "Enter your work email and password.",
     "signingIn": "Signing in…",
     "showPassword": "Show password",
@@ -86,16 +86,16 @@
     "choosePrompt": "Choose your language"
   },
   "Install": {
-    "ctaTitle": "Install Stayable Operations for faster, full-screen access.",
+    "ctaTitle": "Install StayCheck for faster, full-screen access.",
     "installButton": "Install app",
-    "iosBanner": "Add Stayable Operations to your Home Screen →",
+    "iosBanner": "Add StayCheck to your Home Screen →",
     "iosTitle": "Add to Home Screen",
     "iosStep1": "Tap the Share button in Safari's toolbar.",
     "iosStep2": "Scroll down and tap \"Add to Home Screen.\"",
-    "iosStep3": "Tap \"Add,\" then open Stayable Operations from your Home Screen.",
+    "iosStep3": "Tap \"Add,\" then open StayCheck from your Home Screen.",
     "pageTitle": "Install the app",
-    "pageSubtitle": "Add Stayable Operations to your device for full-screen access and a Home Screen icon.",
-    "alreadyInstalled": "Already installed? Open Stayable Operations from your Home Screen icon."
+    "pageSubtitle": "Add StayCheck to your device for full-screen access and a Home Screen icon.",
+    "alreadyInstalled": "Already installed? Open StayCheck from your Home Screen icon."
   },
   "Photo": {
     "testTitle": "Photo capture test",

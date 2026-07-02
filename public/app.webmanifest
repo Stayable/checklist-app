@@ -1,6 +1,6 @@
 {
-  "name": "Stayable Operations",
-  "short_name": "Stayable Ops",
+  "name": "StayCheck",
+  "short_name": "StayCheck",
   "description": "Property operations platform for RISE8 Companies / Stayable.",
   "id": "/",
   "start_url": "/",

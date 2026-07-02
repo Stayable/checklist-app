@@ -1,6 +1,6 @@
 {
   "App": {
-    "name": "Stayable Operations",
+    "name": "StayCheck",
     "tagline": "Operaciones de la propiedad, en cada turno."
   },
   "Common": {
@@ -21,7 +21,7 @@
     "email": "Correo electrónico",
     "password": "Contraseña",
     "forgotPassword": "¿Olvidaste tu contraseña?",
-    "title": "Inicia sesión en Stayable Operations",
+    "title": "Inicia sesión en StayCheck",
     "subtitle": "Ingresa tu correo de trabajo y contraseña.",
     "signingIn": "Iniciando sesión…",
     "showPassword": "Mostrar contraseña",
@@ -86,16 +86,16 @@
     "choosePrompt": "Elige tu idioma"
   },
   "Install": {
-    "ctaTitle": "Instala Stayable Operations para un acceso más rápido y en pantalla completa.",
+    "ctaTitle": "Instala StayCheck para un acceso más rápido y en pantalla completa.",
     "installButton": "Instalar aplicación",
-    "iosBanner": "Agrega Stayable Operations a tu pantalla de inicio →",
+    "iosBanner": "Agrega StayCheck a tu pantalla de inicio →",
     "iosTitle": "Agregar a la pantalla de inicio",
     "iosStep1": "Toca el botón Compartir en la barra de Safari.",
     "iosStep2": "Desplázate y toca \"Agregar a pantalla de inicio.\"",
-    "iosStep3": "Toca \"Agregar\" y luego abre Stayable Operations desde tu pantalla de inicio.",
+    "iosStep3": "Toca \"Agregar\" y luego abre StayCheck desde tu pantalla de inicio.",
     "pageTitle": "Instalar la aplicación",
-    "pageSubtitle": "Agrega Stayable Operations a tu dispositivo para acceso en pantalla completa y un ícono en la pantalla de inicio.",
-    "alreadyInstalled": "¿Ya la instalaste? Abre Stayable Operations desde el ícono en tu pantalla de inicio."
+    "pageSubtitle": "Agrega StayCheck a tu dispositivo para acceso en pantalla completa y un ícono en la pantalla de inicio.",
+    "alreadyInstalled": "¿Ya la instalaste? Abre StayCheck desde el ícono en tu pantalla de inicio."
   },
   "Photo": {
     "testTitle": "Prueba de captura de fotos",
