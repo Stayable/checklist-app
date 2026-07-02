@@ -2,21 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import {
-  InstanceStatus,
-  IssuePriority,
-  NotificationChannel,
-  NotificationStatus,
-  Prisma,
-} from "@prisma/client";
+import { InstanceStatus, IssuePriority } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canAccessProperty, requireManager } from "@/lib/rbac";
 import { createIssue, slaHoursByPriority } from "@/lib/issues.server";
+import {
+  deliverNotificationEmail,
+  logNotification,
+  type NotifyRecipient,
+} from "@/lib/notify.server";
 
 // Manager review actions (Phase 4, ADR-011): Approve / Flag / Request Re-do.
-// All write audit_log; recipient notifications are logged to notification_log —
-// EMAIL rows as SKIPPED until Resend lands, IN_APP rows as PENDING for the
-// Phase 6 notification center.
+// All write audit_log; recipient notifications write an IN_APP row (PENDING,
+// Phase-6 center) + an EMAIL row delivered post-commit via Resend (bilingual
+// per ADR-013). Delivery failure never fails the review action.
 
 export type ReviewResult = { ok: true } | { ok: false; error: string };
 
@@ -33,7 +32,7 @@ async function loadGuarded(instanceId: string) {
       template: { select: { name: true } },
       property: { select: { id: true, shortCode: true } },
       room: { select: { id: true, roomNumber: true } },
-      assignedUser: { select: { id: true, name: true } },
+      assignedUser: { select: { id: true, name: true, email: true, locale: true } },
     },
   });
   if (!instance) return { ok: false as const, error: "Submission not found." };
@@ -52,41 +51,12 @@ function label(instance: {
   return `${instance.template.name} — ${instance.property.shortCode}${rm}`;
 }
 
-/** Log recipient notifications: EMAIL is SKIPPED (Resend deferred), IN_APP PENDING. */
-async function logNotifications(
-  tx: Prisma.TransactionClient,
-  recipientUserId: string | null,
-  event: string,
-  title: string,
-  body: string | null,
-  instanceId: string,
-) {
-  if (!recipientUserId) return;
-  await tx.notificationLog.createMany({
-    data: [
-      {
-        userId: recipientUserId,
-        channel: NotificationChannel.IN_APP,
-        status: NotificationStatus.PENDING,
-        event,
-        title,
-        body,
-        entityType: "checklist_instance",
-        entityId: instanceId,
-      },
-      {
-        userId: recipientUserId,
-        channel: NotificationChannel.EMAIL,
-        status: NotificationStatus.SKIPPED,
-        event,
-        title,
-        body,
-        entityType: "checklist_instance",
-        entityId: instanceId,
-        error: "resend_deferred",
-      },
-    ],
-  });
+/** The submitter is the notification recipient (null when unassigned). */
+function recipientOf(instance: {
+  assignedUser: { id: string; email: string; locale: "en" | "es" } | null;
+}): NotifyRecipient | null {
+  const u = instance.assignedUser;
+  return u ? { id: u.id, email: u.email, locale: u.locale } : null;
 }
 
 export async function approveSubmission(
@@ -103,8 +73,10 @@ export async function approveSubmission(
   }
   const trimmed = note?.trim() || null;
   const now = new Date();
+  const recipient = recipientOf(instance);
+  const lbl = label(instance);
 
-  await db.$transaction(async (tx) => {
+  const emailLogId = await db.$transaction(async (tx) => {
     await tx.checklistInstance.update({
       where: { id: instanceId },
       data: {
@@ -124,15 +96,13 @@ export async function approveSubmission(
         after: { status: InstanceStatus.REVIEWED, note: trimmed },
       },
     });
-    await logNotifications(
-      tx,
-      instance.assignedUser?.id ?? null,
-      "review_approved",
-      `Approved: ${label(instance)}`,
-      trimmed,
-      instanceId,
-    );
+    return logNotification(tx, recipient, "review_approved", lbl, trimmed, {
+      type: "checklist_instance",
+      id: instanceId,
+    });
   });
+
+  await deliverNotificationEmail(emailLogId, recipient, "review_approved", lbl, trimmed);
 
   revalidatePath("/review");
   revalidatePath(`/review/${instanceId}`);
@@ -162,8 +132,10 @@ export async function flagSubmission(
   }
   const { note, priority } = parsed.data;
   const hours = await slaHoursByPriority();
+  const recipient = recipientOf(instance);
+  const lbl = label(instance);
 
-  await db.$transaction(async (tx) => {
+  const emailLogId = await db.$transaction(async (tx) => {
     await tx.checklistInstance.update({
       where: { id: instanceId },
       data: { status: InstanceStatus.FLAGGED, managerNote: note },
@@ -174,7 +146,7 @@ export async function flagSubmission(
         propertyId: instance.propertyId,
         roomId: instance.room?.id ?? null,
         sourceInstanceId: instanceId,
-        title: `Flagged: ${label(instance)}`,
+        title: `Flagged: ${lbl}`,
         description: note,
         priority,
       },
@@ -190,15 +162,13 @@ export async function flagSubmission(
         after: { status: InstanceStatus.FLAGGED, note, issueId },
       },
     });
-    await logNotifications(
-      tx,
-      instance.assignedUser?.id ?? null,
-      "review_flagged",
-      `Flagged: ${label(instance)}`,
-      note,
-      instanceId,
-    );
+    return logNotification(tx, recipient, "review_flagged", lbl, note, {
+      type: "checklist_instance",
+      id: instanceId,
+    });
   });
+
+  await deliverNotificationEmail(emailLogId, recipient, "review_flagged", lbl, note);
 
   revalidatePath("/review");
   revalidatePath(`/review/${instanceId}`);
@@ -223,7 +193,10 @@ export async function requestRedo(
     return { ok: false, error: "Only submitted or flagged checklists can be sent back." };
   }
 
-  await db.$transaction(async (tx) => {
+  const recipient = recipientOf(instance);
+  const lbl = label(instance);
+
+  const emailLogId = await db.$transaction(async (tx) => {
     await tx.checklistInstance.update({
       where: { id: instanceId },
       data: {
@@ -245,15 +218,13 @@ export async function requestRedo(
         after: { status: InstanceStatus.ASSIGNED, note: parsedNote.data },
       },
     });
-    await logNotifications(
-      tx,
-      instance.assignedUser?.id ?? null,
-      "review_redo",
-      `Re-do requested: ${label(instance)}`,
-      parsedNote.data,
-      instanceId,
-    );
+    return logNotification(tx, recipient, "review_redo", lbl, parsedNote.data, {
+      type: "checklist_instance",
+      id: instanceId,
+    });
   });
+
+  await deliverNotificationEmail(emailLogId, recipient, "review_redo", lbl, parsedNote.data);
 
   revalidatePath("/review");
   revalidatePath(`/review/${instanceId}`);

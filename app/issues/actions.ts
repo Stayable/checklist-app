@@ -2,19 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import {
-  GeofenceStatus,
-  IssuePriority,
-  IssueStatus,
-  NotificationChannel,
-  NotificationStatus,
-  Role,
-} from "@prisma/client";
+import { GeofenceStatus, IssuePriority, IssueStatus, Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canAccessProperty, requireManager } from "@/lib/rbac";
 import { geofenceStatusFor } from "@/lib/geofence";
 import { slaHoursByPriority } from "@/lib/issues.server";
 import { slaTargetAt } from "@/lib/review";
+import {
+  deliverNotificationEmail,
+  logNotification,
+  type NotifyRecipient,
+} from "@/lib/notify.server";
 
 // Issue pipeline actions (Phase 4). Open-state edits via updateIssue; closing
 // (RESOLVED / WONT_FIX) goes through closeIssue and requires a resolution note
@@ -81,11 +79,18 @@ export async function updateIssue(issueId: string, input: unknown): Promise<Issu
     slaTargetAt?: Date;
   } = {};
 
+  let recipient: NotifyRecipient | null = null;
   if (assignedUserId !== undefined) {
     if (assignedUserId !== null) {
       const assignee = await db.user.findUnique({
         where: { id: assignedUserId },
-        select: { active: true, role: true, properties: { select: { propertyId: true } } },
+        select: {
+          active: true,
+          role: true,
+          email: true,
+          locale: true,
+          properties: { select: { propertyId: true } },
+        },
       });
       const memberOfProperty =
         assignee &&
@@ -96,6 +101,7 @@ export async function updateIssue(issueId: string, input: unknown): Promise<Issu
         return { ok: false, error: "Assignee must be an active user at this property." };
       }
       data.assignedUserId = assignedUserId;
+      recipient = { id: assignedUserId, email: assignee.email, locale: assignee.locale };
       // Assigning an OPEN issue moves it to ASSIGNED unless a status was given.
       if (!status && issue.status === IssueStatus.OPEN) data.status = IssueStatus.ASSIGNED;
     } else {
@@ -110,7 +116,10 @@ export async function updateIssue(issueId: string, input: unknown): Promise<Issu
   }
   if (Object.keys(data).length === 0) return { ok: true };
 
-  await db.$transaction(async (tx) => {
+  // Only notify on a fresh assignment (recipient set above).
+  const notifyRecipient = data.assignedUserId ? recipient : null;
+
+  const emailLogId = await db.$transaction(async (tx) => {
     await tx.issue.update({ where: { id: issueId }, data });
     await tx.auditLog.create({
       data: {
@@ -126,32 +135,13 @@ export async function updateIssue(issueId: string, input: unknown): Promise<Issu
         after: { ...data, slaTargetAt: data.slaTargetAt?.toISOString() },
       },
     });
-    if (data.assignedUserId) {
-      await tx.notificationLog.createMany({
-        data: [
-          {
-            userId: data.assignedUserId,
-            channel: NotificationChannel.IN_APP,
-            status: NotificationStatus.PENDING,
-            event: "issue_assigned",
-            title: `Issue assigned: ${issue.title}`,
-            entityType: "issue",
-            entityId: issueId,
-          },
-          {
-            userId: data.assignedUserId,
-            channel: NotificationChannel.EMAIL,
-            status: NotificationStatus.SKIPPED,
-            event: "issue_assigned",
-            title: `Issue assigned: ${issue.title}`,
-            entityType: "issue",
-            entityId: issueId,
-            error: "resend_deferred",
-          },
-        ],
-      });
-    }
+    return logNotification(tx, notifyRecipient, "issue_assigned", issue.title, null, {
+      type: "issue",
+      id: issueId,
+    });
   });
+
+  await deliverNotificationEmail(emailLogId, notifyRecipient, "issue_assigned", issue.title, null);
 
   revalidatePath("/issues");
   revalidatePath(`/issues/${issueId}`);
