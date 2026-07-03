@@ -16,6 +16,10 @@ Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts
 
 **Blocked-on-Kate:** (a) Cloudbeds per-property read-only API keys → unblocks S3; (b) **maintenance ticketing `.md` incoming** → unblocks S7 detail; (c) structured-flags modeling call; (d) prod/dev DB split (hard-block for S3 cron).
 
+**🔔 TWO DECISIONS PENDING (asked 2026-07-03, user away — answer to unblock):**
+1. **Neon prod DB** (to run the DB split — everything downstream is automatable; only DB *creation* is blocked): pick one — (i) you create the Neon project & drop pooled+direct strings in gitignored `.env.production.local`; (ii) give me a `NEON_API_KEY` and I create it via `neonctl`; (iii) try Vercel's Neon marketplace integration. Runbook: `docs/RUNBOOK.md §Splitting the Production DB`. Vercel CLI IS authed+linked, so `vercel env` repoint is scripted.
+2. **S1 structured flags modeling** (gates S1 start): dedicated columns on `ChecklistInstance` (**recommended** — drives dashboards) vs reserved question types. Also confirm **S1 is next** vs pulling **S7 (Ticketing)** or **S3 (Cloudbeds)** forward (spec §4 says order is flexible).
+
 | Phase | Pri | Status | What |
 |---|---|---|---|
 | S0 — Foundations & rename | P1 | [~] | **DONE + DEPLOYED TO PROD 2026-07-02** (`ee31c09`+`0130c3b`, FF `main` `9015c34→ddf1ac5`, prod deploy `dpl_HURDNW5Z…` READY on ops.rentstayable.com; `/login` 200, `/review`+`/issues` 307). ADRs 022–024 in DECISIONS.md; `lib/role-display.ts` (6→3-role display map, tested, label-only-not-authz); StayCheck rename across all user-facing surfaces (`/ios-spike` left as throwaway); `bonusEligible` **dropped** — migration `20260702221150_drop_bonus_eligible` **applied to shared prod DB 2026-07-02** (deployed new code first so live reads didn't break). 129/129 tests, clean types+lint, build 30 routes. **🧑 STILL BLOCKED-ON-YOU:** prod/dev DB split — runbook now in `docs/RUNBOOK.md §Splitting the Production DB` (needs Neon console + Vercel Prod env write, which Claude can't do here). PDF wordmark rename deferred until PDF templates exist |
