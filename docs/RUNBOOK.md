@@ -362,7 +362,7 @@ curl -X POST https://ops.stayable.com/api/cron/cleanup-photos \
 
 **Status:** NOT done as of 2026-07-02. Prod (`ops.rentstayable.com`) still shares the **dev** Neon DB `ep-falling-moon-apwovbb3` (`neondb`), which holds seeded test users + PLACEHOLDER question content. Fine for alpha; a hard blocker before real go-live and before enabling the 5 AM generation cron (`CRON_SECRET`). Because they share, **any migration applied locally also hits prod's schema** — e.g. `20260702221150_drop_bonus_eligible` was applied to this shared DB on 2026-07-02.
 
-**Why this needs a human:** creating the Neon DB requires Neon console access, and repointing prod requires writing Vercel **Production** env vars — neither is available to Claude Code from this environment (no Neon API key; Vercel MCP has no env-write tool; Vercel CLI not installed). Everything below is copy-paste once you create the DB.
+**What actually needs a human:** only **creating the Neon prod database** — that needs Neon console access (or a `NEON_API_KEY` + `neonctl`, neither present here). The Vercel CLI *is* installed, authed (`admin-15537530`), and linked, so the env-var repoint (step 4) can be scripted. Once the prod DB exists and its connection strings are provided, Claude can run migrate + seed + the Vercel Production env writes + redeploy end-to-end.
 
 **Recommended approach — new empty prod DB, migrate fresh, seed real data** (a Neon *branch* would copy the dev placeholders, which is the opposite of what we want).
 
@@ -378,7 +378,11 @@ curl -X POST https://ops.stayable.com/api/cron/cleanup-photos \
    DATABASE_URL="<prod-pooled>" DIRECT_URL="<prod-direct>" pnpm tsx prisma/seed.ts
    ```
 
-4. **Repoint Vercel Production.** Project → Settings → Environment Variables → set `DATABASE_URL` and `DIRECT_URL` for the **Production** scope only (Encrypted) to the new strings. Leave Preview/Development pointed at the dev DB so local + branch previews keep working.
+4. **Repoint Vercel Production** (CLI — it's authed + linked). `DATABASE_URL`/`DIRECT_URL` are currently `Production, Preview` on the *same* (dev) value; to split, remove the Production-scoped copy and re-add the prod value to Production only, leaving Preview on the dev DB:
+   ```bash
+   vercel env rm DATABASE_URL production -y && printf '%s' "<prod-pooled>" | vercel env add DATABASE_URL production
+   vercel env rm DIRECT_URL  production -y && printf '%s' "<prod-direct>" | vercel env add DIRECT_URL  production
+   ```
 
 5. **Redeploy production** so the new env is picked up (env changes don't apply to existing deployments): push a commit to `main`, or redeploy the latest prod deployment from the Vercel dashboard.
 
