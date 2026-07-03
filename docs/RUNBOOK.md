@@ -358,4 +358,36 @@ curl -X POST https://ops.stayable.com/api/cron/cleanup-photos \
 
 ---
 
+## Splitting the Production DB off the shared Dev DB
+
+**Status:** NOT done as of 2026-07-02. Prod (`ops.rentstayable.com`) still shares the **dev** Neon DB `ep-falling-moon-apwovbb3` (`neondb`), which holds seeded test users + PLACEHOLDER question content. Fine for alpha; a hard blocker before real go-live and before enabling the 5 AM generation cron (`CRON_SECRET`). Because they share, **any migration applied locally also hits prod's schema** — e.g. `20260702221150_drop_bonus_eligible` was applied to this shared DB on 2026-07-02.
+
+**Why this needs a human:** creating the Neon DB requires Neon console access, and repointing prod requires writing Vercel **Production** env vars — neither is available to Claude Code from this environment (no Neon API key; Vercel MCP has no env-write tool; Vercel CLI not installed). Everything below is copy-paste once you create the DB.
+
+**Recommended approach — new empty prod DB, migrate fresh, seed real data** (a Neon *branch* would copy the dev placeholders, which is the opposite of what we want).
+
+1. **Create the DB.** Neon console → new project (or new database in an isolated project), e.g. `stayable-ops-prod`. Copy both connection strings: the **pooled** URL (→ `DATABASE_URL`) and the **direct** URL (→ `DIRECT_URL`, used by migrations).
+
+2. **Apply schema** to the empty DB (all migrations, no data):
+   ```bash
+   DATABASE_URL="<prod-pooled>" DIRECT_URL="<prod-direct>" pnpm prisma migrate deploy
+   ```
+
+3. **Seed real data — decision required.** `prisma/seed.ts` creates the 8 properties + a temp admin + TEST users + PLACEHOLDER templates/questions. For prod you want the 8 properties + geofences + one real admin, then the real template/question content (owed by Karla/Christopher) and staff provisioned via the admin UI. Either trim `seed.ts` to properties+admin only, or run the full seed and then delete the test users. Run against prod explicitly:
+   ```bash
+   DATABASE_URL="<prod-pooled>" DIRECT_URL="<prod-direct>" pnpm tsx prisma/seed.ts
+   ```
+
+4. **Repoint Vercel Production.** Project → Settings → Environment Variables → set `DATABASE_URL` and `DIRECT_URL` for the **Production** scope only (Encrypted) to the new strings. Leave Preview/Development pointed at the dev DB so local + branch previews keep working.
+
+5. **Redeploy production** so the new env is picked up (env changes don't apply to existing deployments): push a commit to `main`, or redeploy the latest prod deployment from the Vercel dashboard.
+
+6. **Verify:** log in as the new prod admin → `/admin/users` + `/admin/properties` show the real (not test) data; submit + review a checklist round-trips.
+
+7. **Only now** set `CRON_SECRET` in Vercel Production to enable 5 AM generation — the route is fail-closed until it's set (commit `9cf069d`), and you don't want auto-gen firing against placeholder content.
+
+**After the split:** local dev keeps pointing at the dev DB, so local migrations no longer touch prod. To apply a future migration to prod, run `prisma migrate deploy` against the prod URLs (step 2 pattern), or fold it into a deploy step. Consider a clean prod R2 bucket at the same time (still `rise8-ops-staging` today).
+
+---
+
 *Add to this runbook every time something is fixed or learned. Future-you will thank present-you.*
