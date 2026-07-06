@@ -10,6 +10,13 @@ This file gives Claude Code the persistent context it needs for the RISE8 Operat
 
 It serves field staff (Housekeeping, Property Attendants, Maintenance Technicians) and management (Property Managers, Corporate, Asset Management) across 7 Stayable extended-stay properties in Florida.
 
+**As of 2026-07-07 (ADR-025), the project is three components, one codebase, built in parallel:**
+- **I. Checklist App (StayCheck)** — the live Connecteam replacement (this doc's original scope + StayCheck v1.1).
+- **II. Maintenance / Ticketing System** — intake (web form + `blake@rentstayable.com` email AI-ingestion; urgent/contractor WhatsApp front door) → human review → ticket vs. "concern" → work-order lifecycle → dispatch → close; Outlook sync. Absorbs the old "S7."
+- **III. Construction Progress / Scheduling** — buildout/renovation PM (`docs/ConstructionAgentBrief_RISE8_062026.md`); **concept, gated on Rob's greenlight.**
+
+`TODO.md` is now organized under `# COMPONENT I/II/III`. Building II and III is a scope expansion beyond the original checklist-replacement v1 — a budget/scope matter for Rob.
+
 **Why it exists:** Field staff currently fill out checklists in Connecteam (a mobile app), then Karla and Christopher manually download the completed PDFs and re-upload them as Smartsheet row attachments while typing metadata. This consumes 1–2 hours/day of corporate staff time and loses photo/structured-response fidelity. The new platform is the single source of truth.
 
 ---
@@ -241,6 +248,8 @@ She is an engineer by background (Texas Instruments, process engineer + PM) and 
 - **Rob Beyer** — CEO of RISE8. Sponsor and final approver on budget/scope changes.
 - **Christopher Acoy Jr.** (`christopher@rentstayable.com`) — Operations support; backup for project decisions; currently uploads Maintenance Report data.
 - **Karla Ysabelle Dugayo** (`karla@rentstayable.com`) — Operations support; currently does manual Connecteam-to-Smartsheet uploads. This burden goes away post-cutover.
+- **Crystal Johnson** — Head of Operations. Owns the Maintenance Dispatch brief (`ProjectBrief_MaintenanceDispatch_062226.docx`) and **Component II (Ticketing/Dispatch) design** (ADR-025). Signs off ops/dispatch features before Rob.
+- **Blake** — owner of the `blake@rentstayable.com` maintenance inbox (Component II email intake).
 - **Primary developer** — Person executing the build using Claude Code.
 
 ---
@@ -315,7 +324,8 @@ When changing scope or architecture: update the relevant doc and add an entry to
 
 ## Current Status (update this section as work progresses)
 
-**As of:** July 2, 2026
+**As of:** July 7, 2026
+**🆕 PROJECT RESTRUCTURED INTO 3 COMPONENTS (2026-07-07, ADR-025):** I. Checklist App (StayCheck) · II. Maintenance/Ticketing · III. Construction Progress/Scheduling. All parallel; III gated on Rob. `TODO.md` reorganized under `# COMPONENT I/II/III`; old StayCheck "S7 — Maintenance Ticketing" moved to Component II (II.1). Component II intake confirmed: web form + `blake@` email AI-ingestion + urgent/contractor WhatsApp → human review queue → ticket vs. concern (payments/refunds/extensions = concerns). Building II/III = scope expansion beyond checklist v1 (Rob's call). **Component II build must open with a brainstorming/spec pass before code.**
 **🆕 STAYCHECK v1.1 S0 STARTED (2026-07-02) — foundations + Resend wiring committed (NOT deployed):** New epic `StayCheck v1.1` (spec `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md`, 10 phases S0–S9). **S0 code DONE + committed** (`ee31c09`): ADRs **022** (Cloudbeds manual-first adapter) / **023** (keep 6-role DB enum + 3-role display grouping) / **024** (rename **Stayable Operations → StayCheck**, supersedes ADR-010 naming) now in DECISIONS.md; `lib/role-display.ts` (6→3-role display map, tested, label-only never-for-authz); **StayCheck rename** across all user-facing surfaces (message catalogs EN/ES, page titles, `app.webmanifest`, apple-web-app title, offline page, icon aria-labels, shell wordmark; throwaway `/ios-spike` left alone); **`ChecklistInstance.bonusEligible` dropped** from schema (ADR-014, dead everywhere). **Resend delivery wired** (`0130c3b`): the 4 events that had `SKIPPED`/`resend_deferred` rows now actually send — `review_approved/flagged/redo`→submitter + `issue_assigned`→assignee, via `lib/email.ts sendEmail()` + bilingual `lib/notify-copy.ts` (ADR-013) + `lib/notify.server.ts` (delivery is post-commit and never fails the user action; EMAIL row settles SENT/FAILED/SKIPPED). **129/129 tests, clean types+lint, build 30 routes. ✅ DEPLOYED TO PROD 2026-07-02:** FF `main` `9015c34→ddf1ac5`, prod deploy `dpl_HURDNW5Z…` READY on ops.rentstayable.com (`/login` 200, `/review`+`/issues` 307, no 500s). Migration `20260702221150_drop_bonus_eligible` **applied to the shared prod DB** (deployed new code FIRST so live `SELECT`s didn't break on the dropped column). Rollback candidate `dpl_CSpBWxS…` (`9015c34`). **🧑 STILL BLOCKING (needs you):** **prod/dev DB split** — hard-block for Cloudbeds cron / S3 + real go-live; runbook written at `docs/RUNBOOK.md §Splitting the Production DB` (needs Neon console + Vercel Production env write — not doable from Claude Code here). **Scope note:** submit→manager email, activation email, unassigned-digest are **net-new** (not `SKIPPED`-flip), deferred.
 **Phase:** **Phases 4–5 + Plans 1–5 ALL LIVE IN PRODUCTION** at **https://ops.rentstayable.com**. **Plans 2–5 (auth/OTP, template builder, completed view, dashboard/reports/PDF) MERGED + DEPLOYED 2026-06-27** — `main` FF `2a55336 → 75e6cc1`, prod deploy `dpl_ucHh8…` READY. **✅ Email-OTP validated live in prod 2026-06-27** (`RESEND_API_KEY` + `RESEND_FROM_EMAIL` set in Vercel Production by user; admin login attempt → `notification_log` `otp_login`=**SENT** + code received in inbox). Untrusted-device OTP path round-trips. Rollback candidate `dpl_D1uttknKL5…` if needed.
 **Current week:** Week 5 (Recurrence). Phase 4 remaining: alpha demo for Rob.

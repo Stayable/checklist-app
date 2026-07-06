@@ -10,6 +10,24 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 ---
 
+## 🧭 Component Map (ADR-025, 2026-07-07)
+
+The project is three components. All three run **in parallel** (Kyle, 2026-07-07); III's build is gated on Rob's greenlight.
+
+| # | Component | What | Status |
+|---|---|---|---|
+| **I** | **Checklist App (StayCheck)** | The live Connecteam replacement. All existing phases + StayCheck v1.1 (S0–S9) **minus ticketing** | 🟢 Live in prod, active build |
+| **II** | **Maintenance / Ticketing System** | Intake (form + `blake@` email AI-ingestion; urgent/contractor WhatsApp) → human review → ticket vs. concern → work-order lifecycle → dispatch → close. Outlook sync | 🟡 New — planning |
+| **III** | **Construction Progress / Scheduling** | Buildout/renovation PM (`docs/ConstructionAgentBrief_RISE8_062026.md`). Shares the ingestion engine | ⛔ Concept — gated on Rob's decisions file |
+
+Components share one codebase/deploy and reuse each other's infra (auth, RBAC, Issue/SLA, audit, Teams digest, geofence). See ADR-025.
+
+---
+
+# COMPONENT I — CHECKLIST APP (StayCheck)
+
+*The live platform. Everything below through the "Open Questions" section belongs to Component I unless marked otherwise. S7 (ticketing) has moved to Component II.*
+
 ## 🆕 EPIC: StayCheck v1.1 (scoped 2026-07-02)
 
 Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts `StayCheckPRD_RISE8_070126.md` onto the live platform. **Forks settled (Kate):** Cloudbeds in-scope (manual-first + per-property adapter, ADR-022); 3-role *display* mapping keeps 6-role DB (ADR-023); rename to **StayCheck** (ADR-024, supersedes ADR-010). ✅ **ADRs 022–024 now recorded in DECISIONS.md** (S0, 2026-07-02).
@@ -29,7 +47,7 @@ Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts
 | S4 — Preventive Maintenance | P1 | [ ] | `Asset` registry · interval-from-last-completion scheduling · `CONDITION` question type · PM submission fields · corrective-action → Issue bridge · PM compliance dashboard |
 | S5 — Staff Performance & Quality Score | P1 | [ ] | Quality Score (pass÷verified) + Completion Rate (submitted÷assigned) · per-staff cards · leaderboard · benchmarks · consistency score · staff self-view · outlier flags |
 | S6 — Insights engine | P2 | [ ] | Recurring issues · failure patterns · timing anomalies (auto-flag) · property health trend · shift coverage gaps · PM insights |
-| S7 — **Maintenance Ticketing / Work Orders** | P1 | [!] | Extends `Issue`: target date · lifecycle · required closing photo · recurrence auto-flag. **Blocked: Kate's ticketing `.md`** (spec §Ticketing has the frame) |
+| ~~S7 — Maintenance Ticketing~~ | — | → | **MOVED to Component II** (ADR-025). Now tracked as II.1. The `Issue`-extension frame lives there |
 | S8 — Reports + export + photo tooling | P2 | [ ] | Report suite · Smartsheet column-parity CSV export · before/after compare · per-room photo gallery · PDF parity |
 | S9 — Offline + push + versioning + library | P2 | [ ] | Full offline sync + conflict notice · push notifications · template version-snapshot · starter template library · Lease-Flip type · AM/PM shift |
 
@@ -435,6 +453,115 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P0 | [ ] | SLA defaults per priority — placeholders shipping (4h/24h/72h/7d, admin-editable); Christopher to confirm/correct | Christopher | Week 4, non-blocking |
 | P0 | [ ] | Recurring rules per template per property | PMs | Week 4 |
 | P0 | [ ] | Final geofence polygons per property | Kate | Week 5 |
+
+---
+
+# COMPONENT II — MAINTENANCE / TICKETING SYSTEM
+
+*New component (ADR-025). Intake → AI triage → human review queue → ticket vs. concern → work-order lifecycle → dispatch → close. Reuses Component I infra (Issue/SLA, audit, Teams digest, geofence, roles). **No AI decides alone** — human review precedes every ticket.*
+
+**Intake model (confirmed 2026-07-07):**
+- **Primary:** web form + **`blake@rentstayable.com` email ingestion** — AI parses the email, extracts ticket details, classifies **ticket vs. concern**.
+- **Concerns lane:** payments / refunds / extensions → held, human decides later whether it becomes a ticket.
+- **Urgent + contractor-needed:** the **WhatsApp "one front door"** (photos/voice/Spanish) — busted pipe, no power, no hot water, or "we need a contractor." A channel into the same queue.
+- **Outlook sync:** track which emails became tickets / became concerns / were responded to.
+
+**📄 Design docs drafted 2026-07-07 (the spec pass — now in staged review, NOT yet built):**
+- `MAINTENANCE_DESK_SPEC.md` — technical spec for the email/form desk: MS Graph ingestion → filter → Claude triage → `maintenance_tickets`/`maintenance_messages` tables → multi-agent reply-as-`blake@`. **Replaces Zoho Desk** (runs alongside during build, then retires it). ⚠ References `lib/maintenance/{filter,triage,graph,db}.js` + `SENDER_CATALOG.md`/`SenderFilter_Blake_070226.xlsx` marked `[BUILT]` — **these live in a separate prototype, NOT in this repo; must be ported in.** Model `claude-sonnet-4-6` in the spec is not a real ID → use **Sonnet 5** (`claude-sonnet-5`).
+- `MaintenanceTicketingDesignReview_RISE8_070726.md` — **staged sign-off (Kate → Crystal → Rob)** reconciling the StayCheck PRD (issues/work-orders placed *inside* the checklist app, §7/§18/§20) against the new separate-Ticketing direction. **Gates the build.**
+- `MaintenanceTicketingScopingQuestions_RISE8_070726.md` — §A–§M build-level questions w/ recommended defaults + a **Top-8 blockers** list.
+- `IngestionEngineSketch_RISE8_070726.png` — the "one front door → ingestion engine → 3 lanes (Construction / Maintenance / existing Issues)" whiteboard.
+
+**⚖ Key open architecture decision (recommended, pending sign-off — scoping §A2/A3):** the checklist app *emits* issues; **Ticketing owns the lifecycle** → **migrate the existing `/issues` into Ticketing and retire the standalone page** (SLA/assignment/resolution-photo logic absorbed, not rebuilt). This reframes II.1 from "extend/relate to `Issue`" to "absorb + retire `/issues`."
+
+**Top-8 blockers to answer first (scoping doc):** A2+A3 (issues→Ticketing) · B1+B2 (v1 sources + concerns/leads as tagged tickets) · B3 (lifecycle states) · D1 (Kate: Graph/Entra app-reg + admin consent) · D2 (supply sender-filter catalog files, or rebuild from spec §5) · F1 (`ANTHROPIC_API_KEY` + Sonnet 5) · G3+G4 (auto-create tickets from checklist fails; normal room checklists don't touch Ticketing) · L1 (prod/dev DB split — real tickets/live email must NOT hit the shared dev DB).
+
+**Recommended build order once unblocked (scoping §M2):** (1) unified ticket model + migrate `/issues` → (2) tenant form intake → (3) email desk (Graph) → (4) AI triage → (5) dispatch-a-checklist + auto-close loop.
+
+**Design ownership (review §1.2):** Kate owns Component I; **Crystal Johnson (Head of Operations)** owns Component II design (Ticketing/Dispatch — hers via `ProjectBrief_MaintenanceDispatch_062226.docx`); the checklist↔ticket loop is jointly owned; Rob signs off scope/budget.
+
+**Blocked-on-Kyle/Kate/Crystal/Blake:** (a) complete the staged sign-off chain (Kate → Crystal → Rob); (b) Kate: M365/Entra app-reg + admin consent for Graph `Mail.Read`/`Mail.Send`/`Mail.ReadWrite` on `blake@`; (c) supply the sender-filter catalog files; (d) `ANTHROPIC_API_KEY` set in Vercel; (e) prod/dev DB split (L1).
+
+### Phase II.0 — Design reconciliation & sign-off (GATE — build blocked until done)
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [~] | Spec pass drafted (3 docs above, 2026-07-07): desk spec + design review + scoping questions |
+| P0 | [!] | Staged sign-off: **Kate** (design reconciliation) → **Crystal** (ops/dispatch approval) → **Rob** (scope/budget) — ledger in `MaintenanceTicketingDesignReview_RISE8_070726.md` |
+| P0 | [!] | Answer Top-8 blockers (scoping doc) — esp. A2/A3 (issues→Ticketing), D1 (Graph consent), L1 (DB split) |
+| P0 | [ ] | Turn signed-off answers → Component II design spec → implementation plan → build |
+
+### Phase II.1 — Ticket / Work-Order model + lifecycle (absorbs S7)
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Data model: unified `Ticket` — **migrate + retire existing `/issues`** (recommended §A2/A3, pending sign-off) — ticket `kind` (maintenance/concern/lead), `source` channel, target date, lifecycle states, required closing photo, recurrence auto-flag |
+| P1 | [ ] | Lifecycle: OPEN → TRIAGED → ASSIGNED → IN_PROGRESS → (BLOCKED) → RESOLVED → CLOSED, all audit-logged |
+| P1 | [ ] | Ticket vs. "concern" as a first-class field (concern = payments/refunds/extensions, no work order) |
+| P1 | [ ] | SLA reuse: map ticket priority → existing `sla_defaults`; urgent (pipe/power/hot water) = top priority |
+
+### Phase II.2 — Web-form intake + manual create
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Public/authed maintenance request form (property, room, category, description, photos) |
+| P1 | [ ] | Manager/staff manual ticket create (mirrors Issue create) |
+
+### Phase II.3 — Email ingestion (`blake@`) + AI triage
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Inbound email capture from `blake@rentstayable.com` (M365 / Outlook pull or forward-to-webhook) |
+| P1 | [ ] | AI extraction: sender → property/room · problem · location · photos · confidence · ES→EN translate |
+| P1 | [ ] | AI classifier: ticket vs. concern; low-confidence → flag for human |
+| P1 | [ ] | **Human review queue** — approve → ticket/concern; nothing auto-created without approval |
+
+### Phase II.4 — Outlook sync + concern tracking
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | Mark/track in Outlook which emails became tickets / concerns / were responded to |
+| P2 | [ ] | Concerns view (payments/refunds/extensions) with promote-to-ticket action |
+
+### Phase II.5 — Dispatch queue + scheduling + assignment
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Dispatch queue: assign to internal MT or contractor; scheduling |
+| P2 | [ ] | Contractor assignment via magic-link (reuse Phase 9 contractor flow) |
+
+### Phase II.6 — Urgent / contractor WhatsApp front door (the sketch)
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | WhatsApp Business inbound channel → same ingestion engine → review queue (photos/voice/Spanish) |
+| P2 | [ ] | Urgent routing: pipe/power/hot-water → top-priority ticket + immediate notify |
+
+### Phase II.7 — Cost-per-repair + reporting
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | Cost capture per ticket; cost-per-repair rollups; maintenance reporting |
+
+---
+
+# COMPONENT III — CONSTRUCTION PROGRESS / SCHEDULING
+
+*New component (ADR-025). Buildout/renovation coordination. **Concept — gated on Rob's decisions file.** Brief: `docs/ConstructionAgentBrief_RISE8_062026.md`. Shares the ingestion engine (the sketch's CONSTRUCTION lane) with Component II. Track runs in parallel for planning; no build until greenlight.*
+
+### Phase III.0 — Greenlight (gate)
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [!] | Rob answers brief §5 questionnaire → generates `ConstructionAgentDecisions_RISE8_<MMDDYY>.md` — **blocks all III build** |
+| P1 | [ ] | Confirm scope (renovation contractors vs. in-house crew vs. both), #1 pain, launch channel, sequencing (brief §5) |
+
+### Phase III.1 — Progress capture
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Progress % / milestones per project/property |
+| P1 | [ ] | Punch-list tracking |
+
+### Phase III.2 — Scheduling
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Project/task scheduling; blocker & delay alerts |
+
+### Phase III.3 — Draw / billing documentation
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | Documentation for draws / billing (photo-verified progress) |
 
 ---
 

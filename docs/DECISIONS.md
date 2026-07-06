@@ -788,6 +788,46 @@ End-user product name is **StayCheck**. All user-facing surfaces — UI wordmark
 
 ---
 
+## ADR-025: Project restructured into three components (Checklist · Ticketing · Construction)
+
+**Date:** 2026-07-07
+**Status:** Accepted
+**Decided by:** Kyle (2026-07-07)
+
+### Context
+The project began as a single product — the Connecteam checklist replacement (now **StayCheck**). Two adjacent needs have surfaced that are operationally distinct from checklists:
+1. **Maintenance / ticketing** — properties raising work items, primarily today via a form and via the `blake@rentstayable.com` inbox, plus urgent/"we need a contractor" events (busted pipe, no power, no hot water). These arrive as unstructured email/messages, not clean form input.
+2. **Construction progress / scheduling** — buildout & renovation coordination (the "Construction Coordination Agent" concept in `docs/ConstructionAgentBrief_RISE8_062026.md`), still un-greenlit pending Rob.
+
+Treating these as loose backlog items (the StayCheck epic had ticketing as "S7") obscured that they are separate products with their own intake, lifecycle, and users.
+
+### Decision
+Organize the project into **three components**, tracked as top-level sections in `TODO.md`:
+
+- **I. Checklist App (StayCheck)** — the live platform. All existing phases + StayCheck v1.1 (S0–S9) **except ticketing**. S7 moves to Component II.
+- **II. Maintenance / Ticketing System** — intake (web form + `blake@` email ingestion with AI extraction; urgent/contractor **WhatsApp** front door per the whiteboard sketch / brief §4) → **human review queue** → ticket vs. "concern" classification (payments/refunds/extensions held as concerns) → work-order lifecycle → dispatch/scheduling → close. **Outlook sync** tracks which emails became tickets/concerns/were responded to. Reuses Component I's Issue/SLA, audit, Teams-digest, geofence, and role infrastructure.
+- **III. Construction Progress / Scheduling** — buildout/renovation PM. **Concept, gated on Rob's decisions file** (`ConstructionAgentDecisions_RISE8_*.md`). Shares the ingestion engine (the sketch's CONSTRUCTION lane).
+
+**Sequencing:** all three tracks run **in parallel** (Kyle, 2026-07-07). III's *build* is gated on greenlight; its track is live for planning only until then.
+
+**Intake model for II (confirmed 2026-07-07):**
+- Primary channels: web form + `blake@rentstayable.com` email ingestion (AI parses email → extracts ticket details → classifies ticket vs. concern).
+- Urgent/contractor channel: WhatsApp "one front door" (photos, voice, Spanish) — for urgent needs or when a property needs a contractor. A *channel*, not the whole system.
+- Human review queue precedes ticket creation. **No AI decides alone** (carries forward the brief's non-negotiable).
+
+### Alternatives Considered
+1. Keep ticketing as StayCheck epic item S7 — rejected: undersells a full ticketing product and its distinct intake.
+2. Separate repos/apps per component — rejected: one product, one codebase, one deploy (per brief §3); components share auth, RBAC, Issue/SLA, audit, geofence, Teams digest.
+3. Sequential build (finish I → II → III) — not chosen; Kyle wants all three in parallel.
+
+### Consequences
+- `TODO.md` reorganized under `# COMPONENT I/II/III`; S7 relocated from the StayCheck epic to II.1.
+- **Scope expansion beyond v1.** The project is now a three-product ops suite, not just a checklist replacement. Building II and III is a larger commitment than the original v1 scope and is a budget/scope matter for Rob (sponsor); III specifically is not greenlit.
+- Component II's actual build should open with a brainstorming/spec pass (intake design, AI extraction contract, concern taxonomy, Outlook integration surface) before code.
+- Superseder note: this reframes — does not cancel — ADR-012 (Contractor Checklists / Quick Tasks) and the StayCheck v1.1 adaptation spec; those items now live under the appropriate component.
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```
