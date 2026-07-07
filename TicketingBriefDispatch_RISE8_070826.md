@@ -1,12 +1,12 @@
-# Maintenance / Ticketing System — Overview & Questions for Crystal
+# Maintenance / Ticketing System — Overview & Questions for Gerardo & Jesus
 
-**For:** Crystal Johnson — Head of Operations
+**For:** Gerardo and Jesus — maintenance / dispatch
 **From:** Kyle (via Claude Code)
 **Date:** 2026-07-08
-**Matter:** Component II (Ticketing / Dispatch). You own this system's design — this doc gets you the full picture and asks what we need from you.
-**Status:** Ready for your review. Kate has already reconciled the design conflicts (Part 1 of the formal sign-off); you're next.
+**Matter:** Component II (Ticketing / Dispatch). You two are closest to how maintenance and dispatch actually run day-to-day, so we need your input on how this system should work. **Crystal oversees and signs off** — your answers feed up to her.
+**Status:** Kate has already reconciled the design (Part 1 of the formal sign-off). We need your operational input next.
 
-> **Companion doc:** the formal, staged sign-off ledger lives in `MaintenanceTicketingDesignReview_RISE8_070726.md` (Kate → **you** → Rob). This doc is the plain-language version so you don't have to read the whole PRD. Answer here or there — I'll reconcile.
+> **Companion doc:** the formal sign-off ledger lives in `MaintenanceTicketingDesignReview_RISE8_070726.md` (Kate → **Crystal** → Rob). This doc is the plain-language version so you don't have to read the whole PRD. Answer here — I'll reconcile it up to Crystal.
 
 ---
 
@@ -19,7 +19,7 @@
 3. **Add anything you want** — before generating the file, this is your chance to bring up whatever's on your mind: extra features or capabilities you'd want, how you actually run maintenance/dispatch day-to-day, concerns, comments, or anything about the wider project you want on the record. Tell Claude to fold it into the file. The structured questions in §4 are a starting point, not a limit.
 4. When you're done, paste this prompt to get your answers as a clean file to send back:
 
-   > *"Based on our whole discussion, generate `TicketingAnswersCrystal_RISE8_<today's date MMDDYY>.md` — a filled-in copy of §4 with my answer to every question, plus a short section capturing any extra features, comments, or project notes I raised, ready to send to Kyle."*
+   > *"Based on our whole discussion, generate `TicketingAnswersDispatch_RISE8_<today's date MMDDYY>.md` — a filled-in copy of §4 with my answer to every question, plus a short section capturing any extra features, comments, or project notes I raised, ready to send to Kyle."*
 
 5. Send Kyle the file it produces. That's it.
 
@@ -82,23 +82,23 @@ Kate reconciled the design conflicts between her checklist PRD and this new syst
 
 ## 4. What we need from you
 
-### 4.1 — Do you approve the design in §1–§2?
+### 4.1 — Does the design in §1–§2 match how it should work?
 
 Issues (from checklists) and maintenance requests (email + tenant form, AI-triaged) flow into **one ticket queue**; agents triage, assign, and can dispatch a maintenance checklist; completing it closes the ticket.
 
 - **Approve as-is / approve with changes / hold:** ______________
 - **Changes, if any:** ______________
 
-### 4.2 — Your Maintenance Dispatch brief — what's in v1?
+### 4.2 — The Maintenance Dispatch brief — what's in v1?
 
-Your brief (`ProjectBrief_MaintenanceDispatch_062226.docx`) includes things beyond the week-1 desk. For each, tell us **v1 / later / drop**:
+Crystal's dispatch brief (`ProjectBrief_MaintenanceDispatch_062226.docx`) includes things beyond the week-1 desk. For each, tell us **v1 / later / drop** based on what you actually need:
 
 | Item | Your call |
 |---|---|
 | **Crew scheduling** — plan the week, reserve 20–25% capacity, roll bumped work forward, Davenport renovation as a standing block | |
 | **Cost capture per job** — labor time + parts, to drive in-house-vs-outsource decisions | |
 | **WhatsApp crew channel** — crews report Property/Location/Problem/Photo, receive assignments (needs Meta Business setup + a pilot) | |
-| **Dispatcher role + named backup** — you named Gerardo; who's the backup so dispatch never stalls? | |
+| **Dispatcher role + named backup** — who dispatches, and who's the backup so dispatch never stalls? | |
 | **Emergency definition** — lock the URGENT list (no power, water leak, no hot water, unsafe/uninhabitable) → immediate notify + phone call | |
 | **Crew skills + location tracking** — assign the right nearby tech (electrical/plumbing/HVAC/cosmetic/general) | |
 | **Translation** — crews report in Spanish; back-office reads English. Auto-translate, keep original | |
@@ -122,7 +122,7 @@ Your brief (`ProjectBrief_MaintenanceDispatch_062226.docx`) includes things beyo
 - **C-7.** When a construction update comes in, should it become a **Ticket** in this same system (a `construction`-type ticket), a **dispatched checklist** (like a maintenance work order), or a **separate progress view** that only shares the intake engine? *(Our lean: separate progress view, but reuse the intake engine + review queue + Teams digest so nothing's rebuilt — tell us if that's wrong.)*
 - **C-8.** Should a construction crew's photo/voice update flow through the **same human-review queue** as maintenance, or does construction need its own reviewer?
 - **C-9.** Does construction scheduling overlap with the **crew scheduling** in §4.2, or are they separate calendars? (Is a renovation just a big standing block on the same crew schedule, or its own thing?)
-- **C-10.** Who reviews/approves construction items day-to-day — you, Gerardo, a PM, a project lead?
+- **C-10.** Who reviews/approves construction items day-to-day — you two, Crystal, a PM, a project lead?
 
 ### 4.4 — Anything else you want in this system
 
@@ -132,6 +132,6 @@ ______________
 
 ## 5. What happens next
 
-Once you're done, this goes to **Rob** for scope/budget sign-off. After that, Kyle + Claude Code turn your answers into the Component II build spec → implementation plan → build, with review checkpoints along the way. The detailed build-level questions (exact SLA hours, email filter lists, form spam guards) get worked alongside the spec — you don't need to touch those here.
+Once you're done, your answers go to **Crystal** to review and sign off, then to **Rob** for scope/budget. After that, Kyle + Claude Code turn them into the Component II build spec → implementation plan → build, with review checkpoints along the way. The detailed build-level questions (exact SLA hours, email filter lists, form spam guards) get worked alongside the spec — you don't need to touch those here.
 
-Thanks, Crystal — your answers shape how the whole maintenance side gets built.
+Thanks, Gerardo and Jesus — your input shapes how the whole maintenance side gets built.

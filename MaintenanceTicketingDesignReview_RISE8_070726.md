@@ -101,6 +101,8 @@ PART 2 — CRYSTAL: Ops approval + additions
 
 *Fill in after Kate completes Part 1. You own the Maintenance Dispatch brief (`ProjectBrief\_MaintenanceDispatch\_062226.docx`), so this system is largely yours.*
 
+> **Input path (Kyle, 2026-07-08):** the operational answers to Part 2 are being gathered from **Gerardo and Jesus** (maintenance/dispatch, closest to day-to-day) via the plain-language brief `TicketingBriefDispatch_RISE8_070826.md`. **Crystal oversees and signs off** Stage 2 — their answers reconcile up to her before this moves to Rob.
+
 ### 2.1 — Do you approve the reconciled design?
 
 The Ticketing System: issues (from checklists) and maintenance requests (email into `admin@` + `blake@` + a public tenant form, AI-triaged) flow into **one ticket queue**; agents (Admin/Corporate/Manager) triage, assign, and can **dispatch a maintenance checklist** to a tech; completing it closes the ticket.
