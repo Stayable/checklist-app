@@ -486,7 +486,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | Pri | Status | Task |
 |---|---|---|
 | P0 | [~] | Spec pass drafted (3 docs, 2026-07-07): desk spec + design review + scoping questions. **+ Crystal-tailored brief `TicketingBriefCrystal_RISE8_070826.md`** (2026-07-08, plain-language overview + §4 questions + §0 "upload to claude.ai → discuss → generate `TicketingAnswersCrystal_…md`" flow) |
-| P0 | [~] | Staged sign-off: **Kate ✅ reconciled Part 1 (2026-07-08)** → **Crystal ◧ in review** (send her the brief) → **Rob** (scope/budget). Ledger in `MaintenanceTicketingDesignReview_RISE8_070726.md`. **Kate open micro-decisions:** 1.2 ownership (routed to Crystal), 1.3 role label (interp: CORPORATE→"Manager" display, confirm w/ Kate). **Construction greenlight moved to Crystal's ops input** (§2.3/§4.3) — was gated on Rob's brief §5; Rob now budget-only. ⚠ record as ADR when chain closes |
+| P0 | [~] | Staged sign-off: **Kate ✅ reconciled Part 1 (2026-07-08)** → **Crystal — brief SENT via Teams 2026-07-08, awaiting her response** (`TicketingAnswersCrystal_…md` or inline) → **Rob** (scope/budget). Ledger in `MaintenanceTicketingDesignReview_RISE8_070726.md`. **Kate open micro-decisions:** 1.2 ownership (routed to Crystal), 1.3 role label (interp: CORPORATE→"Manager" display, confirm w/ Kate). **Construction greenlight moved to Crystal's ops input** (§2.3/§4.3) — was gated on Rob's brief §5; Rob now budget-only. ⚠ record as ADR when chain closes |
 | P0 | [!] | Answer Top-8 blockers (scoping doc) — esp. A2/A3 (issues→Ticketing), D1 (Graph consent), L1 (DB split) |
 | P0 | [ ] | Turn signed-off answers → Component II design spec → implementation plan → build |
 
