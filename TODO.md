@@ -478,7 +478,16 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 
 **Top-8 blockers to answer first (scoping doc):** A2+A3 (issues→Ticketing) · B1+B2 (v1 sources + concerns/leads as tagged tickets) · B3 (lifecycle states) · D1 (Kate: Graph/Entra app-reg + admin consent) · D2 (supply sender-filter catalog files, or rebuild from spec §5) · F1 (`ANTHROPIC_API_KEY` + Sonnet 5) · G3+G4 (auto-create tickets from checklist fails; normal room checklists don't touch Ticketing) · L1 (prod/dev DB split — real tickets/live email must NOT hit the shared dev DB).
 
-**Recommended build order once unblocked (scoping §M2):** (1) unified ticket model + migrate `/issues` → (2) tenant form intake → (3) email desk (Graph) → (4) AI triage → (5) dispatch-a-checklist + auto-close loop.
+**🆕 RE-SEQUENCED BUILD ORDER (Kyle 2026-07-08) — Contractor Dispatch MVP FIRST.** Kyle's call: ship the contractor side first as the fastest, most-independent win (emergencies + contractor scheduling are the sharpest pain and don't depend on tenant-intake/PM plumbing). Build it as a **module inside the existing platform** (NOT a separate app — ADR-025 one-codebase). New order:
+1. **Phase II.A — Contractor Dispatch MVP** (see below) — directory → one-tap WhatsApp/call dispatch → emergency flag → contractor calendar.
+2. Phase II.1 — unified ticket model + migrate `/issues`.
+3. Phase II.2 — tenant form intake (TurboTenant + Jotform).
+4. Phase II.3 — email desk (Graph) → II.4 AI triage.
+5. Phase II.5 dispatch-a-checklist + auto-close loop; II.6 WhatsApp two-way; II.7 cost.
+
+**⚠ Assumption to confirm before committing II.A:** contractor scheduling is **separable** from the internal daily maintenance schedule (which lives in Connecteam today and is what Component I / the checklist app already replaces). If separable → II.A builds clean with no Connecteam conflict. If entangled (one shared calendar) → II.A must either coexist w/ Connecteam during parallel run or pull internal-task scheduling in too. Connecteam retires ~Week 14, so any dependency is temporary; build II.A as the *permanent* home for contractor scheduling.
+
+*(Prior order, scoping §M2, now superseded: unified ticket model → tenant form → email desk → AI triage → dispatch loop.)*
 
 **Design ownership (review §1.2):** Kate owns Component I; **Crystal Johnson (Head of Operations)** owns Component II design (Ticketing/Dispatch — hers via `ProjectBrief_MaintenanceDispatch_062226.docx`); the checklist↔ticket loop is jointly owned; Rob signs off scope/budget.
 
@@ -492,6 +501,19 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P0 | [ ] | **Draft PM-facing maintenance-intake brief** (recipient TBD, Q2): TurboTenant + Jotform + email → triage → assign → daily schedule (urgency order) → emergency-to-checklist. This is the flow PMs run today in Connecteam/Smartsheet |
 | P0 | [!] | Answer Top-8 blockers (scoping doc) — esp. A2/A3 (issues→Ticketing), D1 (Graph consent), L1 (DB split) |
 | P0 | [ ] | Turn signed-off answers → Component II design spec → implementation plan → build |
+
+### Phase II.A — Contractor Dispatch MVP (BUILD FIRST, Kyle 2026-07-08)
+
+*Fastest, most-independent slice: get emergencies to the right contractor fast, and give Gerardo & Jesus a real contractor directory + dispatch surface. Module inside the platform (shared auth/roles/audit/notify). **Gated on:** II.0 sign-off + the separable-scheduling assumption above + Gerardo's "who classifies an emergency" answer. Layers map to my design rec (0→3).*
+
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | **L0 — Contractor directory:** `Contractor` model (name/company, trades[], property coverage[], preferred channel, WhatsApp/phone, language, contracted-vs-ad-hoc flag, active/on-call). **A person can be both internal staff/agent AND a contractor** (Jesús Pérez) — model the overlap, don't make them exclusive. Seed the confirmed roster (Orlando Torres contracted-plumbing, Arlis Velázquez plumbing, Jesús Pérez electrical, Cristina de León electrical) |
+| P1 | [ ] | **Minimal contractor job/ticket:** subset of the unified `Ticket` (or a lean precursor that migrates into II.1) — property, room, trade, problem, photos, `URGENT` flag, status. Emergency = top priority |
+| P1 | [ ] | **L1 — One-tap dispatch (no new infra):** from a job, surface the right contractor(s) for property+trade, **contracted-first ordering**, and a one-tap button opening a **pre-filled bilingual WhatsApp (`wa.me`) / SMS / `tel:` deep link** (property/room/problem/photo link). Human sends (guardrail: no auto-action) |
+| P1 | [ ] | **Emergency flag + fast alert:** URGENT job notifies the coordination group (today's Teams chat: Shayla Shane, Shay Harper, Kyle, Gerardo, Jesus) — decide in-app notify vs. Teams webhook. Rule/threshold pending Gerardo's classification answer |
+| P2 | [ ] | **Contractor calendar (basic):** assign + schedule contractor jobs; when a contractor is pulled for an emergency, **auto-flag the bumped job to reschedule** (§4.3 C-0b) |
+| P2 | [ ] | **L2 — Two-way automation (follow-on, needs vendor):** WhatsApp Business API (primary — they already use it, ES-native) or Twilio SMS (fallback, faster to stand up) → auto-send on confirm, structured Accept/Decline/ETA (reuse Phase 9 no-account magic-link), **auto-escalation ladder** (no accept in N min → next contractor → group), broadcast-to-pool for true emergencies. **Decision for Rob/Crystal:** WhatsApp-vs-SMS rail + cost/Meta approval |
 
 ### Phase II.1 — Ticket / Work-Order model + lifecycle (absorbs S7)
 | Pri | Status | Task |
