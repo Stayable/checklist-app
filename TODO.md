@@ -530,7 +530,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 > - **Initial contractor roster (seed for the Layer-0 contractor directory):**
 >   - *Plumbing:* Orlando Torres (contracted / direct hire), Arlis Velázquez
 >   - *Electrical:* Jesús Pérez, Cristina de León
-> - ⚠ **Name check:** confirm "Jesús Pérez" (electrical contractor) is a different person from **Jesus** the contractor-scheduler — avoid a directory dupe.
+> - **Note (confirmed Kyle 2026-07-08):** "Jesús Pérez" the electrical contractor **is the same person as "Jesus" the contractor-scheduler** — he wears both hats. **Data-model implication:** one person can be *both* an internal scheduler/agent *and* a contractor; the contractor directory and the user/role model must allow that overlap (don't model contractor and staff as mutually exclusive).
 > - **⏳ PENDING (Gerardo to answer, Kyle relaying):** *who judges* an issue is an emergency, and *how* it's classified — drives the URGENT-flag rule + auto-notify trigger.
 > - **Emergency-dispatch design (my rec, Layer 0→3):** (0) contractor directory w/ trade+coverage+channel; (1) one-tap pre-filled WhatsApp/SMS deep-link dispatch (no new infra); (2) WhatsApp Business API / Twilio two-way accept-decline-ETA + auto-escalation ladder + broadcast-to-pool; (3) contractor calendar w/ auto-reschedule of bumped jobs. WhatsApp primary (they already use it), SMS fallback.
 
