@@ -525,6 +525,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | Pri | Status | Task |
 |---|---|---|
 | P1 | [ ] | Dispatch queue: assign to internal MT or contractor; scheduling |
+| P1 | [ ] | **Emergency → fast contractor notification** (Kyle 2026-07-08): when an emergency ticket is flagged urgent, alert the right contractor **immediately** — decide channel (call prompt / SMS / WhatsApp / push) + who triggers it (auto vs. human-in-loop). Today it runs through the Teams chat (Shayla Shane, Shay Harper, Kyle, Gerardo, Jesus); goal is to cut time-to-contractor. **Gerardo & Jesus brief §4.3 C-0c gathers the current process + desired speed** — design once answered |
 | P2 | [ ] | Contractor assignment via magic-link (reuse Phase 9 contractor flow) |
 
 ### Phase II.6 — Urgent / contractor WhatsApp front door (the sketch)

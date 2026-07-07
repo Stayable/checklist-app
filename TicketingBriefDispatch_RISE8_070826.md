@@ -104,6 +104,7 @@ Right now, property emergencies needing a contractor get raised in a Teams chat 
 
 - **C-0a.** Should that emergency coordination be **captured in this system** (a flagged urgent ticket the group sees + acts on), or stay a separate Teams conversation? ______________
 - **C-0b.** When you pull a contractor off scheduled work for an emergency, should the system **auto-reschedule** the bumped job, or do you handle that manually? ______________
+- **C-0c. Fast contractor notification (important).** When an emergency comes in, how do you reach the contractor **immediately** today — call, text, WhatsApp, something else? How fast does it *need* to be, and what would make it faster? Should the system **auto-alert the right contractor the moment an urgent ticket is flagged** (push/SMS/WhatsApp), or should a person always place the call? ______________
 
 ### 4.4 — Construction: how should it work?
 
