@@ -522,8 +522,21 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P2 | [ ] | Concerns view (payments/refunds/extensions) with promote-to-ticket action |
 
 ### Phase II.5 — Dispatch queue + scheduling + assignment
+
+> **Current emergency-contractor process (ground truth — Kyle/Gerardo 2026-07-08):**
+> - **Flow today:** Crystal + Shayla flag the emergency on Teams → Gerardo/Jesus contact contractors by **WhatsApp or phone call**; work details sent over WhatsApp.
+> - **Emergencies: call contracted contractors first.** Currently the only one under contract is **Orlando Torres (direct hire)**.
+> - **Most common emergencies = plumbing + electrical.**
+> - **Initial contractor roster (seed for the Layer-0 contractor directory):**
+>   - *Plumbing:* Orlando Torres (contracted / direct hire), Arlis Velázquez
+>   - *Electrical:* Jesús Pérez, Cristina de León
+> - ⚠ **Name check:** confirm "Jesús Pérez" (electrical contractor) is a different person from **Jesus** the contractor-scheduler — avoid a directory dupe.
+> - **⏳ PENDING (Gerardo to answer, Kyle relaying):** *who judges* an issue is an emergency, and *how* it's classified — drives the URGENT-flag rule + auto-notify trigger.
+> - **Emergency-dispatch design (my rec, Layer 0→3):** (0) contractor directory w/ trade+coverage+channel; (1) one-tap pre-filled WhatsApp/SMS deep-link dispatch (no new infra); (2) WhatsApp Business API / Twilio two-way accept-decline-ETA + auto-escalation ladder + broadcast-to-pool; (3) contractor calendar w/ auto-reschedule of bumped jobs. WhatsApp primary (they already use it), SMS fallback.
+
 | Pri | Status | Task |
 |---|---|---|
+| P1 | [ ] | Contractor directory (Layer 0): name/company, trades, property coverage, preferred channel + WhatsApp/phone, language, contracted-vs-ad-hoc, active/on-call — seed roster above |
 | P1 | [ ] | Dispatch queue: assign to internal MT or contractor; scheduling |
 | P1 | [ ] | **Emergency → fast contractor notification** (Kyle 2026-07-08): when an emergency ticket is flagged urgent, alert the right contractor **immediately** — decide channel (call prompt / SMS / WhatsApp / push) + who triggers it (auto vs. human-in-loop). Today it runs through the Teams chat (Shayla Shane, Shay Harper, Kyle, Gerardo, Jesus); goal is to cut time-to-contractor. **Gerardo & Jesus brief §4.3 C-0c gathers the current process + desired speed** — design once answered |
 | P2 | [ ] | Contractor assignment via magic-link (reuse Phase 9 contractor flow) |
