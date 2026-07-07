@@ -461,7 +461,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 *New component (ADR-025). Intake → AI triage → human review queue → ticket vs. concern → work-order lifecycle → dispatch → close. Reuses Component I infra (Issue/SLA, audit, Teams digest, geofence, roles). **No AI decides alone** — human review precedes every ticket.*
 
 **Intake model (confirmed 2026-07-07):**
-- **Primary:** web form + **`blake@rentstayable.com` email ingestion** — AI parses the email, extracts ticket details, classifies **ticket vs. concern**.
+- **Primary:** web form + **two-mailbox email ingestion — `admin@rentstayable.com` + `blake@rentstayable.com`** (updated 2026-07-08; was `blake@` only → Graph consent now needed on both; `admin@` is also the app admin login — same address, separate system) — AI parses the email, extracts ticket details, classifies **ticket vs. concern**.
 - **Concerns lane:** payments / refunds / extensions → held, human decides later whether it becomes a ticket.
 - **Urgent + contractor-needed:** the **WhatsApp "one front door"** (photos/voice/Spanish) — busted pipe, no power, no hot water, or "we need a contractor." A channel into the same queue.
 - **Outlook sync:** track which emails became tickets / became concerns / were responded to.
@@ -485,8 +485,8 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 ### Phase II.0 — Design reconciliation & sign-off (GATE — build blocked until done)
 | Pri | Status | Task |
 |---|---|---|
-| P0 | [~] | Spec pass drafted (3 docs above, 2026-07-07): desk spec + design review + scoping questions |
-| P0 | [!] | Staged sign-off: **Kate** (design reconciliation) → **Crystal** (ops/dispatch approval) → **Rob** (scope/budget) — ledger in `MaintenanceTicketingDesignReview_RISE8_070726.md` |
+| P0 | [~] | Spec pass drafted (3 docs, 2026-07-07): desk spec + design review + scoping questions. **+ Crystal-tailored brief `TicketingBriefCrystal_RISE8_070826.md`** (2026-07-08, plain-language overview + §4 questions + §0 "upload to claude.ai → discuss → generate `TicketingAnswersCrystal_…md`" flow) |
+| P0 | [~] | Staged sign-off: **Kate ✅ reconciled Part 1 (2026-07-08)** → **Crystal ◧ in review** (send her the brief) → **Rob** (scope/budget). Ledger in `MaintenanceTicketingDesignReview_RISE8_070726.md`. **Kate open micro-decisions:** 1.2 ownership (routed to Crystal), 1.3 role label (interp: CORPORATE→"Manager" display, confirm w/ Kate). **Construction greenlight moved to Crystal's ops input** (§2.3/§4.3) — was gated on Rob's brief §5; Rob now budget-only. ⚠ record as ADR when chain closes |
 | P0 | [!] | Answer Top-8 blockers (scoping doc) — esp. A2/A3 (issues→Ticketing), D1 (Graph consent), L1 (DB split) |
 | P0 | [ ] | Turn signed-off answers → Component II design spec → implementation plan → build |
 

@@ -10,6 +10,8 @@ auth, database, and UI shell. Not a standalone app.
 
 ## 1. Summary
 
+> **⚠ Scope update (2026-07-07): two mailboxes, not one.** The desk now monitors **both `admin@rentstayable.com` and `blake@rentstayable.com`**. This spec is still written throughout for the single `blake@` case; before build, generalize it to a **mailbox list**: (a) MS Graph app registration + admin consent for `Mail.Read`/`Mail.Send`/`Mail.ReadWrite` on **both** mailboxes (§9); (b) `MAILBOX` env → a list, and each ticket/message records **which** mailbox it arrived on / replied from (`sent_as` already covers the send side); (c) filter + triage run per mailbox; (d) reply defaults to the mailbox the thread came in on. Note `admin@rentstayable.com` is *also* the app's admin login identity — same address, separate system; keep that in mind and rotate the temp admin password before rollout. Every `blake@`-only reference below should be read as "the receiving mailbox."
+
 Turn `blake@rentstayable.com` into a shared, multi-user maintenance queue that lives
 inside the checklist app. Incoming mail is read via Microsoft Graph, filtered to remove
 noise (marketing, broker blasts, payment notifications), triaged by Claude (issue,
@@ -25,7 +27,7 @@ as backup). Zoho can be retired once this is stable.
 3. Multiple users answer without confusion (shared status, ownership; collision in v2).
 
 ### Inbound channels (v1)
-- **Email** — blake@rentstayable.com via Microsoft Graph (filtered + triaged).
+- **Email** — `admin@rentstayable.com` **and** `blake@rentstayable.com` via Microsoft Graph (filtered + triaged, per mailbox).
 - **Maintenance form** — public web form tenants submit; creates a ticket directly.
 
 ### Non-goals (v1)
