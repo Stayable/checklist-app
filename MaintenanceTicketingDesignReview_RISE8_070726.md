@@ -33,7 +33,7 @@ We restructured the project into three components (ADR-025):
 **I. Checklist App (StayCheck)** — live in prod; 
 **II. Maintenance / Ticketing System** — new; 
 **III. Construction Progress/Scheduling** — parked, gated on Rob's separate brief. 
-Component II is a **Zoho Desk replacement** — a Zoho-Desk-style shared inbox monitoring **two mailboxes, `admin@rentstayable.com` and `blake@rentstayable.com`**, plus a tenant form → AI triage → tickets — that also becomes the front of the maintenance workflow: a ticket can dispatch a maintenance checklist, and completing that checklist closes the ticket. 
+Component II consolidates maintenance intake into one queue. **Today's reality (confirmed Kyle 2026-07-08):** tenant maintenance requests come via **TurboTenant + Jotform**, consolidated in **Smartsheet** (current source of truth for maintenance status/progress); maintenance also arrives as **email to `admin@`/`blake@`** that is hard to track and often missed; and staff spot problems on checklists. **Property managers** own triage/assignment/daily scheduling; **Gerardo & Jesus** schedule contractors downstream. Component II absorbs all of that (replacing the Smartsheet maintenance tracker + catching the missed emails). It's also a **Zoho Desk replacement** for the email side (shared inbox on the two mailboxes → AI triage) and the front of the maintenance workflow: a ticket can dispatch a maintenance checklist, and completing that checklist closes the ticket. 
 The problem: **Kate's PRD already placed "issues" and "work orders" inside the checklist app**, and the app already shipped an `/issues` pipeline. So before building, the design has to be reconciled — that's Part 1.
 
 \---
@@ -101,11 +101,15 @@ PART 2 — CRYSTAL: Ops approval + additions
 
 *Fill in after Kate completes Part 1. You own the Maintenance Dispatch brief (`ProjectBrief\_MaintenanceDispatch\_062226.docx`), so this system is largely yours.*
 
-> **Input path (Kyle, 2026-07-08):** the operational answers to Part 2 are being gathered from **Gerardo and Jesus** (maintenance/dispatch, closest to day-to-day) via the plain-language brief `TicketingBriefDispatch_RISE8_070826.md`. **Crystal oversees and signs off** Stage 2 — their answers reconcile up to her before this moves to Rob.
+> **Input path (Kyle, 2026-07-08).** Ops input for Part 2 is **split by who actually does the work:**
+> - **Contractor scheduling + construction** → **Gerardo & Jesus** (they schedule contractors; brief `TicketingBriefDispatch_RISE8_070826.md`).
+> - **Maintenance-request intake/triage/daily scheduling** → **property managers** (they run this today in Connecteam, fed by TurboTenant + Jotform + Smartsheet). Recipient **TBD** (Q2 open) — a PM brief will be drafted recipient-agnostic and held until Crystal/Kyle assign it.
+>
+> **Crystal oversees and signs off** Stage 2 — both streams reconcile up to her before this moves to Rob.
 
 ### 2.1 — Do you approve the reconciled design?
 
-The Ticketing System: issues (from checklists) and maintenance requests (email into `admin@` + `blake@` + a public tenant form, AI-triaged) flow into **one ticket queue**; agents (Admin/Corporate/Manager) triage, assign, and can **dispatch a maintenance checklist** to a tech; completing it closes the ticket.
+The Ticketing System: maintenance requests (**TurboTenant + Jotform** — today in Smartsheet; plus **email `admin@`/`blake@`**, AI-triaged) and issues (from checklists) flow into **one ticket queue**; **property managers** triage/assign/schedule the day-to-day, and can **dispatch a maintenance checklist** to a tech; completing it closes the ticket. **Gerardo & Jesus** schedule contractors downstream and handle emergency-contractor coordination (the Teams chat).
 
 * **Approve as-is / approve with changes / hold:** \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 * **Changes, if any:** \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
