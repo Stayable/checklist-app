@@ -510,10 +510,10 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 |---|---|---|
 | P1 | [ ] | **L0 — Contractor directory:** `Contractor` model (name/company, trades[], property coverage[], preferred channel, WhatsApp/phone, language, contracted-vs-ad-hoc flag, active/on-call). **A person can be both internal staff/agent AND a contractor** (Jesús Pérez) — model the overlap, don't make them exclusive. Seed the confirmed roster (Orlando Torres contracted-plumbing, Arlis Velázquez plumbing, Jesús Pérez electrical, Cristina de León electrical) |
 | P1 | [ ] | **Minimal contractor job/ticket:** subset of the unified `Ticket` (or a lean precursor that migrates into II.1) — property, room, trade, problem, photos, `URGENT` flag, status. Emergency = top priority |
-| P1 | [ ] | **L1 — One-tap dispatch (no new infra):** from a job, surface the right contractor(s) for property+trade, **contracted-first ordering**, and a one-tap button opening a **pre-filled bilingual WhatsApp (`wa.me`) / SMS / `tel:` deep link** (property/room/problem/photo link). Human sends (guardrail: no auto-action) |
+| P1 | [ ] | **L1 — One-tap dispatch (no new infra):** from a job, surface the right contractor(s) for property+trade, **contracted-first ordering**, and a one-tap button opening a **pre-filled bilingual WhatsApp (`wa.me`) deep link** — WhatsApp is THE contractor channel (they use it only); `tel:` one-tap for the emergency phone-first-touch to the contracted contractor. (No SMS — contractors don't use it.) Human sends (guardrail: no auto-action) |
 | P1 | [ ] | **Emergency flag + fast alert:** URGENT job notifies the coordination group (today's Teams chat: Shayla Shane, Shay Harper, Kyle, Gerardo, Jesus) — decide in-app notify vs. Teams webhook. Rule/threshold pending Gerardo's classification answer |
 | P2 | [ ] | **Contractor calendar (basic):** assign + schedule contractor jobs; when a contractor is pulled for an emergency, **auto-flag the bumped job to reschedule** (§4.3 C-0b) |
-| P2 | [ ] | **L2 — Two-way automation (follow-on, needs vendor):** WhatsApp Business API (primary — they already use it, ES-native) or Twilio SMS (fallback, faster to stand up) → auto-send on confirm, structured Accept/Decline/ETA (reuse Phase 9 no-account magic-link), **auto-escalation ladder** (no accept in N min → next contractor → group), broadcast-to-pool for true emergencies. **Decision for Rob/Crystal:** WhatsApp-vs-SMS rail + cost/Meta approval |
+| P2 | [ ] | **L2 — Two-way automation (follow-on, needs vendor):** **WhatsApp Business API** (settled rail — contractors use WhatsApp only) → auto-send on confirm, structured Accept/Decline/ETA (reuse Phase 9 no-account magic-link), **auto-escalation ladder** (no accept in N min → next contractor → group), broadcast-to-pool for true emergencies. **Decision for Rob/Crystal:** cost + Meta Business verification/approval timeline (not "which channel" — WhatsApp is confirmed) |
 
 ### Phase II.1 — Ticket / Work-Order model + lifecycle (absorbs S7)
 | Pri | Status | Task |
@@ -546,8 +546,9 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 ### Phase II.5 — Dispatch queue + scheduling + assignment
 
 > **Current emergency-contractor process (ground truth — Kyle/Gerardo 2026-07-08):**
-> - **Flow today:** Crystal + Shayla flag the emergency on Teams → Gerardo/Jesus contact contractors by **WhatsApp or phone call**; work details sent over WhatsApp.
-> - **Emergencies: call contracted contractors first.** Currently the only one under contract is **Orlando Torres (direct hire)**.
+> - **Flow today:** Crystal + Shayla flag the emergency on Teams → Gerardo/Jesus contact contractors; work details sent over WhatsApp.
+> - **Channel split (confirmed Kyle 2026-07-08):** **contractors use WhatsApp ONLY** (→ WhatsApp is THE contractor rail; SMS not needed). **Internal MTs get their maintenance info on Smartsheet** (relevant to the PM/maintenance-intake side + eventual Smartsheet retirement, not to the contractor MVP).
+> - **Emergencies: call contracted contractors first** (phone first-touch). Currently the only one under contract is **Orlando Torres (direct hire)**; WhatsApp for the rest.
 > - **Most common emergencies = plumbing + electrical.**
 > - **Initial contractor roster (seed for the Layer-0 contractor directory):**
 >   - *Plumbing:* Orlando Torres (contracted / direct hire), Arlis Velázquez
