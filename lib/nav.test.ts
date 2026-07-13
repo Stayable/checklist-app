@@ -17,7 +17,7 @@ describe("navItemsForRole", () => {
   it("manager and corporate get the management surfaces, no admin group", () => {
     for (const r of [Role.MANAGER, Role.CORPORATE]) {
       const hrefs = navItemsForRole(r).map((i) => i.href);
-      expect(hrefs).toEqual(["/", "/dashboard", "/review", "/issues", "/rules", "/templates", "/completed", "/reports/completeness"]);
+      expect(hrefs).toEqual(["/", "/dashboard", "/review", "/issues", "/contractors", "/rules", "/templates", "/completed", "/reports/completeness"]);
       expect(navItemsForRole(r).some((i) => i.group === "admin")).toBe(false);
     }
   });
@@ -30,6 +30,7 @@ describe("navItemsForRole", () => {
       "/dashboard",
       "/review",
       "/issues",
+      "/contractors",
       "/rules",
       "/templates",
       "/completed",
