@@ -13,7 +13,7 @@ It serves field staff (Housekeeping, Property Attendants, Maintenance Technician
 **As of 2026-07-07 (ADR-025), the project is three components, one codebase, built in parallel:**
 - **I. Checklist App (StayCheck)** — the live Connecteam replacement (this doc's original scope + StayCheck v1.1).
 - **II. Maintenance / Ticketing System** — intake (web form + `blake@rentstayable.com` email AI-ingestion; urgent/contractor WhatsApp front door) → human review → ticket vs. "concern" → work-order lifecycle → dispatch → close; Outlook sync. Absorbs the old "S7."
-- **III. Construction Progress / Scheduling** — buildout/renovation PM (`docs/ConstructionAgentBrief_RISE8_062026.md`); **concept, gated on Rob's greenlight.**
+- **III. Construction Progress / Scheduling** — buildout/renovation PM (`docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`); **concept, gated on Rob's greenlight.**
 
 `TODO.md` is now organized under `# COMPONENT I/II/III`. Building II and III is a scope expansion beyond the original checklist-replacement v1 — a budget/scope matter for Rob.
 
@@ -248,7 +248,7 @@ She is an engineer by background (Texas Instruments, process engineer + PM) and 
 - **Rob Beyer** — CEO of RISE8. Sponsor and final approver on budget/scope changes.
 - **Christopher Acoy Jr.** (`christopher@rentstayable.com`) — Operations support; backup for project decisions; currently uploads Maintenance Report data.
 - **Karla Ysabelle Dugayo** (`karla@rentstayable.com`) — Operations support; currently does manual Connecteam-to-Smartsheet uploads. This burden goes away post-cutover.
-- **Crystal Johnson** — Head of Operations. Owns the Maintenance Dispatch brief (`ProjectBrief_MaintenanceDispatch_062226.docx`) and **Component II (Ticketing/Dispatch) design** (ADR-025). Signs off ops/dispatch features before Rob.
+- **Crystal Johnson** — Head of Operations. Owns the Maintenance Dispatch brief (`docs/component-ii/ProjectBrief_MaintenanceDispatch_062226.docx`) and **Component II (Ticketing/Dispatch) design** (ADR-025). Signs off ops/dispatch features before Rob.
 - **Blake** — owner of the `blake@rentstayable.com` maintenance inbox (Component II email intake).
 - **Primary developer** — Person executing the build using Claude Code.
 
@@ -317,6 +317,15 @@ Production/staging/preview: Vercel environment variables.
 - `docs/DECISIONS.md` — Architecture Decision Records (ADRs). Append-only log of significant decisions and their reasoning.
 - `docs/RUNBOOK.md` — Operational runbook. How to fix common issues, rotate secrets, restore from backup, etc. Built up over time.
 - `docs/CHANGELOG.md` — User-facing change history.
+
+**Repo layout (reorganized 2026-07-20):** root holds only `README.md`, `CLAUDE.md`, `TODO.md` + config/code dirs. All docs live under `docs/`:
+- `docs/` (top level) — cross-component sources of truth: PRD, ARCHITECTURE, SPRINT_PLAN, DECISIONS, RUNBOOK, CHANGELOG.
+- `docs/component-i/` — StayCheck / checklist-app docs (`StayCheckPRD_RISE8_070126.md`, `ChecklistTeamInterviewGuide_RISE8_060526.md`).
+- `docs/component-ii/` — Maintenance/Ticketing docs (`MAINTENANCE_DESK_SPEC.md`, `MaintenanceTicketing{DesignReview,ScopingQuestions}_RISE8_070726.md`, `TicketingBriefDispatch_RISE8_070826.md`, `ProjectBrief_MaintenanceDispatch_062226.docx`, `IngestionEngineSketch_RISE8_070726.png`).
+- `docs/component-iii/` — Construction docs (`ConstructionAgentBrief_RISE8_062026.md`).
+- `docs/archive/` — superseded status docs (`CurrentUpdate`/`ProjectPhases`/`StatusSummary_RISE8_051826.md`).
+- `docs/assets/` — screenshots + `connecteam-snapshots/` reference images.
+- `docs/superpowers/{specs,plans}/` — epic specs + execution plans.
 
 When changing scope or architecture: update the relevant doc and add an entry to `DECISIONS.md`.
 

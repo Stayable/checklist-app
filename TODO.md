@@ -18,7 +18,7 @@ The project is three components. All three run **in parallel** (Kyle, 2026-07-07
 |---|---|---|---|
 | **I** | **Checklist App (StayCheck)** | The live Connecteam replacement. All existing phases + StayCheck v1.1 (S0–S9) **minus ticketing** | 🟢 Live in prod, active build |
 | **II** | **Maintenance / Ticketing System** | Intake (form + `blake@` email AI-ingestion; urgent/contractor WhatsApp) → human review → ticket vs. concern → work-order lifecycle → dispatch → close. Outlook sync | 🟡 New — planning |
-| **III** | **Construction Progress / Scheduling** | Buildout/renovation PM (`docs/ConstructionAgentBrief_RISE8_062026.md`). Shares the ingestion engine | ⛔ Concept — gated on Rob's decisions file |
+| **III** | **Construction Progress / Scheduling** | Buildout/renovation PM (`docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`). Shares the ingestion engine | ⛔ Concept — gated on Rob's decisions file |
 
 Components share one codebase/deploy and reuse each other's infra (auth, RBAC, Issue/SLA, audit, Teams digest, geofence). See ADR-025.
 
@@ -427,7 +427,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P1 | [x] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — 9 cases: 5-strike lock, 15-min window reset + boundary, 30-min unlock, success clear. Shipped 2026-05-30 commit `180b12d` |
 | P1 | [x] | **Vitest for `lib/checklist-logic.ts`** — 14 cases: conditional `show_if` (incl. MULTI), per-type validation, validateAll. Commit `a6ea416` |
 | P2 | [ ] | Add `AUTH_SECRET` to Vercel **Preview** if branch-preview login testing is wanted (Production-only per Kate's default-to-Prod rule) |
-| P3 | [ ] | Decide fate of stray untracked files: `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` + `Screenshot 2026-06-02 042054.png` (commit as deliverables vs `.gitignore` vs delete) |
+| P3 | [x] | ~~Decide fate of stray untracked files~~ — **RESOLVED 2026-07-20**: repo reorg moved superseded status docs → `docs/archive/`, screenshots + Connecteam snapshots → `docs/assets/`, component docs → `docs/component-i|ii|iii/` |
 | P1 | [ ] | CI: GitHub Actions — lint + typecheck + unit tests on PR |
 | P1 | [ ] | Playwright e2e on login + submit + review |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |
@@ -582,7 +582,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 
 # COMPONENT III — CONSTRUCTION PROGRESS / SCHEDULING
 
-*New component (ADR-025). Buildout/renovation coordination. **Concept — gated on Rob's decisions file.** Brief: `docs/ConstructionAgentBrief_RISE8_062026.md`. Shares the ingestion engine (the sketch's CONSTRUCTION lane) with Component II. Track runs in parallel for planning; no build until greenlight.*
+*New component (ADR-025). Buildout/renovation coordination. **Concept — gated on Rob's decisions file.** Brief: `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`. Shares the ingestion engine (the sketch's CONSTRUCTION lane) with Component II. Track runs in parallel for planning; no build until greenlight.*
 
 ### Phase III.0 — Greenlight (gate)
 | Pri | Status | Task |

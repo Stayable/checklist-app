@@ -170,7 +170,7 @@ Component II (Ticketing) is **new scope beyond the original checklist replacemen
 
 ### 3.3 — Note on Component III (Construction)
 
-Construction was originally gated on your answers in `docs/ConstructionAgentBrief\_RISE8\_062026.md` §5. Note the shift: **Crystal's answers in §2.3 now greenlight and shape the construction build** at the ops level, so the shared ingestion engine is designed to serve the Construction lane from the start. What remains for you here is **scope/budget sign-off** — confirm you're good with construction being built alongside Ticketing, or flag if you want it held.
+Construction was originally gated on your answers in `docs/component-iii/ConstructionAgentBrief\_RISE8\_062026.md` §5. Note the shift: **Crystal's answers in §2.3 now greenlight and shape the construction build** at the ops level, so the shared ingestion engine is designed to serve the Construction lane from the start. What remains for you here is **scope/budget sign-off** — confirm you're good with construction being built alongside Ticketing, or flag if you want it held.
 
 * \---
 

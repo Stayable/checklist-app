@@ -313,9 +313,9 @@ Examples: `CL-4645-ARR-20260526-012`, `CL-6802-PWR-20260526-001`
 **Status:** Accepted
 
 ### Context
-Currently Karla / Christopher read every prior-day submission across all 8 properties and manually type a single portfolio-wide morning summary into a corporate Teams channel (see `connecteam-snapshots/image (9).png` for the canonical format). The PRD §8 notification table lists a "Daily morning summary" but only as an email to property managers — it does not include a Teams channel post, nor a corporate consolidation. This is one of the largest manual workloads in the current pipeline and a primary driver for building the platform.
+Currently Karla / Christopher read every prior-day submission across all 8 properties and manually type a single portfolio-wide morning summary into a corporate Teams channel (see `docs/assets/connecteam-snapshots/image (9).png` for the canonical format). The PRD §8 notification table lists a "Daily morning summary" but only as an email to property managers — it does not include a Teams channel post, nor a corporate consolidation. This is one of the largest manual workloads in the current pipeline and a primary driver for building the platform.
 
-Separately, Stayable's current Connecteam instance is white-labeled with the Stayable logo (visible in `connecteam-snapshots/image (10).png`). The new platform needs an end-user product name.
+Separately, Stayable's current Connecteam instance is white-labeled with the Stayable logo (visible in `docs/assets/connecteam-snapshots/image (10).png`). The new platform needs an end-user product name.
 
 ### Alternatives Considered
 
@@ -376,7 +376,7 @@ Separately, Stayable's current Connecteam instance is white-labeled with the Sta
 **Status:** Accepted
 
 ### Context
-Two related UX decisions surfaced from reviewing the Connecteam screenshots in `connecteam-snapshots/`:
+Two related UX decisions surfaced from reviewing the Connecteam screenshots in `docs/assets/connecteam-snapshots/`:
 
 1. **Single-submission review** (image 10): Connecteam uses a three-column layout — left rail for manager fields (status + note), center for question responses + photos, right rail for activity timeline (each status change / note / submission stamped with actor + timestamp). PMs are already trained on this pattern.
 
@@ -458,7 +458,7 @@ The human label format from ADR-009 now reads:
 **Status:** Accepted
 
 ### Context
-Reviewing the Connecteam admin module list (`connecteam-snapshots/image (12).png`) surfaced two operational surfaces that were not in the original PRD scope: **Contractor Checklists** (sign-off forms for vendors/contractors, not employees) and **Quick Tasks** (ad-hoc one-off tasks that are not template-driven and have no recurrence). Both are actively used today on the Connecteam side. Kate's call: keep them in v1 rather than defer to v1.5.
+Reviewing the Connecteam admin module list (`docs/assets/connecteam-snapshots/image (12).png`) surfaced two operational surfaces that were not in the original PRD scope: **Contractor Checklists** (sign-off forms for vendors/contractors, not employees) and **Quick Tasks** (ad-hoc one-off tasks that are not template-driven and have no recurrence). Both are actively used today on the Connecteam side. Kate's call: keep them in v1 rather than defer to v1.5.
 
 This is a meaningful scope expansion. ADR-006 ("Out of scope for v1") deliberately limited the build to template-driven operational checklists. ADR-012 explicitly amends that scope.
 
@@ -797,7 +797,7 @@ End-user product name is **StayCheck**. All user-facing surfaces — UI wordmark
 ### Context
 The project began as a single product — the Connecteam checklist replacement (now **StayCheck**). Two adjacent needs have surfaced that are operationally distinct from checklists:
 1. **Maintenance / ticketing** — properties raising work items, primarily today via a form and via the `blake@rentstayable.com` inbox, plus urgent/"we need a contractor" events (busted pipe, no power, no hot water). These arrive as unstructured email/messages, not clean form input.
-2. **Construction progress / scheduling** — buildout & renovation coordination (the "Construction Coordination Agent" concept in `docs/ConstructionAgentBrief_RISE8_062026.md`), still un-greenlit pending Rob.
+2. **Construction progress / scheduling** — buildout & renovation coordination (the "Construction Coordination Agent" concept in `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`), still un-greenlit pending Rob.
 
 Treating these as loose backlog items (the StayCheck epic had ticketing as "S7") obscured that they are separate products with their own intake, lifecycle, and users.
 

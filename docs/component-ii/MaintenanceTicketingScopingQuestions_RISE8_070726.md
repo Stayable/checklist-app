@@ -7,7 +7,7 @@
 
 **How to read:** each question has a `→ Rec:` — my recommended default. If you agree, just write **"confirm"**. If not, edit it. Priority tags: 🔴 blocks starting the build · 🟡 shapes the build · 🟢 can decide later.
 
-**Source docs reconciled:** `MAINTENANCE_DESK_SPEC.md` (Zoho Desk replacement — email/form), `ProjectBrief_MaintenanceDispatch_062226.docx` (Crystal's crew-dispatch vision — WhatsApp/scheduling/cost), `StayCheckPRD_RISE8_070126.md` (checklist app; §7/§18/§20 = issues + work-order lifecycle), `docs/ConstructionAgentBrief_RISE8_062026.md` (Component III), `docs/DECISIONS.md` (ADR-025 three-component split).
+**Source docs reconciled:** `MAINTENANCE_DESK_SPEC.md` (Zoho Desk replacement — email/form), `ProjectBrief_MaintenanceDispatch_062226.docx` (Crystal's crew-dispatch vision — WhatsApp/scheduling/cost), `StayCheckPRD_RISE8_070126.md` (checklist app; §7/§18/§20 = issues + work-order lifecycle), `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md` (Component III), `docs/DECISIONS.md` (ADR-025 three-component split).
 
 ---
 
@@ -191,7 +191,7 @@ Kate's PRD puts the issue + work-order lifecycle **inside** the checklist app (�
 ## K. Construction (Component III) — parked
 
 - **K1** 🟢 You said you don't yet know how to integrate construction scheduling. Directions to consider later: (a) construction = **another ticket source + a "project" grouping** in Ticketing; (b) a **separate construction module** that links to tickets; (c) **defer entirely** until Rob greenlights the brief.
-  → Rec: **park until Rob greenlights** `docs/ConstructionAgentBrief_RISE8_062026.md` §5; then brainstorm III on its own.
+  → Rec: **park until Rob greenlights** `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md` §5; then brainstorm III on its own.
 
 - **K2** 🟢 Send Rob the brief §5 questionnaire now so III can greenlight in parallel?
   → Rec: yes.
