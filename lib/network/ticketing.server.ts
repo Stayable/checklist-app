@@ -141,6 +141,47 @@ export async function createStandardTicket(
 }
 
 /**
+ * Cascade (Task 5, spec §5.5; extracted Task 10 follow-up so BOTH the
+ * automated recovery path (`closeOpenTicketOnRecovery` below) and a manual
+ * status edit (`updateTicket` in app/network/tickets/actions.ts) trigger the
+ * SAME cascade): if `resolvedTicket` is a STANDARD child spawned off a
+ * MASS_OUTAGE parent (`parentTicketId` set), and every sibling child of that
+ * parent has now reached a terminal status (RESOLVED/CLOSED), the parent
+ * mass-outage ticket is auto-resolved too ("Mass outage ticket fully closes
+ * when all its spawned individual tickets are resolved"). No-op when
+ * `resolvedTicket` has no `parentTicketId` or siblings aren't all done yet.
+ *
+ * Must run on an interactive `tx` — either the enclosing recovery
+ * transaction or the caller's own `$transaction` — so the parent update is
+ * atomic with the child's own status write.
+ */
+export async function cascadeParentCloseIfDone(
+  tx: Prisma.TransactionClient,
+  resolvedTicket: Pick<Ticket, "id" | "parentTicketId">,
+  now: Date,
+): Promise<void> {
+  if (!resolvedTicket.parentTicketId) return;
+
+  const siblings = await tx.ticket.findMany({
+    where: { parentTicketId: resolvedTicket.parentTicketId },
+    select: { status: true },
+  });
+  if (!allChildrenResolved(siblings.map((s) => s.status))) return;
+
+  const parent = await tx.ticket.update({
+    where: { id: resolvedTicket.parentTicketId },
+    data: { status: "RESOLVED", resolvedAt: now },
+  });
+  const parentProperty = await tx.property.findUnique({
+    where: { id: parent.propertyId },
+    select: TEAMS_PROPERTY_SELECT,
+  });
+  if (parentProperty) {
+    await logTeamsTicketResolved(tx, parent, parentProperty);
+  }
+}
+
+/**
  * Closes the device's most recent open ticket (OPEN/IN_PROGRESS) on
  * recovery, if one exists. No-op (returns null) when the device has no open
  * ticket — e.g. it self-resolved before the 5-minute timer ever fired one.
@@ -149,13 +190,9 @@ export async function createStandardTicket(
  * server-trustworthy `receivedAt` (falling back to the ticket's `openedAt`
  * if the trigger event is somehow missing) to `now`.
  *
- * Cascade (Task 5, spec §5.5): if the ticket being resolved is a STANDARD
- * child spawned off a MASS_OUTAGE parent (`parentTicketId` set), and every
- * sibling child of that parent has now reached a terminal status, the
- * parent mass-outage ticket is auto-resolved too ("Mass outage ticket fully
- * closes when all its spawned individual tickets are resolved"). Runs on
- * the same interactive `tx` as the rest of this function — no new-ticket
- * creation here, so no P2002/fresh-tx concern.
+ * Cascade: delegates to `cascadeParentCloseIfDone` above (see its doc
+ * comment) on the same interactive `tx` as the rest of this function — no
+ * new-ticket creation here, so no P2002/fresh-tx concern.
  */
 export async function closeOpenTicketOnRecovery(
   tx: Prisma.TransactionClient,
@@ -200,25 +237,7 @@ export async function closeOpenTicketOnRecovery(
     await logTeamsTicketResolved(tx, resolved, property);
   }
 
-  if (resolved.parentTicketId) {
-    const siblings = await tx.ticket.findMany({
-      where: { parentTicketId: resolved.parentTicketId },
-      select: { status: true },
-    });
-    if (allChildrenResolved(siblings.map((s) => s.status))) {
-      const parent = await tx.ticket.update({
-        where: { id: resolved.parentTicketId },
-        data: { status: "RESOLVED", resolvedAt: params.now },
-      });
-      const parentProperty = await tx.property.findUnique({
-        where: { id: parent.propertyId },
-        select: TEAMS_PROPERTY_SELECT,
-      });
-      if (parentProperty) {
-        await logTeamsTicketResolved(tx, parent, parentProperty);
-      }
-    }
-  }
+  await cascadeParentCloseIfDone(tx, resolved, params.now);
 
   return resolved;
 }

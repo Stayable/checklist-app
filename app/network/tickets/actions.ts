@@ -6,6 +6,7 @@ import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireNetworkAccess } from "@/lib/rbac";
 import { downDurationMin } from "@/lib/network/ticketing";
+import { cascadeParentCloseIfDone } from "@/lib/network/ticketing.server";
 
 // NETWORK ticket edit actions (Task 6). Manual edits are audit-logged only —
 // no Teams posting here (Task 7 wires the automated notifications; this is
@@ -29,8 +30,15 @@ const updateTicketSchema = z.object({
  * trigger event and no downDurationMin yet — computes it via the same
  * downDurationMin helper the automated recovery path uses
  * (lib/network/ticketing.ts), so a manually-closed ticket's duration is
- * consistent with an auto-resolved one. Audited; does not touch mass-outage
- * cascade logic (Tasks 4-5 own that automated path).
+ * consistent with an auto-resolved one. Audited.
+ *
+ * Cascade (Task 10 fix): if the ticket being closed is a STANDARD child of a
+ * MASS_OUTAGE parent (`parentTicketId` set) and this edit is the one that
+ * transitions it INTO a terminal status, `cascadeParentCloseIfDone` runs the
+ * SAME sibling-check-and-resolve the automated recovery path
+ * (`closeOpenTicketOnRecovery` in lib/network/ticketing.server.ts) already
+ * runs — otherwise a manually-resolved last child would leave its
+ * MASS_OUTAGE parent stranded IN_PROGRESS forever.
  */
 export async function updateTicket(input: unknown): Promise<TicketActionResult> {
   const user = await requireNetworkAccess();
@@ -71,7 +79,7 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
   }
 
   await db.$transaction(async (tx) => {
-    await tx.ticket.update({
+    const updated = await tx.ticket.update({
       where: { id: ticketId },
       data: {
         status,
@@ -95,6 +103,10 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
         after: { status, assignedTo, resolutionNotes },
       },
     });
+
+    if (enteringTerminal) {
+      await cascadeParentCloseIfDone(tx, updated, now);
+    }
   });
 
   revalidatePath("/network");
