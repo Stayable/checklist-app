@@ -7,7 +7,7 @@ import {
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
-import { formatDateInET } from "@/lib/datetime";
+import { formatDateInET, etDayStartUtc, nextYMD } from "@/lib/datetime";
 import { isSlaBreached } from "@/lib/review";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { ReportsNav } from "../ReportsNav";
@@ -16,9 +16,6 @@ import { ParamSelect } from "../ParamSelect";
 
 // MANAGER+ report — issues found, property-scoped, with date/status/priority filters.
 // English-only surface (ADR-013).
-
-const parseDateParam = (s?: string): Date | null =>
-  s ? new Date(`${s}T00:00:00.000Z`) : null;
 
 const PRIORITY_BADGE: Record<IssuePriority, string> = {
   URGENT: "bg-red-100 text-red-800",
@@ -55,12 +52,12 @@ export default async function IssuesReport({
   const properties = await accessibleProperties(user);
   const codeById = new Map(properties.map((p) => [p.id, p.shortCode]));
 
-  const from = parseDateParam(sp.from);
-  const toMidnight = parseDateParam(sp.to);
-  // Use an exclusive next-day upper bound so the entire selected end day is included.
-  const toExclusive = toMidnight
-    ? new Date(toMidnight.getTime() + 24 * 60 * 60 * 1000)
-    : null;
+  // createdAt is a timestamptz — bound it by ET day starts (honors EDT/EST) so
+  // an issue created late-evening ET doesn't spill into the adjacent UTC day.
+  const from = sp.from ? etDayStartUtc(sp.from) : null;
+  // Exclusive upper bound = start of the ET day AFTER `to`, so the whole ET
+  // end-day is included.
+  const toExclusive = sp.to ? etDayStartUtc(nextYMD(sp.to)) : null;
   const statusFilter =
     sp.status && sp.status in IssueStatus ? (sp.status as IssueStatus) : null;
   const priorityFilter =

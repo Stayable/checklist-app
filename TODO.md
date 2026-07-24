@@ -421,6 +421,25 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P3 | [ ] | Web Push notifications (iOS 16.4+) |
 | P3 | [ ] | Capacitor wrapper (only if iOS PWA fails Week 1) |
 
+### Review findings — deferred-minor (audited 2026-07-24)
+
+Deferred-minor items flagged in the Plan 2–5 code reviews, re-verified against current code, then **fixed 2026-07-24** (branch only, NOT deployed; typecheck+lint clean, 134/134 tests, build 31 routes). `[x]` = done/resolved; `[ ]` = still open.
+
+| Pri | Status | Finding | Where |
+|---|---|---|---|
+| P1 | [x] | **`set-admin-password.ts` no longer hardcodes a password** — reads from `ADMIN_NEW_PASSWORD` env or CLI arg, refuses to run without one. ⚠ *The old literal is still in git history — the actual live password must be rotated separately* | `scripts/set-admin-password.ts` |
+| P1 | [x] | **Template builder rows now keyed by stable client `_uid`** (stripped before the action payload) — reorder/delete render correctly | `app/templates/TemplateBuilder.tsx` |
+| P2 | [x] | **`/completed` paginated** — 100/page, total count, page N of M, Prev/Next preserving filters (was silent 200-row cap) | `app/completed/page.tsx` |
+| P2 | [x] | **PER_ROOM client guard added** — inline "choose a room" before submit. *(Server already rejected this — `checklists/new/actions.ts:66` — so it was a UX gap, not a data bug)* | `app/checklists/new/ManualCreateClient.tsx` |
+| P2 | [x] | **Issues report now bounds `createdAt` by ET day starts** via `etDayStartUtc`/`nextYMD` (honors EDT/EST) — no more adjacent-day spill | `app/reports/issues/page.tsx`, `lib/datetime.ts` |
+| P2 | [x] | **Dashboard "Checklists with issues" tile added** — distinct instances with ≥1 open sourced issue (6th tile) | `app/dashboard/page.tsx` |
+| P3 | [x] | **`/review` queue rows use `title ?? template.name`** — parity with Today/completed/detail | `app/review/page.tsx` |
+| P3 | [x] | **PhotoFigure uses `!= null` coord guard + descriptive alt** (geofence label + capture time) | `components/review/PhotoFigure.tsx` |
+| P3 | [x] | **Report-PDF free-text cells truncated** (`trunc()` on issue title/checklist) so long text can't blow out the column | `lib/pdf/IssuesPdf.tsx` |
+| P2 | [x] | ~~`CompletedFilters` `key={params}` remount~~ — **resolved/moot**: inputs drive the URL; anti-pattern not present | `app/completed/CompletedFilters.tsx` |
+| P3 | [ ] | OTP attempt-cap resets on resend — **reclassified low/negligible risk 2026-07-24**: each resend emails a fresh unseen code, so resetting the 5-attempt counter yields no brute-force advantage. Proper hardening = account-level lockout on OTP failures (touches security-reviewed `authorize`); deferred, not worth the regression risk as a drive-by | `lib/otp.ts` + `app/login/actions.ts` + `lib/auth.ts` |
+| P2 | [ ] | `AUTH_SECRET` reused as OTP pepper + trusted-device HMAC + NextAuth secret — **deferred to Phase 8**: splitting rotates live secrets (invalidates every trusted-device token + in-flight OTP) and needs coordinated Vercel env changes | `lib/otp.ts`, `lib/trusted-device.ts` |
+
 ---
 
 ## Open Questions (mirror of PRD §12 — tick when resolved)

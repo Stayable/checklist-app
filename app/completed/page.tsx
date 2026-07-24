@@ -26,7 +26,12 @@ function parseDateParam(value: string): Date {
 export default async function CompletedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; assignee?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    assignee?: string;
+    page?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const user = await requireManager();
@@ -39,22 +44,32 @@ export default async function CompletedPage({
   const fromDate = sp.from ? parseDateParam(sp.from) : null;
   const toDate = sp.to ? parseDateParam(sp.to) : null;
 
+  const PAGE_SIZE = 100;
+  const requestedPage = Math.max(1, Number(sp.page) || 1);
+
+  const where = {
+    propertyId: { in: scopeIds },
+    status: { in: [InstanceStatus.SUBMITTED, InstanceStatus.REVIEWED] },
+    ...(sp.assignee ? { assignedUserId: sp.assignee } : {}),
+    ...(fromDate || toDate
+      ? {
+          scheduledFor: {
+            ...(fromDate ? { gte: fromDate } : {}),
+            ...(toDate ? { lte: toDate } : {}),
+          },
+        }
+      : {}),
+  };
+
+  const total = await db.checklistInstance.count({ where });
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const current = Math.min(requestedPage, pageCount);
+
   const instances = await db.checklistInstance.findMany({
-    where: {
-      propertyId: { in: scopeIds },
-      status: { in: [InstanceStatus.SUBMITTED, InstanceStatus.REVIEWED] },
-      ...(sp.assignee ? { assignedUserId: sp.assignee } : {}),
-      ...(fromDate || toDate
-        ? {
-            scheduledFor: {
-              ...(fromDate ? { gte: fromDate } : {}),
-              ...(toDate ? { lte: toDate } : {}),
-            },
-          }
-        : {}),
-    },
+    where,
     orderBy: [{ submittedAt: "desc" }],
-    take: 200,
+    skip: (current - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     select: {
       id: true,
       title: true,
@@ -84,11 +99,22 @@ export default async function CompletedPage({
     ).values(),
   );
 
+  const pageHref = (p: number) => {
+    const params = new URLSearchParams();
+    if (sp.from) params.set("from", sp.from);
+    if (sp.to) params.set("to", sp.to);
+    if (sp.assignee) params.set("assignee", sp.assignee);
+    params.set("page", String(p));
+    return `/completed?${params.toString()}`;
+  };
+  const firstRow = total === 0 ? 0 : (current - 1) * PAGE_SIZE + 1;
+  const lastRow = (current - 1) * PAGE_SIZE + instances.length;
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Completed checklists"
-        subtitle={`${instances.length} in view`}
+        subtitle={`${total} completed${pageCount > 1 ? ` · page ${current} of ${pageCount}` : ""}`}
       />
       <CompletedFilters assignees={assignees} />
       <div className="overflow-x-auto rounded-lg bg-white ring-1 ring-slate-200">
@@ -148,6 +174,31 @@ export default async function CompletedPage({
           </tbody>
         </table>
       </div>
+      {pageCount > 1 && (
+        <div className="flex items-center justify-between text-sm text-slate-600">
+          <span>
+            Showing {firstRow}–{lastRow} of {total}
+          </span>
+          <div className="flex gap-2">
+            {current > 1 && (
+              <Link
+                href={pageHref(current - 1)}
+                className="rounded-md px-3 py-1.5 ring-1 ring-slate-300 hover:bg-slate-50"
+              >
+                Previous
+              </Link>
+            )}
+            {current < pageCount && (
+              <Link
+                href={pageHref(current + 1)}
+                className="rounded-md px-3 py-1.5 ring-1 ring-slate-300 hover:bg-slate-50"
+              >
+                Next
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

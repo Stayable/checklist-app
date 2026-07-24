@@ -24,6 +24,11 @@ export type BuilderInitial = {
   questions: BuilderQuestion[];
 };
 
+// A stable per-row id so React keys survive reorder/delete (index keys misrender
+// on move/remove). Client-only — stripped before the payload hits the action.
+type QRow = BuilderQuestion & { _uid: string };
+const newUid = () => crypto.randomUUID();
+
 const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
   { value: QuestionType.SHORT_TEXT, label: "Single line text" },
   { value: QuestionType.LONG_TEXT, label: "Multi line text" },
@@ -57,13 +62,15 @@ export function TemplateBuilder({
   const [reviewLevel, setReviewLevel] = useState(initial.reviewLevel);
   const [allProperties, setAllProperties] = useState(initial.allProperties);
   const [propertyIds, setPropertyIds] = useState<string[]>(initial.propertyIds);
-  const [questions, setQuestions] = useState<BuilderQuestion[]>(initial.questions);
+  const [questions, setQuestions] = useState<QRow[]>(() =>
+    initial.questions.map((q) => ({ ...q, _uid: newUid() })),
+  );
 
   function toggleProperty(id: string) {
     setPropertyIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   }
   function addQuestion() {
-    setQuestions((q) => [...q, { type: QuestionType.SHORT_TEXT, prompt: "", required: true }]);
+    setQuestions((q) => [...q, { type: QuestionType.SHORT_TEXT, prompt: "", required: true, _uid: newUid() }]);
   }
   function updateQuestion(i: number, patch: Partial<BuilderQuestion>) {
     setQuestions((q) => q.map((item, idx) => (idx === i ? { ...item, ...patch } : item)));
@@ -90,7 +97,14 @@ export function TemplateBuilder({
       reviewLevel,
       allProperties,
       propertyIds: allProperties ? [] : propertyIds,
-      questions,
+      // Strip the client-only _uid before sending to the action.
+      questions: questions.map((q) => ({
+        type: q.type,
+        prompt: q.prompt,
+        required: q.required,
+        photoMax: q.photoMax,
+        failFlagsIssue: q.failFlagsIssue,
+      })),
     };
     startTransition(async () => {
       const res = initial.id
@@ -162,7 +176,7 @@ export function TemplateBuilder({
           <button onClick={addQuestion} className="rounded-md bg-slate-100 px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-200">+ Add question</button>
         </div>
         {questions.map((q, i) => (
-          <div key={i} className="flex flex-col gap-2 rounded-md border border-slate-200 p-3">
+          <div key={q._uid} className="flex flex-col gap-2 rounded-md border border-slate-200 p-3">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">{i + 1}</span>
               <select value={q.type} onChange={(e) => updateQuestion(i, { type: e.target.value as QuestionType })}
