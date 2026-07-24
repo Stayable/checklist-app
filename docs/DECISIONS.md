@@ -721,6 +721,89 @@ Phase-7 redesign **mirrors Connecteam's layout / information architecture** (the
 
 ---
 
+## ADR-018: Unified AppShell — desktop left sidebar + mobile bottom bar; global property scope
+
+**Date:** 2026-06-23
+**Status:** Accepted (supersedes the interim `AppNav`/`BottomNav` structural pass under ADR-017)
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 1
+
+### Context
+The Phase-7 structural pass (ADR-017) shipped a mobile-first Connecteam-style feed with a role-aware bottom tab bar (`AppNav`/`BottomNav`). Kate then requested a desktop/responsive redesign: the app is used on laptops by managers/corporate as much as on phones by field staff, and the bottom-bar-only chrome wasted desktop width. She also wanted a single, consistent property filter rather than the ad-hoc header picker.
+
+### Decision
+One unified `AppShell` renders **a navy left sidebar on desktop** and **a bottom tab bar on mobile**, both driven by a single role-aware nav model (`lib/nav.ts`). A **global property-scope filter** (`lib/property-scope.ts`, `resolveScopedPropertyIds`) lives in the shell header and narrows every property-scoped list (review, issues, completed, dashboard, reports) to the active property; CORPORATE/ADMIN default to the full portfolio. The old `AppNav`/`BottomNav` components are deleted.
+
+### Consequences
+- Every page mounts inside the shell via the root layout; new pages get nav + scope for free.
+- Property scope is resolved once and passed down, replacing per-page picker logic.
+- Retires the interim navigation from the ADR-017 structural pass (that ADR's *branding* direction still stands).
+
+---
+
+## ADR-019: Email OTP for all users with a 30-day trusted-device token, layered on password
+
+**Date:** 2026-06-25
+**Status:** Accepted (amends ADR-008's MFA approach)
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 2
+
+### Context
+ADR-008 planned TOTP MFA (on for managers/corp, optional for field staff) via authenticator apps. In practice, field staff don't reliably have authenticator apps configured, and Kate wanted a single second factor that works for everyone without per-user enrollment. Resend email delivery is now available.
+
+### Decision
+Authentication requires **password + a second factor for all users**. The second factor is a **6-digit email OTP**; on success the browser receives a **30-day HMAC-signed trusted-device token**, so the OTP is only re-prompted on new/expired devices. `authorize` (`lib/auth.ts`) enforces password AND (valid trusted-device token OR a verified-and-consumed OTP) with **no bypass path** and **fails closed on an empty `AUTH_SECRET`**. Two-step bilingual login UI; OTP records in `login_otps` (sha256 + pepper, attempt-cap, TTL); lockout metered in the pre-check.
+
+### Consequences
+- Uniform 2FA for every role without authenticator-app enrollment; supersedes the TOTP-only plan in ADR-008 (TOTP schema fields remain, unused, for a possible future).
+- Requires `RESEND_API_KEY` + `RESEND_FROM_EMAIL` in prod (set 2026-06-27; live OTP send validated).
+- **Deferred-minor (Phase 8):** `AUTH_SECRET` currently triple-purposes as NextAuth secret + OTP pepper + trusted-device HMAC key; splitting rotates live secrets and is deferred.
+
+---
+
+## ADR-020: Template authoring in-app; property-scoped templates; role-based edit scope
+
+**Date:** 2026-06-24
+**Status:** Accepted
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 3
+
+### Context
+The 9 templates were seed-only, editable only by changing code. StayCheck needs managers/corporate to author and edit checklist templates in-app, and templates must be able to target specific properties (not every template applies portfolio-wide).
+
+### Decision
+An in-app template builder (`/templates`) lets authorized users create/edit templates and their question sets. Templates declare their property applicability via a `TemplateProperty` join plus an `allProperties` flag. Access rules (`lib/template-access.ts`):
+- **ADMIN** — author/edit any template, including all-properties templates.
+- **MANAGER** — author/edit only templates fully scoped within their own property set. **Conservative edit scope (Kate decision):** managers **cannot** edit an all-properties template or a template that spans properties outside their assignment.
+- **CORPORATE** — **broad authoring (Kate decision):** may author/edit any non-all-properties template across the portfolio, but all-properties templates remain ADMIN-only.
+
+All mutations are audit-logged. Instances carry an optional free-text `title` override of the ADR-009 human label.
+
+### Consequences
+- Property-scoped templates keep each property's list relevant without duplicating templates.
+- The two role-boundary calls above are deliberate: managers are prevented from changing shared/all-property templates that affect properties they don't own; corporate gets reach without being able to touch the portfolio-wide set.
+- Template `version` is an int today; version **snapshotting** (binding an instance to the question set as it was) is deferred to StayCheck S9.
+
+---
+
+## ADR-021: Manager dashboard, reports, and on-demand PDF export
+
+**Date:** 2026-06-25
+**Status:** Accepted
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 5
+
+### Context
+Managers and corporate needed at-a-glance operational health and exportable records well before the full Phase-6 dashboard suite. The spec pulled a focused dashboard + reports + PDF slice forward.
+
+### Decision
+- **`/dashboard`** — property-scoped alert tiles (completion %, incomplete, overdue, unassigned, open issues, checklists-with-issues).
+- **`/reports/completeness`** and **`/reports/issues`** — filterable (property/date/status/priority) report screens backed by pure helpers (`lib/reports.ts summarizeCompleteness`, tested).
+- **PDF export** via `@react-pdf/renderer` (pinned 4.5.1, `serverExternalPackages`, Node runtime, `auth()`-gated): single-checklist PDF (`/api/checklists/[id]/pdf`, with photos incl. ET capture time + geo, signatures) and report PDFs (`/api/reports/{completeness,issues}/pdf`) at query-parity with the screens.
+
+### Consequences
+- Establishes reusable PDF infrastructure (`lib/pdf/*`, `renderPdfToBuffer`) for later phases (contractor PDFs, S8 report parity).
+- These are an early, focused slice; the full multi-role dashboard suite (Phase 6 / PRD §13–14) still layers on top.
+- **Deferred-minor:** PDF free-text cell truncation and ET-exact issues `createdAt` bound (the latter fixed 2026-07-24).
+
+---
+
 ## ADR-022: Cloudbeds PMS in scope — manual-first room model with Cloudbeds as a pluggable sync adapter
 
 **Date:** 2026-07-02
