@@ -10,38 +10,87 @@ import { isMassOutage, MASS_OUTAGE_CHECK_MIN, MASS_OUTAGE_WINDOW_SEC, partitionR
 import {
   allocateTicketNumber,
   createStandardTicket,
+  hasOpenTicketForDevice,
   type TransactableClient,
 } from "./ticketing.server";
 import { logTeamsMassOutageCheck, logTeamsMassOutageCreated } from "./teams-graph.server";
 
+/** Outcome of the in-transaction mass-outage check+decision (see `evaluateMassOutage`). */
+export type MassOutageEvaluation =
+  | { kind: "none" }
+  | { kind: "joined-existing" }
+  | { kind: "create-needed"; clusterDevices: AffectedDevice[]; problemEventIds: string[] };
+
 /**
- * Detects and handles a mass outage (spec §5.5) for the property a PROBLEM
- * event just landed on. Called from the ingest PROBLEM path AFTER the main
- * device/event-insert transaction has committed (see the "TASK 5 SEAM" in
- * ingest.server.ts) — the read below needs to see the just-inserted event,
- * and mass-outage TICKET CREATION needs its own fresh top-level transaction
- * per attempt (the Task 4 P2002-retry lesson: a create that can collide on
- * a unique constraint must never run nested inside an already-committed-or-
- * poisoned outer transaction). `db` is therefore the top-level client, not
- * an interactive `Prisma.TransactionClient`.
- *
- * Returns `suppressStandardTimer: true` whenever a mass outage is detected
- * (whether this call created the cluster ticket or joined an existing one)
- * — the caller must not also schedule/leave scheduled a per-device
- * STANDARD_TIMER job for this event.
+ * Merges `additions` into `existing` by `deviceId`, leaving any
+ * already-present entry untouched (so a "recovered" entry from an earlier
+ * check cycle is never clobbered back to "offline"). Pure — no I/O.
  */
-export async function checkAndHandleMassOutage(
-  db: TransactableClient & Pick<PrismaClient, "networkEvent" | "ticket">,
+function mergeAffectedDevices(
+  existing: AffectedDevice[],
+  additions: AffectedDevice[],
+): { merged: AffectedDevice[]; changed: boolean } {
+  const merged = [...existing];
+  let changed = false;
+  for (const a of additions) {
+    if (!merged.some((d) => d.deviceId === a.deviceId)) {
+      merged.push(a);
+      changed = true;
+    }
+  }
+  return { merged, changed };
+}
+
+/**
+ * Takes a per-property Postgres transaction-scoped advisory lock as the
+ * first statement of the caller's transaction (auto-released at that
+ * transaction's commit/rollback). Serializes concurrent mass-outage
+ * check+decision (and, separately, ticket-creation) attempts for the SAME
+ * property so a second handler always observes the first's committed
+ * writes rather than racing it (Finding 2). `hashtext` collapses the cuid
+ * property id to an int4, which Postgres implicitly widens to the bigint
+ * `pg_advisory_xact_lock(bigint)` overload expects.
+ */
+async function lockPropertyForOutageHandling(
+  tx: Prisma.TransactionClient,
+  propertyId: string,
+): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${propertyId}))`;
+}
+
+/**
+ * Detects and evaluates a mass outage (spec §5.5) for the property a PROBLEM
+ * event just landed on. Runs INSIDE the caller's event-insert transaction
+ * (see ingest.server.ts) — the 120s window-count read and the "an open
+ * MASS_OUTAGE ticket already exists → append device" branch are plain
+ * reads/updates with no unique-constraint risk, so they belong in the same
+ * atomic unit as the event insert (Finding 1). Only ticket *creation* has
+ * the P2002 ticket-number risk (allocateTicketNumber can collide under
+ * concurrent webhook delivery) and is therefore NOT done here — when this
+ * returns `{ kind: "create-needed" }`, the caller creates the ticket via
+ * `createMassOutageTicket` in its own fresh top-level transaction AFTER this
+ * transaction commits, exactly like `createStandardTicket` isolates itself.
+ *
+ * Takes a per-property advisory lock (Finding 2) as its first statement so
+ * two PROBLEM webhooks for the same property landing near-simultaneously
+ * can't both read "no ticket yet" and both decide to create one, and can't
+ * lost-update each other's append to an existing ticket's `affectedDevices`.
+ */
+export async function evaluateMassOutage(
+  tx: Prisma.TransactionClient,
   params: {
     device: Pick<Device, "id" | "name">;
     property: Pick<Property, "id" | "shortCode" | "teamsChannelName">;
     now: Date;
   },
-): Promise<{ massOutage: boolean; suppressStandardTimer: boolean }> {
+): Promise<MassOutageEvaluation> {
   const { device, property, now } = params;
+
+  await lockPropertyForOutageHandling(tx, property.id);
+
   const windowStart = new Date(now.getTime() - MASS_OUTAGE_WINDOW_SEC * 1000);
 
-  const recentProblems = await db.networkEvent.findMany({
+  const recentProblems = await tx.networkEvent.findMany({
     where: {
       propertyId: property.id,
       eventType: "PROBLEM",
@@ -56,12 +105,12 @@ export async function checkAndHandleMassOutage(
   });
 
   if (!isMassOutage(recentProblems.map((e) => e.receivedAt), now)) {
-    return { massOutage: false, suppressStandardTimer: false };
+    return { kind: "none" };
   }
 
   // An open mass-outage ticket for this property already exists — join it
   // rather than creating a second (spec §5.5: one ticket per outage window).
-  const existing = await db.ticket.findFirst({
+  const existing = await tx.ticket.findFirst({
     where: {
       propertyId: property.id,
       ticketType: "MASS_OUTAGE",
@@ -70,19 +119,17 @@ export async function checkAndHandleMassOutage(
   });
 
   if (existing) {
-    const affected = ((existing.affectedDevices as unknown as AffectedDevice[] | null) ?? []);
-    const alreadyPresent = affected.some((d) => d.deviceId === device.id);
-    if (!alreadyPresent) {
-      const updated: AffectedDevice[] = [
-        ...affected,
-        { deviceId: device.id, deviceName: device.name, status: "offline", recoveredAt: null },
-      ];
-      await db.ticket.update({
+    const affected = (existing.affectedDevices as unknown as AffectedDevice[] | null) ?? [];
+    const { merged, changed } = mergeAffectedDevices(affected, [
+      { deviceId: device.id, deviceName: device.name, status: "offline", recoveredAt: null },
+    ]);
+    if (changed) {
+      await tx.ticket.update({
         where: { id: existing.id },
-        data: { affectedDevices: updated as unknown as Prisma.InputJsonValue },
+        data: { affectedDevices: merged as unknown as Prisma.InputJsonValue },
       });
     }
-    return { massOutage: true, suppressStandardTimer: true };
+    return { kind: "joined-existing" };
   }
 
   // Distinct devices with a PROBLEM event in the cluster window — the
@@ -110,14 +157,11 @@ export async function checkAndHandleMassOutage(
     });
   }
 
-  await createMassOutageTicket(db, {
-    property,
+  return {
+    kind: "create-needed",
     clusterDevices: [...byDevice.values()],
     problemEventIds: recentProblems.map((e) => e.id),
-    now,
-  });
-
-  return { massOutage: true, suppressStandardTimer: true };
+  };
 }
 
 /**
@@ -127,8 +171,23 @@ export async function checkAndHandleMassOutage(
  * pattern exactly, for the same reason: `allocateTicketNumber` can collide
  * under concurrent webhook delivery, and the retry must not run against a
  * transaction attempt #1 already aborted).
+ *
+ * Called from ingest.server.ts AFTER its event-insert transaction (which ran
+ * `evaluateMassOutage` and got back `{ kind: "create-needed" }`) has already
+ * committed — so there is a narrow gap between that commit (which released
+ * the per-property advisory lock) and this transaction's start. To close
+ * that gap (Finding 2): this transaction re-takes the SAME per-property
+ * advisory lock as its first statement, then RE-CHECKS for an open
+ * MASS_OUTAGE ticket before creating. If another concurrent handler won that
+ * race and already created one (or appended to one) while we were waiting
+ * for the lock, we join it — merging in every device from this cluster
+ * snapshot — instead of creating a duplicate. Only when no ticket exists do
+ * we actually allocate a ticket number and create; that allocation keeps its
+ * P2002 retry-once as a backstop (ticketNumber is a global per-ET-day
+ * sequence shared across properties, so a cross-property collision is still
+ * possible even though the per-property race is now closed).
  */
-async function createMassOutageTicket(
+export async function createMassOutageTicket(
   db: TransactableClient,
   params: {
     property: Pick<Property, "id" | "shortCode" | "teamsChannelName">;
@@ -139,9 +198,47 @@ async function createMassOutageTicket(
 ): Promise<Ticket> {
   const { property, clusterDevices, problemEventIds, now } = params;
 
+  async function cancelSupersededTimers(tx: Prisma.TransactionClient): Promise<void> {
+    if (problemEventIds.length === 0) return;
+    await tx.networkJob.updateMany({
+      where: {
+        kind: "STANDARD_TIMER",
+        status: "PENDING",
+        eventId: { in: problemEventIds },
+      },
+      data: { status: "CANCELLED" },
+    });
+  }
+
   async function attempt(retrying: boolean): Promise<Ticket> {
     try {
       return await db.$transaction(async (tx) => {
+        await lockPropertyForOutageHandling(tx, property.id);
+
+        const already = await tx.ticket.findFirst({
+          where: {
+            propertyId: property.id,
+            ticketType: "MASS_OUTAGE",
+            status: { in: ["OPEN", "IN_PROGRESS"] },
+          },
+        });
+
+        if (already) {
+          // A racing handler created (or joined) the cluster ticket while we
+          // were waiting on the lock — join it rather than creating a
+          // duplicate (Finding 2's whole point of re-checking here).
+          const affected = (already.affectedDevices as unknown as AffectedDevice[] | null) ?? [];
+          const { merged, changed } = mergeAffectedDevices(affected, clusterDevices);
+          if (changed) {
+            await tx.ticket.update({
+              where: { id: already.id },
+              data: { affectedDevices: merged as unknown as Prisma.InputJsonValue },
+            });
+          }
+          await cancelSupersededTimers(tx);
+          return already;
+        }
+
         const ticketNumber = await allocateTicketNumber(tx, now);
         const ticket = await tx.ticket.create({
           data: {
@@ -159,16 +256,7 @@ async function createMassOutageTicket(
         // Cancel superseded standard timers (spec §5.5): the per-device
         // 5-min timers for devices now folded into this mass-outage cluster
         // no longer need to fire their own standard ticket.
-        if (problemEventIds.length > 0) {
-          await tx.networkJob.updateMany({
-            where: {
-              kind: "STANDARD_TIMER",
-              status: "PENDING",
-              eventId: { in: problemEventIds },
-            },
-            data: { status: "CANCELLED" },
-          });
-        }
+        await cancelSupersededTimers(tx);
 
         await tx.networkJob.create({
           data: {
@@ -272,24 +360,42 @@ export async function runMassOutageCheck(
   }
 
   if (property) {
+    // Finding 3: `affected`/`updated` was already persisted above, so if this
+    // loop throws partway through, the job is left PENDING and retried by
+    // next cron tick (see route.ts's try/catch around runMassOutageCheck) —
+    // which would call createStandardTicket again for a device that already
+    // got one on the prior attempt. Guard each iteration with
+    // hasOpenTicketForDevice (mirrors processJob in the cron route) so a
+    // retry is idempotent, and isolate each device in its own try/catch so
+    // one device's failure doesn't strand the rest of the cluster.
     for (const d of stillOffline) {
-      const triggerEvent = await findTriggerEventForChildTicket(db, d.deviceId);
-      if (!triggerEvent) {
-        // Device is tracked as still-offline but has no PROBLEM event on
-        // record — shouldn't happen in practice; skip rather than create a
-        // child ticket with no valid trigger-event FK to link.
+      try {
+        const hasOpenTicket = await hasOpenTicketForDevice(db, d.deviceId);
+        if (hasOpenTicket) continue;
+
+        const triggerEvent = await findTriggerEventForChildTicket(db, d.deviceId);
+        if (!triggerEvent) {
+          // Device is tracked as still-offline but has no PROBLEM event on
+          // record — shouldn't happen in practice; skip rather than create a
+          // child ticket with no valid trigger-event FK to link.
+          console.error(
+            `mass-outage: no PROBLEM event found for still-offline device ${d.deviceId}, skipping child ticket`,
+          );
+          continue;
+        }
+        await createStandardTicket(db, {
+          device: { id: d.deviceId },
+          property,
+          triggerEvent,
+          now,
+          parentTicketId: ticket.id,
+        });
+      } catch (err) {
         console.error(
-          `mass-outage: no PROBLEM event found for still-offline device ${d.deviceId}, skipping child ticket`,
+          `mass-outage: failed creating child ticket for device ${d.deviceId}`,
+          err,
         );
-        continue;
       }
-      await createStandardTicket(db, {
-        device: { id: d.deviceId },
-        property,
-        triggerEvent,
-        now,
-        parentTicketId: ticket.id,
-      });
     }
   }
 

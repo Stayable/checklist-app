@@ -2,7 +2,7 @@ import type { DeviceSource } from "@prisma/client";
 import { db } from "@/lib/db";
 import type { ParsedWebhook } from "./parse";
 import { TICKET_TIMER_MIN } from "./mass-outage";
-import { checkAndHandleMassOutage } from "./mass-outage.server";
+import { createMassOutageTicket, evaluateMassOutage, type MassOutageEvaluation } from "./mass-outage.server";
 import { closeOpenTicketOnRecovery } from "./ticketing.server";
 
 export type IngestResult =
@@ -113,40 +113,64 @@ export async function ingestWebhook(
       });
     }
 
-    return { device, event };
+    // TASK 5 SEAM: a query against `tx` always sees this transaction's own
+    // prior writes (this event insert included), so the mass-outage window
+    // read does NOT need a fresh/committed transaction — it belongs in the
+    // same atomic unit as the event insert, same as the "an open
+    // MASS_OUTAGE ticket already exists → append device" branch and the
+    // normal (non-mass-outage) STANDARD_TIMER job insert below. These are
+    // all plain reads/updates with no unique-constraint risk. The ONLY
+    // thing that genuinely needs to break out to its own fresh top-level
+    // transaction is mass-outage TICKET CREATION (`createMassOutageTicket`):
+    // it allocates a ticketNumber and can P2002-retry, which per the Task 4
+    // lesson needs a transaction that isn't nested inside (or run after, on
+    // an already-committed) this one — see `evaluateMassOutage`'s doc
+    // comment. A mass outage supersedes the per-device standard-ticket flow
+    // with its own MASS_OUTAGE_CHECK job/ticket handling (spec §5.5).
+    let massOutageEvaluation: MassOutageEvaluation = { kind: "none" };
+    if (parsed.eventType === "PROBLEM") {
+      massOutageEvaluation = await evaluateMassOutage(tx, {
+        device,
+        property,
+        now: event.receivedAt,
+      });
+
+      if (massOutageEvaluation.kind === "none") {
+        // Schedule the standard 5-minute ticket timer (DevSpec §5.2). The
+        // 1-minute cron (app/api/cron/network-timers) picks this up once
+        // `runAt` has passed and decides whether to create a ticket.
+        await tx.networkJob.create({
+          data: {
+            kind: "STANDARD_TIMER",
+            runAt: new Date(event.receivedAt.getTime() + TICKET_TIMER_MIN * 60_000),
+            eventId: event.id,
+            status: "PENDING",
+          },
+        });
+      }
+    }
+
+    return { device, event, massOutageEvaluation };
   });
 
-  // TASK 5 SEAM: the mass-outage check runs AFTER the main insert
-  // transaction above has committed, not nested inside it. Two reasons:
-  // (1) it needs to read this PROBLEM event back via a fresh top-level `db`
-  // query (property-scoped PROBLEM events in the last 120s) — that read
-  // must see this event, which it only can once the insert transaction has
-  // committed; (2) mass-outage TICKET CREATION allocates a ticketNumber and
-  // can P2002-retry, which per the Task 4 lesson needs its own fresh
-  // transaction per attempt, not one nested inside (or chained directly
-  // after, uncommitted) this function's insert transaction. A mass outage
-  // supersedes the per-device standard-ticket flow with its own
-  // MASS_OUTAGE_CHECK job/ticket handling (spec §5.5).
-  if (parsed.eventType === "PROBLEM") {
-    const { suppressStandardTimer } = await checkAndHandleMassOutage(db, {
-      device: result.device,
+  // Only the "no existing MASS_OUTAGE ticket → create one" sub-case runs
+  // here, in its own fresh transaction, AFTER the insert transaction above
+  // has committed — it has the P2002 ticket-number risk, exactly like
+  // `createStandardTicket` isolates itself (Finding 1). A crash/throw
+  // between that commit and this call would strand this event's cluster
+  // with no ticket — the same residual gap Task 4 already accepts for the
+  // STANDARD_TIMER path's `createStandardTicket` call in the cron sweep.
+  // Unlike the pre-fix bug, this is no longer the common case: every
+  // PROBLEM event still atomically gets either a STANDARD_TIMER job or an
+  // append-to-existing-ticket update inside the transaction above; only the
+  // rare "brand-new mass-outage cluster" case has this narrow window.
+  if (result.massOutageEvaluation.kind === "create-needed") {
+    await createMassOutageTicket(db, {
       property,
+      clusterDevices: result.massOutageEvaluation.clusterDevices,
+      problemEventIds: result.massOutageEvaluation.problemEventIds,
       now: result.event.receivedAt,
     });
-
-    if (!suppressStandardTimer) {
-      // Schedule the standard 5-minute ticket timer (DevSpec §5.2). The
-      // 1-minute cron (app/api/cron/network-timers) picks this up once
-      // `runAt` has passed and decides whether to create a ticket.
-      await db.networkJob.create({
-        data: {
-          kind: "STANDARD_TIMER",
-          runAt: new Date(result.event.receivedAt.getTime() + TICKET_TIMER_MIN * 60_000),
-          eventId: result.event.id,
-          status: "PENDING",
-        },
-      });
-    }
   }
 
   return {
