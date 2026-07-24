@@ -35,7 +35,7 @@ async function loadGuarded(instanceId: string) {
   const instance = await db.checklistInstance.findUnique({
     where: { id: instanceId },
     include: {
-      template: { select: { name: true } },
+      template: { select: { name: true, collectsCheckoutFlags: true } },
       property: { select: { id: true, shortCode: true } },
       room: { select: { id: true, roomNumber: true } },
       assignedUser: { select: { id: true, name: true, email: true, locale: true } },
@@ -295,6 +295,9 @@ export async function verifySubmission(
         verifiedAt: now,
         verifiedByUserId: user.id,
         lockedAt: now,
+        // Persist a verify note so it's visible in the Manager-note card; when
+        // no note is entered, leave the prior (approve) note intact.
+        ...(trimmed ? { managerNote: trimmed } : {}),
       },
     });
     await tx.auditLog.create({
@@ -347,6 +350,9 @@ export async function saveCheckoutFlags(
   if (!loaded.ok) return { ok: false, error: loaded.error };
   const { user, instance } = loaded;
   if (isLocked(instance)) return { ok: false, error: LOCKED_ERROR };
+  if (!instance.template.collectsCheckoutFlags) {
+    return { ok: false, error: "This checklist does not collect checkout flags." };
+  }
 
   const nf = normalizeCheckoutFlags(parsed.data);
 
