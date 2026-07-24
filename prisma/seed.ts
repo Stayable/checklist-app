@@ -24,7 +24,26 @@ const HK_EMAIL      = "hk.lakeland@rentstayable.com";
 const ADMIN_PASSWORD = "StayableCheck";
 const DEFAULT_PASSWORD = "ChangeMe!2026";
 
+// Real CORPORATE baseline users (portfolio-wide role; no user_properties needed).
+// Seeded with DEFAULT_PASSWORD on first creation only — MUST be rotated via /profile
+// immediately. The upsert below never overwrites an existing (possibly rotated) password.
+// Names are placeholders — edit in /admin/users.
+const CORP_USERS = [
+  { email: "kate@rentstayable.com", name: "Kate" },
+  { email: "bke@rentstayable.com", name: "BKE" },
+];
+
+// Demo data (Lakeland manager/HK + rooms + hand-seeded instances) is gated behind
+// SEED_DEMO=1. Rationale: production currently shares this dev Neon DB, so a plain
+// `db:seed` used to RESURRECT the Lakeland manager/HK accounts that were deliberately
+// deleted from the prod user baseline (2026-07-24). Keeping the demo block opt-in means
+// the default seed only establishes the safe, idempotent baseline. Remove this guard
+// once the prod/dev DB split lands (RUNBOOK §Splitting the Production DB) — after that,
+// the dev seed can no longer touch prod and the demo data is harmless.
+const SEED_DEMO = process.env.SEED_DEMO === "1";
+
 async function main() {
+  // ---- Core baseline (safe for any environment; fully idempotent) ----
   console.log("Seeding properties…");
   for (const p of PROPERTIES) {
     await db.property.upsert({
@@ -38,10 +57,7 @@ async function main() {
     });
   }
 
-  const lakeland = await db.property.findUniqueOrThrow({ where: { propertyId: "4645" } });
-  const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
   const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-
   console.log("Seeding admin…");
   await db.user.upsert({
     where: { email: ADMIN_EMAIL },
@@ -55,47 +71,19 @@ async function main() {
     },
   });
 
-  console.log("Seeding Lakeland manager…");
-  const manager = await db.user.upsert({
-    where: { email: MANAGER_EMAIL },
-    update: { role: Role.MANAGER, name: "Lakeland Manager", active: true },
-    create: {
-      email: MANAGER_EMAIL,
-      name: "Lakeland Manager",
-      role: Role.MANAGER,
-      passwordHash,
-    },
-  });
-  await db.userProperty.upsert({
-    where: { userId_propertyId: { userId: manager.id, propertyId: lakeland.id } },
-    update: {},
-    create: { userId: manager.id, propertyId: lakeland.id },
-  });
-
-  console.log("Seeding Lakeland HK…");
-  const hk = await db.user.upsert({
-    where: { email: HK_EMAIL },
-    update: { role: Role.HK, name: "Lakeland Housekeeper", active: true },
-    create: {
-      email: HK_EMAIL,
-      name: "Lakeland Housekeeper",
-      role: Role.HK,
-      passwordHash,
-    },
-  });
-  await db.userProperty.upsert({
-    where: { userId_propertyId: { userId: hk.id, propertyId: lakeland.id } },
-    update: {},
-    create: { userId: hk.id, propertyId: lakeland.id },
-  });
-
-  console.log("Seeding a few Lakeland rooms…");
-  for (let n = 101; n <= 105; n++) {
-    const roomNumber = String(n);
-    await db.room.upsert({
-      where: { propertyId_roomNumber: { propertyId: lakeland.id, roomNumber } },
-      update: {},
-      create: { propertyId: lakeland.id, roomNumber, status: RoomStatus.VACANT },
+  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+  console.log("Seeding CORPORATE baseline users…");
+  for (const u of CORP_USERS) {
+    await db.user.upsert({
+      where: { email: u.email },
+      // Never touch passwordHash on update — preserves a rotated password.
+      update: { role: Role.CORPORATE, name: u.name, active: true },
+      create: {
+        email: u.email,
+        name: u.name,
+        role: Role.CORPORATE,
+        passwordHash: defaultPasswordHash,
+      },
     });
   }
 
@@ -137,9 +125,96 @@ async function main() {
     });
   }
 
-  console.log("Seeding today's Arrival checklists for the Lakeland HK…");
-  // Until the Phase-5 generation cron exists, hand-seed a few ASSIGNED Arrival
-  // instances so the Phase-3 "Today" home + filling flow have real data.
+  console.log("Seeding SLA defaults (placeholders, ADR-014)…");
+  for (const priority of Object.values(IssuePriority)) {
+    await db.slaDefault.upsert({
+      where: { priority },
+      update: {}, // don't clobber admin-edited values on re-seed
+      create: { priority, hours: SLA_PLACEHOLDER_HOURS[priority] },
+    });
+  }
+
+  // ---- Demo data (local dev only; gated so it never resurrects prod baseline) ----
+  if (SEED_DEMO) {
+    await seedDemoData(defaultPasswordHash);
+  } else {
+    console.log(
+      "Skipping demo users/rooms/instances — set SEED_DEMO=1 to include them (see comment in prisma/seed.ts).",
+    );
+  }
+
+  const propertyCount = await db.property.count();
+  const userCount = await db.user.count();
+  const templateCount = await db.checklistTemplate.count();
+  const questionCount = await db.question.count();
+  const instanceCount = await db.checklistInstance.count();
+  console.log(
+    `\nSeed complete — properties: ${propertyCount}, users: ${userCount}, templates: ${templateCount}, questions: ${questionCount}, instances: ${instanceCount}`,
+  );
+  console.log("⚠️  Template QUESTION content is PLACEHOLDER — replace with real Connecteam/Smartsheet questions before go-live.");
+  console.log(`Admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+  console.log(
+    `CORPORATE baseline (${CORP_USERS.map((u) => u.email).join(", ")}) default password: ${DEFAULT_PASSWORD} — ROTATE via /profile immediately.`,
+  );
+  if (SEED_DEMO) {
+    console.log(`Demo accounts default password: ${DEFAULT_PASSWORD}  (rotate before production use)`);
+  }
+}
+
+/**
+ * Local-dev demo data: a Lakeland manager + housekeeper, a handful of rooms, and
+ * hand-seeded Arrival instances (assigned + submitted) so the Today / filling /
+ * review flows have something to show. NOT part of the production baseline — these
+ * accounts were deliberately removed from prod (2026-07-24). Gated behind SEED_DEMO=1.
+ */
+async function seedDemoData(passwordHash: string) {
+  const lakeland = await db.property.findUniqueOrThrow({ where: { propertyId: "4645" } });
+
+  console.log("[demo] Seeding Lakeland manager…");
+  const manager = await db.user.upsert({
+    where: { email: MANAGER_EMAIL },
+    update: { role: Role.MANAGER, name: "Lakeland Manager", active: true },
+    create: {
+      email: MANAGER_EMAIL,
+      name: "Lakeland Manager",
+      role: Role.MANAGER,
+      passwordHash,
+    },
+  });
+  await db.userProperty.upsert({
+    where: { userId_propertyId: { userId: manager.id, propertyId: lakeland.id } },
+    update: {},
+    create: { userId: manager.id, propertyId: lakeland.id },
+  });
+
+  console.log("[demo] Seeding Lakeland HK…");
+  const hk = await db.user.upsert({
+    where: { email: HK_EMAIL },
+    update: { role: Role.HK, name: "Lakeland Housekeeper", active: true },
+    create: {
+      email: HK_EMAIL,
+      name: "Lakeland Housekeeper",
+      role: Role.HK,
+      passwordHash,
+    },
+  });
+  await db.userProperty.upsert({
+    where: { userId_propertyId: { userId: hk.id, propertyId: lakeland.id } },
+    update: {},
+    create: { userId: hk.id, propertyId: lakeland.id },
+  });
+
+  console.log("[demo] Seeding a few Lakeland rooms…");
+  for (let n = 101; n <= 105; n++) {
+    const roomNumber = String(n);
+    await db.room.upsert({
+      where: { propertyId_roomNumber: { propertyId: lakeland.id, roomNumber } },
+      update: {},
+      create: { propertyId: lakeland.id, roomNumber, status: RoomStatus.VACANT },
+    });
+  }
+
+  console.log("[demo] Seeding today's Arrival checklists for the Lakeland HK…");
   const arr = await db.checklistTemplate.findUniqueOrThrow({ where: { code: "ARR" } });
   const ymd = etYYYYMMDD();
   const today = etDateOnly();
@@ -165,16 +240,7 @@ async function main() {
     });
   }
 
-  console.log("Seeding SLA defaults (placeholders, ADR-014)…");
-  for (const priority of Object.values(IssuePriority)) {
-    await db.slaDefault.upsert({
-      where: { priority },
-      update: {}, // don't clobber admin-edited values on re-seed
-      create: { priority, hours: SLA_PLACEHOLDER_HOURS[priority] },
-    });
-  }
-
-  console.log("Seeding a SUBMITTED Arrival checklist so the review queue is demoable…");
+  console.log("[demo] Seeding SUBMITTED Arrival checklists so the review queue is demoable…");
   // Rooms 104/105: one clean submission, one with a FAILED flagged PASSFAIL.
   // Until R2 lands, PHOTO answers carry { count, pendingUpload: true } and
   // SIGNATURE is a tiny placeholder data URL.
@@ -236,18 +302,6 @@ async function main() {
         })),
     });
   }
-
-  const propertyCount = await db.property.count();
-  const userCount = await db.user.count();
-  const templateCount = await db.checklistTemplate.count();
-  const questionCount = await db.question.count();
-  const instanceCount = await db.checklistInstance.count();
-  console.log(
-    `\nSeed complete — properties: ${propertyCount}, users: ${userCount}, templates: ${templateCount}, questions: ${questionCount}, instances: ${instanceCount}`,
-  );
-  console.log("⚠️  Template QUESTION content is PLACEHOLDER — replace with real Connecteam/Smartsheet questions before go-live.");
-  console.log(`Admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
-  console.log(`Default password for other seeded accounts: ${DEFAULT_PASSWORD}  (rotate before production use)`);
 }
 
 main()
