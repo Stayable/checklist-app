@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
-import { ticketAgeBucket, type AgeBucket } from "@/lib/network/ticket-age";
+import { AgeBadge } from "@/components/network/AgeBadge";
+import { ticketAgeBucket } from "@/lib/network/ticket-age";
 import type { AffectedDevice } from "@/lib/network/mass-outage";
 import { isPropertyTeamsConfigured } from "@/lib/network/teams-config";
 import { TicketActions } from "./TicketActions";
@@ -10,12 +11,6 @@ import { TicketActions } from "./TicketActions";
 // NETWORK ticket detail (spec §6.3). Mirrors app/review/[id]/page.tsx's
 // detail + client-actions-island + audit-timeline pattern. Access is guarded
 // once by app/network/layout.tsx.
-
-const AGE_DOT: Record<AgeBucket, string> = {
-  green: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-};
 
 export default async function TicketDetailPage({
   params,
@@ -81,10 +76,7 @@ export default async function TicketDetailPage({
           {bucket && (
             <>
               {" · "}
-              <span className="inline-flex items-center gap-1.5">
-                <span className={`h-2 w-2 rounded-full ${AGE_DOT[bucket]}`} />
-                {bucket}
-              </span>
+              <AgeBadge bucket={bucket} />
             </>
           )}
         </p>

@@ -3,7 +3,8 @@ import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { ticketAgeBucket, type AgeBucket } from "@/lib/network/ticket-age";
+import { AgeBadge } from "@/components/network/AgeBadge";
+import { ticketAgeBucket } from "@/lib/network/ticket-age";
 
 // NETWORK ticket list. Filterable by status via a query param; default
 // open-only (mirrors app/issues/page.tsx's status-tab pattern). Access is
@@ -11,11 +12,13 @@ import { ticketAgeBucket, type AgeBucket } from "@/lib/network/ticket-age";
 
 const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];
 
-const AGE_DOT: Record<AgeBucket, string> = {
-  green: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-};
+// Carried Task-6 Minor #4: the generated all-status tab set used to include
+// a standalone "OPEN" tab (OPEN status only) alongside the combined "Open"
+// tab below (OPEN + IN_PROGRESS) — two tabs that looked nearly identical
+// but filtered differently. Dropping OPEN from the generated set keeps the
+// combined "Open" as the one open-ticket view and the remaining statuses
+// (IN_PROGRESS/RESOLVED/CLOSED) distinct from it.
+const OTHER_STATUS_TABS = Object.values(TicketStatus).filter((s) => s !== TicketStatus.OPEN);
 
 export default async function NetworkTicketsPage({
   searchParams,
@@ -62,7 +65,7 @@ export default async function NetworkTicketsPage({
         >
           Open
         </Link>
-        {Object.values(TicketStatus).map((s) => (
+        {OTHER_STATUS_TABS.map((s) => (
           <Link
             key={s}
             href={linkFor(s)}
@@ -112,10 +115,7 @@ export default async function NetworkTicketsPage({
                     <td className="px-4 py-3 text-slate-700">{formatInET(t.openedAt)}</td>
                     <td className="px-4 py-3">
                       {bucket ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className={`h-2 w-2 rounded-full ${AGE_DOT[bucket]}`} />
-                          {bucket}
-                        </span>
+                        <AgeBadge bucket={bucket} />
                       ) : (
                         <span className="text-slate-400">—</span>
                       )}

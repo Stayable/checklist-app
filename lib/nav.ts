@@ -28,8 +28,9 @@ const ADMIN_GROUP: NavItem[] = [
 // this group; ADMIN and CORPORATE get it in addition to their usual nav
 // (portfolio-wide, no per-property scoping — see lib/rbac.ts canAccessNetwork).
 const NETWORK_GROUP: NavItem[] = [
-  { href: "/network", label: "Dashboard", group: "network" },
+  { href: "/network", label: "Network", group: "network" },
   { href: "/network/tickets", label: "Tickets", group: "network" },
+  { href: "/network/wifi", label: "WiFi", group: "network" },
 ];
 
 /** Nav items for a role. Field staff have a single Today surface. */

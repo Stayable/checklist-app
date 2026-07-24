@@ -34,6 +34,7 @@ describe("navItemsForRole", () => {
       "/reports/completeness",
       "/network",
       "/network/tickets",
+      "/network/wifi",
     ]);
     expect(navItemsForRole(Role.CORPORATE).some((i) => i.group === "admin")).toBe(false);
   });
@@ -55,14 +56,15 @@ describe("navItemsForRole", () => {
       "/admin/properties",
       "/network",
       "/network/tickets",
+      "/network/wifi",
     ]);
     expect(items.filter((i) => i.group === "admin")).toHaveLength(3);
-    expect(items.filter((i) => i.group === "network")).toHaveLength(2);
+    expect(items.filter((i) => i.group === "network")).toHaveLength(3);
   });
 
   it("NETWORK_TECH gets only the network group (no checklist nav at all)", () => {
     const items = navItemsForRole(Role.NETWORK_TECH);
-    expect(items.map((i) => i.href)).toEqual(["/network", "/network/tickets"]);
+    expect(items.map((i) => i.href)).toEqual(["/network", "/network/tickets", "/network/wifi"]);
     expect(items.every((i) => i.group === "network")).toBe(true);
   });
 

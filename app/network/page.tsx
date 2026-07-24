@@ -3,7 +3,8 @@ import { DeviceStatus, TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { ticketAgeBucket, type AgeBucket } from "@/lib/network/ticket-age";
+import { AgeBadge } from "@/components/network/AgeBadge";
+import { ticketAgeBucket } from "@/lib/network/ticket-age";
 import { isTeamsGraphConfigured } from "@/lib/network/teams-config";
 
 // NETWORK portfolio dashboard (spec §6.1). Access is guarded once by
@@ -11,12 +12,6 @@ import { isTeamsGraphConfigured } from "@/lib/network/teams-config";
 // lib/rbac.ts canAccessNetwork).
 
 const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];
-
-const AGE_DOT: Record<AgeBucket, string> = {
-  green: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-};
 
 function SummaryCard({
   label,
@@ -148,10 +143,7 @@ export default async function NetworkDashboardPage() {
                       <td className="px-4 py-3 text-slate-700">{t.ticketType}</td>
                       <td className="px-4 py-3 text-slate-700">{t.device?.name ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className={`h-2 w-2 rounded-full ${AGE_DOT[bucket]}`} />
-                          {bucket}
-                        </span>
+                        <AgeBadge bucket={bucket} />
                       </td>
                       <td className="px-4 py-3 text-slate-700">{formatInET(t.openedAt)}</td>
                     </tr>
