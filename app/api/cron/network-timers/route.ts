@@ -23,50 +23,62 @@ function authorized(req: Request): boolean {
 type JobOutcome = "created" | "skipped" | "noop";
 
 /**
- * Evaluates and resolves a single STANDARD_TIMER job inside its own
- * transaction, so one job's failure (thrown out to the caller's try/catch)
- * can't partially-write state or block the rest of the batch.
+ * Evaluates and resolves a single STANDARD_TIMER job.
+ *
+ * Deliberately does NOT wrap this whole function in one outer
+ * `db.$transaction` (as an earlier version did). `createStandardTicket`
+ * retries once on a ticketNumber P2002 collision, and that retry needs a
+ * FRESH transaction to run in — Postgres aborts an entire transaction on
+ * any error inside it (SQLSTATE 25P02), so if the retry's
+ * `allocateTicketNumber` count query ran on the same outer `tx` that just
+ * saw attempt #1's P2002, it would itself throw "current transaction is
+ * aborted" and the whole job would silently fail closed (leaving the job
+ * PENDING for next-minute retry instead of succeeding this tick). The
+ * read-only checks here (`hasOpenTicketForDevice`, event/device lookup) run
+ * directly against `db`; `createStandardTicket` owns its own per-attempt
+ * transaction internally. If ticket creation throws (e.g. both attempts
+ * collide), this function throws too and the job is correctly left PENDING
+ * by the caller's try/catch — no partial state, no job marked DONE without
+ * a ticket.
  */
 async function processJob(jobId: string, eventId: string | null): Promise<JobOutcome> {
-  return db.$transaction(async (tx) => {
-    if (!eventId) {
-      // Nothing to evaluate against — mark DONE, not worth retrying forever.
-      await tx.networkJob.update({ where: { id: jobId }, data: { status: "DONE" } });
-      return "noop";
-    }
+  if (!eventId) {
+    // Nothing to evaluate against — mark DONE, not worth retrying forever.
+    await db.networkJob.update({ where: { id: jobId }, data: { status: "DONE" } });
+    return "noop";
+  }
 
-    const event = await tx.networkEvent.findUnique({
-      where: { id: eventId },
-      select: {
-        id: true,
-        alertMessage: true,
-        resolvedByEventId: true,
-        device: { select: { id: true } },
-        property: { select: { id: true, shortCode: true, teamsChannelName: true } },
-      },
-    });
-
-    if (!event?.device || !event.property) {
-      await tx.networkJob.update({ where: { id: jobId }, data: { status: "DONE" } });
-      return "noop";
-    }
-
-    const hasOpenTicket = await hasOpenTicketForDevice(tx, event.device.id);
-    const problemResolved = event.resolvedByEventId != null;
-    const action = decideTimerAction({ hasOpenTicket, problemResolved });
-
-    if (action === "CREATE_TICKET") {
-      await createStandardTicket(tx, {
-        device: event.device,
-        property: event.property,
-        triggerEvent: { id: event.id, alertMessage: event.alertMessage },
-        now: new Date(),
-      });
-    }
-
-    await tx.networkJob.update({ where: { id: jobId }, data: { status: "DONE" } });
-    return action === "CREATE_TICKET" ? "created" : "skipped";
+  const event = await db.networkEvent.findUnique({
+    where: { id: eventId },
+    select: {
+      id: true,
+      alertMessage: true,
+      resolvedByEventId: true,
+      device: { select: { id: true } },
+      property: { select: { id: true, shortCode: true, teamsChannelName: true } },
+    },
   });
+
+  if (!event?.device || !event.property) {
+    await db.networkJob.update({ where: { id: jobId }, data: { status: "DONE" } });
+    return "noop";
+  }
+
+  const hasOpenTicket = await hasOpenTicketForDevice(db, event.device.id);
+  const problemResolved = event.resolvedByEventId != null;
+  const action = decideTimerAction({ hasOpenTicket, problemResolved });
+
+  if (action === "CREATE_TICKET") {
+    await createStandardTicket(db, {
+      device: event.device,
+      property: event.property,
+      triggerEvent: { id: event.id, alertMessage: event.alertMessage },
+      now: new Date(),
+    });
+  }
+
+  await db.networkJob.update({ where: { id: jobId }, data: { status: "DONE" } });
+  return action === "CREATE_TICKET" ? "created" : "skipped";
 }
 
 async function run() {
