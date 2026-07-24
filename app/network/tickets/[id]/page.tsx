@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { ticketAgeBucket, type AgeBucket } from "@/lib/network/ticket-age";
 import type { AffectedDevice } from "@/lib/network/mass-outage";
+import { isPropertyTeamsConfigured } from "@/lib/network/teams-config";
 import { TicketActions } from "./TicketActions";
 
 // NETWORK ticket detail (spec §6.3). Mirrors app/review/[id]/page.tsx's
@@ -26,7 +27,7 @@ export default async function TicketDetailPage({
   const ticket = await db.ticket.findUnique({
     where: { id },
     include: {
-      property: { select: { id: true, shortCode: true } },
+      property: { select: { id: true, shortCode: true, teamsChannelId: true } },
       device: { select: { id: true, name: true } },
       parentTicket: { select: { id: true, ticketNumber: true } },
       childTickets: {
@@ -64,6 +65,9 @@ export default async function TicketDetailPage({
   const now = new Date();
   const isOpen = ticket.status === "OPEN" || ticket.status === "IN_PROGRESS";
   const bucket = isOpen ? ticketAgeBucket(ticket.openedAt, now) : null;
+  // Task 7 (SCAFFOLD + DEGRADE): no Graph creds yet, so nothing is ever
+  // actually posted — surface that honestly instead of a silent blank link.
+  const teamsConfigured = isPropertyTeamsConfigured(ticket.property);
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,8 +165,14 @@ export default async function TicketDetailPage({
                   >
                     View in Teams
                   </a>
+                ) : !teamsConfigured ? (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                    Teams: not configured
+                  </span>
                 ) : (
-                  "—"
+                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    Teams: pending
+                  </span>
                 )}
               </dd>
             </dl>

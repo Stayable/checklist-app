@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { ticketAgeBucket, type AgeBucket } from "@/lib/network/ticket-age";
+import { isTeamsGraphConfigured } from "@/lib/network/teams-config";
 
 // NETWORK portfolio dashboard (spec §6.1). Access is guarded once by
 // app/network/layout.tsx. Portfolio-wide — no property scoping (see
@@ -81,6 +82,12 @@ export default async function NetworkDashboardPage() {
           </Link>
         }
       />
+
+      {!isTeamsGraphConfigured() && (
+        <p className="text-xs text-slate-400">
+          Teams notifications: not configured — ticket events are logged, not posted.
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <SummaryCard

@@ -84,7 +84,7 @@ export async function createStandardTicket(
   db: TransactableClient,
   params: {
     device: Pick<Device, "id">;
-    property: Pick<Property, "id" | "shortCode" | "teamsChannelName">;
+    property: Pick<Property, "id" | "name" | "shortCode" | "teamsChannelName" | "teamsChannelId">;
     triggerEvent: Pick<NetworkEvent, "id" | "alertMessage">;
     now: Date;
     parentTicketId?: string;
@@ -193,7 +193,7 @@ export async function closeOpenTicketOnRecovery(
 
   const property = await tx.property.findUnique({
     where: { id: resolved.propertyId },
-    select: { shortCode: true, teamsChannelName: true },
+    select: { id: true, name: true, shortCode: true, teamsChannelName: true, teamsChannelId: true },
   });
   if (property) {
     await logTeamsTicketResolved(tx, resolved, property);
@@ -211,7 +211,13 @@ export async function closeOpenTicketOnRecovery(
       });
       const parentProperty = await tx.property.findUnique({
         where: { id: parent.propertyId },
-        select: { shortCode: true, teamsChannelName: true },
+        select: {
+          id: true,
+          name: true,
+          shortCode: true,
+          teamsChannelName: true,
+          teamsChannelId: true,
+        },
       });
       if (parentProperty) {
         await logTeamsTicketResolved(tx, parent, parentProperty);

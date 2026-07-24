@@ -190,7 +190,7 @@ export async function evaluateMassOutage(
 export async function createMassOutageTicket(
   db: TransactableClient,
   params: {
-    property: Pick<Property, "id" | "shortCode" | "teamsChannelName">;
+    property: Pick<Property, "id" | "name" | "shortCode" | "teamsChannelName" | "teamsChannelId">;
     clusterDevices: AffectedDevice[];
     problemEventIds: string[];
     now: Date;
@@ -350,7 +350,7 @@ export async function runMassOutageCheck(
 
   const property = await db.property.findUnique({
     where: { id: ticket.propertyId },
-    select: { id: true, shortCode: true, teamsChannelName: true },
+    select: { id: true, name: true, shortCode: true, teamsChannelName: true, teamsChannelId: true },
   });
   if (property) {
     await logTeamsMassOutageCheck(db, ticket, property, {

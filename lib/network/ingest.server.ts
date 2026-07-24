@@ -38,7 +38,14 @@ export async function ingestWebhook(
 ): Promise<IngestResult> {
   const property = await db.property.findUnique({
     where: { propertyId: parsed.propertyRef },
-    select: { id: true, propertyId: true, shortCode: true, teamsChannelName: true },
+    select: {
+      id: true,
+      propertyId: true,
+      name: true,
+      shortCode: true,
+      teamsChannelName: true,
+      teamsChannelId: true,
+    },
   });
 
   // Can't attribute the event to a known property — don't create a Device or

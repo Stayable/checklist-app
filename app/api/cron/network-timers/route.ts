@@ -59,7 +59,15 @@ async function processJob(jobId: string, eventId: string | null): Promise<JobOut
       alertMessage: true,
       resolvedByEventId: true,
       device: { select: { id: true } },
-      property: { select: { id: true, shortCode: true, teamsChannelName: true } },
+      property: {
+        select: {
+          id: true,
+          name: true,
+          shortCode: true,
+          teamsChannelName: true,
+          teamsChannelId: true,
+        },
+      },
     },
   });
 
