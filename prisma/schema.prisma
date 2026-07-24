@@ -26,6 +26,10 @@ enum Role {
   MANAGER
   CORPORATE
   ADMIN
+  // NETWORK section (IT staff). Dedicated IT/MSP role; NOT field staff and not a
+  // full ADMIN. RBAC in lib/rbac.ts (canAccessNetwork). Display grouping in
+  // lib/role-display.ts folds it into "Admin" for labels only.
+  NETWORK_TECH
 }
 
 enum Locale {
@@ -121,6 +125,51 @@ enum NotificationStatus {
 }
 
 // ---------------------------------------------------------------------------
+// NETWORK section enums (network monitoring + IT ticketing).
+// DevSpec_NetworkMonitoringTicketing_RISE8_072426. Ported onto the platform
+// stack; see docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md.
+// ---------------------------------------------------------------------------
+
+enum DeviceType {
+  CAMERA
+  AP // access point
+}
+
+enum DeviceSource {
+  UNIFI_PROTECT // cameras
+  UNIFI_NETWORK // UniFi APs
+  ARUBA // Aruba Instant On APs
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  UNKNOWN
+}
+
+enum NetworkEventType {
+  PROBLEM
+  RECOVERY
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketType {
+  STANDARD
+  MASS_OUTAGE
+}
+
+enum TicketNoteSource {
+  TEAMS_REPLY
+  MANUAL
+}
+
+// ---------------------------------------------------------------------------
 // Core identity (Phase 1)
 // ---------------------------------------------------------------------------
 
@@ -164,6 +213,13 @@ model Property {
   address    String
   geofence   Json?
   active     Boolean  @default(true)
+  // NETWORK section: Microsoft Teams channel for this property's ticket posts
+  // (Graph API, ADR pending) + Spotipo guest-WiFi site. apiKey handling (env vs
+  // encrypted column) settled at the Spotipo task; nullable until configured.
+  teamsChannelId   String? @map("teams_channel_id")
+  teamsChannelName String? @map("teams_channel_name")
+  spotipoSiteId    String? @map("spotipo_site_id")
+  spotipoApiKey    String? @map("spotipo_api_key")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -173,6 +229,9 @@ model Property {
   instances          ChecklistInstance[]
   issues             Issue[]
   templateProperties TemplateProperty[]
+  devices            Device[]
+  networkEvents      NetworkEvent[]
+  tickets            Ticket[]
 
   @@map("properties")
 }
@@ -496,6 +555,148 @@ model SlaDefault {
   updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("sla_defaults")
+}
+
+// ---------------------------------------------------------------------------
+// NETWORK section — device monitoring + IT ticketing (kept fully separate from
+// the Issue/maintenance pipeline). DevSpec §3–6. Property is REUSED (no second
+// properties table); spec `rise8_id` = Property.propertyId.
+// ---------------------------------------------------------------------------
+
+// A monitored device (camera or AP). Uniquely keyed by name+property so repeat
+// webhooks upsert the same row (DevSpec §4.2).
+model Device {
+  id            String       @id @default(uuid()) @db.Uuid
+  deviceKey     String       @unique @map("device_key") // `${name}_${propertyId}`
+  name          String
+  type          DeviceType
+  source        DeviceSource
+  propertyId    String       @map("property_id") @db.Uuid
+  lastSeenAt    DateTime?    @map("last_seen_at") @db.Timestamptz
+  currentStatus DeviceStatus @default(UNKNOWN) @map("current_status")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  events   NetworkEvent[]
+  tickets  Ticket[]
+
+  @@index([propertyId])
+  @@index([currentStatus])
+  @@map("devices")
+}
+
+// A problem/recovery event mapped from a webhook (DevSpec §4.3). Renamed from
+// the spec's `events` to avoid colliding with the audit/notification concept.
+model NetworkEvent {
+  id          String           @id @default(uuid()) @db.Uuid
+  deviceId    String           @map("device_id") @db.Uuid
+  propertyId  String           @map("property_id") @db.Uuid
+  eventType   NetworkEventType @map("event_type")
+  source      DeviceSource
+  alertMessage String?         @map("alert_message")
+  occurredAt  DateTime         @map("occurred_at") @db.Timestamptz
+  receivedAt  DateTime         @default(now()) @map("received_at") @db.Timestamptz
+  ticketId    String?          @map("ticket_id") @db.Uuid
+  // Self-relation: the RECOVERY event that resolved this PROBLEM event.
+  resolvedByEventId String?    @unique @map("resolved_by_event_id") @db.Uuid
+
+  device          Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  property        Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  ticket          Ticket?        @relation(fields: [ticketId], references: [id])
+  resolvedByEvent NetworkEvent?  @relation("EventResolution", fields: [resolvedByEventId], references: [id])
+  resolves        NetworkEvent[] @relation("EventResolution")
+
+  @@index([deviceId, occurredAt])
+  @@index([propertyId, occurredAt])
+  @@index([ticketId])
+  @@map("network_events")
+}
+
+// Raw inbound webhook payloads, stored separately for debugging + confirming
+// firmware field names before parsers are trusted (DevSpec §3.3, §9).
+model RawWebhookPayload {
+  id             String       @id @default(uuid()) @db.Uuid
+  source         DeviceSource
+  signatureValid Boolean      @map("signature_valid")
+  payload        Json
+  receivedAt     DateTime     @default(now()) @map("received_at") @db.Timestamptz
+
+  @@index([source, receivedAt])
+  @@map("raw_webhook_payloads")
+}
+
+// An IT ticket (DevSpec §4.4 + §5.5 mass-outage additions).
+model Ticket {
+  id            String       @id @default(uuid()) @db.Uuid
+  ticketNumber  String       @unique @map("ticket_number") // TKT-YYYYMMDD-NNN (ET daily seq)
+  deviceId      String?      @map("device_id") @db.Uuid
+  propertyId    String       @map("property_id") @db.Uuid
+  triggerEventId String?     @map("trigger_event_id") @db.Uuid
+  alertMessage  String?      @map("alert_message")
+  status        TicketStatus @default(OPEN)
+  ticketType    TicketType   @default(STANDARD) @map("ticket_type")
+  openedAt      DateTime     @default(now()) @map("opened_at") @db.Timestamptz
+  // Free-text for now (may be in-house IT or an external MSP name); can become
+  // a User FK later if assignment moves fully in-house (DevSpec §4.4).
+  assignedTo    String?      @map("assigned_to")
+  resolutionNotes String?    @map("resolution_notes")
+  resolvedAt    DateTime?    @map("resolved_at") @db.Timestamptz
+  downDurationMin Int?       @map("down_duration_min")
+  teamsNotified Boolean      @default(false) @map("teams_notified")
+  teamsMessageId String?     @map("teams_message_id")
+  teamsMessageUrl String?    @map("teams_message_url")
+  // Mass-outage device-status snapshot (DevSpec §5.5).
+  affectedDevices Json?      @map("affected_devices")
+  parentTicketId String?     @map("parent_ticket_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  device       Device?        @relation(fields: [deviceId], references: [id])
+  property     Property       @relation(fields: [propertyId], references: [id])
+  parentTicket Ticket?        @relation("TicketChildren", fields: [parentTicketId], references: [id])
+  childTickets Ticket[]       @relation("TicketChildren")
+  events       NetworkEvent[]
+  notes        TicketNote[]
+
+  @@index([propertyId, status])
+  @@index([status, openedAt])
+  @@index([deviceId, status])
+  @@index([parentTicketId])
+  @@map("tickets")
+}
+
+// A note on a ticket — a Teams reply ingested via Graph, or a manual note
+// (DevSpec §4.5). teamsReplyId dedupes on re-poll/re-delivery.
+model TicketNote {
+  id          String           @id @default(uuid()) @db.Uuid
+  ticketId    String           @map("ticket_id") @db.Uuid
+  source      TicketNoteSource
+  author      String?
+  teamsReplyId String?         @unique @map("teams_reply_id")
+  content     String
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_notes")
+}
+
+// Durable timer substitute for BullMQ/Redis (decision 2026-07-25): a 1-minute
+// Vercel Cron polls PENDING rows whose runAt has passed. Kinds: TICKET_5MIN
+// (standard threshold) / MASS_OUTAGE_10MIN (mass-outage resolution check).
+model NetworkJob {
+  id        String   @id @default(uuid()) @db.Uuid
+  kind      String
+  runAt     DateTime @map("run_at") @db.Timestamptz
+  eventId   String?  @map("event_id") @db.Uuid
+  ticketId  String?  @map("ticket_id") @db.Uuid
+  status    String   @default("PENDING") // PENDING | DONE | CANCELLED
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([status, runAt])
+  @@map("network_jobs")
 }
 
 // ---------------------------------------------------------------------------
