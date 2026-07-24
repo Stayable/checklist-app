@@ -684,8 +684,11 @@ model TicketNote {
 }
 
 // Durable timer substitute for BullMQ/Redis (decision 2026-07-25): a 1-minute
-// Vercel Cron polls PENDING rows whose runAt has passed. Kinds: TICKET_5MIN
-// (standard threshold) / MASS_OUTAGE_10MIN (mass-outage resolution check).
+// Vercel Cron polls PENDING rows whose runAt has passed. Kinds (code values,
+// reconciled Task 5 — supersedes this comment's earlier TICKET_5MIN /
+// MASS_OUTAGE_10MIN placeholders): "STANDARD_TIMER" (5-min standard-ticket
+// threshold, DevSpec §5.2) / "MASS_OUTAGE_CHECK" (10-min mass-outage
+// resolution check, DevSpec §5.5).
 model NetworkJob {
   id        String   @id @default(uuid()) @db.Uuid
   kind      String

@@ -9,6 +9,7 @@ import {
 import { etYYYYMMDD } from "../datetime";
 import { formatTicketNumber } from "./ticket-number";
 import { downDurationMin } from "./ticketing";
+import { allChildrenResolved } from "./mass-outage";
 import { logTeamsTicketCreated, logTeamsTicketResolved } from "./teams-graph.server";
 
 /**
@@ -16,9 +17,11 @@ import { logTeamsTicketCreated, logTeamsTicketResolved } from "./teams-graph.ser
  * top-level `db` singleton, not an interactive `Prisma.TransactionClient`
  * handed down from an enclosing `$transaction`. `createStandardTicket` needs
  * this so its P2002 retry runs against FRESH transaction state (see the
- * doc comment on `createStandardTicket` for why).
+ * doc comment on `createStandardTicket` for why). Exported so
+ * `mass-outage.server.ts` (Task 5) can reuse the same fresh-tx-per-attempt
+ * pattern for mass-outage ticket creation.
  */
-type TransactableClient = Pick<PrismaClient, "$transaction">;
+export type TransactableClient = Pick<PrismaClient, "$transaction">;
 
 const OPEN_STATUSES = ["OPEN", "IN_PROGRESS"] as const;
 
@@ -70,6 +73,12 @@ export async function hasOpenTicketForDevice(
  * aborted", silently swallowing the intended retry. Giving each attempt a
  * brand-new transaction means a P2002 on attempt 1 can never poison
  * attempt 2.
+ *
+ * `parentTicketId` (Task 5, spec §5.5): when a still-offline device is
+ * "demoted" from a mass-outage cluster into its own STANDARD child ticket
+ * (lib/network/mass-outage.server.ts `runMassOutageCheck`), the child links
+ * back to the MASS_OUTAGE parent so the parent can cascade-close once every
+ * child resolves. Undefined/omitted for the normal (non-mass-outage) path.
  */
 export async function createStandardTicket(
   db: TransactableClient,
@@ -78,9 +87,10 @@ export async function createStandardTicket(
     property: Pick<Property, "id" | "shortCode" | "teamsChannelName">;
     triggerEvent: Pick<NetworkEvent, "id" | "alertMessage">;
     now: Date;
+    parentTicketId?: string;
   },
 ): Promise<Ticket> {
-  const { device, property, triggerEvent, now } = params;
+  const { device, property, triggerEvent, now, parentTicketId } = params;
 
   async function attempt(retrying: boolean): Promise<Ticket> {
     try {
@@ -96,6 +106,7 @@ export async function createStandardTicket(
             status: "OPEN",
             ticketType: "STANDARD",
             openedAt: now,
+            parentTicketId: parentTicketId ?? null,
           },
         });
 
@@ -136,6 +147,14 @@ export async function createStandardTicket(
  * Down-duration is computed from the ticket's triggering PROBLEM event's
  * server-trustworthy `receivedAt` (falling back to the ticket's `openedAt`
  * if the trigger event is somehow missing) to `now`.
+ *
+ * Cascade (Task 5, spec §5.5): if the ticket being resolved is a STANDARD
+ * child spawned off a MASS_OUTAGE parent (`parentTicketId` set), and every
+ * sibling child of that parent has now reached a terminal status, the
+ * parent mass-outage ticket is auto-resolved too ("Mass outage ticket fully
+ * closes when all its spawned individual tickets are resolved"). Runs on
+ * the same interactive `tx` as the rest of this function — no new-ticket
+ * creation here, so no P2002/fresh-tx concern.
  */
 export async function closeOpenTicketOnRecovery(
   tx: Prisma.TransactionClient,
@@ -178,6 +197,26 @@ export async function closeOpenTicketOnRecovery(
   });
   if (property) {
     await logTeamsTicketResolved(tx, resolved, property);
+  }
+
+  if (resolved.parentTicketId) {
+    const siblings = await tx.ticket.findMany({
+      where: { parentTicketId: resolved.parentTicketId },
+      select: { status: true },
+    });
+    if (allChildrenResolved(siblings.map((s) => s.status))) {
+      const parent = await tx.ticket.update({
+        where: { id: resolved.parentTicketId },
+        data: { status: "RESOLVED", resolvedAt: params.now },
+      });
+      const parentProperty = await tx.property.findUnique({
+        where: { id: parent.propertyId },
+        select: { shortCode: true, teamsChannelName: true },
+      });
+      if (parentProperty) {
+        await logTeamsTicketResolved(tx, parent, parentProperty);
+      }
+    }
   }
 
   return resolved;

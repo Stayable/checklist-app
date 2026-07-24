@@ -2,6 +2,7 @@ import type { DeviceSource } from "@prisma/client";
 import { db } from "@/lib/db";
 import type { ParsedWebhook } from "./parse";
 import { TICKET_TIMER_MIN } from "./mass-outage";
+import { checkAndHandleMassOutage } from "./mass-outage.server";
 import { closeOpenTicketOnRecovery } from "./ticketing.server";
 
 export type IngestResult =
@@ -37,7 +38,7 @@ export async function ingestWebhook(
 ): Promise<IngestResult> {
   const property = await db.property.findUnique({
     where: { propertyId: parsed.propertyRef },
-    select: { id: true, propertyId: true },
+    select: { id: true, propertyId: true, shortCode: true, teamsChannelName: true },
   });
 
   // Can't attribute the event to a known property — don't create a Device or
@@ -80,24 +81,6 @@ export async function ingestWebhook(
         where: { id: device.id },
         data: { currentStatus: "OFFLINE" },
       });
-
-      // TASK 5 SEAM: the mass-outage check (lib/network/mass-outage.ts
-      // isMassOutage against recent property-scoped PROBLEM events) belongs
-      // HERE, before scheduling the standard timer below — a mass outage
-      // supersedes the per-device standard-ticket flow with its own
-      // MASS_OUTAGE_10MIN job/ticket handling. Not implemented in Task 4.
-
-      // Schedule the standard 5-minute ticket timer (DevSpec §5.2). The
-      // 1-minute cron (app/api/cron/network-timers) picks this up once
-      // `runAt` has passed and decides whether to create a ticket.
-      await tx.networkJob.create({
-        data: {
-          kind: "STANDARD_TIMER",
-          runAt: new Date(event.receivedAt.getTime() + TICKET_TIMER_MIN * 60_000),
-          eventId: event.id,
-          status: "PENDING",
-        },
-      });
     } else {
       // RECOVERY: spec §4.2 — lastSeenAt updates on every recovery.
       await tx.device.update({
@@ -130,13 +113,46 @@ export async function ingestWebhook(
       });
     }
 
-    return { deviceId: device.id, eventId: event.id };
+    return { device, event };
   });
+
+  // TASK 5 SEAM: the mass-outage check runs AFTER the main insert
+  // transaction above has committed, not nested inside it. Two reasons:
+  // (1) it needs to read this PROBLEM event back via a fresh top-level `db`
+  // query (property-scoped PROBLEM events in the last 120s) — that read
+  // must see this event, which it only can once the insert transaction has
+  // committed; (2) mass-outage TICKET CREATION allocates a ticketNumber and
+  // can P2002-retry, which per the Task 4 lesson needs its own fresh
+  // transaction per attempt, not one nested inside (or chained directly
+  // after, uncommitted) this function's insert transaction. A mass outage
+  // supersedes the per-device standard-ticket flow with its own
+  // MASS_OUTAGE_CHECK job/ticket handling (spec §5.5).
+  if (parsed.eventType === "PROBLEM") {
+    const { suppressStandardTimer } = await checkAndHandleMassOutage(db, {
+      device: result.device,
+      property,
+      now: result.event.receivedAt,
+    });
+
+    if (!suppressStandardTimer) {
+      // Schedule the standard 5-minute ticket timer (DevSpec §5.2). The
+      // 1-minute cron (app/api/cron/network-timers) picks this up once
+      // `runAt` has passed and decides whether to create a ticket.
+      await db.networkJob.create({
+        data: {
+          kind: "STANDARD_TIMER",
+          runAt: new Date(result.event.receivedAt.getTime() + TICKET_TIMER_MIN * 60_000),
+          eventId: result.event.id,
+          status: "PENDING",
+        },
+      });
+    }
+  }
 
   return {
     resolved: true,
-    deviceId: result.deviceId,
-    eventId: result.eventId,
+    deviceId: result.device.id,
+    eventId: result.event.id,
     eventType: parsed.eventType,
   };
 }

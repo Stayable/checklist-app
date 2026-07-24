@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { decideTimerAction } from "@/lib/network/ticketing";
 import { createStandardTicket, hasOpenTicketForDevice } from "@/lib/network/ticketing.server";
+import { runMassOutageCheck } from "@/lib/network/mass-outage.server";
 
-// Standard ticket-timer sweep (DevSpec §5.2). Vercel Cron fires this every
-// minute (vercel.json) to poll PENDING NetworkJob rows whose 5-minute
-// TICKET_TIMER_MIN deadline has passed (D2 — DB-backed timer, no
-// Redis/BullMQ; ~1-min granularity on a 5-min SLA is acceptable).
+// Standard ticket-timer sweep (DevSpec §5.2) + mass-outage resolution sweep
+// (DevSpec §5.5). Vercel Cron fires this every minute (vercel.json) to poll
+// PENDING NetworkJob rows whose deadline (`runAt`) has passed (D2 — DB-backed
+// timer, no Redis/BullMQ; ~1-min granularity on a 5-/10-min SLA is
+// acceptable) — STANDARD_TIMER (5-min standard-ticket threshold) and
+// MASS_OUTAGE_CHECK (10-min mass-outage resolution check) jobs both land
+// here (Task 5).
 //
 // Auth mirrors app/api/cron/generate-checklists/route.ts: fail-closed in
 // production when CRON_SECRET is unset, dev-open otherwise.
@@ -84,7 +88,11 @@ async function processJob(jobId: string, eventId: string | null): Promise<JobOut
 async function run() {
   const now = new Date();
   const jobs = await db.networkJob.findMany({
-    where: { status: "PENDING", kind: "STANDARD_TIMER", runAt: { lte: now } },
+    where: {
+      status: "PENDING",
+      kind: { in: ["STANDARD_TIMER", "MASS_OUTAGE_CHECK"] },
+      runAt: { lte: now },
+    },
     orderBy: { runAt: "asc" },
   });
 
@@ -95,9 +103,16 @@ async function run() {
   for (const job of jobs) {
     processed++;
     try {
-      const outcome = await processJob(job.id, job.eventId);
-      if (outcome === "created") created++;
-      else skipped++;
+      if (job.kind === "MASS_OUTAGE_CHECK") {
+        // runMassOutageCheck owns marking its own job DONE (including its
+        // early-return "ticket missing/already resolved" paths) — see its
+        // doc comment. Nothing else to do here on success.
+        await runMassOutageCheck(db, { id: job.id, ticketId: job.ticketId });
+      } else {
+        const outcome = await processJob(job.id, job.eventId);
+        if (outcome === "created") created++;
+        else skipped++;
+      }
     } catch (err) {
       // Leave the job PENDING so next minute's cron retries it. Never throw
       // out of run() — one bad job must not block the rest of the sweep.
