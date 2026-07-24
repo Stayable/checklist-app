@@ -35,6 +35,10 @@ export function ShellChrome({
 
   const mainItems = navItems.filter((i) => i.group === "main");
   const adminItems = navItems.filter((i) => i.group === "admin");
+  const networkItems = navItems.filter((i) => i.group === "network");
+  // NETWORK_TECH has ONLY network-group items (no "main" nav at all), so the
+  // mobile bottom bar must include them or that role gets no mobile nav.
+  const mobileItems = [...mainItems, ...networkItems];
 
   return (
     <div className="min-h-screen bg-slate-50 lg:flex">
@@ -53,6 +57,16 @@ export function ShellChrome({
                 Admin
               </p>
               {adminItems.map((item) => (
+                <SidebarLink key={item.href} item={item} pathname={pathname} />
+              ))}
+            </>
+          )}
+          {networkItems.length > 0 && (
+            <>
+              <p className="mt-6 px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Network
+              </p>
+              {networkItems.map((item) => (
                 <SidebarLink key={item.href} item={item} pathname={pathname} />
               ))}
             </>
@@ -98,10 +112,10 @@ export function ShellChrome({
           {children}
         </main>
 
-        {/* Mobile bottom tab bar — main items only */}
+        {/* Mobile bottom tab bar — main + network items (admin stays desktop-only) */}
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
           <div className="mx-auto flex max-w-md items-stretch justify-around">
-            {mainItems.map((item) => {
+            {mobileItems.map((item) => {
               const active = isNavItemActive(item.href, pathname);
               return (
                 <Link
