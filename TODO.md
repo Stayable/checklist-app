@@ -23,7 +23,7 @@ Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts
 | Phase | Pri | Status | What |
 |---|---|---|---|
 | S0 — Foundations & rename | P1 | [~] | **DONE + DEPLOYED TO PROD 2026-07-02** (`ee31c09`+`0130c3b`, FF `main` `9015c34→ddf1ac5`, prod deploy `dpl_HURDNW5Z…` READY on ops.rentstayable.com; `/login` 200, `/review`+`/issues` 307). ADRs 022–024 in DECISIONS.md; `lib/role-display.ts` (6→3-role display map, tested, label-only-not-authz); StayCheck rename across all user-facing surfaces (`/ios-spike` left as throwaway); `bonusEligible` **dropped** — migration `20260702221150_drop_bonus_eligible` **applied to shared prod DB 2026-07-02** (deployed new code first so live reads didn't break). 129/129 tests, clean types+lint, build 30 routes. **✅ prod/dev DB split DONE 2026-07-25** (prod on its own Neon `ep-summer-cloud`; see RUNBOOK §Splitting the Production DB). PDF wordmark rename deferred until PDF templates exist |
-| S1 — Review workflow upgrade | P1 | [~] | **DESIGN LOCKED 2026-07-25** (Kate answered queries; plan `docs/superpowers/plans/2026-07-24-s1-review-workflow-upgrade.md`, 7 tasks). **NEXT: Task 1 = schema + migration `add_s1_review_upgrade`.** Completion Check (manager-manual) · Verified-by-PM + immutability + admin-unlock · structured flags **staff-at-fill→manager-confirm, dedicated columns, bilingual, gated by template `collectsCheckoutFlags`** · internal-vs-staff note toggle · free-text room on instance |
+| S1 — Review workflow upgrade | P1 | [x] | **DONE + DEPLOYED TO PROD 2026-07-25** (`29abd81` + fix-wave `ab6e736`, `main`→prod deploy `checklist-cqkps9rrw` Ready/live; fix-wave `checklist-cevtb8h76`). All 7 tasks: migration `add_s1_review_upgrade` (authored **offline** via `migrate diff` — dev DB not reset, main/prod stay contractor-free; applied to prod via `migrate deploy`); `lib/review-lock.ts` immutability enforced in every mutation + submit; verify+admin-unlock; internal/staff **notify toggle** on approve(off)/flag(on, dialog checkbox)/verify(off), re-do always notifies; `review_verified` copy EN+ES; manual Pass/Fail completion check + `lib/completion-check.ts` hint; **checkout flags** staff-capture(bilingual `Checkout` ns)→draft→submit(server-gated `collectsCheckoutFlags`)→manager confirm/edit→lock-at-verify; `lib/room-label.ts` free-text room fallback everywhere. **Code review: no criticals**; 2 minor fixed (gate `saveCheckoutFlags`; verify note→`managerNote`). 161/161 tests, build 32 routes. Rollback: `checklist-oxril8x27`. 🧑 **Verify authed:** login → open a checkout/Departure submission → flag block + verify/lock + admin unlock |
 | S2 — Room lifecycle (manual-first) | P1 | [ ] | 9-state derived room lifecycle · **Room Status Board** · **Checkout Queue** (manual entry) · OOO wiring from checklist flags |
 | S3 — Cloudbeds sync adapter | P1 | [!] | `CloudbedsConnection` + `lib/cloudbeds/` · webhook/poll → checkout queue + arrivals trigger · room-reassignment rules · per-property isolation. **Blocked: API keys** (DB split DONE 2026-07-25) |
 | S4 — Preventive Maintenance | P1 | [ ] | `Asset` registry · interval-from-last-completion scheduling · `CONDITION` question type · PM submission fields · corrective-action → Issue bridge · PM compliance dashboard |
@@ -32,6 +32,29 @@ Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts
 | S7 — **Maintenance Ticketing / Work Orders** | P1 | [!] | Extends `Issue`: target date · lifecycle · required closing photo · recurrence auto-flag. **Blocked: Kate's ticketing `.md`** (spec §Ticketing has the frame) |
 | S8 — Reports + export + photo tooling | P2 | [ ] | Report suite · Smartsheet column-parity CSV export · before/after compare · per-room photo gallery · PDF parity |
 | S9 — Offline + push + versioning + library | P2 | [ ] | Full offline sync + conflict notice · push notifications · template version-snapshot · starter template library · Lease-Flip type · AM/PM shift |
+
+---
+
+## 🆕 EPIC: NETWORK — Network Monitoring & IT Ticketing (started 2026-07-25)
+
+New top-level `/network` section (sibling of ADMIN). Kate's `DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` (standalone-app spec) **ported onto the StayCheck stack** — plan `docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md`. Supersedes the on-hold `ITTicketingPlan` for network tickets. **Built on branch `feat/network-monitoring` (NOT merged, NOT deployed).**
+
+**Decisions locked (Kyle 2026-07-25):** new **`NETWORK_TECH`** role (7th); **DB-backed `NetworkJob` + 1-min Vercel Cron** for the 5/10-min timers (no Redis). **Schema defaults chosen (confirm):** `Ticket.assignedTo` = free-text (MSP-friendly, could become User FK); `NETWORK_TECH` folds into "Admin" **display** label only.
+**Still-open decisions:** D3 Graph-API-vs-ADR-010 (new ADR needed) · D4 Zoho Desk dropped (record ADR) · D6 Spotipo key encryption · overnight-notif behavior · reply-ingest sub-vs-poll.
+**Cred blockers:** Microsoft Graph (Azure AD app reg + tenant/team/8-channel IDs) → Tasks 7–8 · UniFi+Aruba HMAC secrets + payload schemas → trust Task 3 parsers · Spotipo siteid×8 + key(s) → Task 9.
+
+| Task | Status | What |
+|---|---|---|
+| 1 — Schema + migration | [x] | **DONE on branch 2026-07-25** (`a22407c`). `Role.NETWORK_TECH`; 7 enums; `Property` +Teams/Spotipo; models `Device`/`NetworkEvent`/`RawWebhookPayload`/`Ticket`/`TicketNote`/`NetworkJob`. Migration `add_network_monitoring` authored offline, applied to dev DB out-of-band. `lib/role-display.ts` maps NETWORK_TECH→Admin. 161/161 tests, clean. **NOT deployed** (prod migrate only when NETWORK ships) |
+| 2 — Pure event-mapping + ticket-number + mass-outage window + tests | [ ] | **NEXT.** `lib/network/event-mapping.ts` (§3.1/3.2 problem/recovery), `ticket-number.ts` (ET daily seq), window predicate. No creds |
+| 3 — Webhook receivers + event logging | [ ] | `/api/webhooks/{unifi,aruba}` HMAC→401, store RawWebhookPayload, upsert Device, insert NetworkEvent. Fixtures (trust parsers once HMAC secrets/schemas land) |
+| 4 — Timer + standard ticket creation | [ ] | DB-cron 5-min threshold, dup-suppression, recovery-closes, downDurationMin |
+| 5 — Mass outage (§5.5) | [ ] | 120s cluster → immediate ticket, 10-min split, parent/child |
+| 6 — NETWORK shell + RBAC + nav + dashboard/ticket pages | [ ] | `requireNetworkAccess` (`canAccessNetwork`={NETWORK_TECH,ADMIN,CORPORATE}), `lib/nav.ts` network group, portfolio/per-property/ticket-detail/device pages, edit actions. **Demoable core ends here (no creds)** |
+| 7 — Teams Graph: post + resolution reply | [!] | BLOCKED: Azure AD app reg (Graph) |
+| 8 — Teams reply ingestion → notes | [!] | BLOCKED: Graph |
+| 9 — Guest WiFi / Spotipo (§11) | [!] | BLOCKED: Spotipo creds |
+| 10 — Escalation + recurring flag + final review + ADR | [ ] | Age thresholds, 3+/30d recurring, overnight tag; Opus review; record ADR (role + Graph + Zoho supersession) |
 
 ---
 
