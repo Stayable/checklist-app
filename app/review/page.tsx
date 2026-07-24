@@ -6,6 +6,7 @@ import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { formatDateInET } from "@/lib/datetime";
 import { timeToCompleteMinutes } from "@/lib/review";
+import { roomDisplay } from "@/lib/room-label";
 import { presignDownload } from "@/lib/r2";
 import { ReviewQueueClient, type QueueRow } from "./ReviewQueueClient";
 
@@ -59,6 +60,7 @@ export default async function ReviewQueuePage({
       },
       property: { select: { shortCode: true } },
       room: { select: { roomNumber: true } },
+      roomLabel: true,
       assignedUser: { select: { name: true } },
       responses: {
         select: {
@@ -84,7 +86,7 @@ export default async function ReviewQueuePage({
       date: i.submittedAt
         ? formatDateInET(i.submittedAt)
         : formatDateInET(i.scheduledFor),
-      unit: i.room?.roomNumber ?? null,
+      unit: roomDisplay(i.room, i.roomLabel),
       minutes: timeToCompleteMinutes(i.openedAt, i.submittedAt),
       photoSlots: await Promise.all(
         i.template.questions.map(async (q) => {

@@ -80,6 +80,14 @@
     "err_photoMin": "Agrega más fotos.",
     "err_photoMax": "Demasiadas fotos."
   },
+  "Checkout": {
+    "heading": "Notas de salida",
+    "notifyCorporate": "Notificar a corporativo",
+    "returnDeposit": "Devolver depósito",
+    "itemsToReplace": "Hay artículos por reemplazar",
+    "itemsToReplaceList": "¿Qué hay que reemplazar?",
+    "placeOOO": "Poner la habitación fuera de servicio"
+  },
   "Locale": {
     "english": "Inglés",
     "spanish": "Español",

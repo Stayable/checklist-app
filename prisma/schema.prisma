@@ -77,6 +77,12 @@ enum InstanceStatus {
   EXPIRED
 }
 
+// S1 (StayCheck v1.1): manager's manual Pass/Fail completion check at review.
+enum CompletionCheck {
+  PASS
+  FAIL
+}
+
 enum GeofenceStatus {
   VERIFIED
   OFF_PROPERTY
@@ -140,6 +146,7 @@ model User {
   properties        UserProperty[]
   assignedInstances ChecklistInstance[] @relation("InstanceAssignee")
   reviewedInstances ChecklistInstance[] @relation("InstanceReviewer")
+  verifiedInstances ChecklistInstance[] @relation("InstanceVerifier")
   assignedIssues    Issue[]             @relation("IssueAssignee")
   auditLogs         AuditLog[]
   notifications     NotificationLog[]
@@ -235,6 +242,9 @@ model ChecklistTemplate {
   reviewLevel ReviewLevel   @default(MANAGER) @map("review_level")
   active         Boolean       @default(true)
   allProperties  Boolean       @default(false) @map("all_properties")
+  // S1: gates the checkout-flag capture block (fill flow + review confirm).
+  // On for Departure/checkout-type templates, off elsewhere.
+  collectsCheckoutFlags Boolean @default(false) @map("collects_checkout_flags")
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -345,6 +355,26 @@ model ChecklistInstance {
   // Manager note from the review left rail (ADR-011); set on approve/flag/redo.
   managerNote      String?   @map("manager_note")
 
+  // S1 (StayCheck v1.1) — review workflow upgrade
+  // Manager's manual Pass/Fail completion check at review (Q1).
+  completionCheck  CompletionCheck? @map("completion_check")
+  // Verify-by-PM lock (Q4): once verified, the instance is immutable except an
+  // admin-only unlock. lockedAt is the enforcement anchor (lib/review-lock.ts).
+  verifiedByPm     Boolean   @default(false) @map("verified_by_pm")
+  verifiedAt       DateTime? @map("verified_at") @db.Timestamptz
+  verifiedByUserId String?   @map("verified_by_user_id") @db.Uuid
+  lockedAt         DateTime? @map("locked_at") @db.Timestamptz
+  // Structured checkout flags (Q2/Q3): captured by staff at fill when the
+  // template collectsCheckoutFlags, confirmed/editable by manager at review.
+  notifyCorporate  Boolean   @default(false) @map("notify_corporate")
+  returnDeposit    Boolean   @default(false) @map("return_deposit")
+  itemsToReplace   Boolean   @default(false) @map("items_to_replace")
+  itemsToReplaceList String? @map("items_to_replace_list")
+  // placeOOO stored now; room-lifecycle wiring is S2 (typed hook only here).
+  placeOOO         Boolean   @default(false) @map("place_ooo")
+  // Free-text room fallback (PRD §17/§24: "-", "Suite") when no Room row.
+  roomLabel        String?   @map("room_label")
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -353,6 +383,7 @@ model ChecklistInstance {
   room         Room?             @relation(fields: [roomId], references: [id])
   assignedUser User?             @relation("InstanceAssignee", fields: [assignedUserId], references: [id])
   reviewedBy   User?             @relation("InstanceReviewer", fields: [reviewedByUserId], references: [id])
+  verifiedBy   User?             @relation("InstanceVerifier", fields: [verifiedByUserId], references: [id])
 
   // Self-relation: an invalidated instance points to its replacement.
   reassignedToInstance ChecklistInstance?  @relation("InstanceReassignment", fields: [reassignedToInstanceId], references: [id])
@@ -367,6 +398,7 @@ model ChecklistInstance {
   @@index([templateId])
   @@index([roomId])
   @@index([reviewedByUserId])
+  @@index([verifiedByUserId])
   @@map("checklist_instances")
 }
 

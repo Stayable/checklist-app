@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { AnswerMap } from "@/lib/checklist-logic";
 import type { Position } from "@/lib/image";
+import type { CheckoutFlags } from "@/lib/checkout-flags";
 
 // Offline draft storage for in-progress checklists (ARCHITECTURE §5.2). Answers
 // auto-save to IndexedDB on every change so a dropped connection or closed tab
@@ -21,6 +22,9 @@ export type ChecklistDraft = {
   photoTimestamps?: Record<string, (number | null)[]>;
   // Signature data URLs, per signature question.
   signatures: Record<string, string>;
+  // S1 structured checkout flags (only for templates that collect them).
+  // Optional because most drafts (and pre-S1 drafts) have none.
+  flags?: CheckoutFlags;
   updatedAt: number;
 };
 

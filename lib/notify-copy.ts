@@ -7,12 +7,14 @@ export type NotifyEvent =
   | "review_approved"
   | "review_flagged"
   | "review_redo"
+  | "review_verified"
   | "issue_assigned";
 
 export const NOTIFY_EVENTS: readonly NotifyEvent[] = [
   "review_approved",
   "review_flagged",
   "review_redo",
+  "review_verified",
   "issue_assigned",
 ] as const;
 
@@ -46,6 +48,11 @@ const COPY: Record<Locale, Record<NotifyEvent, EventStrings>> = {
       lead: "A re-do was requested on your submission.",
       noteLabel: "Note",
     },
+    review_verified: {
+      subject: (l) => `Verified: ${l}`,
+      lead: "Your submission was verified by a manager.",
+      noteLabel: "Note",
+    },
     issue_assigned: {
       subject: (l) => `Issue assigned: ${l}`,
       lead: "An issue was assigned to you.",
@@ -66,6 +73,11 @@ const COPY: Record<Locale, Record<NotifyEvent, EventStrings>> = {
     review_redo: {
       subject: (l) => `Se solicitó rehacer: ${l}`,
       lead: "Se solicitó rehacer tu envío.",
+      noteLabel: "Nota",
+    },
+    review_verified: {
+      subject: (l) => `Verificado: ${l}`,
+      lead: "Un gerente verificó tu envío.",
       noteLabel: "Nota",
     },
     issue_assigned: {

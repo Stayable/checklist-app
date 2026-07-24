@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { InstanceStatus, QuestionType } from "@prisma/client";
+import { QuestionType } from "@prisma/client";
 import { db } from "@/lib/db";
-import { canAccessProperty, requireManager } from "@/lib/rbac";
+import { canAccessProperty, isAdmin, requireManager } from "@/lib/rbac";
+import { isLocked } from "@/lib/review-lock";
 import { formatDateInET, formatInET } from "@/lib/datetime";
 import { formatMinutes, timeToCompleteMinutes } from "@/lib/review";
 import { presignDownload } from "@/lib/r2";
 import { ReviewActions } from "./ReviewActions";
+import { CompletionCheckControl } from "./CompletionCheckControl";
+import { CheckoutFlagsReview } from "./CheckoutFlagsReview";
+import { deriveCompletionCheck } from "@/lib/completion-check";
+import { roomDisplay } from "@/lib/room-label";
 import { PhotoFigure } from "@/components/review/PhotoFigure";
 import type { PhotoFigureProps } from "@/components/review/PhotoFigure";
 
@@ -97,6 +102,7 @@ export default async function ReviewDetailPage({
       room: { select: { roomNumber: true } },
       assignedUser: { select: { name: true } },
       reviewedBy: { select: { name: true } },
+      verifiedBy: { select: { name: true } },
       responses: {
         include: {
           photos: {
@@ -139,8 +145,11 @@ export default async function ReviewDetailPage({
     select: { id: true, action: true, createdAt: true, actor: { select: { name: true } } },
   });
 
-  const reviewable =
-    instance.status === InstanceStatus.SUBMITTED || instance.status === InstanceStatus.FLAGGED;
+  const locked = isLocked(instance);
+  const completionHint = deriveCompletionCheck(
+    instance.responses.map((r) => ({ questionId: r.questionId, answer: r.answer })),
+    instance.template.questions.map((q) => ({ id: q.id, type: q.type })),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -153,7 +162,10 @@ export default async function ReviewDetailPage({
             {instance.title ?? (
               <>
                 {instance.template.name} — {instance.property.shortCode}
-                {instance.room ? ` — Rm ${instance.room.roomNumber}` : ""}
+                {(() => {
+                  const rd = roomDisplay(instance.room, instance.roomLabel);
+                  return rd ? (instance.room ? ` — Rm ${rd}` : ` — ${rd}`) : "";
+                })()}
               </>
             )}
           </h1>
@@ -184,6 +196,12 @@ export default async function ReviewDetailPage({
                 by {instance.reviewedBy.name} · {formatInET(instance.reviewedAt)}
               </p>
             )}
+            {instance.verifiedByPm && instance.verifiedAt && (
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                ✓ Verified{instance.verifiedBy ? ` by ${instance.verifiedBy.name}` : ""} ·{" "}
+                {formatInET(instance.verifiedAt)}
+              </p>
+            )}
           </div>
           {instance.managerNote && (
             <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -193,7 +211,31 @@ export default async function ReviewDetailPage({
               <p className="whitespace-pre-wrap text-sm text-slate-700">{instance.managerNote}</p>
             </div>
           )}
-          {reviewable && <ReviewActions instanceId={instance.id} status={instance.status} />}
+          <CompletionCheckControl
+            instanceId={instance.id}
+            current={instance.completionCheck}
+            hint={completionHint}
+            disabled={locked}
+          />
+          {instance.template.collectsCheckoutFlags && (
+            <CheckoutFlagsReview
+              instanceId={instance.id}
+              locked={locked}
+              initial={{
+                notifyCorporate: instance.notifyCorporate,
+                returnDeposit: instance.returnDeposit,
+                itemsToReplace: instance.itemsToReplace,
+                itemsToReplaceList: instance.itemsToReplaceList ?? "",
+                placeOOO: instance.placeOOO,
+              }}
+            />
+          )}
+          <ReviewActions
+            instanceId={instance.id}
+            status={instance.status}
+            locked={locked}
+            isAdmin={isAdmin(user.role)}
+          />
           {instance.sourcedIssues.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white p-4">
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">

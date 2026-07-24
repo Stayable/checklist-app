@@ -1,8 +1,11 @@
 "use server";
 
 import { GeofenceStatus, InstanceStatus, Prisma, QuestionType } from "@prisma/client";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser, isManagerOrAbove } from "@/lib/rbac";
+import { normalizeCheckoutFlags, type CheckoutFlags } from "@/lib/checkout-flags";
+import { roomDisplay } from "@/lib/room-label";
 import {
   isVisible,
   validateAll,
@@ -13,6 +16,7 @@ import {
 } from "@/lib/checklist-logic";
 import { geofenceStatusFor } from "@/lib/geofence";
 import { createIssue, slaHoursByPriority } from "@/lib/issues.server";
+import { isLocked } from "@/lib/review-lock";
 
 // Submit pipeline (Phase 3 + Phase 4 auto-Issue + ADR-015 photos): validate →
 // persist responses + Photo rows → mark SUBMITTED → open an Issue for each
@@ -40,9 +44,18 @@ function photoRefsOf(value: AnswerValue): PhotoRef[] {
   return value.photos;
 }
 
+const checkoutFlagsSchema = z.object({
+  notifyCorporate: z.boolean(),
+  returnDeposit: z.boolean(),
+  itemsToReplace: z.boolean(),
+  itemsToReplaceList: z.string().max(2000),
+  placeOOO: z.boolean(),
+});
+
 export async function submitChecklist(
   instanceId: string,
   answers: AnswerMap,
+  flags?: CheckoutFlags,
 ): Promise<SubmitResult> {
   const user = await requireUser();
 
@@ -71,6 +84,12 @@ export async function submitChecklist(
     return { ok: false, error: "This checklist has already been submitted." };
   }
 
+  // S1: a verified-and-locked instance is immutable (defense in depth — a
+  // locked instance is never in a re-submittable status, but guard anyway).
+  if (isLocked(instance)) {
+    return { ok: false, error: "This checklist has been verified and locked and can no longer be changed." };
+  }
+
   // Server-side validation mirrors the client (defense in depth).
   const questions: QuestionLike[] = instance.template.questions.map((q) => ({
     id: q.id,
@@ -89,6 +108,26 @@ export async function submitChecklist(
   const answerableIds = new Set(questions.map((q) => q.id));
   const questionById = new Map(questions.map((q) => [q.id, q]));
   const now = new Date();
+
+  // S1 checkout flags: persist the 5 instance columns only when THIS template
+  // collects them (server-authoritative — a client can't force flags onto a
+  // template that doesn't declare them). itemsToReplaceList clears when the box
+  // is unchecked (normalizeCheckoutFlags).
+  let flagData: Prisma.ChecklistInstanceUpdateInput | null = null;
+  if (instance.template.collectsCheckoutFlags && flags !== undefined) {
+    const parsedFlags = checkoutFlagsSchema.safeParse(flags);
+    if (!parsedFlags.success) {
+      return { ok: false, error: "Invalid checkout flags." };
+    }
+    const nf = normalizeCheckoutFlags(parsedFlags.data);
+    flagData = {
+      notifyCorporate: nf.notifyCorporate,
+      returnDeposit: nf.returnDeposit,
+      itemsToReplace: nf.itemsToReplace,
+      itemsToReplaceList: nf.itemsToReplaceList || null,
+      placeOOO: nf.placeOOO,
+    };
+  }
 
   // Photo rows from uploaded PhotoRefs on visible PHOTO questions (ADR-015).
   // Key prefixes are strictly validated so a client can only reference objects
@@ -191,6 +230,7 @@ export async function submitChecklist(
         status: InstanceStatus.SUBMITTED,
         submittedAt: now,
         openedAt: instance.openedAt ?? now,
+        ...(flagData ?? {}),
       },
     });
     await tx.auditLog.create({
@@ -204,7 +244,8 @@ export async function submitChecklist(
 
     // One Issue per failed flagged question (skipped if one is already open
     // for the same instance+question from a prior submit).
-    const rm = instance.room ? ` — Rm ${instance.room.roomNumber}` : "";
+    const rd = roomDisplay(instance.room, instance.roomLabel);
+    const rm = rd ? (instance.room ? ` — Rm ${rd}` : ` — ${rd}`) : "";
     for (const q of failedFlagged) {
       await createIssue(
         tx,

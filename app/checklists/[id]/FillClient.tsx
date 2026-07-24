@@ -14,6 +14,7 @@ import {
 } from "@/lib/checklist-logic";
 import { compressImage, getCurrentPosition, type Position } from "@/lib/image";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-store";
+import { type CheckoutFlags } from "@/lib/checkout-flags";
 import { SignaturePad } from "@/components/checklist/SignaturePad";
 import { submitChecklist } from "./actions";
 import { markOpened } from "./mark-opened.action";
@@ -35,16 +36,21 @@ export function FillClient({
   questions,
   initialAnswers,
   submitted,
+  collectsCheckoutFlags,
+  initialFlags,
 }: {
   instanceId: string;
   label: string;
   questions: FillQuestion[];
   initialAnswers: AnswerMap;
   submitted: boolean;
+  collectsCheckoutFlags: boolean;
+  initialFlags: CheckoutFlags;
 }) {
   const t = useTranslations("Checklist");
   const [answers, setAnswers] = useState<AnswerMap>(initialAnswers);
   const [photos, setPhotos] = useState<PhotoState>({});
+  const [flags, setFlags] = useState<CheckoutFlags>(initialFlags);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -73,6 +79,7 @@ export function FillClient({
           }));
         }
         setPhotos(restored);
+        if (draft.flags) setFlags(draft.flags);
       }
       hydrated.current = true;
     })();
@@ -98,8 +105,16 @@ export function FillClient({
       photoPositions[qid] = items.map((it) => it.position);
       photoTimestamps[qid] = items.map((it) => it.capturedAt);
     }
-    void saveDraft({ instanceId, answers, photos: photoBlobs, photoPositions, photoTimestamps, signatures });
-  }, [answers, photos, questions, instanceId, submitted]);
+    void saveDraft({
+      instanceId,
+      answers,
+      photos: photoBlobs,
+      photoPositions,
+      photoTimestamps,
+      signatures,
+      flags: collectsCheckoutFlags ? flags : undefined,
+    });
+  }, [answers, photos, questions, instanceId, submitted, collectsCheckoutFlags, flags]);
 
   // Stamp openedAt + flip to IN_PROGRESS on first open. Fire-and-forget; the
   // server action is a no-op for non-assignees (managers, wrong user, already opened).
@@ -224,7 +239,11 @@ export function FillClient({
         setSubmitError(t("photoUploadFailed"));
         return;
       }
-      const res = await submitChecklist(instanceId, finalAnswers);
+      const res = await submitChecklist(
+        instanceId,
+        finalAnswers,
+        collectsCheckoutFlags ? flags : undefined,
+      );
       if (res.ok) {
         await clearDraft(instanceId);
         setDone(true);
@@ -266,6 +285,8 @@ export function FillClient({
           onRemovePhoto={(i) => removePhoto(q, i)}
         />
       ))}
+
+      {collectsCheckoutFlags && <CheckoutFlagsBlock flags={flags} onChange={setFlags} />}
 
       <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white p-4">
         <div className="mx-auto max-w-md">
@@ -415,5 +436,53 @@ function QuestionField({
 
       {error && <p className="text-sm text-red-600">{t(`err_${error}` as never)}</p>}
     </div>
+  );
+}
+
+// S1 structured checkout flags, captured by field staff at fill (bilingual per
+// ADR-013). Only rendered for templates that collect them. Manager confirms /
+// edits these at review; values lock at Verify.
+function CheckoutFlagsBlock({
+  flags,
+  onChange,
+}: {
+  flags: CheckoutFlags;
+  onChange: (next: CheckoutFlags) => void;
+}) {
+  const t = useTranslations("Checkout");
+  const set = <K extends keyof CheckoutFlags>(key: K, value: CheckoutFlags[K]) =>
+    onChange({ ...flags, [key]: value });
+
+  const row = (key: "notifyCorporate" | "returnDeposit" | "itemsToReplace" | "placeOOO") => (
+    <label className="flex items-center gap-3 py-2 text-base text-slate-800">
+      <input
+        type="checkbox"
+        checked={flags[key]}
+        onChange={(e) => set(key, e.target.checked)}
+        className="h-5 w-5 rounded border-slate-300"
+      />
+      {t(key)}
+    </label>
+  );
+
+  return (
+    <section className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-4">
+      <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-slate-500">
+        {t("heading")}
+      </h2>
+      {row("notifyCorporate")}
+      {row("returnDeposit")}
+      {row("itemsToReplace")}
+      {flags.itemsToReplace && (
+        <input
+          type="text"
+          value={flags.itemsToReplaceList}
+          onChange={(e) => set("itemsToReplaceList", e.target.value)}
+          placeholder={t("itemsToReplaceList")}
+          className="mb-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base text-slate-900 focus:border-slate-900 focus:outline-none"
+        />
+      )}
+      {row("placeOOO")}
+    </section>
   );
 }
