@@ -1,6 +1,8 @@
 import type { DeviceSource } from "@prisma/client";
 import { db } from "@/lib/db";
 import type { ParsedWebhook } from "./parse";
+import { TICKET_TIMER_MIN } from "./mass-outage";
+import { closeOpenTicketOnRecovery } from "./ticketing.server";
 
 export type IngestResult =
   | { resolved: false }
@@ -73,29 +75,58 @@ export async function ingestWebhook(
       },
     });
 
-    // ── TASK 4 SEAM ──────────────────────────────────────────────────────
-    // Not implemented here. Task 4 will, right after this event insert:
-    //   - on PROBLEM: run the mass-outage predicate (lib/network/mass-outage.ts)
-    //     against recent property-scoped PROBLEM events, and schedule a
-    //     5-minute NetworkJob ticket timer (lib/network/mass-outage.ts
-    //     TICKET_TIMER_MIN) if one isn't already pending for this device.
-    //   - on RECOVERY: close any open Ticket tied to this device (set
-    //     resolvedByEventId on the PROBLEM event it resolves) instead of
-    //     leaving a stale open ticket.
-    // Deliberately out of scope for Task 3 (webhook receipt + event logging
-    // only) per the NETWORK implementation plan.
-    // ─────────────────────────────────────────────────────────────────────
-
     if (parsed.eventType === "PROBLEM") {
       await tx.device.update({
         where: { id: device.id },
         data: { currentStatus: "OFFLINE" },
+      });
+
+      // TASK 5 SEAM: the mass-outage check (lib/network/mass-outage.ts
+      // isMassOutage against recent property-scoped PROBLEM events) belongs
+      // HERE, before scheduling the standard timer below — a mass outage
+      // supersedes the per-device standard-ticket flow with its own
+      // MASS_OUTAGE_10MIN job/ticket handling. Not implemented in Task 4.
+
+      // Schedule the standard 5-minute ticket timer (DevSpec §5.2). The
+      // 1-minute cron (app/api/cron/network-timers) picks this up once
+      // `runAt` has passed and decides whether to create a ticket.
+      await tx.networkJob.create({
+        data: {
+          kind: "STANDARD_TIMER",
+          runAt: new Date(event.receivedAt.getTime() + TICKET_TIMER_MIN * 60_000),
+          eventId: event.id,
+          status: "PENDING",
+        },
       });
     } else {
       // RECOVERY: spec §4.2 — lastSeenAt updates on every recovery.
       await tx.device.update({
         where: { id: device.id },
         data: { currentStatus: "ONLINE", lastSeenAt: new Date() },
+      });
+
+      // Spec §5.1: link this RECOVERY to the most recent still-open PROBLEM
+      // for the device (server-trustworthy receivedAt ordering, not
+      // occurredAt), then close any open ticket it was tracked under.
+      const openProblem = await tx.networkEvent.findFirst({
+        where: {
+          deviceId: device.id,
+          eventType: "PROBLEM",
+          resolvedByEventId: null,
+        },
+        orderBy: { receivedAt: "desc" },
+      });
+      if (openProblem) {
+        await tx.networkEvent.update({
+          where: { id: openProblem.id },
+          data: { resolvedByEventId: event.id },
+        });
+      }
+
+      await closeOpenTicketOnRecovery(tx, {
+        device,
+        recoveryEvent: event,
+        now: event.receivedAt,
       });
     }
 
