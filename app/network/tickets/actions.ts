@@ -46,6 +46,13 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
   const now = new Date();
   const enteringTerminal =
     TERMINAL_STATUSES.includes(status) && !TERMINAL_STATUSES.includes(ticket.status);
+  // Carried Task-6 Minor #2: a ticket manually reopened from RESOLVED/CLOSED
+  // back to OPEN/IN_PROGRESS previously kept its stale `resolvedAt` +
+  // `downDurationMin`, so the detail page could show "Status: OPEN" next to
+  // a "Resolved:" timestamp from the prior terminal visit. Clear both on the
+  // way out of a terminal status.
+  const leavingTerminal =
+    !TERMINAL_STATUSES.includes(status) && TERMINAL_STATUSES.includes(ticket.status);
 
   let resolvedAt = ticket.resolvedAt;
   let downMin = ticket.downDurationMin;
@@ -58,6 +65,9 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
       });
       if (triggerEvent) downMin = downDurationMin(triggerEvent.receivedAt, now);
     }
+  } else if (leavingTerminal) {
+    resolvedAt = null;
+    downMin = null;
   }
 
   await db.$transaction(async (tx) => {

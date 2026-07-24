@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { AgeBadge } from "@/components/network/AgeBadge";
+import { EscalationBadges } from "@/components/network/EscalationBadges";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
+import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 
 // NETWORK ticket list. Filterable by status via a query param; default
 // open-only (mirrors app/issues/page.tsx's status-tab pattern). Access is
@@ -92,12 +94,16 @@ export default async function NetworkTicketsPage({
                 <th className="px-4 py-3">Device</th>
                 <th className="px-4 py-3">Opened</th>
                 <th className="px-4 py-3">Age</th>
+                <th className="px-4 py-3">Flags</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {tickets.map((t) => {
                 const isOpen = OPEN_STATUSES.includes(t.status);
                 const bucket = isOpen ? ticketAgeBucket(t.openedAt, now) : null;
+                const escalated =
+                  escalationLevel({ openedAt: t.openedAt, now, status: t.status }) === "ESCALATED";
+                const overnight = isOvernight(t.openedAt);
                 return (
                   <tr key={t.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3">
@@ -119,6 +125,9 @@ export default async function NetworkTicketsPage({
                       ) : (
                         <span className="text-slate-400">—</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <EscalationBadges escalated={escalated} overnight={overnight} />
                     </td>
                   </tr>
                 );

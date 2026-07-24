@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { decideTimerAction } from "@/lib/network/ticketing";
 import { createStandardTicket, hasOpenTicketForDevice } from "@/lib/network/ticketing.server";
 import { runMassOutageCheck } from "@/lib/network/mass-outage.server";
+import { TEAMS_PROPERTY_SELECT } from "@/lib/network/teams-config";
 
 // Standard ticket-timer sweep (DevSpec §5.2) + mass-outage resolution sweep
 // (DevSpec §5.5). Vercel Cron fires this every minute (vercel.json) to poll
@@ -59,15 +60,7 @@ async function processJob(jobId: string, eventId: string | null): Promise<JobOut
       alertMessage: true,
       resolvedByEventId: true,
       device: { select: { id: true } },
-      property: {
-        select: {
-          id: true,
-          name: true,
-          shortCode: true,
-          teamsChannelName: true,
-          teamsChannelId: true,
-        },
-      },
+      property: { select: TEAMS_PROPERTY_SELECT },
     },
   });
 

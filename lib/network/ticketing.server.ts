@@ -11,6 +11,7 @@ import { formatTicketNumber } from "./ticket-number";
 import { downDurationMin } from "./ticketing";
 import { allChildrenResolved } from "./mass-outage";
 import { logTeamsTicketCreated, logTeamsTicketResolved } from "./teams-graph.server";
+import { TEAMS_PROPERTY_SELECT } from "./teams-config";
 
 /**
  * A client capable of starting its OWN top-level transaction — i.e. the
@@ -193,7 +194,7 @@ export async function closeOpenTicketOnRecovery(
 
   const property = await tx.property.findUnique({
     where: { id: resolved.propertyId },
-    select: { id: true, name: true, shortCode: true, teamsChannelName: true, teamsChannelId: true },
+    select: TEAMS_PROPERTY_SELECT,
   });
   if (property) {
     await logTeamsTicketResolved(tx, resolved, property);
@@ -211,13 +212,7 @@ export async function closeOpenTicketOnRecovery(
       });
       const parentProperty = await tx.property.findUnique({
         where: { id: parent.propertyId },
-        select: {
-          id: true,
-          name: true,
-          shortCode: true,
-          teamsChannelName: true,
-          teamsChannelId: true,
-        },
+        select: TEAMS_PROPERTY_SELECT,
       });
       if (parentProperty) {
         await logTeamsTicketResolved(tx, parent, parentProperty);

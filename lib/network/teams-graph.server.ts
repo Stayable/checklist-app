@@ -78,27 +78,10 @@ async function writeTeamsLog(
 ): Promise<void> {
   const { property, event, title, body, entityId } = params;
   try {
-    if (!isPropertyTeamsConfigured(property)) {
-      await client.notificationLog.create({
-        data: {
-          userId: null,
-          channel: NotificationChannel.TEAMS,
-          status: NotificationStatus.SKIPPED,
-          error: "teams_not_configured",
-          event,
-          title,
-          body,
-          target: target(property),
-          entityType: "ticket",
-          entityId,
-        },
-      });
-      return;
-    }
-
-    // FUTURE (creds-unblocked task): `property` is Graph-configured
-    // (MS_GRAPH_TENANT_ID/CLIENT_ID/CLIENT_SECRET set + Property.teamsChannelId
-    // present) — this is where the real Microsoft Graph call goes:
+    // FUTURE (creds-unblocked task): once `isPropertyTeamsConfigured(property)`
+    // is true (MS_GRAPH_TENANT_ID/CLIENT_ID/CLIENT_SECRET set +
+    // Property.teamsChannelId present), this is where the real Microsoft
+    // Graph call goes:
     //   POST /v1.0/teams/{teamId}/channels/{channelId}/messages
     //     body: { body: { content: body } }
     //   → save response.id onto Ticket.teamsMessageId (+ build
@@ -108,16 +91,22 @@ async function writeTeamsLog(
     //   POST /v1.0/teams/{teamId}/channels/{channelId}/messages/{teamsMessageId}/replies
     // (spec §5.3/§5.4). No Azure AD app registration, no Graph SDK dependency
     // exists in this codebase yet — SCAFFOLD + DEGRADE scope decision (Kyle,
-    // 2026-07-25: no creds available). Falls back to a SKIPPED row so this
-    // branch is honest about not actually posting; `error` distinguishes it
-    // from the unconfigured case so it's obvious which gap remains once
-    // Graph creds land.
+    // 2026-07-25: no creds available). Both the configured and unconfigured
+    // cases degrade to the same SKIPPED row below (dedup of a carried Task-7
+    // Minor finding — this used to be two near-identical `create` calls);
+    // `error` alone distinguishes "nothing to post to" from "would post, but
+    // the Graph call isn't wired yet", so it's obvious which gap remains once
+    // creds land.
+    const error = isPropertyTeamsConfigured(property)
+      ? "graph_post_not_implemented"
+      : "teams_not_configured";
+
     await client.notificationLog.create({
       data: {
         userId: null,
         channel: NotificationChannel.TEAMS,
         status: NotificationStatus.SKIPPED,
-        error: "graph_post_not_implemented",
+        error,
         event,
         title,
         body,
@@ -166,7 +155,9 @@ export async function logTeamsTicketCreated(
   } catch {
     // Message enrichment (device/trigger-event lookup) failed — degrade to
     // the bare alert message rather than let this abort the caller's
-    // ticket-creation transaction.
+    // ticket-creation transaction. Deliberate: fall back to the raw
+    // alertMessage rather than fabricate a device name/type we couldn't
+    // actually look up.
     body = ticket.alertMessage ?? "—";
   }
 
@@ -228,11 +219,20 @@ export async function logTeamsMassOutageCheck(
   db: AnyClient,
   ticket: Pick<Ticket, "id" | "ticketNumber">,
   property: TeamsProperty,
-  summary: { recoveredNames: string[]; stillOfflineNames: string[] },
+  summary: {
+    recoveredNames: string[];
+    stillOfflineNames: string[];
+    /** Carried Task-7 Important fix: max down-duration (minutes) across the
+     * recovered devices — threaded through to buildMassOutageCheckReply's
+     * "Down Duration" line, which it only renders in the all-recovered
+     * variant. Omit when nothing has recovered yet. */
+    maxDurationMin?: number;
+  },
 ): Promise<void> {
   const body = buildMassOutageCheckReply({
     recovered: summary.recoveredNames,
     stillOffline: summary.stillOfflineNames,
+    maxDurationMin: summary.maxDurationMin,
   });
 
   await writeTeamsLog(db, {

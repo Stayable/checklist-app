@@ -57,7 +57,7 @@ export default async function WifiPropertyPage({
           />
           <WifiStatCard
             label="Avg dwell"
-            value={summary.avgDwellMin === null ? "—" : `${summary.avgDwellMin} min`}
+            value={summary.avgDwellMin === null ? "—" : `${Math.round(summary.avgDwellMin)} min`}
           />
           <WifiStatCard label="Revenue" value="Unconfirmed" />
         </div>

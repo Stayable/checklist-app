@@ -29,3 +29,19 @@ export function isPropertyTeamsConfigured(
 ): boolean {
   return isTeamsGraphConfigured() && Boolean(property.teamsChannelId);
 }
+
+/**
+ * Shared Prisma `select` shape for "the property fields a Teams-lifecycle
+ * logger needs" (carried Task-7 Minor fix — this exact field list was
+ * duplicated at 5 call sites across lib/network/ticketing.server.ts,
+ * lib/network/mass-outage.server.ts, lib/network/ingest.server.ts, and
+ * app/api/cron/network-timers/route.ts). Spread it (`...TEAMS_PROPERTY_SELECT`)
+ * alongside any extra fields a specific call site also needs.
+ */
+export const TEAMS_PROPERTY_SELECT = {
+  id: true,
+  name: true,
+  shortCode: true,
+  teamsChannelName: true,
+  teamsChannelId: true,
+} as const;

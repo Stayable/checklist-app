@@ -4,6 +4,7 @@ import type { ParsedWebhook } from "./parse";
 import { TICKET_TIMER_MIN } from "./mass-outage";
 import { createMassOutageTicket, evaluateMassOutage, type MassOutageEvaluation } from "./mass-outage.server";
 import { closeOpenTicketOnRecovery } from "./ticketing.server";
+import { TEAMS_PROPERTY_SELECT } from "./teams-config";
 
 export type IngestResult =
   | { resolved: false }
@@ -38,14 +39,7 @@ export async function ingestWebhook(
 ): Promise<IngestResult> {
   const property = await db.property.findUnique({
     where: { propertyId: parsed.propertyRef },
-    select: {
-      id: true,
-      propertyId: true,
-      name: true,
-      shortCode: true,
-      teamsChannelName: true,
-      teamsChannelId: true,
-    },
+    select: { propertyId: true, ...TEAMS_PROPERTY_SELECT },
   });
 
   // Can't attribute the event to a known property — don't create a Device or

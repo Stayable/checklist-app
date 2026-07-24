@@ -7,6 +7,7 @@ import {
   Ticket,
 } from "@prisma/client";
 import { isMassOutage, MASS_OUTAGE_CHECK_MIN, MASS_OUTAGE_WINDOW_SEC, partitionRecovery, type AffectedDevice } from "./mass-outage";
+import { downDurationMin } from "./ticketing";
 import {
   allocateTicketNumber,
   createStandardTicket,
@@ -14,6 +15,7 @@ import {
   type TransactableClient,
 } from "./ticketing.server";
 import { logTeamsMassOutageCheck, logTeamsMassOutageCreated } from "./teams-graph.server";
+import { TEAMS_PROPERTY_SELECT } from "./teams-config";
 
 /** Outcome of the in-transaction mass-outage check+decision (see `evaluateMassOutage`). */
 export type MassOutageEvaluation =
@@ -350,12 +352,24 @@ export async function runMassOutageCheck(
 
   const property = await db.property.findUnique({
     where: { id: ticket.propertyId },
-    select: { id: true, name: true, shortCode: true, teamsChannelName: true, teamsChannelId: true },
+    select: TEAMS_PROPERTY_SELECT,
   });
   if (property) {
+    // Carried Task-7 Important fix: thread the recovered devices' down
+    // duration through to the Teams reply (spec §5.5's "Down Duration:
+    // {max} min" line, which buildMassOutageCheckReply only renders in the
+    // all-recovered branch). Data passthrough only — does not touch the
+    // mass-outage clustering/recovery decision above.
+    const recoveredDurations = recovered
+      .map((d) => (d.recoveredAt ? downDurationMin(ticket.openedAt, new Date(d.recoveredAt)) : null))
+      .filter((n): n is number => n !== null);
+    const maxDurationMin =
+      recoveredDurations.length > 0 ? Math.max(...recoveredDurations) : undefined;
+
     await logTeamsMassOutageCheck(db, ticket, property, {
       recoveredNames: recovered.map((d) => d.deviceName),
       stillOfflineNames: stillOffline.map((d) => d.deviceName),
+      maxDurationMin,
     });
   }
 

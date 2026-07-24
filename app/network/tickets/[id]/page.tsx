@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TicketStatus, TicketType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { AgeBadge } from "@/components/network/AgeBadge";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
+import { escalationLevel, isOvernight } from "@/lib/network/escalation";
+import { EscalationBadges } from "@/components/network/EscalationBadges";
 import type { AffectedDevice } from "@/lib/network/mass-outage";
 import { isPropertyTeamsConfigured } from "@/lib/network/teams-config";
 import { TicketActions } from "./TicketActions";
@@ -41,7 +44,7 @@ export default async function TicketDetailPage({
   // timeline here is deliberately built by deviceId, not the ticket relation.
   const affected = (ticket.affectedDevices as unknown as AffectedDevice[] | null) ?? [];
   const eventDeviceIds =
-    ticket.ticketType === "MASS_OUTAGE"
+    ticket.ticketType === TicketType.MASS_OUTAGE
       ? affected.map((d) => d.deviceId)
       : ticket.deviceId
         ? [ticket.deviceId]
@@ -58,8 +61,14 @@ export default async function TicketDetailPage({
         });
 
   const now = new Date();
-  const isOpen = ticket.status === "OPEN" || ticket.status === "IN_PROGRESS";
+  const isOpen = ticket.status === TicketStatus.OPEN || ticket.status === TicketStatus.IN_PROGRESS;
   const bucket = isOpen ? ticketAgeBucket(ticket.openedAt, now) : null;
+  // Task 10 (display-only, spec §9): escalation threshold is a documented
+  // placeholder (like the SLA defaults) and drives no notifications; the
+  // overnight tag is informational only.
+  const escalated =
+    escalationLevel({ openedAt: ticket.openedAt, now, status: ticket.status }) === "ESCALATED";
+  const overnight = isOvernight(ticket.openedAt);
   // Task 7 (SCAFFOLD + DEGRADE): no Graph creds yet, so nothing is ever
   // actually posted — surface that honestly instead of a silent blank link.
   const teamsConfigured = isPropertyTeamsConfigured(ticket.property);
@@ -77,6 +86,12 @@ export default async function TicketDetailPage({
             <>
               {" · "}
               <AgeBadge bucket={bucket} />
+            </>
+          )}
+          {(escalated || overnight) && (
+            <>
+              {" · "}
+              <EscalationBadges escalated={escalated} overnight={overnight} />
             </>
           )}
         </p>

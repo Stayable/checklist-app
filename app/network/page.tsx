@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { AgeBadge } from "@/components/network/AgeBadge";
+import { EscalationBadges } from "@/components/network/EscalationBadges";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
+import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 import { isTeamsGraphConfigured } from "@/lib/network/teams-config";
 
 // NETWORK portfolio dashboard (spec §6.1). Access is guarded once by
@@ -55,6 +57,11 @@ export default async function NetworkDashboardPage() {
   ]);
 
   const propertiesWithIssues = new Set(openTickets.map((t) => t.propertyId)).size;
+  // Task 10 (display-only, spec §9): escalation is a placeholder threshold
+  // and drives no notifications — see lib/network/escalation.ts.
+  const escalatedCount = openTickets.filter(
+    (t) => escalationLevel({ openedAt: t.openedAt, now, status: t.status }) === "ESCALATED",
+  ).length;
   const avgResolutionMin =
     resolvedLast30d.length === 0
       ? null
@@ -84,11 +91,16 @@ export default async function NetworkDashboardPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <SummaryCard
           label="Open tickets"
           value={openTickets.length}
           tone="bg-red-50 text-red-800 ring-red-200"
+        />
+        <SummaryCard
+          label="Escalated"
+          value={escalatedCount}
+          tone="bg-rose-50 text-rose-800 ring-rose-200"
         />
         <SummaryCard
           label="Devices currently offline"
@@ -123,12 +135,16 @@ export default async function NetworkDashboardPage() {
                   <th className="px-4 py-3">Type</th>
                   <th className="px-4 py-3">Device</th>
                   <th className="px-4 py-3">Age</th>
+                  <th className="px-4 py-3">Flags</th>
                   <th className="px-4 py-3">Opened</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {openTickets.map((t) => {
                   const bucket = ticketAgeBucket(t.openedAt, now);
+                  const escalated =
+                    escalationLevel({ openedAt: t.openedAt, now, status: t.status }) === "ESCALATED";
+                  const overnight = isOvernight(t.openedAt);
                   return (
                     <tr key={t.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3">
@@ -144,6 +160,9 @@ export default async function NetworkDashboardPage() {
                       <td className="px-4 py-3 text-slate-700">{t.device?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <AgeBadge bucket={bucket} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <EscalationBadges escalated={escalated} overnight={overnight} />
                       </td>
                       <td className="px-4 py-3 text-slate-700">{formatInET(t.openedAt)}</td>
                     </tr>

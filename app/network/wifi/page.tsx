@@ -81,7 +81,7 @@ export default async function WifiPortfolioPage() {
                   <td className="px-4 py-3 text-slate-700">{s.totalGuests ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-700">{s.onlineNow ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-700">
-                    {s.avgDwellMin === null ? "—" : `${s.avgDwellMin} min`}
+                    {s.avgDwellMin === null ? "—" : `${Math.round(s.avgDwellMin)} min`}
                   </td>
                 </tr>
               ))}
