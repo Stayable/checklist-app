@@ -4,11 +4,16 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Locale, Role } from "@prisma/client";
 import { formatInET } from "@/lib/datetime";
+
+// Mirror of MIN_PASSWORD_LENGTH in lib/password.ts (kept local so this client
+// bundle doesn't import the server-only crypto module). Server re-validates.
+const MIN_PASSWORD_LENGTH = 8;
 import {
   createUser,
   deleteUser,
   resetPassword,
   setUserActive,
+  setUserPassword,
   setUserProperties,
   type ActionResult,
 } from "./actions";
@@ -43,6 +48,7 @@ export function UsersClient({
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string; secret?: string } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+  const [pwFor, setPwFor] = useState<string | null>(null);
 
   const shortCode = (id: string) => properties.find((p) => p.id === id)?.shortCode ?? "?";
 
@@ -126,8 +132,17 @@ export function UsersClient({
                 shortCode={shortCode}
                 pending={pending}
                 editing={editing === u.id}
+                settingPw={pwFor === u.id}
                 isSelf={u.id === currentUserId}
                 onToggleEdit={() => setEditing(editing === u.id ? null : u.id)}
+                onToggleSetPw={() => setPwFor(pwFor === u.id ? null : u.id)}
+                onSetPw={(pw) =>
+                  run(async () => {
+                    const res = await setUserPassword(u.id, pw);
+                    if (res.ok) setPwFor(null);
+                    return res;
+                  })
+                }
                 onReset={() => run(() => resetPassword(u.id))}
                 onToggleActive={() => run(() => setUserActive(u.id, !u.active))}
                 onDelete={() => {
@@ -224,8 +239,11 @@ function UserRow({
   shortCode,
   pending,
   editing,
+  settingPw,
   isSelf,
   onToggleEdit,
+  onToggleSetPw,
+  onSetPw,
   onReset,
   onToggleActive,
   onDelete,
@@ -236,14 +254,18 @@ function UserRow({
   shortCode: (id: string) => string;
   pending: boolean;
   editing: boolean;
+  settingPw: boolean;
   isSelf: boolean;
   onToggleEdit: () => void;
+  onToggleSetPw: () => void;
+  onSetPw: (password: string) => void;
   onReset: () => void;
   onToggleActive: () => void;
   onDelete: () => void;
   onSaveProps: (ids: string[]) => void;
 }) {
   const [draft, setDraft] = useState<string[]>(user.propertyIds);
+  const [pw, setPw] = useState("");
   const portfolio = isPortfolio(user.role);
   const action = "text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40";
 
@@ -269,6 +291,9 @@ function UserRow({
         <td className="px-4 py-3 text-right">
           <div className="flex justify-end gap-3">
             <button className={action} disabled={pending} onClick={onReset}>Reset PW</button>
+            <button className={action} disabled={pending} onClick={onToggleSetPw}>
+              {settingPw ? "Close" : "Set PW"}
+            </button>
             {!portfolio && (
               <button className={action} disabled={pending} onClick={onToggleEdit}>
                 {editing ? "Close" : "Properties"}
@@ -300,6 +325,28 @@ function UserRow({
             >
               Save assignments
             </button>
+          </td>
+        </tr>
+      )}
+      {settingPw && (
+        <tr>
+          <td colSpan={6} className="bg-slate-50 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={pw}
+                onChange={(e) => setPw(e.target.value)}
+                placeholder={`New password (min ${MIN_PASSWORD_LENGTH} chars)`}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+              />
+              <button
+                className="rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
+                disabled={pending || pw.length < MIN_PASSWORD_LENGTH}
+                onClick={() => onSetPw(pw)}
+              >
+                Set password
+              </button>
+            </div>
           </td>
         </tr>
       )}

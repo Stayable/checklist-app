@@ -112,5 +112,23 @@
     "uploading": "Uploading…",
     "uploaded": "Uploaded — image below was fetched back from storage",
     "loginRequired": "Log in first — upload requires a session."
+  },
+  "Profile": {
+    "title": "Profile",
+    "subtitle": "Manage your account",
+    "name": "Name",
+    "email": "Email",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "save": "Update password",
+    "saving": "Updating…",
+    "success": "Password updated.",
+    "errMismatch": "New passwords don't match.",
+    "errWeak": "Password must be at least 8 characters.",
+    "errWrongCurrent": "Current password is incorrect.",
+    "errSame": "New password must be different from the current one.",
+    "errGeneric": "Couldn't update password. Please try again."
   }
 }

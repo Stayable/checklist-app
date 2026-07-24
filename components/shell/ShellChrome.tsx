@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { User } from "lucide-react";
 import { Role } from "@prisma/client";
 import { isNavItemActive, shouldHideShell, type NavItem } from "@/lib/nav";
 import type { PickerProperty } from "@/lib/rbac";
@@ -59,7 +60,13 @@ export function ShellChrome({
         </nav>
 
         <div className="mt-4 flex flex-col gap-3 border-t border-white/10 px-2 pt-4">
-          <span className="truncate text-sm font-semibold">{name}</span>
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 truncate text-sm font-semibold hover:text-slate-200"
+          >
+            <User className="h-4 w-4 shrink-0" />
+            <span className="truncate">{name}</span>
+          </Link>
           {showPicker && (
             <PropertyPicker properties={properties} current={currentPropertyId} />
           )}
@@ -80,6 +87,9 @@ export function ShellChrome({
             {showPicker && (
               <PropertyPicker properties={properties} current={currentPropertyId} />
             )}
+            <Link href="/profile" aria-label="Profile" className="text-navy">
+              <User className="h-5 w-5" />
+            </Link>
             <SignOutButton />
           </div>
         </div>

@@ -440,6 +440,14 @@ Deferred-minor items flagged in the Plan 2–5 code reviews, re-verified against
 | P3 | [ ] | OTP attempt-cap resets on resend — **reclassified low/negligible risk 2026-07-24**: each resend emails a fresh unseen code, so resetting the 5-attempt counter yields no brute-force advantage. Proper hardening = account-level lockout on OTP failures (touches security-reviewed `authorize`); deferred, not worth the regression risk as a drive-by | `lib/otp.ts` + `app/login/actions.ts` + `lib/auth.ts` |
 | P2 | [ ] | `AUTH_SECRET` reused as OTP pepper + trusted-device HMAC + NextAuth secret — **deferred to Phase 8**: splitting rotates live secrets (invalidates every trusted-device token + in-flight OTP) and needs coordinated Vercel env changes | `lib/otp.ts`, `lib/trusted-device.ts` |
 
+### Auth / user management (requested Kyle 2026-07-24)
+
+| Pri | Status | Item |
+|---|---|---|
+| P2 | [x] | **Admin: set a specific password** — **DONE 2026-07-24**: "Set PW" inline input beside Reset in `/admin/users`; `setUserPassword` action (Zod uuid + `validatePasswordStrength` min 8, bcrypt cost 12, clears lockout, audit `set_password`) |
+| P2 | [x] | **Self-service Profile page** (`/profile`) — **DONE 2026-07-24**: view name/email + change own password (`changeOwnPassword` verifies current → validates → sets, audit `change_password`); bilingual EN+ES (`Profile` namespace, error codes mapped client-side per ADR-013); User-icon link in shell sidebar + mobile bar |
+| P3 | [x] | Provisioning baseline (ops) — **DONE 2026-07-24** (live on shared DB): users = `admin@` (ADMIN) + `kate@`/`bke@` (CORPORATE); deleted Lakeland manager, wiped+deleted Lakeland HK (8 demo instances). **⚠ `db:seed` still re-creates the Lakeland users** — update `prisma/seed.ts` or split the DB so deletions stick |
+
 ---
 
 ## Open Questions (mirror of PRD §12 — tick when resolved)

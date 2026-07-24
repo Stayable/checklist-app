@@ -16,3 +16,18 @@ export function generateTempPassword(length = 12): string {
   }
   return out;
 }
+
+/** Minimum length for a user-chosen password (admin set-password + self-service). */
+export const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Returns an error message if the password is too weak, else null. Shared by the
+ * admin "Set password" action and the self-service profile change so both enforce
+ * the same rule at the API boundary.
+ */
+export function validatePasswordStrength(password: unknown): string | null {
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  return null;
+}
