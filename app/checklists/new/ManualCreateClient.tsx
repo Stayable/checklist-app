@@ -49,6 +49,10 @@ export function ManualCreateClient({
       setError("Select a single property in the header first.");
       return;
     }
+    if (perRoom && !roomId) {
+      setError("This checklist is per-room — choose a room.");
+      return;
+    }
     startTransition(async () => {
       const res = await createInstanceManually({
         templateId,

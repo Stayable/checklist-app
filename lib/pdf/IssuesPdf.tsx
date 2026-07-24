@@ -1,6 +1,11 @@
 import { Document, Page, Text, View } from "@react-pdf/renderer";
 import { styles } from "./pdf-styles";
 
+// Cap free-text cells so a long title/checklist name can't blow out the column
+// (react-pdf wraps by default, growing row height without bound).
+const trunc = (s: string, max: number) =>
+  s.length > max ? `${s.slice(0, max - 1)}…` : s;
+
 export type IssuePdfRow = {
   title: string;
   checklist: string;
@@ -30,8 +35,8 @@ export function IssuesPdf({
         </View>
         {rows.map((r, i) => (
           <View key={i} style={styles.row}>
-            <Text style={styles.cell}>{r.title}</Text>
-            <Text style={styles.cell}>{r.checklist}</Text>
+            <Text style={styles.cell}>{trunc(r.title, 70)}</Text>
+            <Text style={styles.cell}>{trunc(r.checklist, 50)}</Text>
             <Text style={styles.cell}>{r.property}</Text>
             <Text style={styles.cell}>{r.room}</Text>
             <Text style={styles.cell}>{r.priority}</Text>

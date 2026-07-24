@@ -42,6 +42,7 @@ export default async function ReviewQueuePage({
     take: 100,
     select: {
       id: true,
+      title: true,
       status: true,
       submittedAt: true,
       openedAt: true,
@@ -77,7 +78,7 @@ export default async function ReviewQueuePage({
     instances.map(async (i) => ({
       id: i.id,
       status: i.status,
-      template: i.template.name,
+      template: i.title ?? i.template.name,
       shortCode: i.property.shortCode,
       user: i.assignedUser?.name ?? "—",
       date: i.submittedAt

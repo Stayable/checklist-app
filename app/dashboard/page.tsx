@@ -59,8 +59,14 @@ export default async function DashboardPage() {
   const today = etDateOnly();
   const now = new Date();
 
-  const [todayTotal, todayDone, overdue, unassigned, openIssues] =
-    await Promise.all([
+  const [
+    todayTotal,
+    todayDone,
+    overdue,
+    unassigned,
+    openIssues,
+    checklistsWithIssues,
+  ] = await Promise.all([
       // All scheduled instances for today (done + in-flight)
       db.checklistInstance.count({
         where: {
@@ -100,6 +106,14 @@ export default async function DashboardPage() {
           status: { in: OPEN_ISSUE },
         },
       }),
+      // Checklists (instances) that have at least one open sourced issue —
+      // distinct instances, not the raw issue count.
+      db.checklistInstance.count({
+        where: {
+          propertyId: { in: scopeIds },
+          sourcedIssues: { some: { status: { in: OPEN_ISSUE } } },
+        },
+      }),
     ]);
 
   const pct =
@@ -111,7 +125,7 @@ export default async function DashboardPage() {
         title="Dashboard"
         subtitle="Today's status and open work for your properties"
       />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <AlertTile
           href="/completed"
           label={`Complete today (${todayDone}/${todayTotal})`}
@@ -141,6 +155,12 @@ export default async function DashboardPage() {
           label="Open issues"
           value={openIssues}
           tone="bg-blue-50 text-blue-800 ring-blue-200"
+        />
+        <AlertTile
+          href="/reports/issues?status=OPEN"
+          label="Checklists with issues"
+          value={checklistsWithIssues}
+          tone="bg-rose-50 text-rose-800 ring-rose-200"
         />
       </div>
       <p className="text-xs text-slate-400">

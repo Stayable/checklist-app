@@ -22,13 +22,17 @@ export function PhotoFigure({ url, geofenceStatus, capturedAt, gpsLat, gpsLng }:
     <figure className="flex w-32 flex-col gap-1">
       <a href={url} target="_blank" rel="noreferrer">
         {/* eslint-disable-next-line @next/next/no-img-element -- presigned R2 URL */}
-        <img src={url} alt="Checklist photo" className="h-32 w-32 rounded-lg border border-slate-200 object-cover" />
+        <img
+          src={url}
+          alt={`Checklist photo — ${badge.label}${capturedAt ? `, ${capturedAt}` : ""}`}
+          className="h-32 w-32 rounded-lg border border-slate-200 object-cover"
+        />
       </a>
       <figcaption className={`self-start rounded-full px-2 py-0.5 text-xs font-semibold ${badge.cls}`}>
         {badge.label}
       </figcaption>
       {capturedAt && <span className="text-[11px] leading-tight text-slate-500">{capturedAt}</span>}
-      {gpsLat && gpsLng && (
+      {gpsLat != null && gpsLng != null && (
         <span className="text-[11px] leading-tight text-slate-400">
           {gpsLat}, {gpsLng}
         </span>
