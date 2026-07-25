@@ -43,18 +43,22 @@ New top-level `/network` section (sibling of ADMIN). Kate's `DevSpec_NetworkMoni
 **Still-open decisions:** D3 Graph-API-vs-ADR-010 (new ADR needed) · D4 Zoho Desk dropped (record ADR) · D6 Spotipo key encryption · overnight-notif behavior · reply-ingest sub-vs-poll.
 **Cred blockers:** Microsoft Graph (Azure AD app reg + tenant/team/8-channel IDs) → Tasks 7–8 · UniFi+Aruba HMAC secrets + payload schemas → trust Task 3 parsers · Spotipo siteid×8 + key(s) → Task 9.
 
+**✅ BUILD COMPLETE 2026-07-25 (Tasks 1–10 minus deferred T8) — subagent-driven, every task spec+quality reviewed, final Opus whole-branch review = READY (no Critical). Branch `feat/network-monitoring` HEAD `0f13dfc`, 12 commits, PUSHED to origin. NOT merged to main, NOT deployed. 267/267 tests, build 30 routes.** Demoable core (T1–6) needs zero creds; T7/T9 scaffold+degrade ("not configured" until creds); T8 deferred (creds-blocked). Per-task detail in `.superpowers/sdd/progress.md` (gitignored local ledger).
+
 | Task | Status | What |
 |---|---|---|
-| 1 — Schema + migration | [x] | **DONE on branch 2026-07-25** (`a22407c`). `Role.NETWORK_TECH`; 7 enums; `Property` +Teams/Spotipo; models `Device`/`NetworkEvent`/`RawWebhookPayload`/`Ticket`/`TicketNote`/`NetworkJob`. Migration `add_network_monitoring` authored offline, applied to dev DB out-of-band. `lib/role-display.ts` maps NETWORK_TECH→Admin. 161/161 tests, clean. **NOT deployed** (prod migrate only when NETWORK ships) |
-| 2 — Pure event-mapping + ticket-number + mass-outage window + tests | [ ] | **NEXT.** `lib/network/event-mapping.ts` (§3.1/3.2 problem/recovery), `ticket-number.ts` (ET daily seq), window predicate. No creds |
-| 3 — Webhook receivers + event logging | [ ] | `/api/webhooks/{unifi,aruba}` HMAC→401, store RawWebhookPayload, upsert Device, insert NetworkEvent. Fixtures (trust parsers once HMAC secrets/schemas land) |
-| 4 — Timer + standard ticket creation | [ ] | DB-cron 5-min threshold, dup-suppression, recovery-closes, downDurationMin |
-| 5 — Mass outage (§5.5) | [ ] | 120s cluster → immediate ticket, 10-min split, parent/child |
-| 6 — NETWORK shell + RBAC + nav + dashboard/ticket pages | [ ] | `requireNetworkAccess` (`canAccessNetwork`={NETWORK_TECH,ADMIN,CORPORATE}), `lib/nav.ts` network group, portfolio/per-property/ticket-detail/device pages, edit actions. **Demoable core ends here (no creds)** |
-| 7 — Teams Graph: post + resolution reply | [!] | BLOCKED: Azure AD app reg (Graph) |
-| 8 — Teams reply ingestion → notes | [!] | BLOCKED: Graph |
-| 9 — Guest WiFi / Spotipo (§11) | [!] | BLOCKED: Spotipo creds |
-| 10 — Escalation + recurring flag + final review + ADR | [ ] | Age thresholds, 3+/30d recurring, overnight tag; Opus review; record ADR (role + Graph + Zoho supersession) |
+| 1 — Schema + migration | [x] | `a22407c`. `Role.NETWORK_TECH`; 7 enums; `Property` +Teams/Spotipo; Device/NetworkEvent/RawWebhookPayload/Ticket/TicketNote/NetworkJob. Migration `add_network_monitoring` (offline, dev-applied). **NOT on prod DB** |
+| 2 — Pure event-mapping + ticket-number + mass-outage window + tests | [x] | `b535334`. `lib/network/{event-mapping,ticket-number,mass-outage}.ts` pure+tested (Aruba recovery-before-problem; ET ticket key) |
+| 3 — Webhook receivers + event logging | [x] | `9e22765`. `/api/webhooks/{unifi,aruba}` HMAC constant-time→401, capture-before-trust RawWebhookPayload every path, prod fail-closed, device upsert + status in txn. hmac/parse pure-tested |
+| 4 — Timer + standard ticket creation | [x] | `adad844` + fix `2b8a2ab`. DB-cron `/api/cron/network-timers` (1-min), decideTimerAction, recovery-closes + downDurationMin, Teams SKIPPED stub. Fix: P2002 retry across fresh tx |
+| 5 — Mass outage (§5.5) | [x] | `41f6564` + fix `55e6ce5`. 120s cluster → 1 ticket, cancel superseded timers, 10-min split → child tickets, cascade parent-close. Fix: atomicity + `pg_advisory_xact_lock` per-property + idempotent child loop |
+| 6 — NETWORK shell + RBAC + nav + dashboard/ticket pages | [x] | `cd2c9bb`. `canAccessNetwork`/`requireNetworkAccess`, nav network group, `/network` portfolio dashboard + tickets list/detail (edit actions, audit) + per-property + device history (recurring flag). **Demoable core ends here** |
+| 7 — Teams Graph: post + resolution reply | [x] | `e4cb921` — **SCAFFOLD+DEGRADE** (no Azure creds). Exact §5.3/§5.5 message templates (pure+tested), config gate, honest SKIPPED logging + marked FUTURE Graph seam, "Teams: not configured" badge |
+| 8 — Teams reply ingestion → notes | [!] | **DEFERRED** — pure-Graph, nothing to review without creds |
+| 9 — Guest WiFi / Spotipo (§11) | [x] | `5ccf62b` — **SCAFFOLD+DEGRADE** (no Spotipo creds). Pure aggregation (tested) + degraded fetch seam + `/network/wifi` pages + guarded proxy routes + "not configured" state |
+| 10 — Escalation + recurring flag + final review + ADR | [x] | `5e96cc8` + final-review fix `0f13dfc`. Overnight `[OVERNIGHT]` tag + placeholder escalation (display-only); carried fix wave; **ADR-026** recorded. Fix: cascade-close parent on manual child resolution |
+
+**🧑 PRE-PROD hardening (from final Opus review — none block the demo): (a) demo needs a NETWORK seed — dashboards render EMPTY until sample devices/tickets exist; (b) webhook write-amplification guard (body-size cap + rate-limit); (c) cron job-claim `FOR UPDATE SKIP LOCKED`; (d) brand-new-cluster crash-window reconciliation sweep; (e) real UniFi/Aruba HMAC scheme + payloads; (f) Azure Graph + Spotipo creds; (g) reconcile ADR numbering (used 026; contractor branch holds 025). Confirm `add_network_monitoring` migration applied to whatever DB the demo runs against.**
 
 ---
 
