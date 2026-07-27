@@ -3,6 +3,16 @@ import { mapArubaEvent, mapUnifiEvent } from "./event-mapping";
 
 export type ParsedWebhook = {
   deviceName: string;
+  /**
+   * Stable identity for the device key, when the source has one better than
+   * the display name (T11: the UniFi poller passes the MAC). Webhook parsers
+   * leave this undefined and keep the historical name-based key.
+   *
+   * Names are edited freely in the UniFi controller; keying on the name would
+   * strand the old row OFFLINE forever after a rename and open a ticket for a
+   * device that never went down.
+   */
+  deviceIdent?: string;
   propertyRef: string; // matches Property.propertyId (the RISE8 id, e.g. "4645")
   eventType: NetworkEventType;
   source: DeviceSource;

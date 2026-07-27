@@ -36,7 +36,7 @@ export default async function NetworkDashboardPage() {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const [openTickets, devicesOffline, resolvedLast30d] = await Promise.all([
+  const [openTickets, devicesOffline, devicesUnknown, devicesTotal, resolvedLast30d] = await Promise.all([
     db.ticket.findMany({
       where: { status: { in: OPEN_STATUSES } },
       orderBy: { openedAt: "asc" },
@@ -46,6 +46,11 @@ export default async function NetworkDashboardPage() {
       },
     }),
     db.device.count({ where: { currentStatus: DeviceStatus.OFFLINE } }),
+    // N4: devices whose console can't be reached are UNKNOWN, not OFFLINE, so
+    // they must be counted and shown separately — an unmonitored fleet must
+    // never render as a healthy one.
+    db.device.count({ where: { currentStatus: DeviceStatus.UNKNOWN } }),
+    db.device.count(),
     db.ticket.findMany({
       where: {
         status: TicketStatus.RESOLVED,
@@ -85,13 +90,31 @@ export default async function NetworkDashboardPage() {
         }
       />
 
+      {devicesTotal === 0 && (
+        <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+          <span className="font-semibold">No devices are being monitored yet.</span> This is an
+          empty state, not an all-clear — nothing here reflects the real network until the UniFi
+          poll has run against a registered console.
+        </p>
+      )}
+
+      {devicesUnknown > 0 && (
+        <p className="rounded-lg bg-violet-50 px-4 py-3 text-sm text-violet-900 ring-1 ring-violet-200">
+          <span className="font-semibold">
+            {devicesUnknown} device{devicesUnknown === 1 ? "" : "s"} in an unknown state.
+          </span>{" "}
+          Their console is unreachable, so their status could not be verified — they are not
+          confirmed up. See the open monitoring-blind ticket for the affected property.
+        </p>
+      )}
+
       {!isTeamsGraphConfigured() && (
         <p className="text-xs text-slate-400">
           Teams notifications: not configured — ticket events are logged, not posted.
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <SummaryCard
           label="Open tickets"
           value={openTickets.length}
@@ -106,6 +129,11 @@ export default async function NetworkDashboardPage() {
           label="Devices currently offline"
           value={devicesOffline}
           tone="bg-amber-50 text-amber-800 ring-amber-200"
+        />
+        <SummaryCard
+          label="Unverifiable (console unreachable)"
+          value={devicesUnknown}
+          tone="bg-violet-50 text-violet-800 ring-violet-200"
         />
         <SummaryCard
           label="Properties with issues"

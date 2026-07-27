@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/network-timers",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/unifi-poll",
+      "schedule": "*/2 * * * *"
     }
   ]
 }

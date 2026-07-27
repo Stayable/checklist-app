@@ -133,6 +133,12 @@ enum NotificationStatus {
 enum DeviceType {
   CAMERA
   AP // access point
+  // Added by T11 (UniFi poller, 2026-07-27). The live KW fleet is mostly
+  // switches plus one gateway console, so CAMERA|AP alone would have forced
+  // every switch to be labelled "AP" in the UI. Additive enum values only.
+  SWITCH
+  GATEWAY // UDM / UCG / UCK console
+  NVR // UniFi Protect recorder
 }
 
 enum DeviceSource {

@@ -47,7 +47,10 @@ export async function ingestWebhook(
   // stored for reconciliation); this is not the caller's fault to retry.
   if (!property) return { resolved: false };
 
-  const deviceKey = `${parsed.deviceName}_${property.propertyId}`;
+  // `deviceIdent` (the MAC, from the T11 poller) when the source has a stable
+  // identifier; otherwise the historical name-based key, unchanged for the
+  // webhook paths.
+  const deviceKey = `${parsed.deviceIdent ?? parsed.deviceName}_${property.propertyId}`;
 
   const result = await db.$transaction(async (tx) => {
     const device = await tx.device.upsert({
