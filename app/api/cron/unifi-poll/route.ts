@@ -32,11 +32,17 @@ export async function GET(req: Request) {
   // `ok: false` is the signal to look. Nothing user-facing depends on this
   // route's status code.
   try {
-    return NextResponse.json(await runUnifiPoll());
+    const outcome = await runUnifiPoll();
+    // Log the outcome, don't just return it. Nothing reads a cron's response
+    // body, so without this line a sweep that silently did nothing —
+    // unconfigured key, upstream 401, zero registered hosts — is
+    // indistinguishable from a healthy one in the Vercel logs. The prefix is
+    // there to be greppable.
+    console.log("[unifi-poll]", JSON.stringify(outcome));
+    return NextResponse.json(outcome);
   } catch (error) {
-    return NextResponse.json({
-      ok: false,
-      error: error instanceof Error ? error.message : "unifi_poll_failed",
-    });
+    const message = error instanceof Error ? error.message : "unifi_poll_failed";
+    console.error("[unifi-poll] threw:", message);
+    return NextResponse.json({ ok: false, error: message });
   }
 }
