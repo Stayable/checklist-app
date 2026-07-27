@@ -14,15 +14,32 @@ describe("navItemsForRole", () => {
     }
   });
 
-  it("manager and corporate get the management surfaces, no admin group", () => {
-    for (const r of [Role.MANAGER, Role.CORPORATE]) {
-      const hrefs = navItemsForRole(r).map((i) => i.href);
-      expect(hrefs).toEqual(["/", "/dashboard", "/review", "/issues", "/rules", "/templates", "/completed", "/reports/completeness"]);
-      expect(navItemsForRole(r).some((i) => i.group === "admin")).toBe(false);
-    }
+  it("manager gets the management surfaces, no admin or network group", () => {
+    const hrefs = navItemsForRole(Role.MANAGER).map((i) => i.href);
+    expect(hrefs).toEqual(["/", "/dashboard", "/review", "/issues", "/rules", "/templates", "/completed", "/reports/completeness"]);
+    expect(navItemsForRole(Role.MANAGER).some((i) => i.group === "admin")).toBe(false);
+    expect(navItemsForRole(Role.MANAGER).some((i) => i.group === "network")).toBe(false);
   });
 
-  it("admin gets management surfaces plus the admin group", () => {
+  it("corporate gets the management surfaces plus the network group, no admin group", () => {
+    const hrefs = navItemsForRole(Role.CORPORATE).map((i) => i.href);
+    expect(hrefs).toEqual([
+      "/",
+      "/dashboard",
+      "/review",
+      "/issues",
+      "/rules",
+      "/templates",
+      "/completed",
+      "/reports/completeness",
+      "/network",
+      "/network/tickets",
+      "/network/wifi",
+    ]);
+    expect(navItemsForRole(Role.CORPORATE).some((i) => i.group === "admin")).toBe(false);
+  });
+
+  it("admin gets management surfaces plus the admin and network groups", () => {
     const items = navItemsForRole(Role.ADMIN);
     const hrefs = items.map((i) => i.href);
     expect(hrefs).toEqual([
@@ -37,8 +54,18 @@ describe("navItemsForRole", () => {
       "/admin/users",
       "/admin/sla",
       "/admin/properties",
+      "/network",
+      "/network/tickets",
+      "/network/wifi",
     ]);
     expect(items.filter((i) => i.group === "admin")).toHaveLength(3);
+    expect(items.filter((i) => i.group === "network")).toHaveLength(3);
+  });
+
+  it("NETWORK_TECH gets only the network group (no checklist nav at all)", () => {
+    const items = navItemsForRole(Role.NETWORK_TECH);
+    expect(items.map((i) => i.href)).toEqual(["/network", "/network/tickets", "/network/wifi"]);
+    expect(items.every((i) => i.group === "network")).toBe(true);
   });
 
   it("MANAGER sees Templates", () => {

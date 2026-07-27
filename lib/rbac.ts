@@ -60,6 +60,24 @@ export async function requireManager(): Promise<SessionUser> {
 }
 
 /**
+ * NETWORK section access (device monitoring + IT ticketing). Simpler than the
+ * checklist RBAC model: NETWORK_TECH (dedicated IT/MSP role), ADMIN, and
+ * CORPORATE all see the FULL portfolio — there is no per-property
+ * user_properties scoping for network. MANAGER is not granted network access
+ * in v1.
+ */
+export function canAccessNetwork(role: Role): boolean {
+  return role === Role.NETWORK_TECH || role === Role.ADMIN || role === Role.CORPORATE;
+}
+
+/** Require network access; everyone else is bounced to the home page. */
+export async function requireNetworkAccess(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!canAccessNetwork(user.role)) redirect("/");
+  return user;
+}
+
+/**
  * True iff the user may access the given property. Portfolio roles always pass;
  * others must have a user_properties row. `db.Uuid` property primary key.
  */

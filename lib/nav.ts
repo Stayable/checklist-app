@@ -4,7 +4,7 @@ import { Role } from "@prisma/client";
 // the admin layout header). Pure + dependency-free so it unit-tests cleanly and
 // can be imported from both server and client components.
 
-export type NavItem = { href: string; label: string; group: "main" | "admin" };
+export type NavItem = { href: string; label: string; group: "main" | "admin" | "network" };
 
 const MAIN_MANAGER: NavItem[] = [
   { href: "/", label: "Today", group: "main" },
@@ -23,10 +23,22 @@ const ADMIN_GROUP: NavItem[] = [
   { href: "/admin/properties", label: "Properties", group: "admin" },
 ];
 
+// NETWORK section (device monitoring + IT ticketing). NETWORK_TECH is a
+// dedicated IT/MSP role with no checklist access at all, so it gets ONLY
+// this group; ADMIN and CORPORATE get it in addition to their usual nav
+// (portfolio-wide, no per-property scoping — see lib/rbac.ts canAccessNetwork).
+const NETWORK_GROUP: NavItem[] = [
+  { href: "/network", label: "Network", group: "network" },
+  { href: "/network/tickets", label: "Tickets", group: "network" },
+  { href: "/network/wifi", label: "WiFi", group: "network" },
+];
+
 /** Nav items for a role. Field staff have a single Today surface. */
 export function navItemsForRole(role: Role): NavItem[] {
-  if (role === Role.ADMIN) return [...MAIN_MANAGER, ...ADMIN_GROUP];
-  if (role === Role.MANAGER || role === Role.CORPORATE) return MAIN_MANAGER;
+  if (role === Role.ADMIN) return [...MAIN_MANAGER, ...ADMIN_GROUP, ...NETWORK_GROUP];
+  if (role === Role.CORPORATE) return [...MAIN_MANAGER, ...NETWORK_GROUP];
+  if (role === Role.MANAGER) return MAIN_MANAGER;
+  if (role === Role.NETWORK_TECH) return NETWORK_GROUP;
   return [{ href: "/", label: "Today", group: "main" }];
 }
 
