@@ -37,7 +37,7 @@ Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts
 
 ## 🆕 EPIC: NETWORK — Network Monitoring & IT Ticketing (started 2026-07-25)
 
-New top-level `/network` section (sibling of ADMIN). Kate's `DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` (standalone-app spec) **ported onto the StayCheck stack** — plan `docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md`. Supersedes the on-hold `ITTicketingPlan` for network tickets. **Built on branch `feat/network-monitoring` (NOT merged, NOT deployed).**
+New top-level `/network` section (sibling of ADMIN). Kate's `DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` (standalone-app spec) **ported onto the StayCheck stack** — plan `docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md`. Supersedes the on-hold `ITTicketingPlan` for network tickets. **MERGED to `main` 2026-07-27.**
 
 **Decisions locked (Kyle 2026-07-25):** new **`NETWORK_TECH`** role (7th); **DB-backed `NetworkJob` + 1-min Vercel Cron** for the 5/10-min timers (no Redis). **Schema defaults chosen (confirm):** `Ticket.assignedTo` = free-text (MSP-friendly, could become User FK); `NETWORK_TECH` folds into "Admin" **display** label only.
 **Still-open decisions:** D3 Graph-API-vs-ADR-010 (new ADR needed) · D4 Zoho Desk dropped (record ADR) · D6 Spotipo key encryption · overnight-notif behavior · reply-ingest sub-vs-poll.
@@ -58,7 +58,39 @@ New top-level `/network` section (sibling of ADMIN). Kate's `DevSpec_NetworkMoni
 | 9 — Guest WiFi / Spotipo (§11) | [x] | `5ccf62b` — **SCAFFOLD+DEGRADE** (no Spotipo creds). Pure aggregation (tested) + degraded fetch seam + `/network/wifi` pages + guarded proxy routes + "not configured" state |
 | 10 — Escalation + recurring flag + final review + ADR | [x] | `5e96cc8` + final-review fix `0f13dfc`. Overnight `[OVERNIGHT]` tag + placeholder escalation (display-only); carried fix wave; **ADR-026** recorded. Fix: cascade-close parent on manual child resolution |
 
-**🧑 PRE-PROD hardening (from final Opus review — none block the demo): (a) demo needs a NETWORK seed — dashboards render EMPTY until sample devices/tickets exist; (b) webhook write-amplification guard (body-size cap + rate-limit); (c) cron job-claim `FOR UPDATE SKIP LOCKED`; (d) brand-new-cluster crash-window reconciliation sweep; (e) real UniFi/Aruba HMAC scheme + payloads; (f) Azure Graph + Spotipo creds; (g) reconcile ADR numbering (used 026; contractor branch holds 025). Confirm `add_network_monitoring` migration applied to whatever DB the demo runs against.**
+**🧑 PRE-PROD hardening (from final Opus review — none block the demo): (a) demo needs a NETWORK seed — dashboards render EMPTY until sample devices/tickets exist; (b) webhook write-amplification guard (body-size cap + rate-limit); (c) cron job-claim `FOR UPDATE SKIP LOCKED`; (d) brand-new-cluster crash-window reconciliation sweep; (e) real UniFi/Aruba HMAC scheme + payloads; (f) Azure Graph + Spotipo creds; (g) ~~reconcile ADR numbering~~ — **DONE 2026-07-27**: ADR-025 ported to `main` from the contractor branch, numbering now contiguous 024→025→026. Confirm `add_network_monitoring` migration applied to whatever DB the demo runs against.**
+
+### 🚦 UniFi go-live findings (2026-07-27) — LIVE PILOT = KISSIMMEE WEST ONLY
+
+**Architecture decision (Kyle 2026-07-27): UniFi integration is PULL (poll the Site Manager cloud API), not PUSH (webhooks).** Kyle's `UNIFI_API_KEY` is a **Site Manager cloud key** — verified `GET https://api.ui.com/v1/hosts` → **200** from this machine, so Vercel can reach it. Key is in `.env.local` + Vercel Production. This dissolves three unknowns the webhook design carried: no unconfirmed payload shape, no unconfirmed HMAC scheme, and property routing becomes ours to define instead of something the vendor must send. **Aruba deferred** (Kyle): leave `ARUBA_WEBHOOK_SECRET` unset → `/api/webhooks/aruba` stays deployed but fail-closed (401) in prod. Trade-off accepted: detection latency = poll interval (~1–2 min) stacked on the 5-min auto-ticket timer, so worst case ≈7 min to ticket.
+
+**Live scope (Kyle 2026-07-27): go live on Kissimmee West (5399 / KW) only** — the one production console the current key can actually read (`state=connected`, 12 devices, all online). Kyle is chasing account access for the rest internally.
+
+**Live fleet ground truth** (from `unifi.ui.com` screenshot + API): **19 consoles — 11 Network, 8 Protect NVRs, 15 online / 4 offline.** All 8 properties have UniFi coverage. **Cameras ARE on UniFi Protect** → closes the open sub-question in `ITTicketingPlan_RISE8_072426.md` §7 Q3; camera monitoring comes free from the same API. Per-property ISP is visible too (Spectrum / Comcast / Frontier / Summit Broadband) — free ISP attribution on outages later.
+
+| Property | Network console | Protect NVR | Legacy console (offline, decommissioned) |
+|---|---|---|---|
+| JW 6802 | UDM Pro Jax West | — | SS-JAXWEST (UCK G2 Plus) |
+| KE 2295 | SS-KISSEAST | KE-NVR | — |
+| **KW 5399** | **SS-KISSWEST** *(Invited; the pilot)* | — | — |
+| LL 4645 | Lakeland | Lakeland NVR | — |
+| OR 8700 | SS-ORLANDO | Orlando NVR, Orlando NVR2 | SS-ORLANDO (duplicate) |
+| SA 2535 | SS- ST AUGUSTINE | St Augustine NVR | SS-StAugustine (UCG Ultra) |
+| DP 44199 | UDM Pro Devenport | Davenport NVR | — |
+| JN 812 | **none** | JN-NVR1, JN-NVR2 | — |
+
+**⚠ FLAGGED PROBLEMS**
+
+| # | Pri | Status | Problem | Action / owner |
+|---|---|---|---|---|
+| N1 | P0 | [!] | **API key sees only 5 of 19 consoles** — the 4 "Invited" legacy consoles + the 1 hosted controller it owns (`owner:true` on `Unifi Hosting - admin` alone). No pagination (`nextToken` empty on hosts/sites/devices), so this is account scope, not truncation. **Confirmed 2026-07-27: the account is not invited to the other sites.** Blocks portfolio-wide monitoring | 🧑 **Kyle — chasing internally.** Needs a key from the owning account, or that owner granting access then reissuing. Success = the same call returns ~19 hosts. Meanwhile: KW-only pilot |
+| N2 | P1 | [ ] | **4 dead consoles still cloud-registered** — SS-JAXWEST (disconnected 2025-11-14), SS-ORLANDO dupe (2025-05-25), SS-StAugustine (2025-12-12), Unifi Hosting admin (2026-06-24). Replaced hardware. Ingest them naively → permanent false outages on every dashboard, forever | Build a **decommissioned-console exclusion list** (explicit opt-in per host, not "everything the API returns") |
+| N3 | P1 | [ ] | **Properties have multiple consoles** (Network UDM + 1–2 Protect NVRs; OR has 3 total). The build assumed one source per property | Mapping must be **one property → many UniFi hosts**, not a single `unifiHostId` column |
+| N4 | P0 | [ ] | **Stale-data trap:** a disconnected console makes the cloud API report every device under it as `offline`. Naive status→PROBLEM mapping would have opened **~63 bogus tickets** on first poll against the current key | **Console-reachability gate**: `host.state != "connected"` → devices go **`UNKNOWN`** (enum already has it), never `OFFLINE`, plus **one** "console unreachable / monitoring blind" condition per property (reuse `MASS_OUTAGE` type). A blank or stale panel must never read as healthy |
+| N5 | P2 | [ ] | **Jacksonville North (812) has no Network console** — 2 NVRs, no UDM. Its APs/switches are unmanaged, on non-UniFi gear, or under an account not yet seen. This is the real coverage gap | 🧑 Kyle to confirm where JN network gear is managed |
+| N6 | P2 | [ ] | **Is there any Aruba in the estate at all?** All 8 properties appear UniFi-covered, which may make the Aruba lane moot | 🧑 Kyle to confirm. If moot, delete `/api/webhooks/aruba` + the `ARUBA` enum path rather than ship a dead route |
+
+**Next build task — T11 UniFi poller** (not started): `lib/network/unifi-api.ts` (Site Manager fetch: hosts / sites / devices) + `lib/network/unifi-poll.server.ts` (diff device state vs `Device.currentStatus` → synthesize PROBLEM/RECOVERY → feed the existing `ingestWebhook` pipeline unchanged, so tickets/timers/mass-outage/UI all work as built). Carries N2 (exclusion list), N3 (one-to-many host mapping), N4 (reachability gate) as **build requirements, not follow-ups**. Cadence: fold into the existing 1-min `/api/cron/network-timers` or a separate 2-min cron. Note polling makes mass-outage clustering *more* reliable — all devices at a property are discovered in the same tick, well inside the 120s window.
 
 ---
 
