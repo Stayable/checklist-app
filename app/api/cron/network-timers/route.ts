@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { decideTimerAction } from "@/lib/network/ticketing";
 import { createStandardTicket, hasOpenTicketForDevice } from "@/lib/network/ticketing.server";
 import { runMassOutageCheck } from "@/lib/network/mass-outage.server";
+import { deliverPendingTeamsNotifications } from "@/lib/network/teams-deliver.server";
 import { TEAMS_PROPERTY_SELECT } from "@/lib/network/teams-config";
 
 // Standard ticket-timer sweep (DevSpec §5.2) + mass-outage resolution sweep
@@ -129,7 +130,22 @@ async function handle(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const result = await run();
-  return NextResponse.json({ ok: true, ...result });
+
+  // Deliver Teams notifications queued by the lifecycle transactions that just
+  // committed (theirs, or an earlier tick's). Runs after `run()` and in its own
+  // try/catch so a Teams outage can never affect ticket-timer processing — the
+  // tickets are the product, the notification is an accessory.
+  let teams;
+  try {
+    teams = await deliverPendingTeamsNotifications();
+  } catch (err) {
+    console.error("network-timers: teams delivery sweep failed", err);
+    teams = { configured: true, attempted: 0, sent: 0, failed: 0, error: true };
+  }
+
+  const outcome = { ok: true, ...result, teams };
+  console.log("[network-timers]", JSON.stringify(outcome));
+  return NextResponse.json(outcome);
 }
 
 export async function GET(req: Request) {

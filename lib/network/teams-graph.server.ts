@@ -7,6 +7,7 @@ import {
   Property,
 } from "@prisma/client";
 import { isPropertyTeamsConfigured } from "./teams-config";
+import { isTeamsWebhookConfigured } from "./teams-webhook";
 import type { AffectedDevice } from "./mass-outage";
 import {
   buildMassOutageCheckReply,
@@ -97,15 +98,25 @@ async function writeTeamsLog(
     // `error` alone distinguishes "nothing to post to" from "would post, but
     // the Graph call isn't wired yet", so it's obvious which gap remains once
     // creds land.
-    const error = isPropertyTeamsConfigured(property)
-      ? "graph_post_not_implemented"
-      : "teams_not_configured";
+    // A Workflows webhook (TEAMS_WEBHOOK_URL) takes priority when present:
+    // queue the row as PENDING and let the post-commit sweep
+    // (lib/network/teams-deliver.server.ts, driven by the 1-min cron) deliver
+    // it. Deliberately NOT posting here — this function runs inside the
+    // caller's transaction, and an HTTP call in a transaction holds it open
+    // across a third-party round trip, while a rollback could never unsend
+    // the message. Same post-commit discipline as lib/notify.server.ts.
+    const queued = isTeamsWebhookConfigured();
+    const error = queued
+      ? null
+      : isPropertyTeamsConfigured(property)
+        ? "graph_post_not_implemented"
+        : "teams_not_configured";
 
     await client.notificationLog.create({
       data: {
         userId: null,
         channel: NotificationChannel.TEAMS,
-        status: NotificationStatus.SKIPPED,
+        status: queued ? NotificationStatus.PENDING : NotificationStatus.SKIPPED,
         error,
         event,
         title,
