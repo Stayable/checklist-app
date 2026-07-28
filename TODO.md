@@ -20,7 +20,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 | # | Action | Why now |
 |---|---|---|
 | 1 | 🧑 **Run the contractor migration on prod**, then I push `e400698` + `4d572d0` | Two commits are held locally. The merge makes "Contractors" visible in the nav for every manager+; without the migration that link 500s |
-| 2 | 🧑 **Set `TEAMS_WEBHOOK_URL` in Vercel Production** | Teams delivery is built and tested but inert without it (`9461c40`, already pushed) |
+| 2 | ✅ **`TEAMS_WEBHOOK_URL` is set** — verified 2026-07-28 in prod logs (`teams.configured: true` every tick). Queue is armed; `attempted: 0` only because no ticket exists yet | Nothing to do |
 | 3 | **D2 — contractor job record** ▶ | The design spec already exists (`docs/superpowers/specs/2026-07-23-t2-contractor-job-design.md`). Unblocks D3→D4 (WhatsApp) and D6 (scheduling) |
 | 4 | 🧑 **KW unplug test** (~7 min) | The ticket lifecycle has never fired in production. This is the difference between "code is right" and "system works" |
 
@@ -174,7 +174,7 @@ Schema (6 tables, 7 enums, `NETWORK_TECH` role) · pure helpers (event mapping, 
 
 | Pri | Status | Item |
 |---|---|---|
-| P1 | [~] | Teams delivery via Power Automate webhook — **built, needs `TEAMS_WEBHOOK_URL`**. Send-only as configured: no message id comes back, so no threading | §Q5 |
+| P1 | [x] | Teams delivery via Power Automate webhook — **built + configured in prod** (verified `teams.configured: true`). Delivery is post-commit off the 1-min cron. **Untested end-to-end** only because no ticket has ever been created; the first KW outage exercises it. Send-only as configured: no message id back, so no threading | §Q5 |
 | P1 | [ ] | **Ticket close should REPLY to the created-ticket message, not post separately** (Kyle 2026-07-28). Schema is already ready (`Ticket.teamsMessageId` / `teamsMessageUrl`, unused). Two paths — see §Q25. Wanted because an outage generates several posts and a loose "resolved" message makes the channel unreadable exactly when someone is reconstructing what happened |
 | P2 | [!] | Guest WiFi (Spotipo) — scaffold only, renders "not configured" | §Q3 |
 | P2 | [ ] | Decide at-rest encryption for `Property.spotipoApiKey` (plaintext column today) |
