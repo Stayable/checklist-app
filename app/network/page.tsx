@@ -36,7 +36,14 @@ export default async function NetworkDashboardPage() {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const [openTickets, devicesOffline, devicesUnknown, devicesTotal, resolvedLast30d] = await Promise.all([
+  const [
+    openTickets,
+    devicesOffline,
+    devicesUnknown,
+    devicesTotal,
+    resolvedLast30d,
+    recentlyClosed,
+  ] = await Promise.all([
     db.ticket.findMany({
       where: { status: { in: OPEN_STATUSES } },
       orderBy: { openedAt: "asc" },
@@ -58,6 +65,28 @@ export default async function NetworkDashboardPage() {
         downDurationMin: { not: null },
       },
       select: { downDurationMin: true },
+    }),
+    // Recently closed work (Kate's request 2026-07-28). RESOLVED and CLOSED
+    // together: the distinction is internal bookkeeping, and a dashboard reader
+    // asking "what got fixed" means both. Ordered by when it actually finished,
+    // falling back to updatedAt for rows closed without a resolvedAt stamp.
+    db.ticket.findMany({
+      where: { status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } },
+      orderBy: [{ resolvedAt: "desc" }, { updatedAt: "desc" }],
+      take: 25,
+      select: {
+        id: true,
+        ticketNumber: true,
+        ticketType: true,
+        status: true,
+        openedAt: true,
+        resolvedAt: true,
+        updatedAt: true,
+        downDurationMin: true,
+        assignedTo: true,
+        property: { select: { shortCode: true } },
+        device: { select: { name: true } },
+      },
     }),
   ]);
 
@@ -196,6 +225,70 @@ export default async function NetworkDashboardPage() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white">
+        <h2 className="border-b border-slate-200 px-4 py-3 text-sm font-bold text-slate-900">
+          Recently resolved &amp; closed
+          <span className="ml-2 font-normal text-slate-400">last 25</span>
+        </h2>
+        {recentlyClosed.length === 0 ? (
+          <p className="p-8 text-center text-sm text-slate-400">
+            Nothing resolved yet — no ticket has been closed on this system.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Ticket #</th>
+                  <th className="px-4 py-3">Property</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Device</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Down for</th>
+                  <th className="px-4 py-3">Handled by</th>
+                  <th className="px-4 py-3">Closed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recentlyClosed.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/network/tickets/${t.id}`}
+                        className="font-semibold text-slate-900 hover:underline"
+                      >
+                        {t.ticketNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{t.property.shortCode}</td>
+                    <td className="px-4 py-3 text-slate-700">{t.ticketType}</td>
+                    <td className="px-4 py-3 text-slate-700">{t.device?.name ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded px-2 py-0.5 text-xs font-semibold ring-1 ${
+                          t.status === TicketStatus.RESOLVED
+                            ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                            : "bg-slate-100 text-slate-600 ring-slate-200"
+                        }`}
+                      >
+                        {t.status === TicketStatus.RESOLVED ? "Resolved" : "Closed"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {t.downDurationMin == null ? "—" : `${t.downDurationMin} min`}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{t.assignedTo ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {formatInET(t.resolvedAt ?? t.updatedAt)}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

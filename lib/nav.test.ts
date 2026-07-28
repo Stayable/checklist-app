@@ -147,6 +147,13 @@ describe("shouldHideShell", () => {
     }
   });
 
+  it("hides the shell on the public contractor job link", () => {
+    expect(shouldHideShell("/j/some.signed.token")).toBe(true);
+    // /dispatch is the internal surface and must KEEP the shell.
+    expect(shouldHideShell("/dispatch")).toBe(false);
+    expect(shouldHideShell("/dispatch/abc-123")).toBe(false);
+  });
+
   it("shows on app routes", () => {
     for (const p of ["/", "/review", "/issues", "/rules", "/admin/users"]) {
       expect(shouldHideShell(p)).toBe(false);

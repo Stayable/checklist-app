@@ -23,7 +23,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 | 2 | ✅ **`TEAMS_WEBHOOK_URL` is set** — verified 2026-07-28 in prod logs (`teams.configured: true` every tick). Queue is armed; `attempted: 0` only because no ticket exists yet | Nothing to do |
 | 3 | 🧑 **Apply migration `20260728120000_add_contractor_jobs` to prod**, then I push `dafbaf1` | D2+D3 are built and verified locally. `/dispatch` 500s on a missing table until the migration lands |
 | 4 | 🧑 **KW unplug test** (~7 min) | The ticket lifecycle has never fired in production. This is the difference between "code is right" and "system works" |
-| 5 | **D4 — one-tap WhatsApp dispatch** ▶ | Next build. The `/dispatch/[id]` candidate list already carries each contractor's WhatsApp + phone; D4 adds the pre-filled `wa.me` deep link, the `tel:` first-touch, and the no-account magic link |
+| 5 | ✅ **D4 done** (2026-07-28) — one-tap WhatsApp/call + signed `/j/[token]` job link | Dispatch works end-to-end by hand once real numbers exist |
 | 6 | 🧑 **Enter real contractor numbers** in `/contractors` | The directory is live and empty. D4 cannot dispatch to anyone until Orlando Torres et al. have real numbers |
 
 **The two decisions that unblock the most downstream work:** §Q1 (UniFi account access — 7 of 8 properties) and §Q7 (Track A vs Track D priority — see the schedule warning below).
@@ -224,10 +224,10 @@ Fastest, most independent slice: get emergencies to the right contractor fast. A
 | D1 | P1 | [x] | **T1 — Contractor directory.** `Contractor` + `ContractorProperty` + `Trade`, `Contractor.userId` unique link to `User`, `/contractors` CRUD (property-scoped, audited), `lib/contractors.ts` + tests. **Merged to main 2026-07-28; migration NOT yet on prod** |
 | D2 | P1 | [x] | **T2 — Contractor job record — DONE 2026-07-28** (`dafbaf1`). `ContractorJob` + `JobStatus` + third photo owner on `Photo`; `/dispatch` queue (urgent-first, URL filters) + `/dispatch/new` + `/dispatch/[id]`; photos reuse the R2 pipeline unchanged; nav gains Dispatch. Terminal jobs immutable; COMPLETED/CANCELLED need a note; DISPATCHED needs a contractor. **Migration `20260728120000` NOT yet on prod** |
 | D3 | P1 | [x] | **T3 — Match & rank — DONE 2026-07-28** (`dafbaf1`, shipped with D2 since both need the same eligibility predicate). `canAssignContractor` + `rankContractorsForJob` in `lib/contractor-jobs.ts`, 37 tests. Eligible = active ∧ has trade ∧ covers property; **`onCall` ranks but never excludes** (a hard availability filter could leave a property with nobody eligible mid-emergency). Order: contracted → on-call → reachable → name (stable). Re-validated server-side in `assignContractor` — the action doesn't trust the UI |
-| D4 | P1 | [ ] | **T4 — One-tap dispatch:** pre-filled bilingual `wa.me` deep link + `tel:` for the emergency first touch. Human sends; no auto-action. **Message carries a signed single-use magic link** so the contractor sees the job + photos with no account — shared with A10 |
+| D4 | P1 | [x] | **T4 — One-tap dispatch — DONE 2026-07-28.** Pre-filled bilingual `wa.me` deep link (language from `Contractor.language`) + `tel:` first touch + copy-link, on `/dispatch/[id]`. **Signed no-account job link** `/j/[token]` (72h, HMAC, key **derived** from `AUTH_SECRET` for domain separation rather than reusing it raw) renders property/address/Maps link/problem/photos read-only. **Deviation from Phase 9: the link is reusable, not single-use** — it is read-only, and a contractor re-opening it while standing in the room is normal; single-use would break it exactly when needed. A write path (A10 contractor checklists) still gets single-use consumption. Human presses send; nothing auto-sends |
 | D5 | P1 | [ ] | **Emergency flag + fast alert** to the coordination group. MVP = manual URGENT toggle | §Q4 |
 | D6 | P2 | [ ] | **Scheduling: contractor calendar** + auto-reschedule of jobs bumped by an emergency. **§SPEC-5** — and §Q16 must be answered first |
-| D7 | P2 | [ ] | **L2 — WhatsApp Business API**: two-way Accept/Decline/ETA, auto-escalation ladder, broadcast-to-pool. Needs Meta Business verification + cost approval | §Q17 |
+| D7 | P2 | [ ] | **L2 — Automated WhatsApp** (auto-send + auto-reply + escalation ladder). **Spec written 2026-07-28: `docs/component-ii/WhatsAppAutomationSpec_RISE8_072826.md` (§SPEC-7).** Delivery architecture already exists (the Teams queue+cron pattern); what's missing is a Meta account, 4 UTILITY templates in EN+ES, and a client. **Meta Business Verification is the long pole (days–weeks) and is deferred by Kyle.** Note: staff notifications deliberately stay in-app/push — WhatsApp is for contractors only | §Q17 |
 
 ---
 
@@ -326,6 +326,7 @@ These are in the tracker as one-liners but are **not buildable from that line**.
 | **SPEC-4** | **C1 unified ticket model** | The big one. It absorbs `/issues`, spans 4 intake channels, and has to model ticket-vs-concern. Getting this wrong means migrating live maintenance data twice. **Blocked on C0 answers** |
 | **SPEC-5** | **D6 contractor scheduling** | Depends entirely on §Q16. A shared calendar and a contractor-only calendar are different data models |
 | **SPEC-6** | **A7 invalidation flow (ADR-014)** | Request → pending → approve/reject with an audit chain, touching instance state that S1's lock now also governs. Two features both claiming instance immutability need reconciling |
+| **SPEC-7** | **D7 automated WhatsApp** | ✅ **Written 2026-07-28** — `docs/component-ii/WhatsAppAutomationSpec_RISE8_072826.md`. Covers the wa.me-vs-Cloud-API distinction, Meta prerequisites, the 4 UTILITY templates, the 24-hour window rule, schema delta, and why staff stay off WhatsApp |
 
 ---
 

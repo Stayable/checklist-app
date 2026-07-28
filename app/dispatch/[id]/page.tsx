@@ -14,6 +14,8 @@ import {
   rankContractorsForJob,
 } from "@/lib/contractor-jobs";
 import { JobControls } from "./JobControls";
+import { jobLinkUrl } from "@/lib/job-link";
+import { buildDispatchMessage, telHref, waMeUrl } from "@/lib/dispatch-message";
 
 // Contractor-job detail (T2). Fields + photos + status + assignment.
 // T4's one-tap WhatsApp / call button lands in JobControls next.
@@ -66,9 +68,13 @@ export default async function DispatchJobPage({ params }: { params: Promise<{ id
       active: true,
       whatsapp: true,
       phone: true,
+      language: true,
       properties: { select: { propertyId: true } },
     },
   });
+  // Language per contractor — the dispatch message is written in their own
+  // language (most of the roster is Spanish-speaking).
+  const contractorLocales = new Map(candidates.map((c) => [c.id, c.language]));
   const ranked = rankContractorsForJob(
     candidates.map((c) => ({
       id: c.id,
@@ -97,6 +103,36 @@ export default async function DispatchJobPage({ params }: { params: Promise<{ id
   );
 
   const closed = isTerminalJobStatus(job.status);
+
+  // T4: build the outbound message + deep links on the SERVER. The link is
+  // signed, so minting it client-side is not an option, and building the message
+  // here keeps the wording in one tested place (lib/dispatch-message.ts).
+  const linkUrl = jobLinkUrl(job.id);
+  const assigned = job.contractor
+    ? candidates.find((c) => c.id === job.contractor!.id) ?? null
+    : null;
+  const dispatchTargets = (assigned ? [assigned] : ranked.slice(0, 3)).map((c) => {
+    const message = buildDispatchMessage(
+      {
+        propertyName: job.property.name,
+        propertyShortCode: job.property.shortCode,
+        roomLabel: job.roomLabel,
+        trade: job.trade,
+        problem: job.problem,
+        urgent: job.urgent,
+        jobUrl: linkUrl,
+        contractorName: c.name.split(" ")[0] ?? c.name,
+      },
+      contractorLocales.get(c.id) ?? "es",
+    );
+    return {
+      id: c.id,
+      name: c.name,
+      contracted: c.contracted,
+      waUrl: waMeUrl(c.whatsapp, message),
+      telUrl: telHref(c.phone),
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -168,6 +204,8 @@ export default async function DispatchJobPage({ params }: { params: Promise<{ id
           <JobControls
             jobId={job.id}
             status={job.status}
+            jobUrl={linkUrl}
+            dispatchTargets={dispatchTargets}
             closed={closed}
             assignedContractorId={job.contractor?.id ?? null}
             photoCount={photos.length}

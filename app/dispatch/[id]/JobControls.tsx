@@ -7,6 +7,16 @@ import { JOB_PHOTO_MAX, jobStatusLabel, requiresCompletionNote } from "@/lib/con
 import { compressImage, getCurrentPosition } from "@/lib/image";
 import { addJobPhotos, assignContractor, updateJobStatus } from "../actions";
 
+export type DispatchTarget = {
+  id: string;
+  name: string;
+  contracted: boolean;
+  /** Pre-filled wa.me link, or null when the contractor has no WhatsApp. */
+  waUrl: string | null;
+  /** tel: link, or null when there's no phone on file. */
+  telUrl: string | null;
+};
+
 type Candidate = {
   id: string;
   name: string;
@@ -23,6 +33,8 @@ type Candidate = {
 export function JobControls({
   jobId,
   status,
+  jobUrl,
+  dispatchTargets,
   closed,
   assignedContractorId,
   photoCount,
@@ -30,6 +42,8 @@ export function JobControls({
 }: {
   jobId: string;
   status: JobStatus;
+  jobUrl: string | null;
+  dispatchTargets: DispatchTarget[];
   closed: boolean;
   assignedContractorId: string | null;
   photoCount: number;
@@ -40,6 +54,7 @@ export function JobControls({
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setError(null);
@@ -165,6 +180,59 @@ export function JobControls({
               ★ = under contract, called first in an emergency. Ordered contracted → on-call →
               reachable.
             </p>
+          )}
+
+          {dispatchTargets.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-md bg-emerald-50 p-3 ring-1 ring-emerald-200">
+              <span className="text-sm font-semibold text-emerald-900">
+                {assignedContractorId ? "Send the job" : "Send to the best match"}
+              </span>
+              {dispatchTargets.map((t) => (
+                <div key={t.id} className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-emerald-900">
+                    {t.contracted ? "★ " : ""}
+                    {t.name}
+                  </span>
+                  {t.waUrl ? (
+                    <a
+                      href={t.waUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+                    >
+                      WhatsApp
+                    </a>
+                  ) : (
+                    <span className="text-xs text-emerald-800">no WhatsApp on file</span>
+                  )}
+                  {t.telUrl && (
+                    <a
+                      href={t.telUrl}
+                      className="rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                    >
+                      Call
+                    </a>
+                  )}
+                </div>
+              ))}
+              <p className="text-xs text-emerald-800">
+                Opens WhatsApp with the message already written, in the contractor&apos;s language.
+                You still press send — nothing goes out on its own.
+              </p>
+              {jobUrl ? (
+                <button
+                  type="button"
+                  onClick={() => void navigator.clipboard?.writeText(jobUrl).then(() => setCopied(true))}
+                  className="self-start text-xs font-semibold text-emerald-900 underline"
+                >
+                  {copied ? "Link copied" : "Copy the job link"}
+                </button>
+              ) : (
+                <p className="text-xs text-amber-800">
+                  Job link unavailable — check NEXT_PUBLIC_APP_URL and AUTH_SECRET.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="flex flex-col gap-2">
