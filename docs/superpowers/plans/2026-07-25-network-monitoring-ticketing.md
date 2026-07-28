@@ -1,6 +1,6 @@
 # NETWORK — Network Monitoring & IT Ticketing — Implementation Plan
 
-**Epic:** NETWORK (new top-level section, sibling of ADMIN) · **Spec:** `DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` (v3.0, from Kate 2026-07-25) · **Supersedes (for network tickets):** `docs/ITTicketingPlan_RISE8_072426.md` (was ON HOLD)
+**Epic:** NETWORK (new top-level section, sibling of ADMIN) · **Spec:** `docs/network/DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` (v3.0, from Kate 2026-07-25) · **Supersedes (for network tickets):** `docs/network/ITTicketingPlan_RISE8_072426.md` (was ON HOLD)
 **Status:** 📋 DRAFT — scoped 2026-07-25, **NOT approved**. Blocking decisions in §Decisions must be settled before Task 1.
 
 > **Framing (load-bearing):** the DevSpec is written as a *standalone* app (React+Express+own Postgres+BullMQ/Redis+JWT). Kyle wants it as a **section of the StayCheck platform** instead. This plan **ports the spec onto our stack** (Next.js App Router route handlers + server actions, Prisma/Neon, Auth.js v5, Vercel Cron). Every divergence from the spec's tooling is flagged as a decision, not silently adopted. The spec's §4.1 `properties` table is a **duplicate of our `Property` model — do NOT create it** (spec `rise8_id` = our `Property.propertyId`).

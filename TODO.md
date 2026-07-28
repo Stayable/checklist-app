@@ -55,7 +55,7 @@ Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts
 
 ## 🆕 EPIC: NETWORK — Network Monitoring & IT Ticketing (started 2026-07-25)
 
-New top-level `/network` section (sibling of ADMIN). Kate's `DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` (standalone-app spec) **ported onto the StayCheck stack** — plan `docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md`. Supersedes the on-hold `ITTicketingPlan` for network tickets. **MERGED to `main` 2026-07-27.**
+New top-level `/network` section (sibling of ADMIN). Kate's `docs/network/DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` (standalone-app spec) **ported onto the StayCheck stack** — plan `docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md`. Supersedes the on-hold `ITTicketingPlan` for network tickets. **MERGED to `main` 2026-07-27.**
 
 **Decisions locked (Kyle 2026-07-25):** new **`NETWORK_TECH`** role (7th); **DB-backed `NetworkJob` + 1-min Vercel Cron** for the 5/10-min timers (no Redis). **Schema defaults chosen (confirm):** `Ticket.assignedTo` = free-text (MSP-friendly, could become User FK); `NETWORK_TECH` folds into "Admin" **display** label only.
 **Still-open decisions:** D3 Graph-API-vs-ADR-010 (new ADR needed) · D4 Zoho Desk dropped (record ADR) · D6 Spotipo key encryption · overnight-notif behavior · reply-ingest sub-vs-poll.
@@ -84,7 +84,7 @@ New top-level `/network` section (sibling of ADMIN). Kate's `DevSpec_NetworkMoni
 
 **Live scope (Kyle 2026-07-27): go live on Kissimmee West (5399 / KW) only** — the one production console the current key can actually read (`state=connected`, 12 devices, all online). Kyle is chasing account access for the rest internally.
 
-**Live fleet ground truth** (from `unifi.ui.com` screenshot + API): **19 consoles — 11 Network, 8 Protect NVRs, 15 online / 4 offline.** All 8 properties have UniFi coverage. **Cameras ARE on UniFi Protect** → closes the open sub-question in `ITTicketingPlan_RISE8_072426.md` §7 Q3; camera monitoring comes free from the same API. Per-property ISP is visible too (Spectrum / Comcast / Frontier / Summit Broadband) — free ISP attribution on outages later.
+**Live fleet ground truth** (from `unifi.ui.com` screenshot + API): **19 consoles — 11 Network, 8 Protect NVRs, 15 online / 4 offline.** All 8 properties have UniFi coverage. **Cameras ARE on UniFi Protect** → closes the open sub-question in `docs/network/ITTicketingPlan_RISE8_072426.md` §7 Q3; camera monitoring comes free from the same API. Per-property ISP is visible too (Spectrum / Comcast / Frontier / Summit Broadband) — free ISP attribution on outages later.
 
 | Property | Network console | Protect NVR | Legacy console (offline, decommissioned) |
 |---|---|---|---|
@@ -485,7 +485,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P1 | [ ] | **Authorize Adobe Urbane Rounded** for ops.rentstayable.com (kit `dsq0zcq`) → swap Nunito → real brand font (1-line change). Optional — Nunito is a close free stand-in |
 | P0 | [x] | **Prod/dev DB split — DONE 2026-07-25.** Prod on its own Neon `ep-summer-cloud-axmco63q` (us-east-2); Preview+local stay on dev `ep-falling-moon`. migrate+seed+env repoint+redeploy done; `.env.production.local` (gitignored) holds prod strings; rollback = promote `checklist-4gwsbzke8`. RUNBOOK §Splitting the Production DB |
 | P1 | [ ] | **Post-cutover follow-ups (new prod DB):** re-rotate admin pw (seeded `StayableCheck`); kate@/bke@ rotate `ChangeMe!2026` via `/profile`; 🧑 user to verify login (admin@ / StayableCheck + OTP → 8 props + kate/bke); note OTP emails land in `@rentstayable.com` inboxes; old prod sessions invalid (re-login) |
-| P2 | [ ] | **IT Ticketing** — ON HOLD (plan `docs/ITTicketingPlan_RISE8_072426.md`): Zoho Desk backend deferred; UniFi API confirmed; Kate to send a spec `.md`. Separate from S7 maintenance ticketing |
+| P2 | [ ] | **IT Ticketing** — ON HOLD (plan `docs/network/ITTicketingPlan_RISE8_072426.md`): Zoho Desk backend deferred; UniFi API confirmed; Kate to send a spec `.md`. Separate from S7 maintenance ticketing |
 | P1 | [ ] | **Decide branch workflow** — de-facto this session: commit straight to `main`, auto-deploys to prod. Feature branch `claude/rise8-operations-platform-rv9B6` is now **behind `main`** (missing branding/font commits) — branch fresh off `main` next session or fast-forward it |
 
 ## Cross-Cutting Backlog
