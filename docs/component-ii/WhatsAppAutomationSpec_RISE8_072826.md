@@ -155,10 +155,10 @@ Do these in order; each one gates the next.
 |---|---|---|---|
 | 1.1 | Create the Twilio account | twilio.com | Minutes. Upgrade off trial before production sending |
 | 1.2 | **Buy a phone number** | Console → Phone Numbers → Buy a number | Must be able to receive an SMS/voice verification code. **Must NOT already be on consumer WhatsApp** — if it ever was, delete the WhatsApp account on it first, or it cannot be registered |
-| 1.3 | Create / connect a **Meta Business Portfolio** | business.facebook.com | Twilio's signup links to this. Decide now who the admin is — it should be a RISE8 business account, not a personal profile |
+| 1.3 | Create / connect a **Meta Business Portfolio** | business.facebook.com | **Owned by Kate** — step-by-step guide at `docs/component-ii/MetaBusinessPortfolioSetup_RISE8_072926.md`. Two decisions live there: which legal entity gets verified, and the display name contractors will see |
 | 1.4 | **Register the WhatsApp sender** | Console → Messaging → Senders → WhatsApp senders → New | Twilio's embedded signup creates/links the WABA and registers the number |
 | 1.5 | **Display name approval** ⚠ | Part of 1.4, decided by Meta | The name contractors will see. Must relate to the business ("Stayable", "Stayable Maintenance"). **Meta reviews and can reject it** — this is the step people don't expect |
-| 1.6 | **Meta Business Verification** ⚠ | Meta Business Manager | Document-based: business registration, address, and usually a matching domain. **Days to weeks.** Required to lift messaging limits and to send at all in some configurations |
+| 1.6 | **Meta Business Verification** ⚠ | Meta Business Manager | **Kate** — same guide as 1.3, steps 5–6. Document-based: business registration, address, and a domain verified by DNS TXT. **Days to weeks.** Required to lift messaging limits and to send at all in some configurations |
 | 1.7 | Confirm the sender is live | Console → Senders shows the number as active | End of Phase 1 |
 
 **Two approvals, not one.** 1.5 (display name) and 1.6 (business verification) are independent Meta reviews. Either can bounce and ask for more evidence. **Have ready before starting:** business registration document, the business address, the RISE8 domain, and the exact display name you want.
