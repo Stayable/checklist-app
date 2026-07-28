@@ -67,3 +67,8 @@ export function responsePhotoKey(instanceId: string, questionId: string): string
 export function issuePhotoKey(issueId: string): string {
   return `issues/${issueId}/${crypto.randomUUID()}.jpg`;
 }
+
+/** Contractor-job problem photos (T2) — what the contractor needs to see. */
+export function contractorJobPhotoKey(jobId: string): string {
+  return `contractor-jobs/${jobId}/${crypto.randomUUID()}.jpg`;
+}

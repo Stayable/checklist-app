@@ -12,6 +12,7 @@ const MAIN_MANAGER: NavItem[] = [
   { href: "/review", label: "Review", group: "main" },
   { href: "/issues", label: "Issues", group: "main" },
   { href: "/contractors", label: "Contractors", group: "main" },
+  { href: "/dispatch", label: "Dispatch", group: "main" },
   { href: "/rules", label: "Rules", group: "main" },
   { href: "/templates", label: "Templates", group: "main" },
   { href: "/completed", label: "Completed", group: "main" },

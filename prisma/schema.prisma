@@ -124,6 +124,17 @@ enum NotificationStatus {
   SKIPPED
 }
 
+// Contractor-job lifecycle (T2). Deliberately shorter than the future unified
+// Ticket lifecycle: no TRIAGED/BLOCKED, because a dispatcher creates these
+// already-triaged and the MVP has no blocked state to act on.
+enum JobStatus {
+  OPEN // created, not yet dispatched
+  DISPATCHED // contractor assigned + message sent (T4)
+  IN_PROGRESS // contractor working
+  COMPLETED
+  CANCELLED // requires a completionNote reason
+}
+
 // Contractor trades (Component II — Contractor Dispatch, ADR-025). Plumbing +
 // electrical are the most common emergencies (Kyle 2026-07-08); the rest cover
 // the maintenance/dispatch brief's skill list.
@@ -226,6 +237,7 @@ model User {
   // scheduler and an electrical contractor). One optional link — not mutually
   // exclusive with their staff role (Component II, ADR-025).
   contractor        Contractor?         @relation("UserContractor")
+  createdContractorJobs ContractorJob[]  @relation("ContractorJobCreatedBy")
 
   @@map("users")
 }
@@ -258,6 +270,7 @@ model Property {
   networkEvents      NetworkEvent[]
   tickets            Ticket[]
   contractors        ContractorProperty[]
+  contractorJobs     ContractorJob[]
 
   @@map("properties")
 }
@@ -507,11 +520,13 @@ model Response {
 model Photo {
   id             String         @id @default(uuid()) @db.Uuid
   // A photo hangs off EXACTLY ONE owner: a checklist Response (capture-at-fill)
-  // OR an Issue (resolution evidence). Both FKs are nullable; the app enforces
-  // exactly-one-set (submit action / closeIssue). No DB CHECK — Prisma can't
-  // express it; both write paths are server-only and validated.
-  responseId     String?        @map("response_id") @db.Uuid
-  issueId        String?        @map("issue_id") @db.Uuid
+  // OR an Issue (resolution evidence) OR a ContractorJob (T2 problem photos).
+  // All three FKs are nullable; the app enforces exactly-one-set (submit action
+  // / closeIssue / createContractorJob). No DB CHECK — Prisma can't express it;
+  // every write path is server-only and validated.
+  responseId      String?       @map("response_id") @db.Uuid
+  issueId         String?       @map("issue_id") @db.Uuid
+  contractorJobId String?       @map("contractor_job_id") @db.Uuid
   r2Key          String         @map("r2_key")
   fileSizeBytes  Int            @map("file_size_bytes")
   exifTimestamp  DateTime?      @map("exif_timestamp") @db.Timestamptz
@@ -521,11 +536,13 @@ model Photo {
   geofenceStatus GeofenceStatus @map("geofence_status")
   createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
 
-  response Response? @relation(fields: [responseId], references: [id], onDelete: Cascade)
-  issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  response      Response?      @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  issue         Issue?         @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  contractorJob ContractorJob? @relation(fields: [contractorJobId], references: [id], onDelete: Cascade)
 
   @@index([responseId])
   @@index([issueId])
+  @@index([contractorJobId])
   // §4.2 wants a PARTIAL index on non-VERIFIED rows; Prisma can't express a
   // WHERE on @@index, so this is a plain index for now. Convert to partial via
   // a dedicated raw-SQL migration if/when the anomaly query needs it (table is
@@ -768,6 +785,7 @@ model Contractor {
 
   user       User?                @relation("UserContractor", fields: [userId], references: [id], onDelete: SetNull)
   properties ContractorProperty[]
+  jobs       ContractorJob[]
 
   @@index([active])
   @@map("contractors")
@@ -786,6 +804,47 @@ model ContractorProperty {
   @@id([contractorId, propertyId])
   @@index([propertyId])
   @@map("contractor_properties")
+}
+
+// A dispatchable contractor job (T2 — Contractor Dispatch MVP). Deliberately a
+// STRICT SUBSET of the future unified Ticket (Phase II.1): every column here
+// exists there too, so folding this table into Ticket is additive (rename +
+// add kind/source/lifecycle columns) rather than a data reshape.
+//
+// Not modeled on purpose (YAGNI until the unified model is specced): SLA,
+// scheduling/calendar (T6), cost capture, assignment history, and the two-way
+// Accept/Decline/ETA states that belong to the WhatsApp Business API layer.
+model ContractorJob {
+  id     String @id @default(uuid()) @db.Uuid
+  propertyId String @map("property_id") @db.Uuid
+  // Free text, not a Room FK: rooms are only seeded for Lakeland (no PMS in
+  // v1), jobs are portfolio-wide, and a dispatch message just needs "Rm 212" /
+  // "lobby" / "roof". Matches S1's free-text-room direction.
+  roomLabel  String? @map("room_label")
+  trade      Trade
+  problem    String
+  // Boolean, not a priority enum: the emergency-classification rule is still
+  // pending from Gerardo, so this is a manual dispatcher toggle. Sorts the job
+  // to the top of the queue and is what the later emergency-alert task fires on.
+  urgent     Boolean   @default(false)
+  status     JobStatus @default(OPEN)
+  // Set at dispatch (T3 match -> T4 send). Null while the job is unassigned.
+  contractorId    String? @map("contractor_id") @db.Uuid
+  createdByUserId String  @map("created_by_user_id") @db.Uuid
+  // Required when moving to COMPLETED or CANCELLED (enforced in the action).
+  completionNote  String? @map("completion_note")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  property   Property    @relation(fields: [propertyId], references: [id])
+  contractor Contractor? @relation(fields: [contractorId], references: [id])
+  createdBy  User        @relation("ContractorJobCreatedBy", fields: [createdByUserId], references: [id])
+  photos     Photo[]
+
+  @@index([propertyId, status])
+  @@index([contractorId])
+  @@index([urgent, status])
+  @@map("contractor_jobs")
 }
 
 // ---------------------------------------------------------------------------
