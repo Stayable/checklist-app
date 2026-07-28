@@ -1,5 +1,6 @@
 import type { Property } from "@prisma/client";
 import type { WifiSiteSummary } from "./spotipo";
+import { isSpotipoConfiguredFor, resolveSpotipoConfig } from "./spotipo-config";
 
 // Guest WiFi (Spotipo) fetch seam: SCAFFOLD + DEGRADE (Task 9, Kyle
 // 2026-07-25 — no Spotipo siteids/API keys, no confirmed response shape).
@@ -10,21 +11,26 @@ import type { WifiSiteSummary } from "./spotipo";
 // can never break the portfolio view. lib/network/spotipo.ts owns the real,
 // testable aggregation over whatever summaries come back.
 //
-// Key handling: Property.spotipoApiKey is read as-is (plaintext column,
-// nullable). At-rest encryption for this key is an OPEN decision (D6,
-// schema comment in prisma/schema.prisma) — deliberately NOT built here;
-// this task is scaffold-only.
+// Key handling (revised 2026-07-29): credentials now resolve ENV-FIRST via
+// lib/network/spotipo-config.ts, with the Property columns as a fallback. That
+// closes open decision D6 for the normal path — an env var keeps the key out of
+// the database, and therefore out of backups, query logs and any Property read
+// — without needing at-rest column encryption.
 
 export type WifiProperty = Pick<
   Property,
   "id" | "shortCode" | "spotipoSiteId" | "spotipoApiKey"
 >;
 
-/** True iff this property has both a Spotipo site id and an API key set. */
-export function isSpotipoConfigured(
-  property: Pick<Property, "spotipoSiteId" | "spotipoApiKey">,
-): boolean {
-  return Boolean(property.spotipoSiteId && property.spotipoApiKey);
+/**
+ * True iff this property resolves to a full Spotipo config.
+ *
+ * Delegates to lib/network/spotipo-config.ts, which reads env-first (so the key
+ * lives in Vercel rather than a plaintext database column) and falls back to the
+ * legacy Property columns.
+ */
+export function isSpotipoConfigured(property: WifiProperty): boolean {
+  return isSpotipoConfiguredFor(property);
 }
 
 function nullSummary(property: WifiProperty, configured: boolean): WifiSiteSummary {
@@ -57,11 +63,17 @@ function nullSummary(property: WifiProperty, configured: boolean): WifiSiteSumma
  *    even though nothing can throw yet.
  */
 export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSiteSummary> {
-  if (!isSpotipoConfigured(property)) return nullSummary(property, false);
+  const config = resolveSpotipoConfig(property);
+  if (config === null) return nullSummary(property, false);
 
   try {
-    // FUTURE (Spotipo creds task): real GET + field parsing goes here. No
-    // HTTP client call exists yet — see the doc comment above.
+    // FUTURE (Spotipo creds task): the real GET + field parsing goes here, using
+    // `config.siteId` / `config.apiKey`. Still not implemented: the endpoint and
+    // response shape in the doc comment above are from the DevSpec and remain
+    // UNVERIFIED against the live API, and the revenue field name is explicitly
+    // unconfirmed. Writing a parser against a guessed shape would produce
+    // plausible wrong numbers on an ops dashboard, which is worse than blanks —
+    // so this waits for one real captured response.
     return nullSummary(property, true);
   } catch {
     // Never throw out of the fetch seam — a single site's failure must not
