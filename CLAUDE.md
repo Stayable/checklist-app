@@ -15,7 +15,9 @@ It serves field staff (Housekeeping, Property Attendants, Maintenance Technician
 - **II. Maintenance / Ticketing System** — intake (web form + `blake@rentstayable.com` email AI-ingestion; urgent/contractor WhatsApp front door) → human review → ticket vs. "concern" → work-order lifecycle → dispatch → close; Outlook sync. Absorbs the old "S7."
 - **III. Construction Progress / Scheduling** — buildout/renovation PM (`docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`); **concept, gated on Rob's greenlight.**
 
-`TODO.md` is now organized under `# COMPONENT I/II/III`. Building II and III is a scope expansion beyond the original checklist-replacement v1 — a budget/scope matter for Rob.
+**`TODO.md` was reorganized 2026-07-28** into **5 tracks (A–E)** with priorities, ordered phases, a START-HERE block, a single consolidated `§Q` open-questions register (Q1–Q24, grouped by owner), and a `§SPEC` list of work that needs a design pass before any code. It supersedes the old `# COMPONENT I/II/III` layout; the previous 706-line week-phase tracker is preserved at `docs/archive/TODO_preReorg_RISE8_072826.md` for per-task commit history. Track map: **A** Checklist App (live) · **B** Network monitoring (live pilot) · **C** Maintenance/Ticketing (gated) · **D** Contractor dispatch + WhatsApp + scheduling · **E** Construction (gated).
+
+Building C, D and E is a scope expansion beyond the original checklist-replacement v1 — a budget/scope matter for Rob, still unsigned (`§Q8`).
 
 **Why it exists:** Field staff currently fill out checklists in Connecteam (a mobile app), then Karla and Christopher manually download the completed PDFs and re-upload them as Smartsheet row attachments while typing metadata. This consumes 1–2 hours/day of corporate staff time and loses photo/structured-response fidelity. The new platform is the single source of truth.
 
