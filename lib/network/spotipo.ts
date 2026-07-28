@@ -11,6 +11,13 @@ export type WifiSiteSummary = {
   propertyId: string;
   shortCode: string;
   configured: boolean;
+  /**
+   * Why this site has no numbers. null = fine. Set when a configured site
+   * FAILED — previously a failure and "configured but empty" both rendered as
+   * blanks, which is the bug Kate hit: some properties silently unfilled with
+   * no way to tell whether it was broken or just quiet.
+   */
+  error: "unreachable" | "unauthorized" | null;
   totalGuests: number | null;
   onlineNow: number | null;
   avgDwellMin: number | null;

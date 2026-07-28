@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { aggregateWifiPortfolio, type WifiSiteSummary } from "./spotipo";
 
-// Spec §11 Guest WiFi aggregation. SCAFFOLD + DEGRADE (Task 9) — today every
-// real caller produces all-null sites (no Spotipo creds), so these tests
-// exercise the aggregation contract directly with hand-built summaries
-// (configured/unconfigured/partial-null mixes) rather than a live fetch.
+// Spec §11 Guest WiFi aggregation. Exercises the aggregation contract directly
+// with hand-built summaries (configured / unconfigured / partial-null mixes)
+// rather than a live fetch. Guest totals are real since 2026-07-29; onlineNow
+// now comes from UniFi and revenue from Stripe, so partial-null mixes remain
+// the normal case and are what these tests pin down.
 
 function site(overrides: Partial<WifiSiteSummary>): WifiSiteSummary {
   return {
     propertyId: "prop-1",
     shortCode: "LL",
     configured: false,
+    error: null,
     totalGuests: null,
     onlineNow: null,
     avgDwellMin: null,

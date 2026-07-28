@@ -33,11 +33,16 @@ export function isSpotipoConfigured(property: WifiProperty): boolean {
   return isSpotipoConfiguredFor(property);
 }
 
-function nullSummary(property: WifiProperty, configured: boolean): WifiSiteSummary {
+function nullSummary(
+  property: WifiProperty,
+  configured: boolean,
+  error: WifiSiteSummary["error"] = null,
+): WifiSiteSummary {
   return {
     propertyId: property.id,
     shortCode: property.shortCode,
     configured,
+    error,
     totalGuests: null,
     onlineNow: null,
     avgDwellMin: null,
@@ -64,6 +69,14 @@ function nullSummary(property: WifiProperty, configured: boolean): WifiSiteSumma
  */
 const SPOTIPO_BASE = "https://api.spotipo.com";
 const REQUEST_TIMEOUT_MS = 15_000;
+/**
+ * Registered-guest totals barely move minute to minute, and Kate saw the counts
+ * shift on every refresh with some properties randomly blank — the signature of
+ * 8 uncached upstream calls per page view, a few of them timing out each time.
+ * A short cache makes a refresh cheap and the numbers stable.
+ */
+const CACHE_TTL_MS = 60_000;
+const cache = new Map<string, { at: number; value: WifiSiteSummary }>();
 
 /**
  * One site's guest summary from the live Spotipo API.
@@ -94,6 +107,9 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
   const config = resolveSpotipoConfig(property);
   if (config === null) return nullSummary(property, false);
 
+  const cached = cache.get(property.id);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
+
   try {
     const res = await fetch(
       `${SPOTIPO_BASE}/ext/${encodeURIComponent(config.siteId)}/api/v1/guest/?per_page=1`,
@@ -103,24 +119,33 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
         cache: "no-store",
       },
     );
-    if (!res.ok) return nullSummary(property, true);
+    if (res.status === 401 || res.status === 403) {
+      return nullSummary(property, true, "unauthorized");
+    }
+    if (!res.ok) return nullSummary(property, true, "unreachable");
 
     const body: unknown = await res.json();
     const total = readTotalCount(body);
 
-    return {
+    const summary: WifiSiteSummary = {
       propertyId: property.id,
       shortCode: property.shortCode,
       configured: true,
+      error: null,
       totalGuests: total,
-      onlineNow: null,
+      onlineNow: null, // filled by lib/network/wifi-live.server.ts (UniFi)
       avgDwellMin: null,
-      revenue: null,
+      revenue: null, // filled by lib/network/wifi-revenue.server.ts (Stripe)
     };
+    // Only successes are cached — a failure must be retried on the next view,
+    // not remembered for a minute.
+    cache.set(property.id, { at: Date.now(), value: summary });
+    return summary;
   } catch {
     // Never throw out of the fetch seam — one site's failure must not break the
-    // rest of the portfolio.
-    return nullSummary(property, true);
+    // rest of the portfolio. Reported as `unreachable` so the UI can say so
+    // instead of rendering an unexplained blank.
+    return nullSummary(property, true, "unreachable");
   }
 }
 
@@ -145,6 +170,8 @@ export async function fetchPortfolioSummaries(
 ): Promise<WifiSiteSummary[]> {
   const results = await Promise.allSettled(properties.map((p) => fetchSiteSummary(p)));
   return results.map((r, i) =>
-    r.status === "fulfilled" ? r.value : nullSummary(properties[i], isSpotipoConfigured(properties[i])),
+    r.status === "fulfilled"
+      ? r.value
+      : nullSummary(properties[i], isSpotipoConfigured(properties[i]), "unreachable"),
   );
 }
