@@ -43,6 +43,7 @@ export default async function NetworkDashboardPage() {
     devicesTotal,
     resolvedLast30d,
     recentlyClosed,
+    resolvedCount30d,
   ] = await Promise.all([
     db.ticket.findMany({
       where: { status: { in: OPEN_STATUSES } },
@@ -86,6 +87,20 @@ export default async function NetworkDashboardPage() {
         assignedTo: true,
         property: { select: { shortCode: true } },
         device: { select: { name: true } },
+      },
+    }),
+    // Resolved-work counter (Kyle 2026-07-29). Counts RESOLVED *and* CLOSED,
+    // because in this codebase they are functionally the same terminal state and
+    // a reader asking "how much got fixed" means both. Falls back to updatedAt
+    // for rows closed by hand without a resolvedAt stamp — otherwise manually
+    // closed tickets would be invisible here.
+    db.ticket.count({
+      where: {
+        status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] },
+        OR: [
+          { resolvedAt: { gte: thirtyDaysAgo } },
+          { resolvedAt: null, updatedAt: { gte: thirtyDaysAgo } },
+        ],
       },
     }),
   ]);
@@ -143,7 +158,7 @@ export default async function NetworkDashboardPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <SummaryCard
           label="Open tickets"
           value={openTickets.length}
@@ -168,6 +183,11 @@ export default async function NetworkDashboardPage() {
           label="Properties with issues"
           value={propertiesWithIssues}
           tone="bg-orange-50 text-orange-800 ring-orange-200"
+        />
+        <SummaryCard
+          label="Resolved (30d)"
+          value={resolvedCount30d}
+          tone="bg-emerald-50 text-emerald-800 ring-emerald-200"
         />
         <SummaryCard
           label="Avg resolution time (30d)"
