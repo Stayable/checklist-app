@@ -16,7 +16,17 @@ describe("navItemsForRole", () => {
 
   it("manager gets the management surfaces, no admin or network group", () => {
     const hrefs = navItemsForRole(Role.MANAGER).map((i) => i.href);
-    expect(hrefs).toEqual(["/", "/dashboard", "/review", "/issues", "/rules", "/templates", "/completed", "/reports/completeness"]);
+    expect(hrefs).toEqual([
+      "/",
+      "/dashboard",
+      "/review",
+      "/issues",
+      "/contractors",
+      "/rules",
+      "/templates",
+      "/completed",
+      "/reports/completeness",
+    ]);
     expect(navItemsForRole(Role.MANAGER).some((i) => i.group === "admin")).toBe(false);
     expect(navItemsForRole(Role.MANAGER).some((i) => i.group === "network")).toBe(false);
   });
@@ -28,6 +38,7 @@ describe("navItemsForRole", () => {
       "/dashboard",
       "/review",
       "/issues",
+      "/contractors",
       "/rules",
       "/templates",
       "/completed",
@@ -47,6 +58,7 @@ describe("navItemsForRole", () => {
       "/dashboard",
       "/review",
       "/issues",
+      "/contractors",
       "/rules",
       "/templates",
       "/completed",

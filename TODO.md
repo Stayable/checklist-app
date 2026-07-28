@@ -10,6 +10,24 @@ Update `Current Status` in `CLAUDE.md` and check items off here as work lands.
 
 ---
 
+## 🧭 Component Map (ADR-025, 2026-07-07)
+
+The project is three components. All three run **in parallel** (Kyle, 2026-07-07); III's build is gated on Rob's greenlight.
+
+| # | Component | What | Status |
+|---|---|---|---|
+| **I** | **Checklist App (StayCheck)** | The live Connecteam replacement. All existing phases + StayCheck v1.1 (S0–S9) **minus ticketing** | 🟢 Live in prod, active build |
+| **II** | **Maintenance / Ticketing System** | Intake (form + `blake@` email AI-ingestion; urgent/contractor WhatsApp) → human review → ticket vs. concern → work-order lifecycle → dispatch → close. Outlook sync | 🟡 New — planning |
+| **III** | **Construction Progress / Scheduling** | Buildout/renovation PM (`docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`). Shares the ingestion engine | ⛔ Concept — gated on Rob's decisions file |
+
+Components share one codebase/deploy and reuse each other's infra (auth, RBAC, Issue/SLA, audit, Teams digest, geofence). See ADR-025.
+
+---
+
+# COMPONENT I — CHECKLIST APP (StayCheck)
+
+*The live platform. Everything below through the "Open Questions" section belongs to Component I unless marked otherwise. S7 (ticketing) has moved to Component II.*
+
 ## 🆕 EPIC: StayCheck v1.1 (scoped 2026-07-02)
 
 Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts `StayCheckPRD_RISE8_070126.md` onto the live platform. **Forks settled (Kate):** Cloudbeds in-scope (manual-first + per-property adapter, ADR-022); 3-role *display* mapping keeps 6-role DB (ADR-023); rename to **StayCheck** (ADR-024, supersedes ADR-010). ✅ **ADRs 022–024 now recorded in DECISIONS.md** (S0, 2026-07-02).
@@ -29,7 +47,7 @@ Spec: `docs/superpowers/specs/2026-07-02-staycheck-v1.1-adaptation.md` · adapts
 | S4 — Preventive Maintenance | P1 | [ ] | `Asset` registry · interval-from-last-completion scheduling · `CONDITION` question type · PM submission fields · corrective-action → Issue bridge · PM compliance dashboard |
 | S5 — Staff Performance & Quality Score | P1 | [ ] | Quality Score (pass÷verified) + Completion Rate (submitted÷assigned) · per-staff cards · leaderboard · benchmarks · consistency score · staff self-view · outlier flags |
 | S6 — Insights engine | P2 | [ ] | Recurring issues · failure patterns · timing anomalies (auto-flag) · property health trend · shift coverage gaps · PM insights |
-| S7 — **Maintenance Ticketing / Work Orders** | P1 | [!] | Extends `Issue`: target date · lifecycle · required closing photo · recurrence auto-flag. **Blocked: Kate's ticketing `.md`** (spec §Ticketing has the frame) |
+| ~~S7 — Maintenance Ticketing~~ | — | → | **MOVED to Component II** (ADR-025). Now tracked as II.1. The `Issue`-extension frame lives there |
 | S8 — Reports + export + photo tooling | P2 | [ ] | Report suite · Smartsheet column-parity CSV export · before/after compare · per-room photo gallery · PDF parity |
 | S9 — Offline + push + versioning + library | P2 | [ ] | Full offline sync + conflict notice · push notifications · template version-snapshot · starter template library · Lease-Flip type · AM/PM shift |
 
@@ -477,7 +495,7 @@ Production-ready milestone shifts to Phase 10 (after Contractor Checklists + Qui
 | P1 | [x] | **Vitest setup + unit test for `lib/auth-throttle.ts`** — 9 cases: 5-strike lock, 15-min window reset + boundary, 30-min unlock, success clear. Shipped 2026-05-30 commit `180b12d` |
 | P1 | [x] | **Vitest for `lib/checklist-logic.ts`** — 14 cases: conditional `show_if` (incl. MULTI), per-type validation, validateAll. Commit `a6ea416` |
 | P2 | [ ] | Add `AUTH_SECRET` to Vercel **Preview** if branch-preview login testing is wanted (Production-only per Kate's default-to-Prod rule) |
-| P3 | [ ] | Decide fate of stray untracked files: `CurrentUpdate/ProjectPhases/StatusSummary_RISE8_051826.md` + `Screenshot 2026-06-02 042054.png` (commit as deliverables vs `.gitignore` vs delete) |
+| P3 | [x] | ~~Decide fate of stray untracked files~~ — **RESOLVED 2026-07-20**: repo reorg moved superseded status docs → `docs/archive/`, screenshots + Connecteam snapshots → `docs/assets/`, component docs → `docs/component-i|ii|iii/` |
 | P1 | [ ] | CI: GitHub Actions — lint + typecheck + unit tests on PR |
 | P1 | [ ] | Playwright e2e on login + submit + review |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |
@@ -530,6 +548,158 @@ Deferred-minor items flagged in the Plan 2–5 code reviews, re-verified against
 | P0 | [ ] | SLA defaults per priority — placeholders shipping (4h/24h/72h/7d, admin-editable); Christopher to confirm/correct | Christopher | Week 4, non-blocking |
 | P0 | [ ] | Recurring rules per template per property | PMs | Week 4 |
 | P0 | [ ] | Final geofence polygons per property | Kate | Week 5 |
+
+---
+
+# COMPONENT II — MAINTENANCE / TICKETING SYSTEM
+
+*New component (ADR-025). Intake → AI triage → human review queue → ticket vs. concern → work-order lifecycle → dispatch → close. Reuses Component I infra (Issue/SLA, audit, Teams digest, geofence, roles). **No AI decides alone** — human review precedes every ticket.*
+
+**Intake model (confirmed 2026-07-07):**
+- **Primary (corrected Kyle 2026-07-08):** tenant maintenance requests come via **TurboTenant + Jotform**, today consolidated in **Smartsheet** (current maintenance status/progress tracker — Component II replaces it). **Property managers** own triage/assignment/daily scheduling (in Connecteam today); **Gerardo & Jesus** schedule **contractors** downstream + emergency-contractor coordination (Teams chat: Shayla Shane, Shay Harper, Kyle, Gerardo, Jesus).
+- **Additional email channel:** **two-mailbox ingestion — `admin@` + `blake@`** (maintenance emails hard to track / often missed today; Graph consent needed on both; `admin@` is also the app admin login). This is the Zoho Desk replacement lane — ONE channel, not the whole intake. `MAINTENANCE_DESK_SPEC.md` covers only this lane; TT + Jotform ingestion + unified ticket model are separate, larger pieces to spec.
+- AI parses each source, extracts ticket details, classifies **ticket vs. concern**.
+- **Concerns lane:** payments / refunds / extensions → held, human decides later whether it becomes a ticket.
+- **Urgent + contractor-needed:** the **WhatsApp "one front door"** (photos/voice/Spanish) — busted pipe, no power, no hot water, or "we need a contractor." A channel into the same queue.
+- **Outlook sync:** track which emails became tickets / became concerns / were responded to.
+
+**📄 Design docs drafted 2026-07-07 (the spec pass — now in staged review, NOT yet built):**
+- `MAINTENANCE_DESK_SPEC.md` — technical spec for the email/form desk: MS Graph ingestion → filter → Claude triage → `maintenance_tickets`/`maintenance_messages` tables → multi-agent reply-as-`blake@`. **Replaces Zoho Desk** (runs alongside during build, then retires it). ⚠ References `lib/maintenance/{filter,triage,graph,db}.js` + `SENDER_CATALOG.md`/`SenderFilter_Blake_070226.xlsx` marked `[BUILT]` — **these live in a separate prototype, NOT in this repo; must be ported in.** Model `claude-sonnet-4-6` in the spec is not a real ID → use **Sonnet 5** (`claude-sonnet-5`).
+- `MaintenanceTicketingDesignReview_RISE8_070726.md` — **staged sign-off (Kate → Crystal → Rob)** reconciling the StayCheck PRD (issues/work-orders placed *inside* the checklist app, §7/§18/§20) against the new separate-Ticketing direction. **Gates the build.**
+- `MaintenanceTicketingScopingQuestions_RISE8_070726.md` — §A–§M build-level questions w/ recommended defaults + a **Top-8 blockers** list.
+- `IngestionEngineSketch_RISE8_070726.png` — the "one front door → ingestion engine → 3 lanes (Construction / Maintenance / existing Issues)" whiteboard.
+
+**⚖ Key open architecture decision (recommended, pending sign-off — scoping §A2/A3):** the checklist app *emits* issues; **Ticketing owns the lifecycle** → **migrate the existing `/issues` into Ticketing and retire the standalone page** (SLA/assignment/resolution-photo logic absorbed, not rebuilt). This reframes II.1 from "extend/relate to `Issue`" to "absorb + retire `/issues`."
+
+**Top-8 blockers to answer first (scoping doc):** A2+A3 (issues→Ticketing) · B1+B2 (v1 sources + concerns/leads as tagged tickets) · B3 (lifecycle states) · D1 (Kate: Graph/Entra app-reg + admin consent) · D2 (supply sender-filter catalog files, or rebuild from spec §5) · F1 (`ANTHROPIC_API_KEY` + Sonnet 5) · G3+G4 (auto-create tickets from checklist fails; normal room checklists don't touch Ticketing) · L1 (prod/dev DB split — real tickets/live email must NOT hit the shared dev DB).
+
+**🆕 RE-SEQUENCED BUILD ORDER (Kyle 2026-07-08) — Contractor Dispatch MVP FIRST.** Kyle's call: ship the contractor side first as the fastest, most-independent win (emergencies + contractor scheduling are the sharpest pain and don't depend on tenant-intake/PM plumbing). Build it as a **module inside the existing platform** (NOT a separate app — ADR-025 one-codebase). New order:
+1. **Phase II.A — Contractor Dispatch MVP** (see below) — directory → one-tap WhatsApp/call dispatch → emergency flag → contractor calendar.
+2. Phase II.1 — unified ticket model + migrate `/issues`.
+3. Phase II.2 — tenant form intake (TurboTenant + Jotform).
+4. Phase II.3 — email desk (Graph) → II.4 AI triage.
+5. Phase II.5 dispatch-a-checklist + auto-close loop; II.6 WhatsApp two-way; II.7 cost.
+
+**⚠ Assumption to confirm before committing II.A:** contractor scheduling is **separable** from the internal daily maintenance schedule (which lives in Connecteam today and is what Component I / the checklist app already replaces). If separable → II.A builds clean with no Connecteam conflict. If entangled (one shared calendar) → II.A must either coexist w/ Connecteam during parallel run or pull internal-task scheduling in too. Connecteam retires ~Week 14, so any dependency is temporary; build II.A as the *permanent* home for contractor scheduling.
+
+*(Prior order, scoping §M2, now superseded: unified ticket model → tenant form → email desk → AI triage → dispatch loop.)*
+
+**Design ownership (review §1.2):** Kate owns Component I; **Crystal Johnson (Head of Operations)** owns Component II design (Ticketing/Dispatch — hers via `ProjectBrief_MaintenanceDispatch_062226.docx`); the checklist↔ticket loop is jointly owned; Rob signs off scope/budget.
+
+**Blocked-on-Kyle/Kate/Crystal/Blake:** (a) complete the staged sign-off chain (Kate → Crystal → Rob); (b) Kate: M365/Entra app-reg + admin consent for Graph `Mail.Read`/`Mail.Send`/`Mail.ReadWrite` on `blake@`; (c) supply the sender-filter catalog files; (d) `ANTHROPIC_API_KEY` set in Vercel; (e) prod/dev DB split (L1).
+
+### Phase II.0 — Design reconciliation & sign-off (GATE — build blocked until done)
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [~] | Spec pass drafted (3 docs, 2026-07-07): desk spec + design review + scoping questions. **+ dispatch brief `TicketingBriefDispatch_RISE8_070826.md`** — **RE-SCOPED 2026-07-08** to contractor scheduling + construction + emergency-contractor flow ONLY (Gerardo & Jesus schedule contractors; they do NOT own maintenance triage). §0 self-serve claude.ai flow → `TicketingAnswersDispatch_…md`. **NOT sent yet** (was about to send the wrong-scope version; caught). |
+| P0 | [~] | Staged sign-off: **Kate ✅ reconciled Part 1** → **Crystal (Stage 2 owner/sign-off)**. Ops input SPLIT: (a) contractor+construction → **Gerardo & Jesus** (brief ready to send); (b) maintenance intake/triage/daily scheduling → **property managers** (they run it today via Connecteam + TurboTenant/Jotform/Smartsheet) — **recipient TBD (Q2 open)**, PM brief to be drafted recipient-agnostic + held. → **Rob** (scope/budget). **Kate open micro-decisions:** 1.2 ownership (→Crystal), 1.3 role label (interp: CORPORATE→"Manager" display, confirm w/ Kate). **Construction greenlight moved to ops input** — Rob now budget-only. ⚠ record as ADR when chain closes |
+| P0 | [ ] | **Draft PM-facing maintenance-intake brief** (recipient TBD, Q2): TurboTenant + Jotform + email → triage → assign → daily schedule (urgency order) → emergency-to-checklist. This is the flow PMs run today in Connecteam/Smartsheet |
+| P0 | [!] | Answer Top-8 blockers (scoping doc) — esp. A2/A3 (issues→Ticketing), D1 (Graph consent), L1 (DB split) |
+| P0 | [ ] | Turn signed-off answers → Component II design spec → implementation plan → build |
+
+### Phase II.A — Contractor Dispatch MVP (BUILD FIRST, Kyle 2026-07-08)
+
+*Fastest, most-independent slice: get emergencies to the right contractor fast, and give Gerardo & Jesus a real contractor directory + dispatch surface. Module inside the platform (shared auth/roles/audit/notify). Layers map to my design rec (0→3).*
+
+**Decisions (Kyle 2026-07-13):** (1) **Build ahead of sign-off** — start T1 now, don't wait for the Kate→Crystal→Rob chain (build on branch, deploy is a separate call). (2) **Dispatchers reuse the `MANAGER` role** (no schema change; Gerardo & Jesus get MANAGER accounts scoped to their properties — portfolio dispatch → CORPORATE at provisioning time). (3) **T4 dispatch message includes a magic-link** (pull Phase-9 signed single-use link forward). **Still open (non-blocking for T1–T3):** separable-scheduling assumption (affects T6 calendar) + Gerardo's emergency-classification rule (affects T5 auto-notify trigger; MVP uses a manual URGENT toggle).
+
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [x] | **T1 — L0 Contractor directory** — **DONE 2026-07-13** (commit `0f86b2b`, branch only, NOT deployed). `Contractor` + `ContractorProperty` join + `Trade` enum; `Contractor.userId` nullable-unique link to `User` so a person is BOTH staff and contractor (Jesús). `/contractors` route (manager-or-above, property-scoped, mirrors `/templates`): list + create/edit + archive; nav between Issues & Rules. Zod+audit+scope-enforced actions (scoped mgrs limited to own props; req ≥1 trade, ≥1 property, WhatsApp-or-phone). `lib/contractors.ts` labels/order + tests. Seed = 4-contractor roster w/ **PLACEHOLDER** numbers (real PII held until DB split; enter via UI). Migration `20260713164200` additive. **134/134 tests, clean types+lint, build 31 routes.** 4 rows seeded to shared DB via scoped one-off (full `db:seed` skipped to avoid dup demo instances) |
+| P1 | [~] | **T2 — Minimal contractor job/ticket (NEXT):** subset of the unified `Ticket` (or a lean precursor that migrates into II.1) — property, room, trade, problem, photos, `URGENT` flag, status. Emergency = top priority. Reuse existing R2 photo pipeline; dispatcher (MANAGER) creates manually in MVP |
+| P1 | [ ] | **T3 — Match & rank (pure):** given a job, filter directory by property+trade, order **contracted-first**. Testable pure fn in `lib/contractors.ts`. Depends on T1+T2 |
+| P1 | [ ] | **T4 — L1 one-tap dispatch:** from a job, surface the right contractor(s), **contracted-first**, one-tap button opening a **pre-filled bilingual WhatsApp (`wa.me`) deep link** (language from contractor's `language`) + `tel:` one-tap for the emergency phone-first-touch to the contracted contractor. WhatsApp is THE contractor channel (no SMS). Human sends (no auto-action). **Decision (Kyle 2026-07-13): message INCLUDES a magic-link** so the contractor can view the job/photos with no account → pull the Phase-9 signed single-use link forward (this is the one place T4 grows beyond "no new infra") |
+| P1 | [ ] | **Emergency flag + fast alert:** URGENT job notifies the coordination group (today's Teams chat: Shayla Shane, Shay Harper, Kyle, Gerardo, Jesus) — decide in-app notify vs. Teams webhook. Rule/threshold pending Gerardo's classification answer |
+| P2 | [ ] | **Contractor calendar (basic):** assign + schedule contractor jobs; when a contractor is pulled for an emergency, **auto-flag the bumped job to reschedule** (§4.3 C-0b) |
+| P2 | [ ] | **L2 — Two-way automation (follow-on, needs vendor):** **WhatsApp Business API** (settled rail — contractors use WhatsApp only) → auto-send on confirm, structured Accept/Decline/ETA (reuse Phase 9 no-account magic-link), **auto-escalation ladder** (no accept in N min → next contractor → group), broadcast-to-pool for true emergencies. **Decision for Rob/Crystal:** cost + Meta Business verification/approval timeline (not "which channel" — WhatsApp is confirmed) |
+
+### Phase II.1 — Ticket / Work-Order model + lifecycle (absorbs S7)
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Data model: unified `Ticket` — **migrate + retire existing `/issues`** (recommended §A2/A3, pending sign-off) — ticket `kind` (maintenance/concern/lead), `source` channel, target date, lifecycle states, required closing photo, recurrence auto-flag |
+| P1 | [ ] | Lifecycle: OPEN → TRIAGED → ASSIGNED → IN_PROGRESS → (BLOCKED) → RESOLVED → CLOSED, all audit-logged |
+| P1 | [ ] | Ticket vs. "concern" as a first-class field (concern = payments/refunds/extensions, no work order) |
+| P1 | [ ] | SLA reuse: map ticket priority → existing `sla_defaults`; urgent (pipe/power/hot water) = top priority |
+
+### Phase II.2 — Web-form intake + manual create
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Public/authed maintenance request form (property, room, category, description, photos) |
+| P1 | [ ] | Manager/staff manual ticket create (mirrors Issue create) |
+
+### Phase II.3 — Email ingestion (`blake@`) + AI triage
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Inbound email capture from `blake@rentstayable.com` (M365 / Outlook pull or forward-to-webhook) |
+| P1 | [ ] | AI extraction: sender → property/room · problem · location · photos · confidence · ES→EN translate |
+| P1 | [ ] | AI classifier: ticket vs. concern; low-confidence → flag for human |
+| P1 | [ ] | **Human review queue** — approve → ticket/concern; nothing auto-created without approval |
+
+### Phase II.4 — Outlook sync + concern tracking
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | Mark/track in Outlook which emails became tickets / concerns / were responded to |
+| P2 | [ ] | Concerns view (payments/refunds/extensions) with promote-to-ticket action |
+
+### Phase II.5 — Dispatch queue + scheduling + assignment
+
+> **Current emergency-contractor process (ground truth — Kyle/Gerardo 2026-07-08):**
+> - **Flow today:** Crystal + Shayla flag the emergency on Teams → Gerardo/Jesus contact contractors; work details sent over WhatsApp.
+> - **Channel split (confirmed Kyle 2026-07-08):** **contractors use WhatsApp ONLY** (→ WhatsApp is THE contractor rail; SMS not needed). **Internal MTs get their maintenance info on Smartsheet** (relevant to the PM/maintenance-intake side + eventual Smartsheet retirement, not to the contractor MVP).
+> - **Emergencies: call contracted contractors first** (phone first-touch). Currently the only one under contract is **Orlando Torres (direct hire)**; WhatsApp for the rest.
+> - **Most common emergencies = plumbing + electrical.**
+> - **Initial contractor roster (seed for the Layer-0 contractor directory):**
+>   - *Plumbing:* Orlando Torres (contracted / direct hire), Arlis Velázquez
+>   - *Electrical:* Jesús Pérez, Cristina de León
+> - **Note (confirmed Kyle 2026-07-08):** "Jesús Pérez" the electrical contractor **is the same person as "Jesus" the contractor-scheduler** — he wears both hats. **Data-model implication:** one person can be *both* an internal scheduler/agent *and* a contractor; the contractor directory and the user/role model must allow that overlap (don't model contractor and staff as mutually exclusive).
+> - **⏳ PENDING (Gerardo to answer, Kyle relaying):** *who judges* an issue is an emergency, and *how* it's classified — drives the URGENT-flag rule + auto-notify trigger.
+> - **Emergency-dispatch design (my rec, Layer 0→3):** (0) contractor directory w/ trade+coverage+channel; (1) one-tap pre-filled WhatsApp/SMS deep-link dispatch (no new infra); (2) WhatsApp Business API / Twilio two-way accept-decline-ETA + auto-escalation ladder + broadcast-to-pool; (3) contractor calendar w/ auto-reschedule of bumped jobs. WhatsApp primary (they already use it), SMS fallback.
+
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Contractor directory (Layer 0): name/company, trades, property coverage, preferred channel + WhatsApp/phone, language, contracted-vs-ad-hoc, active/on-call — seed roster above |
+| P1 | [ ] | Dispatch queue: assign to internal MT or contractor; scheduling |
+| P1 | [ ] | **Emergency → fast contractor notification** (Kyle 2026-07-08): when an emergency ticket is flagged urgent, alert the right contractor **immediately** — decide channel (call prompt / SMS / WhatsApp / push) + who triggers it (auto vs. human-in-loop). Today it runs through the Teams chat (Shayla Shane, Shay Harper, Kyle, Gerardo, Jesus); goal is to cut time-to-contractor. **Gerardo & Jesus brief §4.3 C-0c gathers the current process + desired speed** — design once answered |
+| P2 | [ ] | Contractor assignment via magic-link (reuse Phase 9 contractor flow) |
+
+### Phase II.6 — Urgent / contractor WhatsApp front door (the sketch)
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | WhatsApp Business inbound channel → same ingestion engine → review queue (photos/voice/Spanish) |
+| P2 | [ ] | Urgent routing: pipe/power/hot-water → top-priority ticket + immediate notify |
+
+### Phase II.7 — Cost-per-repair + reporting
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | Cost capture per ticket; cost-per-repair rollups; maintenance reporting |
+
+---
+
+# COMPONENT III — CONSTRUCTION PROGRESS / SCHEDULING
+
+*New component (ADR-025). Buildout/renovation coordination. **Concept — gated on Rob's decisions file.** Brief: `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`. Shares the ingestion engine (the sketch's CONSTRUCTION lane) with Component II. Track runs in parallel for planning; no build until greenlight.*
+
+### Phase III.0 — Greenlight (gate)
+| Pri | Status | Task |
+|---|---|---|
+| P0 | [!] | Rob answers brief §5 questionnaire → generates `ConstructionAgentDecisions_RISE8_<MMDDYY>.md` — **blocks all III build** |
+| P1 | [ ] | Confirm scope (renovation contractors vs. in-house crew vs. both), #1 pain, launch channel, sequencing (brief §5) |
+
+### Phase III.1 — Progress capture
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Progress % / milestones per project/property |
+| P1 | [ ] | Punch-list tracking |
+
+### Phase III.2 — Scheduling
+| Pri | Status | Task |
+|---|---|---|
+| P1 | [ ] | Project/task scheduling; blocker & delay alerts |
+
+### Phase III.3 — Draw / billing documentation
+| Pri | Status | Task |
+|---|---|---|
+| P2 | [ ] | Documentation for draws / billing (photo-verified progress) |
 
 ---
 

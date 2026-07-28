@@ -124,6 +124,21 @@ enum NotificationStatus {
   SKIPPED
 }
 
+// Contractor trades (Component II — Contractor Dispatch, ADR-025). Plumbing +
+// electrical are the most common emergencies (Kyle 2026-07-08); the rest cover
+// the maintenance/dispatch brief's skill list.
+enum Trade {
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  APPLIANCE
+  GENERAL
+  COSMETIC
+  LANDSCAPING
+  PEST_CONTROL
+  ROOFING
+}
+
 // ---------------------------------------------------------------------------
 // NETWORK section enums (network monitoring + IT ticketing).
 // DevSpec_NetworkMonitoringTicketing_RISE8_072426. Ported onto the platform
@@ -207,6 +222,10 @@ model User {
   notifications     NotificationLog[]
   createdRules      RecurringRule[]     @relation("RuleCreatedBy")
   loginOtps         LoginOtp[]
+  // A staff member can ALSO be a contractor (e.g. Jesús Pérez is both a
+  // scheduler and an electrical contractor). One optional link — not mutually
+  // exclusive with their staff role (Component II, ADR-025).
+  contractor        Contractor?         @relation("UserContractor")
 
   @@map("users")
 }
@@ -238,6 +257,7 @@ model Property {
   devices            Device[]
   networkEvents      NetworkEvent[]
   tickets            Ticket[]
+  contractors        ContractorProperty[]
 
   @@map("properties")
 }
@@ -257,13 +277,13 @@ model UserProperty {
 }
 
 model LoginOtp {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  codeHash  String    @map("code_hash")
-  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  codeHash   String    @map("code_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
   consumedAt DateTime? @map("consumed_at") @db.Timestamptz
-  attempts  Int       @default(0)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -297,21 +317,21 @@ model Room {
 // ---------------------------------------------------------------------------
 
 model ChecklistTemplate {
-  id          String        @id @default(uuid()) @db.Uuid
+  id            String        @id @default(uuid()) @db.Uuid
   // ADR-009 templateCode used in the CL-{prop}-{code}-{date}-{seq} system ID.
-  code        String        @unique @db.VarChar(8)
-  name        String
-  version     Int           @default(1)
-  defaultRole Role          @map("default_role")
-  scope       TemplateScope
-  reviewLevel ReviewLevel   @default(MANAGER) @map("review_level")
-  active         Boolean       @default(true)
-  allProperties  Boolean       @default(false) @map("all_properties")
+  code                  String        @unique @db.VarChar(8)
+  name                  String
+  version               Int           @default(1)
+  defaultRole           Role          @map("default_role")
+  scope                 TemplateScope
+  reviewLevel           ReviewLevel   @default(MANAGER) @map("review_level")
+  active                Boolean       @default(true)
+  allProperties         Boolean       @default(false) @map("all_properties")
   // S1: gates the checkout-flag capture block (fill flow + review confirm).
   // On for Departure/checkout-type templates, off elsewhere.
-  collectsCheckoutFlags Boolean @default(false) @map("collects_checkout_flags")
-  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  collectsCheckoutFlags Boolean       @default(false) @map("collects_checkout_flags")
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
   questions      Question[]
   recurringRules RecurringRule[]
@@ -362,24 +382,24 @@ model TemplateProperty {
 // ---------------------------------------------------------------------------
 
 model RecurringRule {
-  id         String   @id @default(uuid()) @db.Uuid
-  templateId String   @map("template_id") @db.Uuid
-  propertyId String   @map("property_id") @db.Uuid
-  pattern    Json // { type: 'daily'|'weekly'|'monthly'|'quarterly'|'on-demand', ... }
-  assignment Json // { type: 'user'|'role'|'unassigned', target: ... }
+  id              String    @id @default(uuid()) @db.Uuid
+  templateId      String    @map("template_id") @db.Uuid
+  propertyId      String    @map("property_id") @db.Uuid
+  pattern         Json // { type: 'daily'|'weekly'|'monthly'|'quarterly'|'on-demand', ... }
+  assignment      Json // { type: 'user'|'role'|'unassigned', target: ... }
   // ADR-009 per-room scope filter for PER_ROOM templates:
   // { kind: 'all'|'occupied'|'vacant'|'list'|'range', roomNumbers?, from?, to? }.
   // Null = 'all' for PER_ROOM; ignored for PER_PROPERTY / AD_HOC.
-  scope         Json?
+  scope           Json?
   // ADR-009 effective window (inclusive ET dates) + skip-day list (yyyyMMdd[]).
-  effectiveFrom DateTime? @map("effective_from") @db.Date
-  effectiveTo   DateTime? @map("effective_to") @db.Date
-  skipDays      Json?     @map("skip_days")
+  effectiveFrom   DateTime? @map("effective_from") @db.Date
+  effectiveTo     DateTime? @map("effective_to") @db.Date
+  skipDays        Json?     @map("skip_days")
   // Creator for audit context (manager mutations also written to audit_log).
-  createdByUserId String? @map("created_by_user_id") @db.Uuid
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  createdByUserId String?   @map("created_by_user_id") @db.Uuid
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   template  ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   property  Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -564,6 +584,9 @@ model SlaDefault {
 }
 
 // ---------------------------------------------------------------------------
+// NETWORK section + Contractor directory. Merged 2026-07-28: the NETWORK
+// models came from main, the Contractor models from the Component II branch;
+// they are independent and both are kept.
 // NETWORK section — device monitoring + IT ticketing (kept fully separate from
 // the Issue/maintenance pipeline). DevSpec §3–6. Property is REUSED (no second
 // properties table); spec `rise8_id` = Property.propertyId.
@@ -706,6 +729,63 @@ model NetworkJob {
 
   @@index([status, runAt])
   @@map("network_jobs")
+}
+
+// ---------------------------------------------------------------------------
+// Contractor directory (Component II — Contractor Dispatch MVP, ADR-025)
+// Layer 0 of the dispatch design: a directory of trades + coverage + channel so
+// Gerardo/Jesus can surface the right contractor per property+trade, contracted-
+// first. No contractor accounts — dispatch is via WhatsApp/phone (T4). A lean
+// contractor-job record + WhatsApp dispatch build on top of this (T2/T4); it all
+// migrates into the unified Ticket model in Phase II.1.
+// ---------------------------------------------------------------------------
+
+model Contractor {
+  id         String  @id @default(uuid()) @db.Uuid
+  name       String
+  company    String?
+  trades     Trade[]
+  // Contractors use WhatsApp ONLY (Kyle 2026-07-08); phone is the emergency
+  // first-touch for contracted contractors. No SMS — they don't use it.
+  whatsapp   String?
+  phone      String?
+  // Contractors report in Spanish; back-office reads English (dispatch brief §4.2).
+  language   Locale  @default(es)
+  // `contracted` = direct hire / under contract → called first in an emergency
+  // (currently only Orlando Torres). `onCall` = currently available for urgent
+  // dispatch. `active` = soft-delete / still in the directory.
+  contracted Boolean @default(false)
+  onCall     Boolean @default(true)
+  active     Boolean @default(true)
+  notes      String?
+  // Optional link to a staff User who is ALSO a contractor (Jesús Pérez). Unique
+  // — one User maps to at most one Contractor row. SetNull so deleting the staff
+  // account leaves the contractor directory entry intact.
+  userId     String? @unique @map("user_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user       User?                @relation("UserContractor", fields: [userId], references: [id], onDelete: SetNull)
+  properties ContractorProperty[]
+
+  @@index([active])
+  @@map("contractors")
+}
+
+// Which properties a contractor covers (many-to-many; mirrors user_properties).
+model ContractorProperty {
+  contractorId String @map("contractor_id") @db.Uuid
+  propertyId   String @map("property_id") @db.Uuid
+
+  contractor Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([contractorId, propertyId])
+  @@index([propertyId])
+  @@map("contractor_properties")
 }
 
 // ---------------------------------------------------------------------------

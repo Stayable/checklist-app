@@ -313,9 +313,9 @@ Examples: `CL-4645-ARR-20260526-012`, `CL-6802-PWR-20260526-001`
 **Status:** Accepted
 
 ### Context
-Currently Karla / Christopher read every prior-day submission across all 8 properties and manually type a single portfolio-wide morning summary into a corporate Teams channel (see `connecteam-snapshots/image (9).png` for the canonical format). The PRD §8 notification table lists a "Daily morning summary" but only as an email to property managers — it does not include a Teams channel post, nor a corporate consolidation. This is one of the largest manual workloads in the current pipeline and a primary driver for building the platform.
+Currently Karla / Christopher read every prior-day submission across all 8 properties and manually type a single portfolio-wide morning summary into a corporate Teams channel (see `docs/assets/connecteam-snapshots/image (9).png` for the canonical format). The PRD §8 notification table lists a "Daily morning summary" but only as an email to property managers — it does not include a Teams channel post, nor a corporate consolidation. This is one of the largest manual workloads in the current pipeline and a primary driver for building the platform.
 
-Separately, Stayable's current Connecteam instance is white-labeled with the Stayable logo (visible in `connecteam-snapshots/image (10).png`). The new platform needs an end-user product name.
+Separately, Stayable's current Connecteam instance is white-labeled with the Stayable logo (visible in `docs/assets/connecteam-snapshots/image (10).png`). The new platform needs an end-user product name.
 
 ### Alternatives Considered
 
@@ -376,7 +376,7 @@ Separately, Stayable's current Connecteam instance is white-labeled with the Sta
 **Status:** Accepted
 
 ### Context
-Two related UX decisions surfaced from reviewing the Connecteam screenshots in `connecteam-snapshots/`:
+Two related UX decisions surfaced from reviewing the Connecteam screenshots in `docs/assets/connecteam-snapshots/`:
 
 1. **Single-submission review** (image 10): Connecteam uses a three-column layout — left rail for manager fields (status + note), center for question responses + photos, right rail for activity timeline (each status change / note / submission stamped with actor + timestamp). PMs are already trained on this pattern.
 
@@ -458,7 +458,7 @@ The human label format from ADR-009 now reads:
 **Status:** Accepted
 
 ### Context
-Reviewing the Connecteam admin module list (`connecteam-snapshots/image (12).png`) surfaced two operational surfaces that were not in the original PRD scope: **Contractor Checklists** (sign-off forms for vendors/contractors, not employees) and **Quick Tasks** (ad-hoc one-off tasks that are not template-driven and have no recurrence). Both are actively used today on the Connecteam side. Kate's call: keep them in v1 rather than defer to v1.5.
+Reviewing the Connecteam admin module list (`docs/assets/connecteam-snapshots/image (12).png`) surfaced two operational surfaces that were not in the original PRD scope: **Contractor Checklists** (sign-off forms for vendors/contractors, not employees) and **Quick Tasks** (ad-hoc one-off tasks that are not template-driven and have no recurrence). Both are actively used today on the Connecteam side. Kate's call: keep them in v1 rather than defer to v1.5.
 
 This is a meaningful scope expansion. ADR-006 ("Out of scope for v1") deliberately limited the build to template-driven operational checklists. ADR-012 explicitly amends that scope.
 
@@ -918,7 +918,7 @@ Organize the project into **three components**, tracked as top-level sections in
 **Status:** Accepted
 **Decided by:** Kate (DevSpec 2026-07-24), implemented Tasks 1–10
 
-> ⚠ **Numbering:** the unmerged Contractor-Dispatch branch already claims ADR-025. Reconcile the numbering at merge if it lands first.
+> **Numbering:** reconciled 2026-07-28 — the Contractor-Dispatch branch's ADR-025 was merged into `main`, so 024→025→026 is contiguous. No renumbering needed.
 
 ### Context
 Kate's DevSpec (`docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md`, ported from her standalone spec) adds portfolio-wide network device monitoring + IT ticketing as a new `/network` section, sibling to ADMIN. The spec was written for its own standalone stack (own DB, Redis, JWT); this ADR records where the StayCheck implementation diverged to reuse existing platform infrastructure instead.
