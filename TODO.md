@@ -21,8 +21,10 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 |---|---|---|
 | 1 | 🧑 **Run the contractor migration on prod**, then I push `e400698` + `4d572d0` | Two commits are held locally. The merge makes "Contractors" visible in the nav for every manager+; without the migration that link 500s |
 | 2 | ✅ **`TEAMS_WEBHOOK_URL` is set** — verified 2026-07-28 in prod logs (`teams.configured: true` every tick). Queue is armed; `attempted: 0` only because no ticket exists yet | Nothing to do |
-| 3 | **D2 — contractor job record** ▶ | The design spec already exists (`docs/superpowers/specs/2026-07-23-t2-contractor-job-design.md`). Unblocks D3→D4 (WhatsApp) and D6 (scheduling) |
+| 3 | 🧑 **Apply migration `20260728120000_add_contractor_jobs` to prod**, then I push `dafbaf1` | D2+D3 are built and verified locally. `/dispatch` 500s on a missing table until the migration lands |
 | 4 | 🧑 **KW unplug test** (~7 min) | The ticket lifecycle has never fired in production. This is the difference between "code is right" and "system works" |
+| 5 | **D4 — one-tap WhatsApp dispatch** ▶ | Next build. The `/dispatch/[id]` candidate list already carries each contractor's WhatsApp + phone; D4 adds the pre-filled `wa.me` deep link, the `tel:` first-touch, and the no-account magic link |
+| 6 | 🧑 **Enter real contractor numbers** in `/contractors` | The directory is live and empty. D4 cannot dispatch to anyone until Orlando Torres et al. have real numbers |
 
 **The two decisions that unblock the most downstream work:** §Q1 (UniFi account access — 7 of 8 properties) and §Q7 (Track A vs Track D priority — see the schedule warning below).
 
@@ -220,8 +222,8 @@ Fastest, most independent slice: get emergencies to the right contractor fast. A
 | Phase | Pri | Status | What |
 |---|---|---|---|
 | D1 | P1 | [x] | **T1 — Contractor directory.** `Contractor` + `ContractorProperty` + `Trade`, `Contractor.userId` unique link to `User`, `/contractors` CRUD (property-scoped, audited), `lib/contractors.ts` + tests. **Merged to main 2026-07-28; migration NOT yet on prod** |
-| D2 | P1 | [ ] ▶ | **T2 — Contractor job record.** Property, room, trade, problem, photos (reuse R2 pipeline), `URGENT` flag, status. Dispatcher-created. Spec ready: `docs/superpowers/specs/2026-07-23-t2-contractor-job-design.md` |
-| D3 | P1 | [ ] | **T3 — Match & rank** (pure, testable): filter by property + trade, order contracted-first |
+| D2 | P1 | [x] | **T2 — Contractor job record — DONE 2026-07-28** (`dafbaf1`). `ContractorJob` + `JobStatus` + third photo owner on `Photo`; `/dispatch` queue (urgent-first, URL filters) + `/dispatch/new` + `/dispatch/[id]`; photos reuse the R2 pipeline unchanged; nav gains Dispatch. Terminal jobs immutable; COMPLETED/CANCELLED need a note; DISPATCHED needs a contractor. **Migration `20260728120000` NOT yet on prod** |
+| D3 | P1 | [x] | **T3 — Match & rank — DONE 2026-07-28** (`dafbaf1`, shipped with D2 since both need the same eligibility predicate). `canAssignContractor` + `rankContractorsForJob` in `lib/contractor-jobs.ts`, 37 tests. Eligible = active ∧ has trade ∧ covers property; **`onCall` ranks but never excludes** (a hard availability filter could leave a property with nobody eligible mid-emergency). Order: contracted → on-call → reachable → name (stable). Re-validated server-side in `assignContractor` — the action doesn't trust the UI |
 | D4 | P1 | [ ] | **T4 — One-tap dispatch:** pre-filled bilingual `wa.me` deep link + `tel:` for the emergency first touch. Human sends; no auto-action. **Message carries a signed single-use magic link** so the contractor sees the job + photos with no account — shared with A10 |
 | D5 | P1 | [ ] | **Emergency flag + fast alert** to the coordination group. MVP = manual URGENT toggle | §Q4 |
 | D6 | P2 | [ ] | **Scheduling: contractor calendar** + auto-reschedule of jobs bumped by an emergency. **§SPEC-5** — and §Q16 must be answered first |
