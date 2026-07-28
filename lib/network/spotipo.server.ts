@@ -62,24 +62,75 @@ function nullSummary(property: WifiProperty, configured: boolean): WifiSiteSumma
  *    unexpected shape) must degrade the same way — hence the try/catch below
  *    even though nothing can throw yet.
  */
+const SPOTIPO_BASE = "https://api.spotipo.com";
+const REQUEST_TIMEOUT_MS = 15_000;
+
+/**
+ * One site's guest summary from the live Spotipo API.
+ *
+ * ── What the API actually provides (probed against a live site 2026-07-29) ──
+ * `GET /ext/{siteId}/api/v1/guest/` returns
+ *   `{ metadata: { page, per_page, total_count, page_count, links }, items: [...] }`
+ * where each item is a guest record: `name, email, phonenumber, newsletter,
+ * consent, id, last_seen_at`.
+ *
+ * So:
+ *  - **totalGuests** comes from `metadata.total_count`. Real, exact, one request.
+ *  - **revenue** is NOT AVAILABLE. There is no revenue field on this endpoint, and
+ *    /stats/, /report/, /analytics/, /transaction/, /payment/, /session/ and
+ *    /voucher/ all 404. Spec §11's revenue field does not merely lack
+ *    confirmation — it appears not to exist on this API surface. Stays null.
+ *  - **onlineNow** is NOT AVAILABLE either. There is no online flag; deriving it
+ *    from `last_seen_at` would require assuming how often Spotipo refreshes that
+ *    stamp, which is a guess we would then display as a fact. Stays null.
+ *  - **avgDwellMin** has no source field. Stays null.
+ *
+ * `per_page=1` is deliberate: we need the count from `metadata`, not the guest
+ * records. Those records are PII (names, emails, phone numbers) and this feature
+ * has no business reading — let alone storing — them, so we ask for the smallest
+ * page the API will give us and discard `items` entirely. Nothing here persists.
+ */
 export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSiteSummary> {
   const config = resolveSpotipoConfig(property);
   if (config === null) return nullSummary(property, false);
 
   try {
-    // FUTURE (Spotipo creds task): the real GET + field parsing goes here, using
-    // `config.siteId` / `config.apiKey`. Still not implemented: the endpoint and
-    // response shape in the doc comment above are from the DevSpec and remain
-    // UNVERIFIED against the live API, and the revenue field name is explicitly
-    // unconfirmed. Writing a parser against a guessed shape would produce
-    // plausible wrong numbers on an ops dashboard, which is worse than blanks —
-    // so this waits for one real captured response.
-    return nullSummary(property, true);
+    const res = await fetch(
+      `${SPOTIPO_BASE}/ext/${encodeURIComponent(config.siteId)}/api/v1/guest/?per_page=1`,
+      {
+        headers: { "Authentication-Token": config.apiKey, Accept: "application/json" },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) return nullSummary(property, true);
+
+    const body: unknown = await res.json();
+    const total = readTotalCount(body);
+
+    return {
+      propertyId: property.id,
+      shortCode: property.shortCode,
+      configured: true,
+      totalGuests: total,
+      onlineNow: null,
+      avgDwellMin: null,
+      revenue: null,
+    };
   } catch {
-    // Never throw out of the fetch seam — a single site's failure must not
-    // break the rest of the portfolio.
+    // Never throw out of the fetch seam — one site's failure must not break the
+    // rest of the portfolio.
     return nullSummary(property, true);
   }
+}
+
+/** Pulls metadata.total_count defensively; null if the shape isn't what we saw. */
+function readTotalCount(body: unknown): number | null {
+  if (typeof body !== "object" || body === null) return null;
+  const meta = (body as { metadata?: unknown }).metadata;
+  if (typeof meta !== "object" || meta === null) return null;
+  const total = (meta as { total_count?: unknown }).total_count;
+  return typeof total === "number" && Number.isFinite(total) ? total : null;
 }
 
 /**

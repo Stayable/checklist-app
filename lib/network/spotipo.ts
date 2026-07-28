@@ -14,8 +14,14 @@ export type WifiSiteSummary = {
   totalGuests: number | null;
   onlineNow: number | null;
   avgDwellMin: number | null;
-  /** Revenue availability is UNCONFIRMED per spec §11 — always null until
-   *  Spotipo support confirms the field, even once a site is configured. */
+  /**
+   * Always null. Probed against the live API 2026-07-29: there is no revenue
+   * field on the guest endpoint, and /stats/, /report/, /analytics/,
+   * /transaction/, /payment/, /session/ and /voucher/ all 404. Spec §11's
+   * revenue figure does not merely lack confirmation — it is not exposed by this
+   * API. Kept in the type so the UI can say "not available" rather than silently
+   * omitting a number Kate asked for.
+   */
   revenue: number | null;
 };
 
