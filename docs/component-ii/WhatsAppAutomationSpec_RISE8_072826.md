@@ -143,20 +143,55 @@ Unset ⇒ `configured: false`, rows settle `SKIPPED`, no network call. Same degr
 4. **Template approval is a gate on every new message type**, not a one-time cost. Budget approval latency into any future notification.
 5. **Alternative vendors** (Twilio, 360dialog, MessageBird) wrap this same Meta API and still require the WABA, verification and template approval. They buy easier onboarding and a test sandbox, not fewer Meta requirements.
 
-## 7. Sequence
+## 7. Plan — **vendor first, app second** (Kyle 2026-07-29)
 
-| Step | Owner | Blocking? |
+**Priority set by Kyle: get Twilio talking to WhatsApp Business FIRST, then connect the app.** This replaces the earlier sandbox-first ordering. The consequence is honest and worth stating: nothing arrives in the app until Phase 1 clears, and Phase 1 contains **two separate Meta approvals** that are outside our control.
+
+### Phase 1 — Twilio ↔ WhatsApp Business (🧑 Kyle) · **the whole critical path**
+
+Do these in order; each one gates the next.
+
+| # | Step | Where | Notes |
+|---|---|---|---|
+| 1.1 | Create the Twilio account | twilio.com | Minutes. Upgrade off trial before production sending |
+| 1.2 | **Buy a phone number** | Console → Phone Numbers → Buy a number | Must be able to receive an SMS/voice verification code. **Must NOT already be on consumer WhatsApp** — if it ever was, delete the WhatsApp account on it first, or it cannot be registered |
+| 1.3 | Create / connect a **Meta Business Portfolio** | business.facebook.com | Twilio's signup links to this. Decide now who the admin is — it should be a RISE8 business account, not a personal profile |
+| 1.4 | **Register the WhatsApp sender** | Console → Messaging → Senders → WhatsApp senders → New | Twilio's embedded signup creates/links the WABA and registers the number |
+| 1.5 | **Display name approval** ⚠ | Part of 1.4, decided by Meta | The name contractors will see. Must relate to the business ("Stayable", "Stayable Maintenance"). **Meta reviews and can reject it** — this is the step people don't expect |
+| 1.6 | **Meta Business Verification** ⚠ | Meta Business Manager | Document-based: business registration, address, and usually a matching domain. **Days to weeks.** Required to lift messaging limits and to send at all in some configurations |
+| 1.7 | Confirm the sender is live | Console → Senders shows the number as active | End of Phase 1 |
+
+**Two approvals, not one.** 1.5 (display name) and 1.6 (business verification) are independent Meta reviews. Either can bounce and ask for more evidence. **Have ready before starting:** business registration document, the business address, the RISE8 domain, and the exact display name you want.
+
+**New senders start rate-limited** (a capped number of unique recipients per 24 h, which rises with quality rating). Irrelevant for four contractors; it would matter if this ever expanded to guests.
+
+### Phase 2 — Templates (🧑 Kyle + me) · needs Phase 1
+
+| # | Step | Notes |
 |---|---|---|
-| 1. Twilio account + buy a number + enable the **Sandbox** | 🧑 Kyle | Minutes. Unblocks everything below |
-| 2. `lib/whatsapp/*` + delivery sweep + inbound/status webhook, **tested live against the Sandbox** | me | Needs only step 1 |
-| 3. Contractor opt-in capture (UI + `whatsappOptInAt`) | me | No — buildable now |
-| 4. Twilio embedded signup → **Meta Business Verification** | 🧑 Kyle | Days–weeks, runs in parallel with 2–3 |
-| 5. Submit T-1…T-4 as Content Templates (EN + ES) | me + 🧑 Kyle | After 4 |
-| 6. Swap `TWILIO_WHATSAPP_FROM` + template SIDs → live | me | After 5. No code change |
-| 7. T-2 `schedule_assigned` | me | **Needs D6 scheduling to exist** |
-| 8. Escalation ladder (T-4) | me | After 6 |
+| 2.1 | Build T-1…T-4 in Twilio's Content Template Builder, **EN + ES** = 8 templates | Text from §4.2. Category **UTILITY** — do not let them be filed as MARKETING |
+| 2.2 | Submit for WhatsApp approval | Meta decides. Usually fast once the sender is live, but it is still a review |
+| 2.3 | Record the approved `ContentSid` for each | These are what the app sends; they go in `lib/whatsapp/templates.ts` |
 
-**Why the order changed:** previously everything waited on Meta verification. With the Twilio Sandbox, steps 2–3 can be built and *actually tested against real WhatsApp* while verification is pending — so when Meta clears, going live is an env-var change rather than the start of a build.
+### Phase 3 — Connect the app (me) · needs 1.7, and 2.3 for live sends
+
+| # | Step | Est. |
+|---|---|---|
+| 3.1 | `NotificationChannel` += `WHATSAPP`; `Contractor.whatsappOptInAt`; `ContractorJob.whatsappMessageId` (one additive migration) | small |
+| 3.2 | `lib/whatsapp/client.server.ts` + `templates.ts` — Twilio Messages API, never throws, config-gated | ~1 session |
+| 3.3 | `lib/whatsapp/deliver.server.ts` — the sweep, cloned from `teams-deliver.server.ts` (claim-before-send, settle SENT/FAILED) | small |
+| 3.4 | `app/api/webhooks/whatsapp/route.ts` — inbound + status callbacks, `X-Twilio-Signature` validated via the SDK, fail-closed in production | ~1 session |
+| 3.5 | Contractor opt-in capture in `/contractors` | small |
+| 3.6 | Wire **T-1 job dispatched** as the first live event, from `/dispatch/[id]` | small |
+| 3.7 | `SENT → DELIVERED` from status callbacks | small |
+| 3.8 | Escalation ladder (T-4) | later |
+| 3.9 | **T-2 schedule assigned** — Kyle's original example | **blocked on D6 scheduling existing at all** |
+
+### What I need from you at the Phase 2→3 handover
+`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` (as `whatsapp:+1…`) **set in Vercel Production — not pasted into chat**, plus the approved template SIDs. The auth token is a full-account credential: it can send messages and spend money, so it is treated like `AUTH_SECRET`.
+
+### The trade-off this ordering accepts
+Building against the **Sandbox** (still available, Console → Messaging → Try it out) would let Phase 3 be written and tested against real WhatsApp *during* Phase 1's approval waits, then go live with an env-var swap. Kyle's ordering is vendor-first, so Phase 3 simply starts later. If Phase 1 stalls on a Meta review, say so and I will start Phase 3 against the sandbox rather than sit idle — the code is identical either way.
 
 ## 8. Definition of done
 
