@@ -60,11 +60,30 @@ describe("findHostEntry", () => {
 });
 
 describe("the real registry", () => {
-  it("monitors exactly the Kissimmee West pilot console today", () => {
+  it("monitors the five properties whose consoles are reachable", () => {
     const live = monitoredHosts();
-    expect(live).toHaveLength(1);
-    expect(live[0]?.propertyRef).toBe("5399");
-    expect(live[0]?.label).toBe("SS-KISSWEST");
+    const props = [...new Set(live.map((h) => h.propertyRef))].sort();
+    // Lexicographic sort, so "44199" precedes "4645".
+    // KE 2295 · DP 44199 · LL 4645 · KW 5399 · OR 8700
+    expect(props).toEqual(["2295", "44199", "4645", "5399", "8700"]);
+    expect(live).toHaveLength(10);
+  });
+
+  it("does NOT monitor Jacksonville West or North — no key reaches them (N1)", () => {
+    const live = monitoredHosts().map((h) => h.propertyRef);
+    expect(live).not.toContain("6802"); // JW
+    expect(live).not.toContain("812"); // JN
+  });
+
+  it("keeps the stale Orlando view excluded while monitoring the live one", () => {
+    const orlando = hostsForProperty("8700");
+    const monitored = orlando.filter((h) => h.monitored);
+    const excluded = orlando.filter((h) => !h.monitored);
+    expect(monitored.length).toBe(3); // network + 2 NVRs
+    expect(excluded.length).toBe(1); // the stale-view duplicate
+    // Same physical console: the ids share their MAC-derived prefix.
+    const livePrefix = monitored.find((h) => h.label.includes("live"))?.hostId.split(":")[0];
+    expect(excluded[0]?.hostId.split(":")[0]).toBe(livePrefix);
   });
 
   it("has no duplicate host ids", () => {

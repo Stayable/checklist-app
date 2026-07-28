@@ -7,13 +7,19 @@
 // Two flagged problems are enforced here by construction rather than by
 // remembering to check them downstream:
 //
-//   N2 (decommissioned consoles) — monitoring is EXPLICIT OPT-IN. A console
+//   N2 (untrusted console views) — monitoring is EXPLICIT OPT-IN. A console
 //   absent from this registry, or present with `monitored: false`, is never
-//   polled. Four consoles in the account are replaced hardware that has been
-//   cloud-disconnected for 8-14 months; ingesting them would manufacture
-//   permanent "outages" that no one can ever clear. They are listed below
-//   with `monitored: false` on purpose — listed, so the exclusion is visible
-//   and auditable, rather than silently missing.
+//   polled. Four entries are excluded because the account that reports them
+//   has a stale view: ingesting them would manufacture permanent "outages"
+//   nobody can clear. They are LISTED with `monitored: false` on purpose, so
+//   the exclusion is visible and auditable rather than silently missing.
+//
+//   ⚠ Host ids are ACCOUNT-SCOPED, not global (discovered 2026-07-29). The
+//   same physical console seen through two accounts yields two different ids
+//   that share a MAC-derived prefix and differ after the ":". Orlando is the
+//   worked example below. So this registry maps (console, account) pairs, and
+//   dedup-by-id across keys cannot collapse them — which is fine precisely
+//   because monitoring is opt-in: only the trustworthy view is turned on.
 //
 //   N3 (multiple consoles per property) — this is a flat list keyed by host,
 //   not a column on Property, so one property can own any number of consoles
@@ -41,10 +47,12 @@ export type UnifiHostEntry = {
 };
 
 /**
- * Every console this account can currently see (5 of the estate's 19 — the
- * key's account is not invited to the other 14; see N1). Add the rest once
- * that access lands: one entry per console, `monitored: true`, correct
- * `propertyRef`.
+ * Consoles visible across the configured keys — 14 of the estate's ~19 as of
+ * 2026-07-29, spread over TWO Ubiquiti accounts (see N1).
+ *
+ * Monitored: Kissimmee West, Lakeland, Kissimmee East, Orlando OBT, Davenport.
+ * STILL MISSING (no key reaches them): **Jacksonville West** and **Jacksonville
+ * North**, plus a live St. Augustine console — only its stale view is visible.
  */
 export const UNIFI_HOST_REGISTRY: readonly UnifiHostEntry[] = [
   {
@@ -55,7 +63,72 @@ export const UNIFI_HOST_REGISTRY: readonly UnifiHostEntry[] = [
     note: "Live pilot console (Kyle 2026-07-27) — the one production console this key can read.",
   },
 
-  // ── Decommissioned / replaced hardware — N2. Never poll these. ───────────
+  {
+    hostId: "D021F959BF0700000000063D263D00000000068724A30000000061C908A1:698881875",
+    label: "Lakeland",
+    propertyRef: "4645", // Lakeland (LL) — Network side
+    monitored: true,
+  },
+  {
+    hostId: "AC8BA96B5E6800000000071A736B000000000770254C00000000639C7710:2137493819",
+    label: "Lakeland-NVR",
+    propertyRef: "4645", // Lakeland (LL) — Protect / cameras
+    monitored: true,
+  },
+  {
+    hostId: "70A74166934C00000000066D640F0000000006BA5304000000006288B335:725861524",
+    label: "SS-KISSEAST",
+    propertyRef: "2295", // Kissimmee East (KE) — Network side
+    monitored: true,
+  },
+  {
+    hostId: "1C6A1B4A723A0000000008CE3C99000000000946AC230000000067C56B3A:1561236543",
+    label: "KE-NVR",
+    propertyRef: "2295", // Kissimmee East (KE) — Protect / cameras
+    monitored: true,
+  },
+  {
+    hostId: "70A741665E6C00000000066E2D4D0000000006C0415D00000000629B6398:105822277",
+    label: "SS-ORLANDO (live)",
+    propertyRef: "8700", // Orlando OBT (OR) — Network side
+    monitored: true,
+    note: "Same physical console as the ':1068319892' entry below — identical MAC prefix, different account-scoped id suffix. THIS is the trustworthy view (connected); the other account sees it stale.",
+  },
+  {
+    hostId: "1C6A1B4A70180000000008CF6762000000000947E73D0000000067C6D928:1821572390",
+    label: "Orlando-NVR",
+    propertyRef: "8700", // Orlando OBT (OR) — Protect / cameras
+    monitored: true,
+  },
+  {
+    hostId: "74FA29252E800000000009F4DC1D000000000A8328390000000069BE3E69:907048078",
+    label: "Orlando-NVR2",
+    propertyRef: "8700", // Orlando OBT (OR) — Protect / cameras (second recorder)
+    monitored: true,
+  },
+  {
+    hostId: "1C6A1B2320710000000008C15EEF0000000009391CBF0000000067B2D815:1927523536",
+    label: "UDM-Pro-Devenport",
+    propertyRef: "44199", // Davenport (DP) — Network side
+    monitored: true,
+  },
+  {
+    hostId: "58D61F534F9500000000099C64A4000000000A23DEA60000000069160102:193461564",
+    label: "Davenport-NVR",
+    propertyRef: "44199", // Davenport (DP) — Protect / cameras
+    monitored: true,
+  },
+
+  // ── Untrusted views — N2. Never poll these. ─────────────────────────────
+  //
+  // CORRECTION 2026-07-29: these were originally labelled "decommissioned
+  // hardware". The Orlando evidence above disproves that for at least one of
+  // them — the same physical console (same MAC prefix) reports `disconnected`
+  // through the first account and `connected` through the second, so what is
+  // stale is the ACCOUNT'S VIEW, not the hardware. JAXWEST and StAugustine are
+  // very likely the same story; the second key simply cannot see them either,
+  // so it remains unproven. Either way they stay unmonitored: an account whose
+  // view of a console is stale is not a source we can trust.
   {
     hostId: "F492BF95B8FB00000000051B1C510000000005563736000000005F904DFE:1235846273",
     label: "SS-JAXWEST",
@@ -68,7 +141,7 @@ export const UNIFI_HOST_REGISTRY: readonly UnifiHostEntry[] = [
     label: "SS-ORLANDO (legacy duplicate)",
     propertyRef: "8700",
     monitored: false,
-    note: "Cloud-disconnected since 2025-05-25; reports only its own UDM Pro. A separate live 'SS-ORLANDO' console exists outside this key's access.",
+    note: "SAME PHYSICAL CONSOLE as the ':105822277' entry above (identical MAC prefix) — not separate hardware. This account's view of it is stale; the other account sees it connected with 15 devices. Kept unmonitored so the stale view can never win.",
   },
   {
     hostId: "9C05D669EAE40000000007FD38F9000000000869AB820000000066036BBB:207126036",
