@@ -18,11 +18,69 @@ const API_BASE = "https://api.ui.com";
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export type UnifiFetchResult =
-  | { ok: true; snapshot: UnifiSnapshot }
+  | { ok: true; snapshot: UnifiSnapshot; keysUsed: number; keysFailed: number }
   | { ok: false; configured: boolean; error: string };
 
+/**
+ * Every configured API key, in precedence order.
+ *
+ * MULTIPLE ACCOUNTS (2026-07-29): the estate's 19 consoles are split across more
+ * than one Ubiquiti account — the original key sees only 5, which is finding N1.
+ * A key per account is therefore normal, not a workaround, so keys are read as
+ * `UNIFI_API_KEY` plus `UNIFI_API_KEY_2 … UNIFI_API_KEY_9` and every one is
+ * polled. Numbering stops at 9 deliberately: an unbounded scan over env would
+ * make a typo like `UNIFI_API_KEY_10` silently do nothing.
+ */
+export function unifiApiKeys(env: Record<string, string | undefined> = process.env): string[] {
+  const keys: string[] = [];
+  const push = (raw: string | undefined) => {
+    const v = typeof raw === "string" ? raw.trim() : "";
+    // De-duplicate: the same key pasted into two slots would otherwise double
+    // every request and every host, for no benefit.
+    if (v.length > 0 && !keys.includes(v)) keys.push(v);
+  };
+  push(env.UNIFI_API_KEY);
+  for (let i = 2; i <= 9; i++) push(env[`UNIFI_API_KEY_${i}`]);
+  return keys;
+}
+
 export function isUnifiConfigured(): boolean {
-  return Boolean(process.env.UNIFI_API_KEY);
+  return unifiApiKeys().length > 0;
+}
+
+/**
+ * Merges per-account snapshots into one.
+ *
+ * A console can legitimately appear under two accounts (one owns it, another was
+ * invited), so hosts are de-duplicated by id. For devices, the group with MORE
+ * devices wins: an invited account often sees a partial or stale inventory, and
+ * between two views of the same console the fuller one is the better evidence.
+ * Taking "first wins" instead would let whichever key happened to be listed first
+ * hide devices the other account can see.
+ */
+export function mergeSnapshots(snapshots: UnifiSnapshot[]): UnifiSnapshot {
+  const hostById = new Map<string, UnifiApiHost>();
+  for (const snap of snapshots) {
+    for (const host of snap.hosts) {
+      const existing = hostById.get(host.id);
+      // Prefer an entry that actually carries a state over one that doesn't.
+      if (existing === undefined || (existing.state === undefined && host.state !== undefined)) {
+        hostById.set(host.id, host);
+      }
+    }
+  }
+
+  const groupByHost = new Map<string, UnifiSnapshot["deviceGroups"][number]>();
+  for (const snap of snapshots) {
+    for (const group of snap.deviceGroups) {
+      const existing = groupByHost.get(group.hostId);
+      if (existing === undefined || group.devices.length > existing.devices.length) {
+        groupByHost.set(group.hostId, group);
+      }
+    }
+  }
+
+  return { hosts: [...hostById.values()], deviceGroups: [...groupByHost.values()] };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -101,29 +159,41 @@ export function parseDeviceGroups(payload: unknown): UnifiSnapshot["deviceGroups
 
 /** Fetches one full snapshot (hosts + devices). Never throws. */
 export async function fetchUnifiSnapshot(): Promise<UnifiFetchResult> {
-  const apiKey = process.env.UNIFI_API_KEY;
-  if (!apiKey) {
+  const keys = unifiApiKeys();
+  if (keys.length === 0) {
     return { ok: false, configured: false, error: "unifi_not_configured" };
   }
 
-  try {
-    const [hostsPayload, devicesPayload] = await Promise.all([
-      getJson("/v1/hosts", apiKey),
-      getJson("/v1/devices", apiKey),
-    ]);
+  const perKey = await Promise.all(
+    keys.map(async (apiKey): Promise<UnifiSnapshot | { error: string }> => {
+      try {
+        const [hostsPayload, devicesPayload] = await Promise.all([
+          getJson("/v1/hosts", apiKey),
+          getJson("/v1/devices", apiKey),
+        ]);
+        return {
+          hosts: parseHosts(hostsPayload),
+          deviceGroups: parseDeviceGroups(devicesPayload),
+        };
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : "unifi_fetch_failed" };
+      }
+    }),
+  );
 
-    return {
-      ok: true,
-      snapshot: {
-        hosts: parseHosts(hostsPayload),
-        deviceGroups: parseDeviceGroups(devicesPayload),
-      },
-    };
-  } catch (error) {
+  const good = perKey.filter((r): r is UnifiSnapshot => !("error" in r));
+  const failed = perKey.filter((r): r is { error: string } => "error" in r);
+
+  // One bad key must not blind us to the accounts that DID answer — a revoked or
+  // mistyped key would otherwise take the whole fleet's monitoring down with it.
+  // Only a total failure is reported as a failure.
+  if (good.length === 0) {
     return {
       ok: false,
       configured: true,
-      error: error instanceof Error ? error.message : "unifi_fetch_failed",
+      error: failed[0]?.error ?? "unifi_fetch_failed",
     };
   }
+
+  return { ok: true, snapshot: mergeSnapshots(good), keysUsed: keys.length, keysFailed: failed.length };
 }

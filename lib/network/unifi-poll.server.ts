@@ -26,6 +26,9 @@ export type PollOutcome = {
   configured: boolean;
   ok: boolean;
   error?: string;
+  /** How many API keys answered, and how many failed (multi-account estates). */
+  keysUsed: number;
+  keysFailed: number;
   hostsPolled: number;
   devicesObserved: number;
   /** Inventory rows that failed to write — surfaces a lagging DB, not a 500. */
@@ -219,6 +222,8 @@ export async function runUnifiPoll(now: Date = new Date()): Promise<PollOutcome>
   const empty: PollOutcome = {
     configured: isConfiguredForReport(),
     ok: false,
+    keysUsed: 0,
+    keysFailed: 0,
     hostsPolled: 0,
     devicesObserved: 0,
     devicesFailed: 0,
@@ -312,6 +317,8 @@ export async function runUnifiPoll(now: Date = new Date()): Promise<PollOutcome>
   return {
     configured: true,
     ok: true,
+    keysUsed: fetched.keysUsed,
+    keysFailed: fetched.keysFailed,
     hostsPolled: monitored.length,
     devicesObserved: inventory.count,
     devicesFailed: inventory.failed,
