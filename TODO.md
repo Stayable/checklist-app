@@ -24,9 +24,11 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 | 3 | **D2 — contractor job record** ▶ | The design spec already exists (`docs/superpowers/specs/2026-07-23-t2-contractor-job-design.md`). Unblocks D3→D4 (WhatsApp) and D6 (scheduling) |
 | 4 | 🧑 **KW unplug test** (~7 min) | The ticket lifecycle has never fired in production. This is the difference between "code is right" and "system works" |
 
-**The two decisions that unblock the most downstream work:** §Q1 (UniFi account access — 7 of 8 properties) and §Q7 (Component I vs II priority — see the schedule warning below).
+**The two decisions that unblock the most downstream work:** §Q1 (UniFi account access — 7 of 8 properties) and §Q7 (Track A vs Track D priority — see the schedule warning below).
 
-**⚠️ Schedule reality:** original plan was cutover at Week 14 ≈ **21 Aug 2026**. We are ~10.5 weeks in with A6 (content + geofences), A7, A8 and A11 all outstanding, and a 4-week parallel run not started. **Week-14 cutover is not reachable.** Two new tracks (C, D) also appeared without Rob signing off the scope expansion. A re-baselined date is owed — see §Q7.
+**Who decides (updated 2026-07-28):** **Kyle develops, Kate reviews, and the two of them share every decision.** There is no external sign-off chain and nothing waits on an approval gate. **Rob monitors the launched app only** — he is not in the decision path, so no item in this tracker is blocked on him. Crystal, Gerardo, Karla and Christopher supply *ops ground truth and content*; those are inputs, not approvals.
+
+**⚠️ Schedule reality:** original plan was cutover at Week 14 ≈ **21 Aug 2026**. We are ~10.5 weeks in with A6 (content + geofences), A7, A8 and A11 all outstanding, and a 4-week parallel run not started. **Week-14 cutover is not reachable.** A re-baselined date is owed — see §Q7. (Tracks C and D are also net-new scope on top of the original v1; that is now a Kyle+Kate call, not an external approval.)
 
 ---
 
@@ -36,9 +38,9 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 |---|---|---|---|---|
 | **A** | **Checklist App (StayCheck)** — the Connecteam replacement | **P0** | 🟢 Live in prod, ~60% of v1 | A6 (real content + geofences) |
 | **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live pilot, 1 of 8 properties | B2 (prove lifecycle + widen access) |
-| **C** | **Maintenance / Ticketing** (tenant + email desk) | P1 | 🔴 Nothing built, gated on sign-off | C0 (gate) |
+| **C** | **Maintenance / Ticketing** (tenant + email desk) | P1 | 🔴 Nothing built, needs a spec | C0 (decide + spec) |
 | **D** | **Contractor Dispatch + WhatsApp + Scheduling** | P1 | 🟡 T1 directory built, not deployed | D2 (job record) ▶ |
-| **E** | **Construction Progress / Scheduling** | P3 | ⛔ Concept, gated | E0 (greenlight) |
+| **E** | **Construction Progress / Scheduling** | P3 | ⛔ Concept, not decided | E0 (go / no-go) |
 
 Tracks share one codebase and one deploy (ADR-025) and reuse each other's infrastructure: auth, RBAC, audit log, notifications, R2 photo pipeline, SLA, geofence.
 
@@ -172,7 +174,8 @@ Schema (6 tables, 7 enums, `NETWORK_TECH` role) · pure helpers (event mapping, 
 
 | Pri | Status | Item |
 |---|---|---|
-| P1 | [~] | Teams delivery via Power Automate webhook — **built, needs `TEAMS_WEBHOOK_URL`**. Send-only: no threading, no message id, T8 impossible | §Q5 |
+| P1 | [~] | Teams delivery via Power Automate webhook — **built, needs `TEAMS_WEBHOOK_URL`**. Send-only as configured: no message id comes back, so no threading | §Q5 |
+| P1 | [ ] | **Ticket close should REPLY to the created-ticket message, not post separately** (Kyle 2026-07-28). Schema is already ready (`Ticket.teamsMessageId` / `teamsMessageUrl`, unused). Two paths — see §Q25. Wanted because an outage generates several posts and a loose "resolved" message makes the channel unreadable exactly when someone is reconstructing what happened |
 | P2 | [!] | Guest WiFi (Spotipo) — scaffold only, renders "not configured" | §Q3 |
 | P2 | [ ] | Decide at-rest encryption for `Property.spotipoApiKey` (plaintext column today) |
 | P3 | [ ] | T8 — Teams reply → `TicketNote` (**requires Graph**, impossible on the webhook) |
@@ -185,11 +188,11 @@ Replaces the Smartsheet maintenance tracker **and** Zoho Desk. Intake → AI tri
 
 **Intake reality (corrected 2026-07-08):** tenant requests arrive via **TurboTenant + Jotform**, consolidated in Smartsheet today. **Property managers** own triage/assignment/daily scheduling. The `admin@`/`blake@` email desk is an *additional* lane (maintenance emails get missed today), not the whole intake.
 
-## C0 — Gate ▶ **build is blocked until this closes** · P0
+## C0 — Decide + spec ▶ **build is blocked until this closes** · P0
 
 | Pri | Status | Item |
 |---|---|---|
-| P0 | [~] | Staged sign-off **Kate ✅ → Crystal (owner) → Rob (budget)** | §Q6 |
+| P0 | [~] | **Design decided by Kyle + Kate** (Kate reconciled Part 1 already). Crystal remains the source of ops ground truth, not an approval gate | §Q6 |
 | P0 | [ ] | **Draft the PM-facing intake brief** — recipient still undecided (§Q15) |
 | P0 | [!] | Answer the **Top-8 blockers** in `docs/component-ii/MaintenanceTicketingScopingQuestions_RISE8_070726.md` | §Q6 |
 | P0 | [ ] | Turn signed-off answers into a design spec → plan → build (**§SPEC-4**) |
@@ -226,13 +229,13 @@ Fastest, most independent slice: get emergencies to the right contractor fast. A
 
 ---
 
-# TRACK E — Construction Progress / Scheduling · P3 · ⛔ GATED
+# TRACK E — Construction Progress / Scheduling · P3 · ⛔ NOT DECIDED
 
-Brief: `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`. Shares the ingestion engine with Track C. **No build until greenlight.**
+Brief: `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`. Shares the ingestion engine with Track C. **No build until Kyle+Kate say go.**
 
 | Phase | Pri | Status | What |
 |---|---|---|---|
-| E0 | P0 | [!] | **Greenlight** — moved from Rob to **Crystal's ops input** (design-review §2.3); Rob is budget-only now. ⚠ Record as an ADR when it closes | §Q18 |
+| E0 | P0 | [ ] | **Go / no-go** — a Kyle+Kate call informed by Crystal's ops input (design-review §2.3). ⚠ Record as an ADR when it closes | §Q18 |
 | E1 | P1 | [ ] | Progress % / milestones per project; punch-list tracking |
 | E2 | P1 | [ ] | Project/task scheduling; blocker & delay alerts |
 | E3 | P2 | [ ] | Draw / billing documentation (photo-verified progress) |
@@ -285,21 +288,18 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 | **Q13** | Final CONTRACTOR-audience template list | A10 | — |
 | **Q14** | **Who reviews the Spanish?** Karla / Christopher / external | A11 — gates field training | Machine-drafted ES keeps shipping meanwhile (ADR-014) |
 | **Q20** | Confirm the CORPORATE→"Manager" display-label interpretation (role stays in DB) | Cosmetic, low | Working interpretation already applied |
+| **Q25** | **Threaded ticket notifications** — reply-on-close needs a parent message id, which the current flow doesn't return. Two ways: **(a)** edit the Power Automate flow to respond with the created message id and to accept a `replyToId` (then we store it and send it on close — small change on our side, needs the flow edited and possibly a premium action); **(b)** switch to Microsoft Graph, which returns the message and supports replies natively, and also unlocks reply-ingestion (T8) | B5 threading, and A8's Teams digest formatting | Try (a) first — it's cheap and keeps today's working path. If the flow can't return the id, (b) is the honest answer and Graph was Kate's original spec anyway |
 
-## Crystal (Head of Ops — owns Track C design)
+## Crystal (Head of Ops) — **ops ground truth, not an approval gate**
+
+Her answers are inputs Kyle+Kate decide with; they do not gate a merge.
 
 | # | Question | Blocks | Note |
 |---|---|---|---|
-| **Q6** | **Sign-off on Track C design** + the Top-8 blockers (esp. issues→Ticketing, Graph consent, DB split) | All of Track C | Kate reconciled Part 1 and routed to her |
+| **Q6** | Track C ops reality + the Top-8 technical blockers (issues→Ticketing, Graph consent, DB split) | Quality of the C1 spec | Kate reconciled Part 1; the technical blockers are Kyle's to settle |
 | **Q15** | **Who receives the PM-facing intake brief?** | C0 | Brief can be drafted recipient-agnostic and held |
-| **Q18** | **Construction greenlight** (moved from Rob to her ops input) | All of Track E | Rob is budget-only now |
-
-## Rob (sponsor)
-
-| # | Question | Blocks | Note |
-|---|---|---|---|
-| **Q8** | **Scope + budget sign-off** — deferred since 2026-05-21. Tracks C, D, E are all a scope expansion beyond the checklist v1 he was asked about | Legitimacy of C/D/E; the re-baselined timeline | Alpha demo for him was never recorded either |
-| **Q17** | WhatsApp Business API cost + Meta verification timeline | D7 | Not "which channel" — WhatsApp is settled |
+| **Q18** | Construction ops input (scope: renovation contractors vs. in-house vs. both, #1 pain) | Quality of the E0 decision | The go/no-go itself is Kyle+Kate |
+| **Q17** | WhatsApp Business API cost + Meta verification timeline | D7 | Not "which channel" — WhatsApp is settled. Cost call is Kyle+Kate |
 
 ## Others
 
