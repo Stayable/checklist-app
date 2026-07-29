@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   INVITE_TTL_MS,
   generateInviteToken,
@@ -7,6 +7,16 @@ import {
   inviteTokenMatches,
   buildInviteUrl,
 } from "./invite";
+
+const ORIGINAL_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+
+afterEach(() => {
+  if (ORIGINAL_APP_URL === undefined) {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+  } else {
+    process.env.NEXT_PUBLIC_APP_URL = ORIGINAL_APP_URL;
+  }
+});
 
 describe("invite tokens", () => {
   it("mints distinct, URL-safe, high-entropy tokens", () => {
@@ -70,16 +80,12 @@ describe("inviteState", () => {
 
 describe("buildInviteUrl", () => {
   it("builds an absolute URL and strips a trailing slash on the base", () => {
-    const prev = process.env.NEXT_PUBLIC_APP_URL;
     process.env.NEXT_PUBLIC_APP_URL = "https://example.com/";
     expect(buildInviteUrl("abc")).toBe("https://example.com/invite/abc");
-    process.env.NEXT_PUBLIC_APP_URL = prev;
   });
 
   it("falls back to the production origin when the env is unset", () => {
-    const prev = process.env.NEXT_PUBLIC_APP_URL;
     delete process.env.NEXT_PUBLIC_APP_URL;
     expect(buildInviteUrl("xyz")).toBe("https://ops.rentstayable.com/invite/xyz");
-    process.env.NEXT_PUBLIC_APP_URL = prev;
   });
 });

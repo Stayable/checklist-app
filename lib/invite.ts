@@ -16,7 +16,11 @@ export function hashInviteToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-/** Constant-time compare. Never throws on a malformed stored hash. */
+/**
+ * Constant-time compare. Defends against malformed hashes via length check, since
+ * Buffer.from(hash, "hex") truncates rather than throws on malformed hex. Never
+ * throws or leaks timing information.
+ */
 export function inviteTokenMatches(token: string, hash: string): boolean {
   const a = Buffer.from(hashInviteToken(token), "hex");
   let b: Buffer;
