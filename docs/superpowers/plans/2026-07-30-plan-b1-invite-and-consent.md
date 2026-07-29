@@ -459,6 +459,11 @@ In `model User`'s relation block (after `notifications NotificationLog[]`):
 In `model Contractor` (after `active Boolean @default(true)`):
 
 ```prisma
+  /// Contact email, used ONLY to deliver a consent invite. Separate from
+  /// `user.email` because most contractors are not staff: of the seeded roster,
+  /// only Jesús Pérez has a linked User. Without this column three of four
+  /// contractors would have no path to grant messaging consent at all.
+  email           String?
   phoneVerifiedAt DateTime? @map("phone_verified_at") @db.Timestamptz
 ```
 
@@ -1104,6 +1109,7 @@ export async function sendConsentInvite(contractorId: string): Promise<ActionRes
       name: true,
       language: true,
       active: true,
+      email: true,
       user: { select: { email: true } },
       properties: { select: { propertyId: true } },
     },
@@ -1119,14 +1125,14 @@ export async function sendConsentInvite(contractorId: string): Promise<ActionRes
     return { ok: false, error: "You don't have access to this contractor's properties." };
   }
 
-  // Consent invites are emailed, so an email address is required. A contractor
-  // with no email consents in person instead — the dispatcher enters nothing and
-  // simply calls them (Spec §5.1: declining messaging is a supported state).
-  const email = contractor.user?.email;
+  // Consent invites are emailed. Prefer the contractor's own email; fall back to a
+  // linked staff account's (Jesús Pérez is both). Most of the roster has no User,
+  // which is exactly why Contractor.email exists.
+  const email = contractor.email ?? contractor.user?.email;
   if (!email) {
     return {
       ok: false,
-      error: "This contractor has no linked email. Link a staff account or capture consent in person.",
+      error: "Add an email address for this contractor before sending a consent invite.",
     };
   }
 
@@ -1538,22 +1544,43 @@ In `ContractorsClient.tsx`, per contractor, compute
 
 - **Consented** → `WhatsApp OK` plus `formatPhoneDisplay(whatsapp)`.
 - **Not consented** → a visible warning: **`No messaging consent — call instead`**,
-  with a **Send consent invite** button calling `sendConsentInvite(c.id)`.
+  with a **Send consent invite** button calling `sendConsentInvite(c.id)`. When the
+  contractor has neither `email` nor a linked user email, the button is replaced by
+  `Add an email to send a consent invite` — do not render a button that always fails.
 - **Invite outstanding** → `Consent invite sent — expires {date} ET` via `formatInET`.
 
-- [ ] **Step 3: Verify**
+- [ ] **Step 3: Add an email field to the contractor create/edit form**
+
+`Contractor.email` (Task 3) is otherwise unreachable — a column nobody can populate
+is a dead column, and without it three of the four seeded contractors can never be
+consent-invited.
+
+In `app/contractors/ContractorsClient.tsx`, add an `email` input to the existing
+create/edit form, beside the WhatsApp and phone fields. In `app/contractors/actions.ts`,
+extend the existing create/update Zod schema with:
+
+```ts
+email: z.string().trim().toLowerCase().email("Enter a valid email").optional().or(z.literal("")),
+```
+
+Normalize `""` to `null` before writing. **Do not make it required** — T1's existing
+rule is "WhatsApp or phone required," and email is only needed to *send* a consent
+invite, not to exist in the directory.
+
+- [ ] **Step 4: Verify**
 
 Run: `pnpm test && pnpm typecheck && pnpm lint && pnpm build`
 Expected: all pass; route count unchanged.
 
-- [ ] **Step 4: Manual check**
+- [ ] **Step 5: Manual check**
 
 Open `/contractors` as a manager. Every seeded contractor shows
 **No messaging consent — call instead** (none have consented). Send a consent
 invite to one with a linked email and confirm the row flips to the
-invite-outstanding state.
+invite-outstanding state. Add an email to a contractor who had none (e.g. Orlando
+Torres) and confirm the invite button becomes available.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add app/contractors
