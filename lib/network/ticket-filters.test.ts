@@ -1,0 +1,171 @@
+import { describe, expect, it } from "vitest";
+import { TicketStatus, TicketType } from "@prisma/client";
+import { etDayStartUtc, nextYMD } from "../datetime";
+import {
+  DEFAULT_SORT_DIR,
+  DEFAULT_SORT_KEY,
+  parseTicketFilters,
+  TICKET_SORT_KEYS,
+  ticketOrderBy,
+  ticketWhereFilters,
+} from "./ticket-filters";
+
+// /network/tickets filters + sort. Pure and DB-free, mirroring the
+// wifi-range.test.ts / ticket-age.test.ts style for this directory.
+
+describe("parseTicketFilters", () => {
+  it("returns all-null for no params", () => {
+    const f = parseTicketFilters({});
+    expect(f).toEqual({ status: null, ticketType: null, propertyId: null, from: null, toExclusive: null });
+  });
+
+  it("parses a valid status", () => {
+    expect(parseTicketFilters({ status: "RESOLVED" }).status).toBe(TicketStatus.RESOLVED);
+  });
+
+  it("rejects a junk status (falls back to null, not a throw)", () => {
+    expect(parseTicketFilters({ status: "not-a-status" }).status).toBeNull();
+  });
+
+  it("parses a valid ticket type", () => {
+    expect(parseTicketFilters({ ticketType: "MASS_OUTAGE" }).ticketType).toBe(TicketType.MASS_OUTAGE);
+  });
+
+  it("rejects a junk ticket type", () => {
+    expect(parseTicketFilters({ ticketType: "not-a-type" }).ticketType).toBeNull();
+  });
+
+  it("passes propertyId through unvalidated (pure fn has no DB access)", () => {
+    expect(parseTicketFilters({ propertyId: "some-uuid" }).propertyId).toBe("some-uuid");
+  });
+
+  it("computes the ET day-start bound for `from`", () => {
+    const f = parseTicketFilters({ from: "2026-07-15" });
+    expect(f.from).toEqual(etDayStartUtc("2026-07-15"));
+  });
+
+  it("computes an exclusive `to` bound at the START of the NEXT ET day", () => {
+    const f = parseTicketFilters({ to: "2026-07-15" });
+    expect(f.toExclusive).toEqual(etDayStartUtc(nextYMD("2026-07-15")));
+    // Sanity: that's later than the day's own start, not equal to it — an
+    // inclusive same-day bound would silently drop the whole end day.
+    expect(f.toExclusive!.getTime()).toBeGreaterThan(etDayStartUtc("2026-07-15").getTime());
+  });
+
+  it("leaves from/to null when not supplied (unbounded)", () => {
+    const f = parseTicketFilters({ status: "OPEN" });
+    expect(f.from).toBeNull();
+    expect(f.toExclusive).toBeNull();
+  });
+
+  it("composes all filters together without one clobbering another", () => {
+    const f = parseTicketFilters({
+      status: "IN_PROGRESS",
+      ticketType: "STANDARD",
+      propertyId: "prop-1",
+      from: "2026-07-01",
+      to: "2026-07-31",
+    });
+    expect(f.status).toBe(TicketStatus.IN_PROGRESS);
+    expect(f.ticketType).toBe(TicketType.STANDARD);
+    expect(f.propertyId).toBe("prop-1");
+    expect(f.from).toEqual(etDayStartUtc("2026-07-01"));
+    expect(f.toExclusive).toEqual(etDayStartUtc(nextYMD("2026-07-31")));
+  });
+
+  it("one invalid filter does not blank out the others", () => {
+    const f = parseTicketFilters({ status: "bogus", ticketType: "STANDARD", propertyId: "prop-1" });
+    expect(f.status).toBeNull();
+    expect(f.ticketType).toBe(TicketType.STANDARD);
+    expect(f.propertyId).toBe("prop-1");
+  });
+});
+
+describe("ticketWhereFilters", () => {
+  it("is empty when nothing is set", () => {
+    expect(ticketWhereFilters({ ticketType: null, propertyId: null, from: null, toExclusive: null })).toEqual({});
+  });
+
+  it("includes only the openedAt bounds that are set", () => {
+    const from = new Date("2026-07-01T04:00:00Z");
+    expect(ticketWhereFilters({ ticketType: null, propertyId: null, from, toExclusive: null })).toEqual({
+      openedAt: { gte: from },
+    });
+  });
+
+  it("composes ticketType + propertyId + both date bounds", () => {
+    const from = new Date("2026-07-01T04:00:00Z");
+    const toExclusive = new Date("2026-08-01T04:00:00Z");
+    const where = ticketWhereFilters({
+      ticketType: TicketType.MASS_OUTAGE,
+      propertyId: "prop-1",
+      from,
+      toExclusive,
+    });
+    expect(where).toEqual({
+      ticketType: TicketType.MASS_OUTAGE,
+      propertyId: "prop-1",
+      openedAt: { gte: from, lt: toExclusive },
+    });
+  });
+});
+
+describe("ticketOrderBy", () => {
+  it("defaults to openedAt desc with no args (current baseline behavior)", () => {
+    const r = ticketOrderBy(undefined, undefined);
+    expect(r.sortKey).toBe(DEFAULT_SORT_KEY);
+    expect(r.sortDir).toBe(DEFAULT_SORT_DIR);
+    expect(r.orderBy).toEqual([{ openedAt: "desc" }, { id: "asc" }]);
+  });
+
+  it("rejects a junk sort key and falls back to the default", () => {
+    const r = ticketOrderBy("dr0p table tickets;--", "asc");
+    expect(r.sortKey).toBe(DEFAULT_SORT_KEY);
+    expect(r.orderBy[0]).toEqual({ openedAt: "asc" });
+  });
+
+  it("rejects a junk direction and falls back to the default direction", () => {
+    const r = ticketOrderBy("status", "sideways");
+    expect(r.sortDir).toBe(DEFAULT_SORT_DIR);
+    expect(r.orderBy[0]).toEqual({ status: "desc" });
+  });
+
+  it("clamps direction case-sensitively (only exact 'asc'/'desc' pass)", () => {
+    expect(ticketOrderBy("status", "ASC").sortDir).toBe(DEFAULT_SORT_DIR);
+    expect(ticketOrderBy("status", "").sortDir).toBe(DEFAULT_SORT_DIR);
+  });
+
+  it("honors every whitelisted sort key with a stable secondary", () => {
+    for (const key of TICKET_SORT_KEYS) {
+      const r = ticketOrderBy(key, "asc");
+      expect(r.sortKey).toBe(key);
+      expect(r.orderBy).toHaveLength(2);
+      expect(r.orderBy[1]).toEqual({ id: "asc" });
+    }
+  });
+
+  it("sorts by ticketNumber", () => {
+    expect(ticketOrderBy("ticketNumber", "asc").orderBy[0]).toEqual({ ticketNumber: "asc" });
+  });
+
+  it("sorts by property short code via the relation", () => {
+    expect(ticketOrderBy("property", "desc").orderBy[0]).toEqual({ property: { shortCode: "desc" } });
+  });
+
+  it("sorts by ticketType", () => {
+    expect(ticketOrderBy("ticketType", "asc").orderBy[0]).toEqual({ ticketType: "asc" });
+  });
+
+  it("sorts by resolvedAt", () => {
+    expect(ticketOrderBy("resolvedAt", "desc").orderBy[0]).toEqual({ resolvedAt: "desc" });
+  });
+
+  it("never produces more than one key in the primary sort term (no raw interpolation)", () => {
+    // Every whitelisted key must map to an exact, known shape — guards against
+    // a future change accidentally spreading a raw user string into orderBy.
+    for (const key of TICKET_SORT_KEYS) {
+      const r = ticketOrderBy(key, "asc");
+      expect(Object.keys(r.orderBy[0]!)).toHaveLength(1);
+    }
+  });
+});
