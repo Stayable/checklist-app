@@ -13,35 +13,30 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (2026-07-28)
+## 🎯 START HERE (2026-07-29)
 
-**Immediate, in order:**
+**Everything is pushed and live.** Working tree clean, prod HEAD `5d5c866`.
 
-| # | Action | Why now |
+| # | Action | Why it matters |
 |---|---|---|
-| 1 | 🧑 **Run the contractor migration on prod**, then I push `e400698` + `4d572d0` | Two commits are held locally. The merge makes "Contractors" visible in the nav for every manager+; without the migration that link 500s |
-| 2 | ✅ **`TEAMS_WEBHOOK_URL` is set** — verified 2026-07-28 in prod logs (`teams.configured: true` every tick). Queue is armed; `attempted: 0` only because no ticket exists yet | Nothing to do |
-| 3 | 🧑 **Apply migration `20260728120000_add_contractor_jobs` to prod**, then I push `dafbaf1` | D2+D3 are built and verified locally. `/dispatch` 500s on a missing table until the migration lands |
-| 4 | 🧑 **KW unplug test** (~7 min) | The ticket lifecycle has never fired in production. This is the difference between "code is right" and "system works" |
-| 5 | ✅ **D4 done** (2026-07-28) — one-tap WhatsApp/call + signed `/j/[token]` job link | Dispatch works end-to-end by hand once real numbers exist |
-| 6 | 🧑 **Enter real contractor numbers** in `/contractors` | The directory is live and empty. D4 cannot dispatch to anyone until Orlando Torres et al. have real numbers |
+| 1 | 🧑 **Fix `UNIFI_API_KEY_2` in Vercel** — must be the 9-console key (SHA-256 starts `8bdfc0ae`) | THE blocker. Until then prod shows 12 devices, holds **9 open "monitoring blind" tickets**, and online-now only fills for KW. Once fixed: ~420 devices land across LL/KE/OR/DP/KW on the next 2-min tick and the blind tickets auto-resolve |
+| 2 | 🧑 **Add the 7 remaining `STRIPE_SECRET_KEY_<CODE>`** | Revenue currently covers Jacksonville West only |
+| 3 | **Build Kate's remaining requests** ▶ | Filters (property · console · device type), date range on the network dashboard, per-property monitoring breakdown, resolved-per-property, **ticket CSV export**. All pure DB work, no vendor dependency |
+| 4 | 🧑 **Chase the third UniFi account** | JW + JN still unreachable — see §Q1 |
+| 5 | 🧑 **Orlando: 46 of 92 cameras offline right now** | A real operational finding the monitoring surfaced. Independent of any build work |
 
-**The two decisions that unblock the most downstream work:** §Q1 (UniFi account access — 7 of 8 properties) and §Q7 (Track A vs Track D priority — see the schedule warning below).
+**Who decides:** **Kyle develops, Kate reviews, both share every decision.** No sign-off chain, no approval gates. **Rob monitors the launched app only and gates nothing** — never add a "pending sign-off" state for anyone but Kyle or Kate. Crystal, Gerardo, Karla and Christopher supply ops ground truth or content: inputs, never approvals.
 
-**Who decides (updated 2026-07-28):** **Kyle develops, Kate reviews, and the two of them share every decision.** There is no external sign-off chain and nothing waits on an approval gate. **Rob monitors the launched app only** — he is not in the decision path, so no item in this tracker is blocked on him. Crystal, Gerardo, Karla and Christopher supply *ops ground truth and content*; those are inputs, not approvals.
-
-**⚠️ Schedule reality:** original plan was cutover at Week 14 ≈ **21 Aug 2026**. We are ~10.5 weeks in with A6 (content + geofences), A7, A8 and A11 all outstanding, and a 4-week parallel run not started. **Week-14 cutover is not reachable.** A re-baselined date is owed — see §Q7. (Tracks C and D are also net-new scope on top of the original v1; that is now a Kyle+Kate call, not an external approval.)
-
----
+**⚠️ Schedule reality:** original cutover was Week 14 ≈ **21 Aug 2026**. A6 (content + geofences), A7, A8 and A11 are all outstanding and the 4-week parallel run has not started. **Week-14 cutover is not reachable.** A re-baselined date is owed (§Q7).
 
 ## 🗺️ Track map
 
 | Track | Scope | Pri | State | Next phase |
 |---|---|---|---|---|
 | **A** | **Checklist App (StayCheck)** — the Connecteam replacement | **P0** | 🟢 Live in prod, ~60% of v1 | A6 (real content + geofences) |
-| **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live pilot, 1 of 8 properties | B2 (prove lifecycle + widen access) |
+| **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live · **5 of 8 properties registered** (420 devices) · lifecycle proven in prod | B3 hardening + Kate's filters |
 | **C** | **Maintenance / Ticketing** (tenant + email desk) | P1 | 🔴 Nothing built, needs a spec | C0 (decide + spec) |
-| **D** | **Contractor Dispatch + WhatsApp + Scheduling** | P1 | 🟡 T1 directory built, not deployed | D2 (job record) ▶ |
+| **D** | **Contractor Dispatch + WhatsApp + Scheduling** | P1 | 🟢 **Live: directory + jobs + match/rank + one-tap WhatsApp/call + signed job link.** Cannot message anyone until real contractor numbers are entered | D5 emergency alert · D6 scheduling (§Q16) · D7 Twilio |
 | **E** | **Construction Progress / Scheduling** | P3 | ⛔ Concept, not decided | E0 (go / no-go) |
 
 Tracks share one codebase and one deploy (ADR-025) and reuse each other's infrastructure: auth, RBAC, audit log, notifications, R2 photo pipeline, SLA, geofence.
@@ -150,11 +145,28 @@ Schema (6 tables, 7 enums, `NETWORK_TECH` role) · pure helpers (event mapping, 
 
 | Pri | Status | Item |
 |---|---|---|
-| P1 | [ ] | 🧑 **KW unplug test** — the whole lifecycle (PROBLEM → 5-min timer → ticket → Teams post → recovery → auto-close) has **never run in production**. ~7 min to verify |
-| P1 | [!] | **7 of 8 properties unmonitored** — API key sees 5 of 19 consoles; account not invited to the rest | §Q1 |
-| P1 | [ ] | Register the other consoles in `lib/network/unifi-hosts.ts` once access lands (one entry each, `monitored: true`) |
+| P1 | [x] | **Lifecycle PROVEN IN PRODUCTION 2026-07-28** — no unplug test needed, it fired on real events: 6 tickets, all auto-resolved. 4 standard (switch offline → 5-min timer → ticket → recovery → close, `downDurationMin` 6) + **2 monitoring-blind** (SS-KISSWEST console dropped its cloud link twice and self-cleared). Teams delivery confirmed: TKT-006 create + resolve both `SENT` |
+| P1 | [~] | **5 of 8 properties now registered** (2026-07-29, `d720313`): KW, LL, KE, OR, DP — 420 devices (319 CAMERA, 55 AP, 37 SWITCH, 5 NVR, 4 GATEWAY), classifier verified against the real fleet. **Still unreachable by any key: Jacksonville West + Jacksonville North**, plus a live St. Augustine console | §Q1 |
+| P1 | [x] | **9 consoles registered** across LL/KE/OR/DP (`d720313`). Two corrections the evidence forced: **host ids are ACCOUNT-SCOPED** (same Orlando console yields two ids sharing a MAC prefix), and the four excluded entries are **stale account views, not decommissioned hardware** — Orlando reports disconnected via one account and connected via the other |
+| P1 | [ ] | 🧑 **Vercel `UNIFI_API_KEY_2` is the WRONG key** — prod therefore holds 9 open monitoring-blind tickets and 12 devices. Needs the key with SHA-256 `8bdfc0ae…` |
 | P2 | [ ] | Registry admin UI (promote the code constant to a `UnifiHost` table) — only needed when a non-developer must edit it |
 | P2 | [ ] | Verify Protect **camera-level** status (8 NVRs exist; none visible to this key yet) |
+
+## B2b — Kate's review requests (2026-07-28/29) ▶ **next build** · P1
+
+All pure DB work — no vendor dependency, no credentials needed.
+
+| Pri | Status | Item |
+|---|---|---|
+| P1 | [x] | "Resolved (30d)" tile + "Recently resolved & closed" table on `/network` (`de420bb`, `1adce30`) |
+| P1 | [x] | Revenue per property on the WiFi page (`5d5c866`) |
+| P1 | [x] | Date range for revenue (`5d5c866`). ⚠ Guest counts **cannot** be date-filtered — Spotipo ignores date params entirely |
+| P1 | [ ] | **Filters: property · console · device type** — Kyle's call: separate filters, not console-name-only (`SS-ORLANDO` exists twice; `Lakeland` vs `Lakeland-NVR` means nothing to a manager) |
+| P1 | [ ] | **Date range on the network dashboard** (tickets/resolved), distinct from the WiFi revenue range |
+| P1 | [ ] | **Overall + per-property monitoring breakdown** on the dashboard |
+| P1 | [ ] | **Resolved count per property** |
+| P1 | [ ] | **Export tickets list (CSV)** |
+| P2 | [ ] | Kate: AP counts look too low — investigated, see §Q2. Likely non-UniFi APs, not a reporting defect |
 
 ## B3 — Hardening before webhooks are public · P1
 
@@ -178,8 +190,9 @@ Schema (6 tables, 7 enums, `NETWORK_TECH` role) · pure helpers (event mapping, 
 |---|---|---|
 | P1 | [x] | Teams delivery via Power Automate webhook — **built + configured in prod** (verified `teams.configured: true`). Delivery is post-commit off the 1-min cron. **Untested end-to-end** only because no ticket has ever been created; the first KW outage exercises it. Send-only as configured: no message id back, so no threading | §Q5 |
 | P1 | [ ] | **Ticket close should REPLY to the created-ticket message, not post separately** (Kyle 2026-07-28). Schema is already ready (`Ticket.teamsMessageId` / `teamsMessageUrl`, unused). Two paths — see §Q25. Wanted because an outage generates several posts and a loose "resolved" message makes the channel unreadable exactly when someone is reconstructing what happened |
-| P2 | [!] | Guest WiFi (Spotipo) — scaffold only, renders "not configured" | §Q3 |
-| P2 | [ ] | Decide at-rest encryption for `Property.spotipoApiKey` (plaintext column today) |
+| P1 | [x] | **Guest WiFi LIVE 2026-07-29** (`a3b2de6`, `1493983`, `5d5c866`). Credentials resolve **env-first** (`SPOTIPO_API_KEY` + `SPOTIPO_SITE_ID_<CODE>`); real guest counts for **8/8 sites (669 total)**. WiFi page now reads **three sources**: guests ← Spotipo · **online-now ← UniFi site statistics** · **revenue ← Stripe per property**. Date range (7d/30d/MTD/90d/12m) applies to revenue only |
+| P2 | [x] | ~~At-rest encryption for `Property.spotipoApiKey`~~ — **moot**: keys now live in env, never in the DB, so they are absent from backups, query logs and every `Property` read. Closes open decision D6 |
+| P2 | [ ] | 7 of 8 properties still need `STRIPE_SECRET_KEY_<CODE>` — revenue shows JW only |
 | P3 | [ ] | T8 — Teams reply → `TicketNote` (**requires Graph**, impossible on the webhook) |
 
 ---
@@ -271,9 +284,9 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 
 | # | Question | Blocks | My recommendation |
 |---|---|---|---|
-| **Q1** | **UniFi account access** — key sees 5 of 19 consoles. **Narrowed 2026-07-29: a SECOND key was tested and returned the identical 5 consoles** (same ids, states, owner flags), so it is the same account's access. **No key minted inside this account can ever help — the fix is access, not credentials.** Who owns the other 14? | B2, and 7 of 8 properties | Either (a) the owner of those consoles invites this account (per console: Settings → Admins), or (b) a key is created **from** the owning account. ⚠ (a) may not suffice: the Site Manager shows an org/"Fabrics" structure (Stayable Central / North / Independent Sites) and API v1 may only return directly-associated hosts, not org-managed ones. Decisive test either way: re-run the host probe with a key from the owning account — success is **~19 hosts, not 5**. Multi-key support is already built, so a second *account's* key just slots into `UNIFI_API_KEY_2` |
-| **Q2** | **Is there any Aruba hardware at all?** | B4 | If no: delete the route and enum path. Don't ship a dead code path |
-| **Q3** | **Is Spotipo actually in use?** | B5 | If no: hide `/network/wifi` rather than ship a permanently "not configured" section |
+| **Q1** | **UniFi account access — mostly SOLVED 2026-07-29.** A third key reached a **second account** and added 9 consoles → 5 of 8 properties now monitored. Three keys tested in total; two saw the same 5, the third saw 9. **Still unreachable: Jacksonville West, Jacksonville North, and a live St. Augustine console** — so a THIRD account exists. Who owns it? | B2, and 7 of 8 properties | Either (a) the owner of those consoles invites this account (per console: Settings → Admins), or (b) a key is created **from** the owning account. ⚠ (a) may not suffice: the Site Manager shows an org/"Fabrics" structure (Stayable Central / North / Independent Sites) and API v1 may only return directly-associated hosts, not org-managed ones. Decisive test either way: re-run the host probe with a key from the owning account — success is **~19 hosts, not 5**. Multi-key support is already built, so a second *account's* key just slots into `UNIFI_API_KEY_2` |
+| **Q2** | **Is there any Aruba hardware?** — **now likely YES, and it matters.** Kate flagged the AP counts as too low; investigation confirmed she is right about the physical count but the cause is not our monitoring. The consoles' OWN statistics match what we ingest, so nothing is truncated: KW reports **2 UniFi APs against 236 guest clients and 9 PoE switches**; DP reports **0 APs against 280 wired clients**. LL (39) and SA (40) show the real per-room pattern. A non-UniFi AP plugged into a UniFi PoE switch appears as an ordinary *wired client* — exactly the signature seen. **Decisive check: physically look at one AP at KW or DP and read the brand** (2 minutes). If Aruba, that lane is the missing half of AP monitoring, not dead code to delete | B4, and AP coverage at 4 properties | Check the hardware before writing any more code either way |
+| **Q3** | ~~Is Spotipo in use?~~ **ANSWERED: yes.** 8/8 sites live, 669 registered guests. API surface is **only** `/api/v1/guest/` — no revenue, no online-now, no date filtering (21 other paths 404, and date params are silently ignored). Revenue comes from Stripe instead; online-now from UniFi | — | Closed |
 | **Q7** | **Component I to cutover, or Component II?** Doing both is what put us behind | Everything, and the re-baselined date | Finish A6 + A7 to get Track A usable, and run D2–D4 alongside (small, independent). Pause Track C until C0 closes |
 | **Q16** | **Is contractor scheduling separable** from the internal daily maintenance schedule (in Connecteam, which Track A replaces)? | D6 | Assume separable and build D6 as the permanent home for contractor scheduling. If entangled, D6 must either coexist with Connecteam during parallel run or absorb internal scheduling too |
 | **Q19** | On-device PWA + iOS GPS check | A11 confidence, Capacitor fallback | 20 minutes with one iPhone closes a Week-1 risk that is still open in Week 11 |
@@ -282,6 +295,7 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 
 | # | Question | Blocks | My recommendation |
 |---|---|---|---|
+| **Q26** | **Date-ranged guest counts: "active in the window" or "acquired in the window"?** Spotipo ignores date params, so the only route is paginating every guest and filtering `last_seen_at` locally — which answers *active*, not *acquired*. Different questions | A date-ranged guest figure | Decide which she means before I build it; the two need different data and only one is cheap |
 | **Q5** | **Teams: accept the send-only webhook, or hold for Graph?** Webhook = no threading, no message id, T8 impossible. Her DevSpec §5.3–5.4 requires Graph | B5, A8 Teams digest | Ship the webhook now, keep the Graph seam. But this is a documented deviation from her spec and hers to accept |
 | **Q9** | **Geofence polygons** for 8 properties | A6 — every photo is `UNVERIFIED` until then | Draw them once the editor exists; then backfill |
 | **Q10** | **Branding kit** — logo, palette, wordmark | A8 design pass | Structural work can proceed; polish can't |
