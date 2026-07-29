@@ -34,7 +34,8 @@
     "otpResend": "Reenviar código",
     "otpError": "Ese código no es válido o caducó. Intenta de nuevo o reenvía.",
     "otpSent": "Código enviado.",
-    "emailFailed": "No pudimos enviar tu código. Intenta de nuevo o contacta a tu administrador."
+    "emailFailed": "No pudimos enviar tu código. Intenta de nuevo o contacta a tu administrador.",
+    "accountActivated": "Cuenta creada. Inicia sesión para continuar."
   },
   "Home": {
     "greeting": "Hola, {name}",
@@ -138,5 +139,36 @@
     "errWrongCurrent": "La contraseña actual es incorrecta.",
     "errSame": "La nueva contraseña debe ser diferente de la actual.",
     "errGeneric": "No se pudo actualizar la contraseña. Inténtalo de nuevo."
+  },
+  "Invite": {
+    "invalidTitle": "Esta invitación no es válida",
+    "invalidBody": "Esta invitación ya no es válida. Pide a tu gerente una nueva.",
+    "accountTitle": "Configura tu cuenta",
+    "accountSubtitle": "Ya casi terminas — crea una contraseña para completar tu cuenta de StayCheck.",
+    "consentOnlyTitle": "Confirma tus datos",
+    "consentOnlySubtitle": "Confirma tu número de celular para recibir mensajes de trabajo de Stayable.",
+    "emailLabel": "Correo electrónico",
+    "phoneLabel": "Número de celular",
+    "phoneHelper": "Los números de EE. UU. se pueden escribir como (407) 555-1234. Para un número que no sea de EE. UU., incluye el código de país, por ejemplo +52…",
+    "passwordLabel": "Contraseña",
+    "confirmPasswordLabel": "Confirmar contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "messagingDisclosuresLink": "Términos de mensajería",
+    "privacyPolicyLink": "Política de Privacidad",
+    "submitAccount": "Crear mi cuenta",
+    "submitConsentOnly": "Confirmar mis datos",
+    "submitting": "Enviando…",
+    "thankYouTitle": "Gracias — todo listo",
+    "thankYouBody": "Tu número y preferencia de idioma quedaron guardados. No hay ninguna cuenta con la cual iniciar sesión — los contratistas reciben los detalles del trabajo por enlaces de WhatsApp, no en este sitio.",
+    "errors": {
+      "invalid_input": "Revisa el formulario e inténtalo de nuevo.",
+      "generic": "Esta invitación ya no es válida. Pide a tu gerente una nueva.",
+      "invalid_phone": "Ingresa un número de celular válido, por ejemplo (407) 555-1234.",
+      "weak_password": "La contraseña debe tener al menos 8 caracteres.",
+      "phone_taken": "Ese número de celular ya está en uso.",
+      "server_error": "Algo salió mal. Inténtalo de nuevo.",
+      "password_mismatch": "Las contraseñas no coinciden."
+    }
   }
 }

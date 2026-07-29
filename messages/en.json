@@ -34,7 +34,8 @@
     "otpResend": "Resend code",
     "otpError": "That code is invalid or expired. Try again or resend.",
     "otpSent": "Code sent.",
-    "emailFailed": "We couldn't send your code. Try again or contact your administrator."
+    "emailFailed": "We couldn't send your code. Try again or contact your administrator.",
+    "accountActivated": "Account created. Sign in to continue."
   },
   "Home": {
     "greeting": "Hello, {name}",
@@ -138,5 +139,36 @@
     "errWrongCurrent": "Current password is incorrect.",
     "errSame": "New password must be different from the current one.",
     "errGeneric": "Couldn't update password. Please try again."
+  },
+  "Invite": {
+    "invalidTitle": "This invitation isn't valid",
+    "invalidBody": "This invitation is no longer valid. Ask your manager for a new one.",
+    "accountTitle": "Set up your account",
+    "accountSubtitle": "You're almost there — set a password to finish creating your StayCheck account.",
+    "consentOnlyTitle": "Confirm your details",
+    "consentOnlySubtitle": "Confirm your mobile number for job messages from Stayable.",
+    "emailLabel": "Email",
+    "phoneLabel": "Mobile number",
+    "phoneHelper": "US numbers can be typed as (407) 555-1234. For a non-US number, include the country code, e.g. +52…",
+    "passwordLabel": "Password",
+    "confirmPasswordLabel": "Confirm password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "messagingDisclosuresLink": "Messaging terms",
+    "privacyPolicyLink": "Privacy Policy",
+    "submitAccount": "Create my account",
+    "submitConsentOnly": "Confirm my details",
+    "submitting": "Submitting…",
+    "thankYouTitle": "Thanks — you're all set",
+    "thankYouBody": "Your number and language preference are saved. There's no account to log into — contractors get job details through WhatsApp links, not this site.",
+    "errors": {
+      "invalid_input": "Please check the form and try again.",
+      "generic": "This invitation is no longer valid. Ask your manager for a new one.",
+      "invalid_phone": "Enter a valid mobile number, e.g. (407) 555-1234.",
+      "weak_password": "Password must be at least 8 characters.",
+      "phone_taken": "That mobile number is already in use.",
+      "server_error": "Something went wrong. Try again.",
+      "password_mismatch": "Passwords don't match."
+    }
   }
 }

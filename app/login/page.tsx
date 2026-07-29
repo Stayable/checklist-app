@@ -1,13 +1,28 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 import { LOCALES, LOCALE_COOKIE, type Locale } from "@/i18n/config";
 import { requestLogin, submitOtp, resendOtp } from "./actions";
 
 type Step = "password" | "otp";
+
+// Confined to its own component + Suspense boundary so useSearchParams doesn't
+// force the whole (already fully client) login page to bail out of static
+// rendering. Shown after the invite flow (app/invite/[token]) redirects a
+// freshly-activated ACCOUNT invitee here with ?activated=1.
+function ActivatedBanner() {
+  const t = useTranslations("Auth");
+  const params = useSearchParams();
+  if (params.get("activated") !== "1") return null;
+  return (
+    <p className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
+      {t("accountActivated")}
+    </p>
+  );
+}
 
 export default function LoginPage() {
   const t = useTranslations("Auth");
@@ -90,6 +105,10 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <Suspense fallback={null}>
+          <ActivatedBanner />
+        </Suspense>
+
         {/* Locale switcher — visible on both steps */}
         <div className="mb-6 flex justify-end gap-1">
           {LOCALES.map((l) => (

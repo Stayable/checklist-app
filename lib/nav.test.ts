@@ -147,6 +147,11 @@ describe("shouldHideShell", () => {
     }
   });
 
+  it("hides the shell on public invite and legal pages", () => {
+    expect(shouldHideShell("/invite/abc123")).toBe(true);
+    expect(shouldHideShell("/legal/messaging")).toBe(true);
+  });
+
   it("hides the shell on the public contractor job link", () => {
     expect(shouldHideShell("/j/some.signed.token")).toBe(true);
     // /dispatch is the internal surface and must KEEP the shell.

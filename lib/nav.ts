@@ -54,6 +54,10 @@ export function isNavItemActive(href: string, pathname: string): boolean {
 // phone-first checklist fill runtime (reparented in a later plan).
 export const SHELL_HIDE_PREFIXES = [
   "/login",
+  // Public, token-gated invite acceptance (Plan B1) and public legal
+  // disclosures. Both are unauthenticated by design — no nav, no picker.
+  "/invite",
+  "/legal",
   "/install",
   "/ios-spike",
   "/photo-test",
