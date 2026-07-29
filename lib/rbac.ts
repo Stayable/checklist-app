@@ -26,9 +26,16 @@ export function isManagerOrAbove(role: Role): boolean {
   return role === Role.MANAGER || isPortfolioRole(role);
 }
 
-/** Field staff (HK, PA, MT) — phone-first fill surfaces; the PWA-install audience. */
+/**
+ * Field staff (HK, PA, MT) — phone-first fill surfaces; the PWA-install audience.
+ *
+ * Deliberately an explicit allowlist, NOT `!isManagerOrAbove(role)`. A negation
+ * would silently classify any future role (e.g. CONTRACTOR) as field staff and
+ * grant it field-staff surfaces — fail-open. Adding a Role member must be an
+ * explicit decision here, enforced by the exhaustiveness test in rbac.test.ts.
+ */
 export function isFieldStaff(role: Role): boolean {
-  return !isManagerOrAbove(role);
+  return role === Role.HK || role === Role.PA || role === Role.MT;
 }
 
 /**
