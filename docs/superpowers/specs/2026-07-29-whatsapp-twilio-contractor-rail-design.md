@@ -436,8 +436,8 @@ two-open-jobs case to confirm it parks rather than misfiles.
 
 | # | Item | Owner | Blocks |
 |---|---|---|---|
-| O1 | **Is the A2P 10DLC / SMS registration deliberate?** Recommendation: **no** — WhatsApp-only per the 2026-07-08 decision. If deliberate, `lib/messaging/` takes a second transport, a second consent scope, and STOP-keyword handling | Kyle | Nothing — spec assumes WhatsApp-only |
-| O2 | WhatsApp sender registration not started (§3) | Kyle | Production sending |
+| O1 | **RESOLVED 2026-07-29 (Kyle): A2P 10DLC registration is deliberate and ongoing.** Consequence: consent copy must cover **SMS *and* WhatsApp** (Spec B §5), or the WhatsApp opt-in has no artifact. SMS remains **out of scope as a transport** for this spec — `lib/messaging/` holds the seam if a fallback is wanted later | — | — |
+| O2 | **WhatsApp sender registration still not started** (§3). A2P does not unlock it | Kyle | Production sending — the pilot gate |
 | O3 | Privacy policy lacks the required Twilio disclosures (§3.3). Claude can draft; someone must publish | Kyle | Registration review |
 | O4 | prod/dev DB split | Kyle | Real contractor PII, go-live |
 | O5 | Gerardo's emergency-classification rule still pending | Gerardo | Nothing — `urgent` stays a manual toggle |

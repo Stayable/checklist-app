@@ -3,7 +3,10 @@
 **Date:** 2026-07-29
 **Component:** Cross-cutting (Component I auth + Component II.A contractor rail)
 **Companion spec:** `2026-07-29-whatsapp-twilio-contractor-rail-design.md` (Spec A — consumes the consent artifact this spec produces)
-**Status:** Design approved in brainstorm (Kyle, 2026-07-29). Not yet planned/built.
+**Status:** Design approved; **build approved (Kyle, 2026-07-29)**.
+**Priority:** ⚡ **Builds BEFORE Spec A.** Twilio's A2P 10DLC submission is live and requires
+demonstrating a real opt-in checkbox (`docs/assets/TwilioConsentRequirements_RISE8_072926.png`,
+"Web Form" opt-in ticked). The submission cannot complete until this form exists.
 
 ---
 
@@ -113,7 +116,42 @@ Spec A §14 O1 — completing these forms does not unlock WhatsApp.
 | HELP and STOP instructions | In consent copy; STOP handling in §8 |
 | Links to Terms + Privacy Policy | Links to `rentstayable.com` pages — **see O2, they currently lack the required disclosures** |
 | Submit button with clear language | *"Create my account"* — consent text sits directly above it |
+| **Channels named in the copy** | Names **both SMS and WhatsApp** — see §5.1 |
 | Opt-in behind a link → host a screenshot publicly | Twilio explicitly permits this (image 2, note 2). Plus we publish a genuinely public `/legal/messaging` page carrying all disclosures, so a public URL exists |
+
+### 5.1 Consent is OPTIONAL — and the copy
+
+**Corrected during spec review (2026-07-29).** An earlier draft of §8.2 made the checkbox mandatory
+to create an account. That is wrong on two counts:
+
+1. It contradicts the *"consent is not required"* non-coercion line Twilio's own pattern expects.
+2. **Consent conditioned on getting a work account is not freely given** — which undermines the
+   validity of the very artifact we are building. A coerced opt-in is worse than no opt-in: it looks
+   compliant while failing the substance.
+
+So: **account creation requires email + password + phone. The messaging checkbox is genuinely
+optional.** Decline it and the account works normally — that contractor is reached by phone call and
+magic-link instead of WhatsApp, which is exactly how the process runs today. **Resolves O6.**
+
+**One checkbox covers both channels; one `ConsentRecord` row is written per channel granted**
+(`WHATSAPP` + `SMS`), because A2P and Meta may each need to evidence their own consent independently.
+
+**Consent copy (EN)** — `policyVersion: "2026-07-29.1"`
+
+> ☐ I agree to receive SMS text messages and WhatsApp messages from Stayable about work assignments,
+> job details, and urgent callouts at the mobile number above. Typically 0–10 messages per week,
+> depending on job volume. Message and data rates may apply. Reply HELP for help or STOP to opt out
+> at any time. **Consent is optional and is not required to create your account or to be assigned
+> work.** See our [Terms and Conditions] and [Privacy Policy].
+
+**Consent copy (ES)** — machine-drafted; **must be human-reviewed before being relied on** (§9, O3)
+
+> ☐ Acepto recibir mensajes de texto (SMS) y mensajes de WhatsApp de Stayable sobre asignaciones de
+> trabajo, detalles de trabajos y llamadas urgentes al número de celular indicado arriba. Normalmente
+> de 0 a 10 mensajes por semana, según el volumen de trabajo. Pueden aplicarse tarifas de mensajes y
+> datos. Responda HELP para obtener ayuda o STOP para darse de baja en cualquier momento. **El
+> consentimiento es opcional y no es necesario para crear su cuenta ni para recibir asignaciones de
+> trabajo.** Consulte nuestros [Términos y Condiciones] y [Política de Privacidad].
 
 **⚠️ The consent language currently drafted in the Twilio form is the weak point.** It says opt-in is
 *"completed by their Stayable project manager on their behalf,"* which contradicts *"checkbox must be
@@ -283,9 +321,10 @@ predicate returns. That test is what stops a future seventh role from silently i
    **unchecked consent box** with full disclosure copy above the submit button.
 3. Submit: transaction → set `passwordHash`, `phone`, `phoneE164`, `locale`; write `ConsentRecord`
    (text + version + IP + UA + locale); consume `InviteToken`; `audit_log`. Then sign the user in.
-4. **Consent is required to submit.** Rationale: for a contractor the whole point of the account is
-   receiving dispatches. For staff the number is needed for urgent operational contact. If a
-   consent-optional path is ever wanted, it needs its own decision — do not add it silently.
+4. **Consent is OPTIONAL** (§5.1). Account creation succeeds either way. If ticked, write one
+   `ConsentRecord` per channel (`WHATSAPP`, `SMS`). If not, the account is created with no consent
+   rows and messaging is simply unavailable for that person — the dispatcher sees "no messaging
+   consent — call instead" on the contractor record, and the magic-link path still works.
 
 ### 8.3 Opt-out / revocation
 
@@ -333,7 +372,7 @@ priority item, and flag it to Kate now.**
 |---|---|
 | Invite invalid / expired / consumed | Generic error page, no discrimination between causes |
 | Token valid, user deactivated | Same generic error; no account activation |
-| Consent box unticked | Submit blocked client- and server-side |
+| Consent box unticked | **Account still created**; no `ConsentRecord` rows; messaging unavailable for that person (§5.1) |
 | Phone fails E.164 parse | Inline field error; no partial write |
 | `phoneE164` collides with an existing user | Inline "already in use" — do **not** reveal whose |
 | Resend send fails | Invite row persists; admin sees FAILED in `notification_log` and can resend |
@@ -348,7 +387,8 @@ priority item, and flag it to Kate now.**
 - **`lib/rbac.ts` — table-driven over every `Role`** for all four predicates (§7)
 - E.164 normalization: `+1 407 555 1234` / `(407) 555-1234` / `4075551234` → one canonical value; rejects garbage
 - Invite token mint/verify/expiry/consume
-- Consent gating: submit rejected without a tick
+- Consent optionality: unticked → account created, **zero** `ConsentRecord` rows, messaging blocked;
+  ticked → exactly two rows (`WHATSAPP` + `SMS`) with matching text, version, and locale
 
 **Integration:** full invite → account round trip; deactivated-user token; double-submit;
 consent-revoked dispatch block.
@@ -378,7 +418,7 @@ trusted-device HMAC) and is a logged piece of deferred debt.
 | O3 | **Human ES review of consent copy** (§9) | Kate | Relying on ES consent legally |
 | O4 | Record the §4 reversals as an ADR | Kyle | — |
 | O5 | prod/dev DB split — invites write real emails and phone numbers | Kyle | Go-live |
-| O6 | Should staff be allowed to decline consent and still get an account? (§8.2 step 4 says no) | Kyle | Nothing — default is required |
+| O6 | ~~Should staff be allowed to decline consent and still get an account?~~ **RESOLVED in spec review: yes — consent is optional (§5.1).** Mandatory consent would be coercive and would undermine the artifact's validity | — | — |
 
 ---
 
@@ -390,8 +430,13 @@ trusted-device HMAC) and is a logged piece of deferred debt.
 - A `CONTRACTOR` account is provably denied `/`, `/review`, `/issues`, `/dispatch`, `/admin`,
   `/templates`, `/rules`, `/completed`, `/reports`, and the checklist runtime.
 - Contractors cannot be given `UserProperty` rows.
-- Invite → set password + phone + consent → signed in, in both EN and ES.
-- `ConsentRecord` captures text, version, locale, IP, UA. Revocation writes a new row; history intact.
+- Invite → set password + phone (+ optional consent) → signed in, in both EN and ES.
+- **Consent unticked path works:** account created, no consent rows, dispatcher sees "no messaging
+  consent — call instead," magic-link still functions.
+- Consent ticked → two `ConsentRecord` rows (`WHATSAPP` + `SMS`) capturing text, version, locale, IP,
+  UA. Revocation writes a new row; history intact.
+- **Checkbox renders unchecked, submit is not blocked by it, and a screenshot of the live page is
+  produced for the Twilio A2P submission** (the reason this ships first).
 - Dispatch to a revoked contractor is blocked with a visible reason.
 - `/my/jobs` shows only that contractor's jobs; web-added updates appear in the same feed as WhatsApp ones.
 - Expired, consumed, and deactivated-user tokens all fail generically.
