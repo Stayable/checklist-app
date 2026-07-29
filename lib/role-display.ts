@@ -18,6 +18,9 @@ const MAP: Record<Role, DisplayRole> = {
   [Role.MANAGER]: "Manager",
   [Role.CORPORATE]: "Admin",
   [Role.ADMIN]: "Admin",
+  // IT staff (NETWORK section). Folded into the "Admin" display bucket for
+  // labels only — never used for authorization (see lib/rbac.ts).
+  [Role.NETWORK_TECH]: "Admin",
 };
 
 export function displayRole(role: Role): DisplayRole {

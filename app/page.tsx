@@ -11,6 +11,17 @@ import {
 } from "@/lib/rbac";
 import { db } from "@/lib/db";
 import { etDateOnly, formatDateInET } from "@/lib/datetime";
+import { roomDisplay } from "@/lib/room-label";
+
+// Today-list room suffix: " · Rm 312" for a real room, " · Suite" for a
+// free-text roomLabel (S1), "" when neither is set.
+function roomSuffix(
+  room: { roomNumber: string } | null,
+  roomLabel: string | null,
+): string {
+  const rd = roomDisplay(room, roomLabel);
+  return rd ? (room ? ` · Rm ${rd}` : ` · ${rd}`) : "";
+}
 
 // Authed home. Field staff see today's assignments ("Today"); admins get a
 // console link; managers get a review link. Route protection via requireUser().
@@ -44,6 +55,7 @@ export default async function Home() {
         template: { select: { name: true } },
         property: { select: { shortCode: true } },
         room: { select: { roomNumber: true } },
+        roomLabel: true,
       },
     }),
     db.checklistInstance.findMany({
@@ -60,6 +72,7 @@ export default async function Home() {
         template: { select: { name: true } },
         property: { select: { shortCode: true } },
         room: { select: { roomNumber: true } },
+        roomLabel: true,
       },
     }),
   ]);
@@ -162,7 +175,7 @@ export default async function Home() {
                     </span>
                     <span className="text-xs text-slate-500">
                       {a.property.shortCode}
-                      {a.room ? ` · Rm ${a.room.roomNumber}` : ""}
+                      {roomSuffix(a.room, a.roomLabel)}
                     </span>
                   </span>
                   <span
@@ -199,7 +212,7 @@ export default async function Home() {
                     </span>
                     <span className="text-xs text-slate-500">
                       {a.property.shortCode}
-                      {a.room ? ` · Rm ${a.room.roomNumber}` : ""}
+                      {roomSuffix(a.room, a.roomLabel)}
                     </span>
                   </span>
                   <span
@@ -234,7 +247,7 @@ export default async function Home() {
                     </span>
                     <span className="text-xs text-slate-500">
                       {r.property.shortCode}
-                      {r.room ? ` · Rm ${r.room.roomNumber}` : ""}
+                      {roomSuffix(r.room, r.roomLabel)}
                       {r.submittedAt
                         ? ` · ${formatDateInET(r.submittedAt)}`
                         : ""}

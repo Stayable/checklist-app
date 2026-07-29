@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { canAccessProperty } from "@/lib/rbac";
 import { presignDownload } from "@/lib/r2";
 import { formatInET } from "@/lib/datetime";
+import { roomDisplay } from "@/lib/room-label";
 import { renderPdfToBuffer } from "@/lib/pdf/render";
 import { ChecklistPdf, type PdfResponse } from "@/lib/pdf/ChecklistPdf";
 import { answerToText } from "@/lib/pdf/answer-text";
@@ -126,7 +127,7 @@ export async function GET(
   const data = {
     title,
     propertyLabel: `${instance.property.shortCode} — ${instance.property.name}`,
-    unit: instance.room?.roomNumber ?? null,
+    unit: roomDisplay(instance.room, instance.roomLabel),
     assignee: instance.assignedUser?.name ?? "Unassigned",
     startedAt: instance.openedAt ? formatInET(instance.openedAt) : null,
     completedAt: instance.submittedAt ? formatInET(instance.submittedAt) : null,

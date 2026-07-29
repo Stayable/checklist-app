@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { User } from "lucide-react";
 import { Role } from "@prisma/client";
 import { isNavItemActive, shouldHideShell, type NavItem } from "@/lib/nav";
 import type { PickerProperty } from "@/lib/rbac";
@@ -34,6 +35,10 @@ export function ShellChrome({
 
   const mainItems = navItems.filter((i) => i.group === "main");
   const adminItems = navItems.filter((i) => i.group === "admin");
+  const networkItems = navItems.filter((i) => i.group === "network");
+  // NETWORK_TECH has ONLY network-group items (no "main" nav at all), so the
+  // mobile bottom bar must include them or that role gets no mobile nav.
+  const mobileItems = [...mainItems, ...networkItems];
 
   return (
     <div className="min-h-screen bg-slate-50 lg:flex">
@@ -56,10 +61,26 @@ export function ShellChrome({
               ))}
             </>
           )}
+          {networkItems.length > 0 && (
+            <>
+              <p className="mt-6 px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Network
+              </p>
+              {networkItems.map((item) => (
+                <SidebarLink key={item.href} item={item} pathname={pathname} />
+              ))}
+            </>
+          )}
         </nav>
 
         <div className="mt-4 flex flex-col gap-3 border-t border-white/10 px-2 pt-4">
-          <span className="truncate text-sm font-semibold">{name}</span>
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 truncate text-sm font-semibold hover:text-slate-200"
+          >
+            <User className="h-4 w-4 shrink-0" />
+            <span className="truncate">{name}</span>
+          </Link>
           {showPicker && (
             <PropertyPicker properties={properties} current={currentPropertyId} />
           )}
@@ -80,6 +101,9 @@ export function ShellChrome({
             {showPicker && (
               <PropertyPicker properties={properties} current={currentPropertyId} />
             )}
+            <Link href="/profile" aria-label="Profile" className="text-navy">
+              <User className="h-5 w-5" />
+            </Link>
             <SignOutButton />
           </div>
         </div>
@@ -88,10 +112,10 @@ export function ShellChrome({
           {children}
         </main>
 
-        {/* Mobile bottom tab bar — main items only */}
+        {/* Mobile bottom tab bar — main + network items (admin stays desktop-only) */}
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
           <div className="mx-auto flex max-w-md items-stretch justify-around">
-            {mainItems.map((item) => {
+            {mobileItems.map((item) => {
               const active = isNavItemActive(item.href, pathname);
               return (
                 <Link

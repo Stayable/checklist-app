@@ -173,12 +173,13 @@ export function ReviewQueueClient({ rows, filter }: { rows: QueueRow[]; filter: 
               : `Request re-do — ${dialog.row.template}${dialog.row.unit ? ` Rm ${dialog.row.unit}` : ""}`
           }
           showPriority={dialog.kind === "flag"}
+          showNotify={dialog.kind === "flag"}
           pending={pending}
           onCancel={() => setDialog(null)}
-          onConfirm={(note, priority) =>
+          onConfirm={(note, priority, notifyStaff) =>
             run(() =>
               dialog.kind === "flag"
-                ? flagSubmission(dialog.row.id, { note, priority })
+                ? flagSubmission(dialog.row.id, { note, priority, notifyStaff })
                 : requestRedo(dialog.row.id, note),
             )
           }
@@ -191,18 +192,22 @@ export function ReviewQueueClient({ rows, filter }: { rows: QueueRow[]; filter: 
 export function NoteDialog({
   title,
   showPriority,
+  showNotify = false,
   pending,
   onCancel,
   onConfirm,
 }: {
   title: string;
   showPriority: boolean;
+  // Show a "notify staff" toggle (flag). Re-do always notifies, so it omits this.
+  showNotify?: boolean;
   pending: boolean;
   onCancel: () => void;
-  onConfirm: (note: string, priority: IssuePriority) => void;
+  onConfirm: (note: string, priority: IssuePriority, notifyStaff: boolean) => void;
 }) {
   const [note, setNote] = useState("");
   const [priority, setPriority] = useState<IssuePriority>(IssuePriority.MEDIUM);
+  const [notifyStaff, setNotifyStaff] = useState(true);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
@@ -232,6 +237,17 @@ export function NoteDialog({
             </select>
           </label>
         )}
+        {showNotify && (
+          <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={notifyStaff}
+              onChange={(e) => setNotifyStaff(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Notify staff by email
+          </label>
+        )}
         <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={onCancel}
@@ -241,7 +257,7 @@ export function NoteDialog({
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(note, priority)}
+            onClick={() => onConfirm(note, priority, notifyStaff)}
             disabled={pending || note.trim().length === 0}
             className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
           >

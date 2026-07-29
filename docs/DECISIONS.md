@@ -721,6 +721,89 @@ Phase-7 redesign **mirrors Connecteam's layout / information architecture** (the
 
 ---
 
+## ADR-018: Unified AppShell — desktop left sidebar + mobile bottom bar; global property scope
+
+**Date:** 2026-06-23
+**Status:** Accepted (supersedes the interim `AppNav`/`BottomNav` structural pass under ADR-017)
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 1
+
+### Context
+The Phase-7 structural pass (ADR-017) shipped a mobile-first Connecteam-style feed with a role-aware bottom tab bar (`AppNav`/`BottomNav`). Kate then requested a desktop/responsive redesign: the app is used on laptops by managers/corporate as much as on phones by field staff, and the bottom-bar-only chrome wasted desktop width. She also wanted a single, consistent property filter rather than the ad-hoc header picker.
+
+### Decision
+One unified `AppShell` renders **a navy left sidebar on desktop** and **a bottom tab bar on mobile**, both driven by a single role-aware nav model (`lib/nav.ts`). A **global property-scope filter** (`lib/property-scope.ts`, `resolveScopedPropertyIds`) lives in the shell header and narrows every property-scoped list (review, issues, completed, dashboard, reports) to the active property; CORPORATE/ADMIN default to the full portfolio. The old `AppNav`/`BottomNav` components are deleted.
+
+### Consequences
+- Every page mounts inside the shell via the root layout; new pages get nav + scope for free.
+- Property scope is resolved once and passed down, replacing per-page picker logic.
+- Retires the interim navigation from the ADR-017 structural pass (that ADR's *branding* direction still stands).
+
+---
+
+## ADR-019: Email OTP for all users with a 30-day trusted-device token, layered on password
+
+**Date:** 2026-06-25
+**Status:** Accepted (amends ADR-008's MFA approach)
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 2
+
+### Context
+ADR-008 planned TOTP MFA (on for managers/corp, optional for field staff) via authenticator apps. In practice, field staff don't reliably have authenticator apps configured, and Kate wanted a single second factor that works for everyone without per-user enrollment. Resend email delivery is now available.
+
+### Decision
+Authentication requires **password + a second factor for all users**. The second factor is a **6-digit email OTP**; on success the browser receives a **30-day HMAC-signed trusted-device token**, so the OTP is only re-prompted on new/expired devices. `authorize` (`lib/auth.ts`) enforces password AND (valid trusted-device token OR a verified-and-consumed OTP) with **no bypass path** and **fails closed on an empty `AUTH_SECRET`**. Two-step bilingual login UI; OTP records in `login_otps` (sha256 + pepper, attempt-cap, TTL); lockout metered in the pre-check.
+
+### Consequences
+- Uniform 2FA for every role without authenticator-app enrollment; supersedes the TOTP-only plan in ADR-008 (TOTP schema fields remain, unused, for a possible future).
+- Requires `RESEND_API_KEY` + `RESEND_FROM_EMAIL` in prod (set 2026-06-27; live OTP send validated).
+- **Deferred-minor (Phase 8):** `AUTH_SECRET` currently triple-purposes as NextAuth secret + OTP pepper + trusted-device HMAC key; splitting rotates live secrets and is deferred.
+
+---
+
+## ADR-020: Template authoring in-app; property-scoped templates; role-based edit scope
+
+**Date:** 2026-06-24
+**Status:** Accepted
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 3
+
+### Context
+The 9 templates were seed-only, editable only by changing code. StayCheck needs managers/corporate to author and edit checklist templates in-app, and templates must be able to target specific properties (not every template applies portfolio-wide).
+
+### Decision
+An in-app template builder (`/templates`) lets authorized users create/edit templates and their question sets. Templates declare their property applicability via a `TemplateProperty` join plus an `allProperties` flag. Access rules (`lib/template-access.ts`):
+- **ADMIN** — author/edit any template, including all-properties templates.
+- **MANAGER** — author/edit only templates fully scoped within their own property set. **Conservative edit scope (Kate decision):** managers **cannot** edit an all-properties template or a template that spans properties outside their assignment.
+- **CORPORATE** — **broad authoring (Kate decision):** may author/edit any non-all-properties template across the portfolio, but all-properties templates remain ADMIN-only.
+
+All mutations are audit-logged. Instances carry an optional free-text `title` override of the ADR-009 human label.
+
+### Consequences
+- Property-scoped templates keep each property's list relevant without duplicating templates.
+- The two role-boundary calls above are deliberate: managers are prevented from changing shared/all-property templates that affect properties they don't own; corporate gets reach without being able to touch the portfolio-wide set.
+- Template `version` is an int today; version **snapshotting** (binding an instance to the question set as it was) is deferred to StayCheck S9.
+
+---
+
+## ADR-021: Manager dashboard, reports, and on-demand PDF export
+
+**Date:** 2026-06-25
+**Status:** Accepted
+**Decided by:** Kate (spec 2026-06-22), implemented Plan 5
+
+### Context
+Managers and corporate needed at-a-glance operational health and exportable records well before the full Phase-6 dashboard suite. The spec pulled a focused dashboard + reports + PDF slice forward.
+
+### Decision
+- **`/dashboard`** — property-scoped alert tiles (completion %, incomplete, overdue, unassigned, open issues, checklists-with-issues).
+- **`/reports/completeness`** and **`/reports/issues`** — filterable (property/date/status/priority) report screens backed by pure helpers (`lib/reports.ts summarizeCompleteness`, tested).
+- **PDF export** via `@react-pdf/renderer` (pinned 4.5.1, `serverExternalPackages`, Node runtime, `auth()`-gated): single-checklist PDF (`/api/checklists/[id]/pdf`, with photos incl. ET capture time + geo, signatures) and report PDFs (`/api/reports/{completeness,issues}/pdf`) at query-parity with the screens.
+
+### Consequences
+- Establishes reusable PDF infrastructure (`lib/pdf/*`, `renderPdfToBuffer`) for later phases (contractor PDFs, S8 report parity).
+- These are an early, focused slice; the full multi-role dashboard suite (Phase 6 / PRD §13–14) still layers on top.
+- **Deferred-minor:** PDF free-text cell truncation and ET-exact issues `createdAt` bound (the latter fixed 2026-07-24).
+
+---
+
 ## ADR-022: Cloudbeds PMS in scope — manual-first room model with Cloudbeds as a pluggable sync adapter
 
 **Date:** 2026-07-02
@@ -825,6 +908,36 @@ Organize the project into **three components**, tracked as top-level sections in
 - **Scope expansion beyond v1.** The project is now a three-product ops suite, not just a checklist replacement. Building II and III is a larger commitment than the original v1 scope and is a budget/scope matter for Rob (sponsor); III specifically is not greenlit.
 - Component II's actual build should open with a brainstorming/spec pass (intake design, AI extraction contract, concern taxonomy, Outlook integration surface) before code.
 - Superseder note: this reframes — does not cancel — ADR-012 (Contractor Checklists / Quick Tasks) and the StayCheck v1.1 adaptation spec; those items now live under the appropriate component.
+
+---
+
+## ADR Template (copy for new entries)
+## ADR-026: Network Monitoring & IT Ticketing
+
+**Date:** 2026-07-25
+**Status:** Accepted
+**Decided by:** Kate (DevSpec 2026-07-24), implemented Tasks 1–10
+
+> **Numbering:** reconciled 2026-07-28 — the Contractor-Dispatch branch's ADR-025 was merged into `main`, so 024→025→026 is contiguous. No renumbering needed.
+
+### Context
+Kate's DevSpec (`docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.md`, ported from her standalone spec) adds portfolio-wide network device monitoring + IT ticketing as a new `/network` section, sibling to ADMIN. The spec was written for its own standalone stack (own DB, Redis, JWT); this ADR records where the StayCheck implementation diverged to reuse existing platform infrastructure instead.
+
+### Decisions
+1. **New `NETWORK_TECH` role** (7th value on the existing `Role` enum) for IT staff/MSP. `canAccessNetwork(role) = {NETWORK_TECH, ADMIN, CORPORATE}` — MANAGER is **not** granted access in v1. Extends ADR-023's 3-role display grouping: `NETWORK_TECH` folds into the "Admin" display bucket (`lib/role-display.ts`), label-only, never used for authorization.
+2. **DB-backed `NetworkJob` + 1-minute Vercel Cron**, not Redis/BullMQ, for the 5-min standard-ticket timer and 10-min mass-outage resolution check. Rejected a dedicated queue as unjustified operational weight for two timer kinds; ~1-minute scheduling granularity against a 5-/10-minute SLA is accepted as good enough.
+3. **Microsoft Graph for ticket Teams posts**, coexisting with ADR-010's Incoming-Webhooks daily digest — the digest stays on Incoming Webhooks (broadcast-only, no reply needed); network tickets need Graph because they require threaded replies and reply ingestion (Teams reply → `TicketNote`), which Incoming Webhooks can't do. Both integrations need their own service identity. **Scaffolded + degraded** (Task 7): every ticket-lifecycle event builds its exact spec §5.3/§5.5 message and logs it as a SKIPPED `NotificationLog` row until Azure AD app-registration creds exist — nothing is posted for real yet.
+4. **Zoho Desk dropped for network tickets** — ticketing is native (`Ticket`/`TicketNote` tables, in-app UI). Supersedes the ON-HOLD `docs/network/ITTicketingPlan_RISE8_072426.md` for the network-ticket use case specifically; that doc's Zoho evaluation was for a different (checklist-issue) ticketing surface and is otherwise unaffected.
+5. **`Ticket.assignedTo` is free-text**, not a `User` FK — assignment may go to an MSP or in-house name with no corresponding platform account. May become a proper FK later if/when all assignees are platform users.
+6. **Spotipo guest-WiFi integration is read-only** (Task 9) — no ticketing/alerting off guest-WiFi data in v1. At-rest encryption of `Property.spotipoApiKey` is an **OPEN** question (plaintext column today, same posture as other unencrypted secrets in this codebase) — deliberately not built in this scaffold-only task. Degrades the same way as Task 7: no siteids/keys exist yet, so every property renders "not configured."
+7. **Capture-before-trust webhook ingestion**: every inbound webhook is persisted to `RawWebhookPayload` before any parsing/business logic runs, so a parse failure or crash never loses the original payload. Receivers are HMAC-verified per vendor. Mass-outage detection clusters PROBLEM events within a 120-second window and serializes ticket creation/append per property via a Postgres transaction-scoped advisory lock (`pg_advisory_xact_lock`), closing the race where two near-simultaneous webhooks could both decide to create a ticket.
+8. **Overnight `[OVERNIGHT]` tag + escalation threshold are display-only** (Task 10, spec §9). `ESCALATION_THRESHOLD_HOURS = 4` is a documented **placeholder**, pending Kate/Christopher confirmation — same status as the checklist SLA defaults (ADR-014). Neither flag drives any notification, email, or Teams post in v1. Overnight = 10 PM–8 AM **Eastern Time** (`lib/datetime.ts`), never server/local time. The overnight suppress-vs-tag notification-behavior question is **OPEN** — this epic implements the tag only.
+
+### Consequences
+- RBAC, timer scheduling, and Teams delivery all reuse existing platform primitives (the `Role` enum + `lib/rbac.ts`, Vercel Cron, Microsoft 365 tenant) instead of the DevSpec's standalone stack — one fewer service to operate, at the cost of NETWORK_TECH being a slightly awkward 7th value on an enum ADR-023 already argued should stay small.
+- Tasks 1–6 (schema, event mapping, webhook ingestion, timers, mass outage, UI) are fully demoable with no external creds. Tasks 7–9 (Teams posting, Spotipo) are scaffolded and honestly degraded (logged `SKIPPED`, never silently no-op) until Azure Graph creds and Spotipo siteids/keys land — a future creds-unblocked task fills in the marked seams rather than rewriting these tasks.
+- Escalation/overnight are pure, unit-tested, display-only helpers (`lib/network/escalation.ts`) — safe to ship without notification-behavior sign-off, and trivially wireable to real alerting later once the threshold and the suppress-vs-tag question are answered.
+- Zoho Desk is now confirmed out of scope for network tickets specifically; the checklist-issue ticketing question in `docs/network/ITTicketingPlan_RISE8_072426.md` remains separately ON-HOLD.
 
 ---
 

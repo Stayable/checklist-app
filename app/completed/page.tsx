@@ -5,6 +5,8 @@ import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
 import { formatDateInET } from "@/lib/datetime";
+import { roomDisplay } from "@/lib/room-label";
+import { hasAnyCheckoutFlag } from "@/lib/checkout-flags";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { CompletedFilters } from "./CompletedFilters";
 
@@ -79,6 +81,11 @@ export default async function CompletedPage({
       template: { select: { name: true } },
       property: { select: { shortCode: true } },
       room: { select: { roomNumber: true } },
+      roomLabel: true,
+      notifyCorporate: true,
+      returnDeposit: true,
+      itemsToReplace: true,
+      placeOOO: true,
       assignedUser: { select: { id: true, name: true } },
     },
   });
@@ -137,7 +144,17 @@ export default async function CompletedPage({
                   {i.title ?? i.template.name}
                 </td>
                 <td className="px-4 py-2">{i.property.shortCode}</td>
-                <td className="px-4 py-2">{i.room?.roomNumber ?? "—"}</td>
+                <td className="px-4 py-2">
+                  {roomDisplay(i.room, i.roomLabel) ?? "—"}
+                  {hasAnyCheckoutFlag(i) && (
+                    <span
+                      title="Checkout flags raised"
+                      className="ml-1.5 inline-block rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+                    >
+                      ⚑
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-2">{i.assignedUser?.name ?? "—"}</td>
                 <td className="px-4 py-2 text-slate-500">
                   {i.submittedAt

@@ -16,6 +16,8 @@ const schema = z.object({
   templateId: z.string().uuid(),
   propertyId: z.string().uuid(),
   roomId: z.string().uuid().nullable().optional(),
+  // S1: free-text room label when no Room row is chosen (e.g. "-", "Suite").
+  roomLabel: z.string().trim().max(120).optional(),
   assignedUserId: z.string().uuid().nullable().optional(),
   title: z.string().trim().min(1, "Title is required"),
 });
@@ -31,7 +33,7 @@ export async function createInstanceManually(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  const { templateId, propertyId, roomId, assignedUserId, title } =
+  const { templateId, propertyId, roomId, roomLabel, assignedUserId, title } =
     parsed.data;
 
   if (!(await canAccessProperty(user, propertyId))) {
@@ -71,6 +73,8 @@ export async function createInstanceManually(
   }
   const effectiveRoomId =
     template.scope === TemplateScope.PER_ROOM ? (roomId ?? null) : null;
+  // Free-text label only kept when there is no real Room row.
+  const effectiveRoomLabel = effectiveRoomId ? null : (roomLabel?.trim() || null);
 
   // Need the property's short code (propertyId field) for the system ID.
   const property = await db.property.findUnique({
@@ -99,6 +103,7 @@ export async function createInstanceManually(
           templateId,
           propertyId,
           roomId: effectiveRoomId,
+          roomLabel: effectiveRoomLabel,
           scheduledFor: target,
           assignedUserId: assignedUserId ?? null,
           status: assignedUserId

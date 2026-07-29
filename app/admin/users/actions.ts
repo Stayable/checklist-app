@@ -6,7 +6,7 @@ import { z } from "zod";
 import { Locale, Prisma, Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/rbac";
-import { generateTempPassword } from "@/lib/password";
+import { generateTempPassword, validatePasswordStrength } from "@/lib/password";
 
 // Admin user-management server actions (Phase 2). All require ADMIN and write
 // an audit_log entry. Resend is deferred, so create/reset return a one-time
@@ -98,6 +98,33 @@ export async function resetPassword(userId: string): Promise<ActionResult> {
   });
   await writeAudit(admin.id, userId, "reset_password");
   return { ok: true, tempPassword, message: "Password reset. Share the temp password securely." };
+}
+
+/** Set a specific password chosen by the admin (vs. resetPassword's random temp). */
+export async function setUserPassword(
+  userId: string,
+  password: string,
+): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const idOk = z.string().uuid().safeParse(userId);
+  if (!idOk.success) return { ok: false, error: "Invalid user." };
+  const weak = validatePasswordStrength(password);
+  if (weak) return { ok: false, error: weak };
+
+  const target = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true },
+  });
+  if (!target) return { ok: false, error: "User not found." };
+
+  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+  // Clear any lockout so the new password works immediately.
+  await db.user.update({
+    where: { id: target.id },
+    data: { passwordHash, failedLoginAttempts: 0, lastFailedLoginAt: null, lockedUntil: null },
+  });
+  await writeAudit(admin.id, target.id, "set_password", { email: target.email });
+  return { ok: true, message: `Password set for ${target.email}.` };
 }
 
 const propsSchema = z.object({

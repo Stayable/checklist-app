@@ -80,6 +80,14 @@
     "err_photoMin": "Agrega más fotos.",
     "err_photoMax": "Demasiadas fotos."
   },
+  "Checkout": {
+    "heading": "Notas de salida",
+    "notifyCorporate": "Notificar a corporativo",
+    "returnDeposit": "Devolver depósito",
+    "itemsToReplace": "Hay artículos por reemplazar",
+    "itemsToReplaceList": "¿Qué hay que reemplazar?",
+    "placeOOO": "Poner la habitación fuera de servicio"
+  },
   "Locale": {
     "english": "Inglés",
     "spanish": "Español",
@@ -112,5 +120,23 @@
     "uploading": "Subiendo…",
     "uploaded": "Subida completada — la imagen de abajo se recuperó del almacenamiento",
     "loginRequired": "Inicia sesión primero — la subida requiere una sesión."
+  },
+  "Profile": {
+    "title": "Perfil",
+    "subtitle": "Administra tu cuenta",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "changePassword": "Cambiar contraseña",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "save": "Actualizar contraseña",
+    "saving": "Actualizando…",
+    "success": "Contraseña actualizada.",
+    "errMismatch": "Las contraseñas no coinciden.",
+    "errWeak": "La contraseña debe tener al menos 8 caracteres.",
+    "errWrongCurrent": "La contraseña actual es incorrecta.",
+    "errSame": "La nueva contraseña debe ser diferente de la actual.",
+    "errGeneric": "No se pudo actualizar la contraseña. Inténtalo de nuevo."
   }
 }

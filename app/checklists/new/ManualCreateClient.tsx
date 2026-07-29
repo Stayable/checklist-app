@@ -30,6 +30,7 @@ export function ManualCreateClient({
     templates[0] ? (defaultTitleFor[templates[0].id] ?? "") : "",
   );
   const [roomId, setRoomId] = useState("");
+  const [roomLabel, setRoomLabel] = useState("");
   const [assignedUserId, setAssignedUserId] = useState("");
 
   const selected = useMemo(
@@ -58,6 +59,7 @@ export function ManualCreateClient({
         templateId,
         propertyId: activePropertyId,
         roomId: perRoom ? roomId || null : null,
+        roomLabel: !perRoom ? roomLabel.trim() || undefined : undefined,
         assignedUserId: assignedUserId || null,
         title,
       });
@@ -130,6 +132,17 @@ export function ManualCreateClient({
               </option>
             ))}
           </select>
+        </label>
+      )}
+      {!perRoom && (
+        <label className="text-sm font-medium text-slate-700">
+          Room label (optional)
+          <input
+            value={roomLabel}
+            onChange={(e) => setRoomLabel(e.target.value)}
+            placeholder='e.g. "Lobby", "Suite", "-"'
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
         </label>
       )}
       <label className="text-sm font-medium text-slate-700">

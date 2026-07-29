@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { requireUser, isManagerOrAbove } from "@/lib/rbac";
 import { formatDateInET } from "@/lib/datetime";
 import type { AnswerMap, AnswerValue } from "@/lib/checklist-logic";
+import type { CheckoutFlags } from "@/lib/checkout-flags";
+import { roomDisplay } from "@/lib/room-label";
 import { FillClient, type FillQuestion } from "./FillClient";
 
 // Checklist filling page (Phase 3). Loads the instance + ordered questions,
@@ -16,7 +18,13 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
   const instance = await db.checklistInstance.findUnique({
     where: { id },
     include: {
-      template: { select: { name: true, questions: { orderBy: { orderIndex: "asc" } } } },
+      template: {
+        select: {
+          name: true,
+          collectsCheckoutFlags: true,
+          questions: { orderBy: { orderIndex: "asc" } },
+        },
+      },
       property: { select: { id: true, shortCode: true } },
       room: { select: { roomNumber: true } },
       responses: { select: { questionId: true, answer: true } },
@@ -56,7 +64,8 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
 
   // ADR-009 human label: prefer stored title (set on manual-create); fall back
   // to the ADR-009 computed pattern {Template} — {Short Code} — {Scope} — {Date}.
-  const scope = instance.room ? `Rm ${instance.room.roomNumber}` : null;
+  const rd = roomDisplay(instance.room, instance.roomLabel);
+  const scope = rd ? (instance.room ? `Rm ${rd}` : rd) : null;
   const generatedLabel = [
     instance.template.name,
     instance.property.shortCode,
@@ -70,6 +79,14 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
   const submitted =
     instance.status === InstanceStatus.SUBMITTED || instance.status === InstanceStatus.REVIEWED;
 
+  const initialFlags: CheckoutFlags = {
+    notifyCorporate: instance.notifyCorporate,
+    returnDeposit: instance.returnDeposit,
+    itemsToReplace: instance.itemsToReplace,
+    itemsToReplaceList: instance.itemsToReplaceList ?? "",
+    placeOOO: instance.placeOOO,
+  };
+
   return (
     <FillClient
       instanceId={instance.id}
@@ -77,6 +94,8 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
       questions={questions}
       initialAnswers={initialAnswers}
       submitted={submitted}
+      collectsCheckoutFlags={instance.template.collectsCheckoutFlags}
+      initialFlags={initialFlags}
     />
   );
 }
