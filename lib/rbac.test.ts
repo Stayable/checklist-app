@@ -1,5 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Role } from "@prisma/client";
+
+// Mock @/lib/auth at file scope to avoid importing next-auth's transitive
+// next/server dependency, which fails under vitest's node environment.
+// lib/rbac.ts imports auth() for requireUser, but the pure predicates we test
+// (isFieldStaff, isManagerOrAbove, etc.) don't depend on it, so a no-op stub
+// is sufficient and safe. Without this mock, the test cannot import rbac.ts.
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn(),
+}));
+
 import { isAdmin, isFieldStaff, isManagerOrAbove, isPortfolioRole } from "./rbac";
 
 // Table-driven over EVERY Role value. This is the guard that stops a future role
