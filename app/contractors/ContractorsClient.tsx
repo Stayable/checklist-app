@@ -4,12 +4,23 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Locale, Trade } from "@prisma/client";
 import { ALL_TRADES, tradeLabel, tradesLabel } from "@/lib/contractors";
+import { formatPhoneDisplay } from "@/lib/phone";
+import { formatInET } from "@/lib/datetime";
 import {
   createContractor,
   updateContractor,
   setContractorActive,
+  sendConsentInvite,
   type ActionResult,
 } from "./actions";
+
+// Serializable mirror of lib/consent.ts ConsentDisplayState (expiresAt as an
+// ISO string — Dates don't cross the server/client boundary in this codebase,
+// see app/admin/users/page.tsx's invite.expiresAt for the same pattern).
+type ConsentState =
+  | { kind: "consented" }
+  | { kind: "invite_outstanding"; expiresAt: string }
+  | { kind: "not_consented"; canInvite: boolean };
 
 type Row = {
   id: string;
@@ -18,6 +29,7 @@ type Row = {
   trades: Trade[];
   whatsapp: string | null;
   phone: string | null;
+  email: string | null;
   language: Locale;
   contracted: boolean;
   onCall: boolean;
@@ -25,6 +37,7 @@ type Row = {
   notes: string | null;
   isStaff: boolean;
   propertyIds: string[];
+  consent: ConsentState;
 };
 
 type Prop = { id: string; shortCode: string; name: string };
@@ -35,6 +48,7 @@ type FormState = {
   trades: Trade[];
   whatsapp: string;
   phone: string;
+  email: string;
   language: Locale;
   contracted: boolean;
   onCall: boolean;
@@ -48,6 +62,7 @@ const emptyForm = (): FormState => ({
   trades: [],
   whatsapp: "",
   phone: "",
+  email: "",
   language: Locale.es,
   contracted: false,
   onCall: true,
@@ -61,6 +76,7 @@ const rowToForm = (r: Row): FormState => ({
   trades: r.trades,
   whatsapp: r.whatsapp ?? "",
   phone: r.phone ?? "",
+  email: r.email ?? "",
   language: r.language,
   contracted: r.contracted,
   onCall: r.onCall,
@@ -185,6 +201,39 @@ export function ContractorsClient({
                     {r.phone && <span>Tel {r.phone}</span>}
                     <span> · {r.language === Locale.es ? "Español" : "English"}</span>
                   </p>
+                  <div className="mt-1 text-xs">
+                    {r.consent.kind === "consented" && (
+                      <span className="font-medium text-emerald-700">
+                        WhatsApp OK{r.whatsapp && ` · ${formatPhoneDisplay(r.whatsapp)}`}
+                      </span>
+                    )}
+                    {r.consent.kind === "invite_outstanding" && (
+                      <span className="text-slate-600">
+                        Consent invite sent — expires {formatInET(r.consent.expiresAt)}
+                      </span>
+                    )}
+                    {r.consent.kind === "not_consented" && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-800">
+                          No messaging consent — call instead
+                        </span>
+                        {r.consent.canInvite ? (
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => run(() => sendConsentInvite(r.id))}
+                            className="font-semibold text-navy underline hover:opacity-80 disabled:opacity-50"
+                          >
+                            Send consent invite
+                          </button>
+                        ) : (
+                          <span className="text-slate-500">
+                            Add an email to send a consent invite
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {r.propertyIds.map((pid) => (
                       <span
@@ -336,6 +385,17 @@ function ContractorForm({
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
         </div>
+      </div>
+
+      <div>
+        <label className={label}>Email (for consent invites)</label>
+        <input
+          className={field}
+          type="email"
+          value={form.email}
+          placeholder="name@example.com"
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

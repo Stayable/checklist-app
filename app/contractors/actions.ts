@@ -26,6 +26,9 @@ const contractorBase = z.object({
   trades: z.array(z.nativeEnum(Trade)).min(1, "Pick at least one trade"),
   whatsapp: z.preprocess(emptyToNull, z.string().trim().max(40).nullable()).optional(),
   phone: z.preprocess(emptyToNull, z.string().trim().max(40).nullable()).optional(),
+  // Not "WhatsApp or phone required" — email only delivers a consent invite
+  // (T9), it is never required for a contractor to exist in the directory.
+  email: z.string().trim().toLowerCase().email("Enter a valid email").optional().or(z.literal("")),
   language: z.nativeEnum(Locale).default(Locale.es),
   contracted: z.boolean().default(false),
   onCall: z.boolean().default(true),
@@ -89,6 +92,7 @@ export async function createContractor(input: unknown): Promise<ActionResult> {
       trades: d.trades,
       whatsapp: d.whatsapp ?? null,
       phone: d.phone ?? null,
+      email: d.email ? d.email : null,
       language: d.language,
       contracted: d.contracted,
       onCall: d.onCall,
@@ -142,6 +146,7 @@ export async function updateContractor(input: unknown): Promise<ActionResult> {
         trades: d.trades,
         whatsapp: d.whatsapp ?? null,
         phone: d.phone ?? null,
+        email: d.email ? d.email : null,
         language: d.language,
         contracted: d.contracted,
         onCall: d.onCall,

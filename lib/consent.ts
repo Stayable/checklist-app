@@ -17,3 +17,28 @@ export type ConsentLike = { channel: ConsentChannel; revokedAt: Date | null };
 export function hasLiveConsent(records: ConsentLike[], channel: ConsentChannel): boolean {
   return records.some((r) => r.channel === channel && r.revokedAt === null);
 }
+
+// Dispatcher-facing consent visibility (T9 — /contractors). Not the compliance
+// hard stop (that's Spec A's dispatch.server.ts calling hasLiveConsent
+// directly); this is "what should a dispatcher see before reaching for
+// WhatsApp." Consented always wins; short of that, an invite already in
+// flight beats prompting to send another one; short of that, whether "Send
+// consent invite" is even actionable depends on having somewhere to email it.
+export type ConsentDisplayState =
+  | { kind: "consented" }
+  | { kind: "invite_outstanding"; expiresAt: Date }
+  | { kind: "not_consented"; canInvite: boolean };
+
+export function consentDisplayState(input: {
+  consentRecords: ConsentLike[];
+  outstandingInvite: { expiresAt: Date } | null;
+  hasEmail: boolean;
+}): ConsentDisplayState {
+  if (hasLiveConsent(input.consentRecords, ConsentChannel.WHATSAPP)) {
+    return { kind: "consented" };
+  }
+  if (input.outstandingInvite) {
+    return { kind: "invite_outstanding", expiresAt: input.outstandingInvite.expiresAt };
+  }
+  return { kind: "not_consented", canInvite: input.hasEmail };
+}
