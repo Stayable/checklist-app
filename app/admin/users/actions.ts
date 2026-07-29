@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { Locale, Prisma, Role } from "@prisma/client";
+import { InviteKind, Locale, NotificationChannel, NotificationStatus, Prisma, Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/rbac";
 import { generateTempPassword, validatePasswordStrength } from "@/lib/password";
+import { INVITE_TTL_MS, buildInviteUrl, generateInviteToken, hashInviteToken } from "@/lib/invite";
+import { sendInviteEmail } from "@/lib/email";
 
 // Admin user-management server actions (Phase 2). All require ADMIN and write
 // an audit_log entry. Resend is deferred, so create/reset return a one-time
@@ -182,4 +184,89 @@ export async function setUserProperties(input: unknown): Promise<ActionResult> {
   await writeAudit(admin.id, userId, "set_properties", { propertyIds });
   revalidatePath("/admin/users");
   return { ok: true, message: "Property assignments updated." };
+}
+
+/**
+ * Mint a single-use ACCOUNT invite (Spec B), email the raw-token URL, and log
+ * the send. The row persists even when the email fails — email is a delivery
+ * concern, not a reason to lose the invite; the admin can retry once Resend is
+ * configured. The raw token lives only in the emailed URL: only its SHA-256 is
+ * ever persisted (`hashInviteToken`), and it is never logged or returned here.
+ */
+export async function sendAccountInvite(userId: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const idOk = z.string().uuid().safeParse(userId);
+  if (!idOk.success) return { ok: false, error: "Invalid user." };
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true, locale: true, active: true },
+  });
+  if (!user) return { ok: false, error: "User not found." };
+  if (!user.active) return { ok: false, error: "Reactivate this user before inviting them." };
+
+  const token = generateInviteToken();
+  const invite = await db.inviteToken.create({
+    data: {
+      kind: InviteKind.ACCOUNT,
+      userId,
+      tokenHash: hashInviteToken(token),
+      expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+      createdByUserId: admin.id,
+    },
+    select: { id: true },
+  });
+
+  const sent = await sendInviteEmail(user.email, buildInviteUrl(token), user.locale, "ACCOUNT");
+  // NotificationLog.title is non-null with no default — it must be supplied.
+  await db.notificationLog.create({
+    data: {
+      userId,
+      channel: NotificationChannel.EMAIL,
+      status: sent.ok ? NotificationStatus.SENT : NotificationStatus.FAILED,
+      event: "account_invite",
+      title: "StayCheck account invitation",
+      entityType: "user",
+      entityId: userId,
+      error: sent.ok ? null : (sent.error ?? "unknown_error"),
+    },
+  });
+  await writeAudit(admin.id, userId, "send_invite", { inviteId: invite.id, sent: sent.ok });
+  revalidatePath("/admin/users");
+
+  if (!sent.ok) {
+    return {
+      ok: false,
+      error: `Invite created but email failed (${sent.error}). The invite still exists — retry once email is configured.`,
+    };
+  }
+  return { ok: true, message: `Invite sent to ${user.email}. Expires in 7 days.` };
+}
+
+/**
+ * Revoke a live invite (ACCOUNT or CONSENT_ONLY — both kinds share InviteToken,
+ * so one admin action covers either). Refuses a consumed invite (nothing to
+ * revoke — the account/consent is already set); revoking an already-revoked
+ * invite is a no-op success rather than an error.
+ */
+export async function revokeInvite(inviteId: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const idOk = z.string().uuid().safeParse(inviteId);
+  if (!idOk.success) return { ok: false, error: "Invalid invite." };
+
+  const invite = await db.inviteToken.findUnique({
+    where: { id: inviteId },
+    select: { id: true, userId: true, contractorId: true, consumedAt: true, revokedAt: true },
+  });
+  if (!invite) return { ok: false, error: "Invite not found." };
+  if (invite.consumedAt) return { ok: false, error: "That invite was already used." };
+  if (invite.revokedAt) return { ok: true, message: "Already revoked." };
+
+  await db.inviteToken.update({ where: { id: inviteId }, data: { revokedAt: new Date() } });
+  await writeAudit(admin.id, invite.userId ?? invite.contractorId ?? inviteId, "revoke_invite", {
+    inviteId,
+  });
+  revalidatePath("/admin/users");
+  revalidatePath("/contractors");
+  return { ok: true, message: "Invite revoked." };
 }

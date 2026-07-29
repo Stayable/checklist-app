@@ -30,6 +30,47 @@ export async function sendOtpEmail(
   return sendEmail({ to, subject: copy.subject, text: copy.line(code) });
 }
 
+// Invite/consent copy (Spec B — invite + consent capture). ACCOUNT invites let
+// staff set their own password; CONSENT_ONLY invites capture messaging consent
+// only and create no account (contractors work via the dispatch magic-link,
+// ADR-012). Both variants share the sendInviteEmail() send path.
+const INVITE_COPY = {
+  en: {
+    ACCOUNT: {
+      subject: "Set up your StayCheck account",
+      body: (url: string) =>
+        `You've been invited to StayCheck. Set your password and confirm your mobile number here:\n\n${url}\n\nThis link expires in 7 days. If you weren't expecting this, ignore this email.`,
+    },
+    CONSENT_ONLY: {
+      subject: "Confirm your contact details for Stayable work assignments",
+      body: (url: string) =>
+        `Stayable would like to send you work assignments by WhatsApp. Confirm your mobile number here:\n\n${url}\n\nThis link expires in 7 days. Messaging is optional — you can decline and still receive work.`,
+    },
+  },
+  es: {
+    ACCOUNT: {
+      subject: "Configura tu cuenta de StayCheck",
+      body: (url: string) =>
+        `Te invitamos a StayCheck. Establece tu contraseña y confirma tu número de celular aquí:\n\n${url}\n\nEste enlace caduca en 7 días. Si no esperabas esto, ignora este correo.`,
+    },
+    CONSENT_ONLY: {
+      subject: "Confirma tus datos de contacto para asignaciones de Stayable",
+      body: (url: string) =>
+        `Stayable quiere enviarte asignaciones de trabajo por WhatsApp. Confirma tu número de celular aquí:\n\n${url}\n\nEste enlace caduca en 7 días. Los mensajes son opcionales — puedes rechazarlos y seguir recibiendo trabajo.`,
+    },
+  },
+} as const;
+
+export async function sendInviteEmail(
+  to: string,
+  url: string,
+  locale: "en" | "es",
+  kind: "ACCOUNT" | "CONSENT_ONLY",
+): Promise<{ ok: boolean; error?: string }> {
+  const copy = (INVITE_COPY[locale] ?? INVITE_COPY.en)[kind];
+  return sendEmail({ to, subject: copy.subject, text: copy.body(url) });
+}
+
 /**
  * Generic transactional send. Returns `{ ok:false, error:"email_not_configured" }`
  * when RESEND_API_KEY is unset (build/test/CI) — callers treat that as SKIPPED,

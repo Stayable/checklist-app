@@ -12,6 +12,8 @@ import {
   createUser,
   deleteUser,
   resetPassword,
+  revokeInvite,
+  sendAccountInvite,
   setUserActive,
   setUserPassword,
   setUserProperties,
@@ -27,6 +29,7 @@ type AdminUser = {
   active: boolean;
   lastLoginAt: string | null;
   propertyIds: string[];
+  invite: { id: string; expiresAt: string } | null;
 };
 
 type Prop = { id: string; shortCode: string; name: string };
@@ -145,6 +148,12 @@ export function UsersClient({
                 }
                 onReset={() => run(() => resetPassword(u.id))}
                 onToggleActive={() => run(() => setUserActive(u.id, !u.active))}
+                onInvite={() => run(() => sendAccountInvite(u.id))}
+                onRevokeInvite={() => {
+                  if (!u.invite) return;
+                  if (!confirm("Revoke this invite? The link will stop working.")) return;
+                  run(() => revokeInvite(u.invite!.id));
+                }}
                 onDelete={() => {
                   if (!confirm(`Permanently delete ${u.email}? This can't be undone.`)) return;
                   run(() => deleteUser(u.id));
@@ -246,6 +255,8 @@ function UserRow({
   onSetPw,
   onReset,
   onToggleActive,
+  onInvite,
+  onRevokeInvite,
   onDelete,
   onSaveProps,
 }: {
@@ -261,6 +272,8 @@ function UserRow({
   onSetPw: (password: string) => void;
   onReset: () => void;
   onToggleActive: () => void;
+  onInvite: () => void;
+  onRevokeInvite: () => void;
   onDelete: () => void;
   onSaveProps: (ids: string[]) => void;
 }) {
@@ -287,6 +300,11 @@ function UserRow({
           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${user.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
             {user.active ? "Active" : "Inactive"}
           </span>
+          {user.invite && (
+            <div className="mt-1 text-xs text-slate-500">
+              Invited — expires {formatInET(user.invite.expiresAt)}
+            </div>
+          )}
         </td>
         <td className="px-4 py-3 text-right">
           <div className="flex justify-end gap-3">
@@ -302,6 +320,24 @@ function UserRow({
             <button className={action} disabled={pending} onClick={onToggleActive}>
               {user.active ? "Deactivate" : "Reactivate"}
             </button>
+            {user.invite ? (
+              <button
+                className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-40"
+                disabled={pending}
+                onClick={onRevokeInvite}
+              >
+                Revoke invite
+              </button>
+            ) : (
+              <button
+                className={action}
+                disabled={pending || !user.active}
+                title={!user.active ? "Reactivate this user before inviting them." : undefined}
+                onClick={onInvite}
+              >
+                Invite
+              </button>
+            )}
             {!isSelf && (
               <button
                 className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-40"

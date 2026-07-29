@@ -1,3 +1,4 @@
+import { InviteKind } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/rbac";
 import { UsersClient } from "./UsersClient";
@@ -29,6 +30,27 @@ export default async function AdminUsersPage() {
     }),
   ]);
 
+  // Newest live (not consumed, not revoked, not expired) ACCOUNT invite per
+  // user, so the row can show "Invited — expires {date} ET" + a Revoke button.
+  // Ordered newest-first so the first hit per userId wins the reduce below.
+  const liveInvites = await db.inviteToken.findMany({
+    where: {
+      kind: InviteKind.ACCOUNT,
+      userId: { in: users.map((u) => u.id) },
+      consumedAt: null,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, userId: true, expiresAt: true },
+  });
+  const inviteByUserId = new Map<string, { id: string; expiresAt: string }>();
+  for (const invite of liveInvites) {
+    if (invite.userId && !inviteByUserId.has(invite.userId)) {
+      inviteByUserId.set(invite.userId, { id: invite.id, expiresAt: invite.expiresAt.toISOString() });
+    }
+  }
+
   const initialUsers = users.map((u) => ({
     id: u.id,
     name: u.name,
@@ -38,6 +60,7 @@ export default async function AdminUsersPage() {
     active: u.active,
     lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
     propertyIds: u.properties.map((p) => p.propertyId),
+    invite: inviteByUserId.get(u.id) ?? null,
   }));
 
   return (

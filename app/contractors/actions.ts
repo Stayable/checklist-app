@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Locale, Prisma, Trade } from "@prisma/client";
+import { InviteKind, Locale, Prisma, Trade } from "@prisma/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireManager, accessiblePropertyIds, isPortfolioRole } from "@/lib/rbac";
+import { INVITE_TTL_MS, buildInviteUrl, generateInviteToken, hashInviteToken } from "@/lib/invite";
+import { sendInviteEmail } from "@/lib/email";
 
 // Contractor directory server actions (Component II — Contractor Dispatch MVP,
 // ADR-025). Manager-or-above. Every mutation writes an audit_log entry. Scoped
@@ -175,4 +177,79 @@ export async function setContractorActive(id: string, active: boolean): Promise<
   await writeAudit(user.id, id, active ? "reactivate" : "deactivate");
   revalidatePath("/contractors");
   return { ok: true, message: active ? `${existing.name} reactivated.` : `${existing.name} archived.` };
+}
+
+/**
+ * Mint a single-use CONSENT_ONLY invite (Spec B) and email it to the
+ * contractor. Creates no account — contractors keep working via the T4
+ * dispatch magic-link (ADR-012); this invite only captures their own
+ * messaging-consent grant, since a dispatcher ticking the box for them would
+ * be proxy consent (which ConsentRecord is deliberately designed to prevent).
+ * The raw token lives only in the emailed URL — only its SHA-256 is persisted.
+ */
+export async function sendConsentInvite(contractorId: string): Promise<ActionResult> {
+  const user = await requireManager();
+  const idOk = z.string().uuid().safeParse(contractorId);
+  if (!idOk.success) return { ok: false, error: "Invalid contractor." };
+
+  const contractor = await db.contractor.findUnique({
+    where: { id: contractorId },
+    select: {
+      id: true,
+      name: true,
+      language: true,
+      active: true,
+      email: true,
+      user: { select: { email: true } },
+      properties: { select: { propertyId: true } },
+    },
+  });
+  if (!contractor) return { ok: false, error: "Contractor not found." };
+  if (!contractor.active) return { ok: false, error: "This contractor is archived." };
+
+  // Scoped managers may only invite contractors covered by a property they
+  // can access — mirrors the overlap check in setContractorActive above.
+  if (!isPortfolioRole(user.role)) {
+    const accessible = await accessiblePropertyIds(user);
+    const overlaps = contractor.properties.some((p) => accessible.includes(p.propertyId));
+    if (!overlaps) return { ok: false, error: "This contractor isn't in your properties." };
+  }
+
+  // Consent invites are emailed. Prefer the contractor's own email; fall back
+  // to a linked staff account's (Jesús Pérez is both). Most of the roster has
+  // no User, which is exactly why Contractor.email exists.
+  const email = contractor.email ?? contractor.user?.email;
+  if (!email) {
+    return {
+      ok: false,
+      error: "Add an email address for this contractor before sending a consent invite.",
+    };
+  }
+
+  const token = generateInviteToken();
+  const invite = await db.inviteToken.create({
+    data: {
+      kind: InviteKind.CONSENT_ONLY,
+      contractorId,
+      tokenHash: hashInviteToken(token),
+      expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+      createdByUserId: user.id,
+    },
+    select: { id: true },
+  });
+
+  const sent = await sendInviteEmail(email, buildInviteUrl(token), contractor.language, "CONSENT_ONLY");
+  await writeAudit(user.id, contractorId, "send_consent_invite", {
+    inviteId: invite.id,
+    sent: sent.ok,
+  });
+  revalidatePath("/contractors");
+
+  if (!sent.ok) {
+    return {
+      ok: false,
+      error: `Invite created but email failed (${sent.error}). The invite still exists — retry once email is configured.`,
+    };
+  }
+  return { ok: true, message: `Consent invite sent to ${email}.` };
 }
