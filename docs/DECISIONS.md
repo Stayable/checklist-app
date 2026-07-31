@@ -972,6 +972,8 @@ Three gaps against what existed: delivery was hardcoded to one `TEAMS_WEBHOOK_UR
 
 7. **Dashboard aggregates extracted to `lib/network/overview.server.ts`**, shared by `/network` and the digest. Two copies of these queries would drift, and a digest that disagrees with the dashboard about how many tickets are open gives a reader no way to tell which is lying.
 
+7a. **The digest table is an Adaptive Card `ColumnSet`, and the digest cron posts inline** (added 2026-08-01 after live verification). Kyle's flow renders **the card attachment**, not the `text` field — proven by its "used a Workflow template to send this card" footer. A card `TextBlock` renders markdown-ish rich text and **collapses runs of spaces**, so the first implementation's space-padded table arrived with its columns squashed; verified by posting the real table and looking at it. The table is now column-major structure (one `Column` per field), overview counts are a `FactSet`, and both renderings draw cells from shared helpers so they cannot disagree about a number. Consequence: the digest **posts directly** rather than queueing a `PENDING` row, because card structure cannot round-trip through `NotificationLog.body` (a string). That is safe here specifically — the queue exists to keep HTTP calls out of open transactions and this route has none. A `FAILED` digest row no longer satisfies the once-a-day guard, so a transient outage at 9:00 retries at 10:00 instead of silently skipping the day.
+
 8. **Escalation is routed to General, not the property channel** — by the time a ticket has sat unattended past the threshold, the property's own channel has already had its chance.
 
 ### Consequences
