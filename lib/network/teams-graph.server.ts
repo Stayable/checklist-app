@@ -7,7 +7,7 @@ import {
   Property,
 } from "@prisma/client";
 import { isPropertyTeamsConfigured } from "./teams-config";
-import { isTeamsWebhookConfigured } from "./teams-webhook";
+import { isAnyTeamsWebhookConfigured } from "./teams-routing";
 import type { AffectedDevice } from "./mass-outage";
 import {
   buildMassOutageCheckReply,
@@ -46,8 +46,21 @@ type TeamsProperty = Pick<
 // must not fail the ticket operation it's attached to (same never-throw
 // discipline as the unconfigured-Resend path in lib/notify.server.ts).
 
-function target(property: Pick<Property, "teamsChannelName" | "shortCode">): string {
-  return property.teamsChannelName ?? property.shortCode;
+/**
+ * The routing key stored on the queued row (2026-08-01).
+ *
+ * Every event in this file is property-scoped — a device went down, an outage
+ * hit one site — so they all route to that property's channel. Portfolio-wide
+ * traffic (the 9 AM digest, escalations) targets GENERAL and is queued
+ * elsewhere.
+ *
+ * This used to be `teamsChannelName ?? shortCode`, a human label for a
+ * single-destination world. It is now the short code alone, because it has to
+ * resolve to an env var name (TEAMS_WEBHOOK_URL_<CODE>) — a free-text channel
+ * name like "Network Tickets (test)" cannot.
+ */
+function target(property: Pick<Property, "shortCode">): string {
+  return property.shortCode;
 }
 
 function ticketUrl(ticketId: string): string {
@@ -105,7 +118,7 @@ async function writeTeamsLog(
     // caller's transaction, and an HTTP call in a transaction holds it open
     // across a third-party round trip, while a rollback could never unsend
     // the message. Same post-commit discipline as lib/notify.server.ts.
-    const queued = isTeamsWebhookConfigured();
+    const queued = isAnyTeamsWebhookConfigured();
     const error = queued
       ? null
       : isPropertyTeamsConfigured(property)

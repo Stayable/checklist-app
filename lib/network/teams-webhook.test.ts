@@ -1,26 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { buildTeamsWebhookPayload, isTeamsWebhookConfigured } from "./teams-webhook";
+import { describe, expect, it } from "vitest";
+import { buildTeamsWebhookPayload } from "./teams-webhook";
 
-const ORIGINAL = process.env.TEAMS_WEBHOOK_URL;
-
-afterEach(() => {
-  if (ORIGINAL === undefined) delete process.env.TEAMS_WEBHOOK_URL;
-  else process.env.TEAMS_WEBHOOK_URL = ORIGINAL;
-});
-
-describe("isTeamsWebhookConfigured", () => {
-  it("is false when unset and when empty", () => {
-    delete process.env.TEAMS_WEBHOOK_URL;
-    expect(isTeamsWebhookConfigured()).toBe(false);
-    process.env.TEAMS_WEBHOOK_URL = "";
-    expect(isTeamsWebhookConfigured()).toBe(false);
-  });
-
-  it("is true once a URL is present", () => {
-    process.env.TEAMS_WEBHOOK_URL = "https://example.invalid/hook";
-    expect(isTeamsWebhookConfigured()).toBe(true);
-  });
-});
+// Config detection moved to teams-routing.test.ts along with the routing rules
+// (2026-08-01) — this file now covers the transport payload only.
 
 describe("buildTeamsWebhookPayload", () => {
   const payload = buildTeamsWebhookPayload("Ticket TKT-1 created", "AP-RM122 is offline");

@@ -15,12 +15,16 @@
 //
 // The Graph seam in lib/network/teams-graph.server.ts is left intact, so
 // moving to Graph later is additive rather than a rewrite.
+//
+// 2026-08-01: there are now NINE channels (one General + one per property), so
+// the destination is no longer implicit in this module — the caller resolves a
+// routing key to a URL via lib/network/teams-routing.ts and passes it in.
+
+// Config detection lives in teams-routing.ts (isAnyTeamsWebhookConfigured) —
+// with nine possible channels, "is Teams configured" is a routing question, not
+// a transport one.
 
 const REQUEST_TIMEOUT_MS = 10_000;
-
-export function isTeamsWebhookConfigured(): boolean {
-  return Boolean(process.env.TEAMS_WEBHOOK_URL);
-}
 
 /**
  * Builds the request body.
@@ -66,10 +70,10 @@ export type TeamsPostResult = { ok: true; status: number } | { ok: false; error:
  * wording.
  */
 export async function postTeamsWebhook(
+  url: string,
   title: string,
   body: string,
 ): Promise<TeamsPostResult> {
-  const url = process.env.TEAMS_WEBHOOK_URL;
   if (!url) return { ok: false, error: "teams_webhook_not_configured" };
 
   try {

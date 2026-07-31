@@ -1,6 +1,11 @@
 import { NotificationChannel, NotificationStatus } from "@prisma/client";
 import { db } from "@/lib/db";
-import { isTeamsWebhookConfigured, postTeamsWebhook } from "./teams-webhook";
+import { postTeamsWebhook } from "./teams-webhook";
+import {
+  GENERAL_TARGET,
+  isAnyTeamsWebhookConfigured,
+  resolveTeamsWebhook,
+} from "./teams-routing";
 
 // Post-commit delivery of queued Teams notifications (2026-07-27).
 //
@@ -24,22 +29,28 @@ export type TeamsDeliveryOutcome = {
   attempted: number;
   sent: number;
   failed: number;
+  /** Posts that went to General because their property channel wasn't set. */
+  rerouted: number;
 };
 
 export async function deliverPendingTeamsNotifications(): Promise<TeamsDeliveryOutcome> {
-  if (!isTeamsWebhookConfigured()) {
-    return { configured: false, attempted: 0, sent: 0, failed: 0 };
+  if (!isAnyTeamsWebhookConfigured()) {
+    return { configured: false, attempted: 0, sent: 0, failed: 0, rerouted: 0 };
   }
 
   const pending = await db.notificationLog.findMany({
     where: { channel: NotificationChannel.TEAMS, status: NotificationStatus.PENDING },
     orderBy: { createdAt: "asc" },
     take: BATCH_LIMIT,
-    select: { id: true, title: true, body: true },
+    // `target` carries the routing key ("GENERAL" or a property short code),
+    // resolved to a URL here rather than stored — see teams-routing.ts on why
+    // the signed URL never enters the database.
+    select: { id: true, title: true, body: true, target: true },
   });
 
   let sent = 0;
   let failed = 0;
+  let rerouted = 0;
 
   for (const row of pending) {
     // Claim the row BEFORE posting. Two overlapping cron invocations would
@@ -53,10 +64,37 @@ export async function deliverPendingTeamsNotifications(): Promise<TeamsDeliveryO
     });
     if (claim.count === 0) continue;
 
-    const result = await postTeamsWebhook(row.title, row.body ?? "");
+    // A row with no target predates per-channel routing; treat it as General
+    // rather than dropping it, since that is the channel it would have gone to
+    // under the single-URL scheme.
+    const destination = resolveTeamsWebhook(row.target ?? GENERAL_TARGET);
+
+    if (!destination) {
+      failed += 1;
+      await db.notificationLog.update({
+        where: { id: row.id },
+        data: {
+          status: NotificationStatus.FAILED,
+          error: `teams_target_not_configured:${row.target ?? GENERAL_TARGET}`,
+        },
+      });
+      continue;
+    }
+
+    const result = await postTeamsWebhook(destination.url, row.title, row.body ?? "");
 
     if (result.ok) {
       sent += 1;
+      if (destination.rerouted) {
+        rerouted += 1;
+        // Record the reroute on the row itself. `status` stays SENT because it
+        // genuinely was sent — but a reader asking "why did KE's alert appear
+        // in General?" gets the answer from the row instead of guessing.
+        await db.notificationLog.update({
+          where: { id: row.id },
+          data: { error: `rerouted_to_general_from:${row.target}` },
+        });
+      }
       continue;
     }
 
@@ -72,5 +110,5 @@ export async function deliverPendingTeamsNotifications(): Promise<TeamsDeliveryO
     });
   }
 
-  return { configured: true, attempted: pending.length, sent, failed };
+  return { configured: true, attempted: pending.length, sent, failed, rerouted };
 }
