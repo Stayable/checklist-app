@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TicketType } from "@prisma/client";
+import { DEVICE_TYPE_OPTIONS } from "@/lib/network/device-type";
 
 // Type/property/date-range filters for /network/tickets. URL-driven (same
 // approach as DispatchFilters / CompletedFilters / ReportFilters) so a
@@ -59,6 +60,22 @@ export function TicketFilters({ properties }: { properties: PropertyOption[] }) 
           {properties.map((p) => (
             <option key={p.id} value={p.id}>
               {p.shortCode}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="text-sm text-slate-600">
+        Device type
+        <select
+          defaultValue={params.get("deviceType") ?? ""}
+          onChange={(e) => setParam("deviceType", e.target.value)}
+          className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+        >
+          <option value="">All devices</option>
+          {DEVICE_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
         </select>

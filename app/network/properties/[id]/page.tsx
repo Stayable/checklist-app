@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
+import { deviceTypeLabel } from "@/lib/network/device-type";
 
 // NETWORK per-property page (spec §6.2): devices, open tickets, 30-day event
 // history. Access is guarded once by app/network/layout.tsx. `[id]` is the
@@ -83,7 +84,7 @@ export default async function NetworkPropertyPage({
                         {d.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{d.type}</td>
+                    <td className="px-4 py-3 text-slate-700">{deviceTypeLabel(d.type)}</td>
                     <td className="px-4 py-3 text-slate-700">{d.source}</td>
                     <td className="px-4 py-3 text-slate-700">{d.currentStatus}</td>
                     <td className="px-4 py-3 text-slate-700">

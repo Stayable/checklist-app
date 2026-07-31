@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { AgeBadge } from "@/components/network/AgeBadge";
 import { EscalationBadges } from "@/components/network/EscalationBadges";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
+import { deviceTypeLabel } from "@/lib/network/device-type";
 import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 import {
   parseTicketFilters,
@@ -34,6 +35,7 @@ type SearchParams = {
   status?: string;
   type?: string;
   property?: string;
+  deviceType?: string;
   from?: string;
   to?: string;
   sort?: string;
@@ -51,6 +53,7 @@ export default async function NetworkTicketsPage({
     status: sp.status,
     ticketType: sp.type,
     propertyId: sp.property,
+    deviceType: sp.deviceType,
     from: sp.from,
     to: sp.to,
   });
@@ -67,7 +70,7 @@ export default async function NetworkTicketsPage({
       take: 200,
       include: {
         property: { select: { shortCode: true } },
-        device: { select: { name: true } },
+        device: { select: { name: true, type: true } },
       },
     }),
     db.property.findMany({
@@ -161,6 +164,7 @@ export default async function NetworkTicketsPage({
                 {sortTh("ticketType", "Type")}
                 {sortTh("status", "Status")}
                 <th className="px-4 py-3">Device</th>
+                <th className="px-4 py-3">Device type</th>
                 {sortTh("openedAt", "Opened")}
                 {sortTh("resolvedAt", "Resolved")}
                 <th className="px-4 py-3">Age</th>
@@ -188,6 +192,9 @@ export default async function NetworkTicketsPage({
                     <td className="px-4 py-3 text-slate-700">{t.ticketType}</td>
                     <td className="px-4 py-3 text-slate-700">{t.status.replace(/_/g, " ")}</td>
                     <td className="px-4 py-3 text-slate-700">{t.device?.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {deviceTypeLabel(t.device?.type)}
+                    </td>
                     <td className="px-4 py-3 text-slate-700">{formatInET(t.openedAt)}</td>
                     <td className="px-4 py-3 text-slate-700">
                       {t.resolvedAt ? formatInET(t.resolvedAt) : "—"}

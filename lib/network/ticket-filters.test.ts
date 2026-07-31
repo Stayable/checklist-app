@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TicketStatus, TicketType } from "@prisma/client";
+import { DeviceType, TicketStatus, TicketType } from "@prisma/client";
 import { etDayStartUtc, nextYMD } from "../datetime";
 import {
   DEFAULT_SORT_DIR,
@@ -16,7 +16,19 @@ import {
 describe("parseTicketFilters", () => {
   it("returns all-null for no params", () => {
     const f = parseTicketFilters({});
-    expect(f).toEqual({ status: null, ticketType: null, propertyId: null, from: null, toExclusive: null });
+    expect(f).toEqual({
+      status: null,
+      ticketType: null,
+      propertyId: null,
+      deviceType: null,
+      from: null,
+      toExclusive: null,
+    });
+  });
+
+  it("parses a valid device type and rejects junk", () => {
+    expect(parseTicketFilters({ deviceType: "CAMERA" }).deviceType).toBe(DeviceType.CAMERA);
+    expect(parseTicketFilters({ deviceType: "ROUTER" }).deviceType).toBeNull();
   });
 
   it("parses a valid status", () => {
@@ -82,13 +94,21 @@ describe("parseTicketFilters", () => {
 });
 
 describe("ticketWhereFilters", () => {
+  const none = {
+    ticketType: null,
+    propertyId: null,
+    deviceType: null,
+    from: null,
+    toExclusive: null,
+  };
+
   it("is empty when nothing is set", () => {
-    expect(ticketWhereFilters({ ticketType: null, propertyId: null, from: null, toExclusive: null })).toEqual({});
+    expect(ticketWhereFilters(none)).toEqual({});
   });
 
   it("includes only the openedAt bounds that are set", () => {
     const from = new Date("2026-07-01T04:00:00Z");
-    expect(ticketWhereFilters({ ticketType: null, propertyId: null, from, toExclusive: null })).toEqual({
+    expect(ticketWhereFilters({ ...none, from })).toEqual({
       openedAt: { gte: from },
     });
   });
@@ -97,6 +117,7 @@ describe("ticketWhereFilters", () => {
     const from = new Date("2026-07-01T04:00:00Z");
     const toExclusive = new Date("2026-08-01T04:00:00Z");
     const where = ticketWhereFilters({
+      ...none,
       ticketType: TicketType.MASS_OUTAGE,
       propertyId: "prop-1",
       from,
@@ -106,6 +127,31 @@ describe("ticketWhereFilters", () => {
       ticketType: TicketType.MASS_OUTAGE,
       propertyId: "prop-1",
       openedAt: { gte: from, lt: toExclusive },
+    });
+  });
+
+  it("filters on the linked device's type", () => {
+    expect(ticketWhereFilters({ ...none, deviceType: DeviceType.CAMERA })).toEqual({
+      device: { is: { type: DeviceType.CAMERA } },
+    });
+  });
+
+  it("uses `is:` so device-less mass-outage parents are excluded, not matched", () => {
+    const where = ticketWhereFilters({ ...none, deviceType: DeviceType.AP });
+    // A bare { device: { type } } would still be a relation filter, but spelling
+    // `is` out keeps the null-exclusion explicit for the next reader.
+    expect(where.device).toEqual({ is: { type: DeviceType.AP } });
+  });
+
+  it("composes device type with the other filters", () => {
+    const where = ticketWhereFilters({
+      ...none,
+      propertyId: "prop-1",
+      deviceType: DeviceType.SWITCH,
+    });
+    expect(where).toEqual({
+      propertyId: "prop-1",
+      device: { is: { type: DeviceType.SWITCH } },
     });
   });
 });

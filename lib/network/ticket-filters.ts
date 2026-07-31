@@ -1,5 +1,6 @@
-import { Prisma, TicketStatus, TicketType } from "@prisma/client";
+import { DeviceType, Prisma, TicketStatus, TicketType } from "@prisma/client";
 import { etDayStartUtc, nextYMD } from "../datetime";
+import { parseDeviceType } from "./device-type";
 
 // Pure filter/sort parsing for /network/tickets (Task: date/property/status/
 // type filters + sortable columns). Kept dependency-free (no Prisma client, no
@@ -18,6 +19,10 @@ export type TicketFilters = {
    * unknown id just matches zero rows, same posture as the existing assignee
    * filter on /completed. */
   propertyId: string | null;
+  /** Filters on the linked Device's type. Tickets with no device — mass-outage
+   * parents — are excluded whenever this is set, which is the honest reading of
+   * "show me camera tickets": a parent covering a whole property is not one. */
+  deviceType: DeviceType | null;
   /** Inclusive lower bound on `openedAt`, from the ET day start of `from`. */
   from: Date | null;
   /** Exclusive upper bound on `openedAt` — the ET day start of the day AFTER
@@ -29,6 +34,7 @@ export type TicketFilterParams = {
   status?: string;
   ticketType?: string;
   propertyId?: string;
+  deviceType?: string;
   from?: string;
   to?: string;
 };
@@ -38,6 +44,7 @@ export function parseTicketFilters(params: TicketFilterParams): TicketFilters {
   const ticketType =
     params.ticketType && params.ticketType in TicketType ? (params.ticketType as TicketType) : null;
   const propertyId = params.propertyId ? params.propertyId : null;
+  const deviceType = parseDeviceType(params.deviceType);
 
   // createdAt/openedAt are timestamptz — bound by ET day starts (honors
   // EDT/EST) so a ticket opened late-evening ET doesn't spill into the
@@ -45,20 +52,26 @@ export function parseTicketFilters(params: TicketFilterParams): TicketFilters {
   const from = params.from ? etDayStartUtc(params.from) : null;
   const toExclusive = params.to ? etDayStartUtc(nextYMD(params.to)) : null;
 
-  return { status, ticketType, propertyId, from, toExclusive };
+  return { status, ticketType, propertyId, deviceType, from, toExclusive };
 }
 
 /**
  * Builds the Prisma `where` fragment for the non-status filters (ticketType,
- * property, date range). Status is deliberately excluded — the page owns the
- * "no status param means open tab" default and composes it itself.
+ * property, device type, date range). Status is deliberately excluded — the
+ * page owns the "no status param means open tab" default and composes it itself.
  */
 export function ticketWhereFilters(
-  filters: Pick<TicketFilters, "ticketType" | "propertyId" | "from" | "toExclusive">,
+  filters: Pick<
+    TicketFilters,
+    "ticketType" | "propertyId" | "deviceType" | "from" | "toExclusive"
+  >,
 ): Prisma.TicketWhereInput {
   return {
     ...(filters.ticketType ? { ticketType: filters.ticketType } : {}),
     ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+    // `is:` on an optional to-one relation matches only rows that HAVE a device,
+    // so device-less mass-outage parents drop out — see the field comment above.
+    ...(filters.deviceType ? { device: { is: { type: filters.deviceType } } } : {}),
     ...(filters.from || filters.toExclusive
       ? {
           openedAt: {

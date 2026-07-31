@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { isRecurringDevice } from "@/lib/network/ticket-age";
+import { deviceTypeLabel } from "@/lib/network/device-type";
 
 // NETWORK device history (spec §6.4): per-device event log + all tickets +
 // "Recurring" badge (>= 3 tickets in the trailing 30 days). Access is
@@ -58,7 +59,7 @@ export default async function DeviceDetailPage({
           )}
         </h1>
         <p className="text-sm text-slate-500">
-          {device.type} · {device.source} · {device.currentStatus}
+          {deviceTypeLabel(device.type)} · {device.source} · {device.currentStatus}
           {device.lastSeenAt ? ` · last seen ${formatInET(device.lastSeenAt)}` : ""}
         </p>
       </header>
