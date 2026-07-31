@@ -60,19 +60,35 @@ describe("findHostEntry", () => {
 });
 
 describe("the real registry", () => {
-  it("monitors the five properties whose consoles are reachable", () => {
+  it("monitors all eight properties (N1 closed 2026-07-31, three fabrics)", () => {
     const live = monitoredHosts();
     const props = [...new Set(live.map((h) => h.propertyRef))].sort();
-    // Lexicographic sort, so "44199" precedes "4645".
-    // KE 2295 · DP 44199 · LL 4645 · KW 5399 · OR 8700
-    expect(props).toEqual(["2295", "44199", "4645", "5399", "8700"]);
-    expect(live).toHaveLength(10);
+    // Lexicographic sort: "44199" precedes "4645", and "812" precedes "8700".
+    // KE 2295 · SA 2535 · DP 44199 · LL 4645 · KW 5399 · JW 6802 · JN 812 · OR 8700
+    expect(props).toEqual(["2295", "2535", "44199", "4645", "5399", "6802", "812", "8700"]);
+    expect(live).toHaveLength(16);
   });
 
-  it("does NOT monitor Jacksonville West or North — no key reaches them (N1)", () => {
+  it("monitors Jacksonville West and North — previously unreachable (N1/N5)", () => {
     const live = monitoredHosts().map((h) => h.propertyRef);
-    expect(live).not.toContain("6802"); // JW
-    expect(live).not.toContain("812"); // JN
+    expect(live).toContain("6802"); // JW — via UDM-Pro-Jax-West on the NORTH fabric
+    // N5 claimed JN had no Network console. It does: SS-Jax-North.
+    expect(hostsForProperty("812").filter((h) => h.monitored)).toHaveLength(3);
+  });
+
+  it("monitors the live St. Augustine console while excluding the dead one", () => {
+    const sa = hostsForProperty("2535");
+    expect(sa.filter((h) => h.monitored).map((h) => h.label).sort()).toEqual([
+      "SS-ST-AUGUSTINE",
+      "St-Augustine-NVR",
+    ]);
+    // The legacy UCG Ultra reports the same 48 devices as offline. Different
+    // MAC prefix from the live console — dead hardware, not a stale view.
+    const dead = sa.filter((h) => !h.monitored);
+    expect(dead).toHaveLength(1);
+    expect(dead[0]?.hostId.split(":")[0]).not.toBe(
+      sa.find((h) => h.label === "SS-ST-AUGUSTINE")?.hostId.split(":")[0],
+    );
   });
 
   it("keeps the stale Orlando view excluded while monitoring the live one", () => {

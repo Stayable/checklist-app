@@ -47,12 +47,25 @@ export type UnifiHostEntry = {
 };
 
 /**
- * Consoles visible across the configured keys — 14 of the estate's ~19 as of
- * 2026-07-29, spread over TWO Ubiquiti accounts (see N1).
+ * Consoles visible across the configured keys.
  *
- * Monitored: Kissimmee West, Lakeland, Kissimmee East, Orlando OBT, Davenport.
- * STILL MISSING (no key reaches them): **Jacksonville West** and **Jacksonville
- * North**, plus a live St. Augustine console — only its stale view is visible.
+ * ✅ N1 CLOSED 2026-07-31. Three per-fabric keys (CENTRAL / INDEPENDENT / NORTH)
+ * return **20 host entries with no id overlap** — 16 real consoles plus the 4
+ * known-stale views kept excluded below. Every property is covered and nothing
+ * in this registry is unreachable any more.
+ *
+ *   CENTRAL      9 hosts — Lakeland, Kissimmee East, Orlando OBT, Davenport
+ *   INDEPENDENT  5 hosts — Kissimmee West + the 4 stale views
+ *   NORTH        6 hosts — Jacksonville North, Jacksonville West, St. Augustine
+ *
+ * Monitored: all 8 properties, 16 consoles, ~640 devices.
+ *
+ * Two earlier conclusions the three-fabric evidence overturned:
+ *   • **N5 was wrong** — Jacksonville North HAS a Network console
+ *     (`SS-Jax-North`, 8 devices). It was invisible, not absent.
+ *   • Host ids are account-scoped but **stable across keys within an account**:
+ *     rotating CENTRAL's key returned byte-identical ids, so a key rotation
+ *     does not invalidate this registry.
  */
 export const UNIFI_HOST_REGISTRY: readonly UnifiHostEntry[] = [
   {
@@ -119,22 +132,70 @@ export const UNIFI_HOST_REGISTRY: readonly UnifiHostEntry[] = [
     monitored: true,
   },
 
+  // ── NORTH fabric (added 2026-07-31) — the three properties no earlier key
+  //    could reach. All six were `connected` on first sight.
+  {
+    hostId: "74FA291A02890000000009EED22E000000000A7CC9350000000069B50B68:993936950",
+    label: "SS-Jax-North",
+    propertyRef: "812", // Jacksonville North (JN) — Network side
+    monitored: true,
+    note: "Disproves N5 ('JN has no Network console'). It exists — 8 devices — it was simply invisible to the CENTRAL and INDEPENDENT keys.",
+  },
+  {
+    hostId: "1C6A1B29274C0000000008C01724000000000937C7FF0000000067B0B52F:1938202913",
+    label: "JN-NVR1",
+    propertyRef: "812", // Jacksonville North (JN) — Protect / cameras
+    monitored: true,
+  },
+  {
+    hostId: "1C6A1B2911500000000008C721B000000000093F2F8E0000000067BA80FD:1937848973",
+    label: "JN-NVR2",
+    propertyRef: "812", // Jacksonville North (JN) — Protect / cameras (second recorder)
+    monitored: true,
+  },
+  {
+    hostId: "6C63F8A2CC55000000000937A6070000000009B6831D00000000685415A3:1910034835",
+    label: "UDM-Pro-Jax-West",
+    propertyRef: "6802", // Jacksonville West (JW) — Network side
+    monitored: true,
+    note: "The live replacement for the cloud-dead 'SS-JAXWEST' UCK G2 Plus below. 13 devices vs the legacy console's 14 stale ones — consistent with a like-for-like swap.",
+  },
+  {
+    hostId: "0CEA146EA8DD00000000088154C80000000008F56F5200000000673AAF30:206129026",
+    label: "SS-ST-AUGUSTINE",
+    propertyRef: "2535", // St. Augustine (SA) — Network side
+    monitored: true,
+    note: "The live console. Carries the same 48 devices the dead 'SS-St-Augustine' UCG Ultra below still reports as offline — same fleet, re-adopted onto new hardware. Monitoring the live one and excluding the stale one is what keeps 48 phantom outages out of the ticket queue.",
+  },
+  {
+    hostId: "1C6A1B4A72430000000008CE38D1000000000946A81D0000000067C56752:1156633491",
+    label: "St-Augustine-NVR",
+    propertyRef: "2535", // St. Augustine (SA) — Protect / cameras
+    monitored: true,
+  },
+
   // ── Untrusted views — N2. Never poll these. ─────────────────────────────
   //
   // CORRECTION 2026-07-29: these were originally labelled "decommissioned
   // hardware". The Orlando evidence above disproves that for at least one of
   // them — the same physical console (same MAC prefix) reports `disconnected`
   // through the first account and `connected` through the second, so what is
-  // stale is the ACCOUNT'S VIEW, not the hardware. JAXWEST and StAugustine are
-  // very likely the same story; the second key simply cannot see them either,
-  // so it remains unproven. Either way they stay unmonitored: an account whose
-  // view of a console is stale is not a source we can trust.
+  // stale is the ACCOUNT'S VIEW, not the hardware.
+  //
+  // RESOLVED 2026-07-31, and it is BOTH stories at once. All four live in the
+  // INDEPENDENT fabric and all four still report `disconnected`:
+  //   • SS-ORLANDO is a stale VIEW — the same console is `connected` in CENTRAL.
+  //   • SS-JAXWEST and SS-St-Augustine are genuinely dead HARDWARE — their live
+  //     replacements now appear in the NORTH fabric above, as separate consoles
+  //     with different MAC prefixes.
+  // Every one stays unmonitored. Ingesting them would manufacture 63 phantom
+  // offline devices (14 + 1 + 48) at properties that are actually healthy.
   {
     hostId: "F492BF95B8FB00000000051B1C510000000005563736000000005F904DFE:1235846273",
     label: "SS-JAXWEST",
     propertyRef: "6802",
     monitored: false,
-    note: "Legacy UCK G2 Plus, cloud-disconnected since 2025-11-14. Replaced by 'UDM Pro Jax West' (not visible to this key). Its 14 devices all report offline — stale, not down.",
+    note: "Legacy UCK G2 Plus, cloud-disconnected since 2025-11-14. Dead hardware — its live replacement 'UDM-Pro-Jax-West' is registered above (NORTH fabric, confirmed 2026-07-31). Its 14 devices all report offline: stale, not down.",
   },
   {
     hostId: "70A741665E6C00000000066E2D4D0000000006C0415D00000000629B6398:1068319892",
@@ -148,7 +209,7 @@ export const UNIFI_HOST_REGISTRY: readonly UnifiHostEntry[] = [
     label: "SS-StAugustine",
     propertyRef: "2535",
     monitored: false,
-    note: "Legacy UCG Ultra, cloud-disconnected since 2025-12-12. All 48 devices report offline — stale. Replaced by 'SS- ST AUGUSTINE'.",
+    note: "Legacy UCG Ultra, cloud-disconnected since 2025-12-12. Dead hardware — replaced by 'SS-ST-AUGUSTINE', registered above (NORTH fabric, confirmed 2026-07-31). Reports the same 48 devices as the live console, all offline: stale, not down.",
   },
   {
     hostId: "49a2a116-b82b-4b9f-87c8-926fe33bb407",
