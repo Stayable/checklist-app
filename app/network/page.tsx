@@ -8,6 +8,8 @@ import { EscalationBadges } from "@/components/network/EscalationBadges";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
 import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 import { isTeamsGraphConfigured } from "@/lib/network/teams-config";
+import { resolveRange } from "@/lib/network/wifi-range";
+import { DashboardRangeFilter } from "./DashboardRangeFilter";
 
 // NETWORK portfolio dashboard (spec §6.1). Access is guarded once by
 // app/network/layout.tsx. Portfolio-wide — no property scoping (see
@@ -32,18 +34,30 @@ function SummaryCard({
   );
 }
 
-export default async function NetworkDashboardPage() {
+export default async function NetworkDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  // Date range (Kyle 2026-08-01). Applies to RESOLVED work only — open tickets
+  // and device status are present-tense facts, and filtering "what is broken
+  // right now" by a historical window would be meaningless.
+  const range = resolveRange((await searchParams).range, now);
+  const rangeFrom = range.from;
 
   const [
     openTickets,
     devicesOffline,
     devicesUnknown,
     devicesTotal,
-    resolvedLast30d,
+    resolvedInRange,
     recentlyClosed,
-    resolvedCount30d,
+    resolvedCountInRange,
+    properties,
+    deviceCounts,
+    openTicketCounts,
+    resolvedCounts,
   ] = await Promise.all([
     db.ticket.findMany({
       where: { status: { in: OPEN_STATUSES } },
@@ -62,7 +76,7 @@ export default async function NetworkDashboardPage() {
     db.ticket.findMany({
       where: {
         status: TicketStatus.RESOLVED,
-        resolvedAt: { gte: thirtyDaysAgo },
+        resolvedAt: { gte: rangeFrom },
         downDurationMin: { not: null },
       },
       select: { downDurationMin: true },
@@ -98,12 +112,59 @@ export default async function NetworkDashboardPage() {
       where: {
         status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] },
         OR: [
-          { resolvedAt: { gte: thirtyDaysAgo } },
-          { resolvedAt: null, updatedAt: { gte: thirtyDaysAgo } },
+          { resolvedAt: { gte: rangeFrom } },
+          { resolvedAt: null, updatedAt: { gte: rangeFrom } },
         ],
       },
     }),
+
+    // ── Per-property status table (Kyle 2026-08-01) ────────────────────────
+    // Three grouped aggregates rather than a query per property: 8 properties
+    // today, but this is the page every new property lands on and N+1 here
+    // would degrade quietly as the portfolio grows.
+    db.property.findMany({
+      where: { active: true },
+      select: { id: true, shortCode: true, name: true },
+      orderBy: { shortCode: "asc" },
+    }),
+    db.device.groupBy({ by: ["propertyId", "currentStatus"], _count: true }),
+    db.ticket.groupBy({
+      by: ["propertyId"],
+      where: { status: { in: OPEN_STATUSES } },
+      _count: true,
+    }),
+    db.ticket.groupBy({
+      by: ["propertyId"],
+      where: {
+        status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] },
+        OR: [
+          { resolvedAt: { gte: rangeFrom } },
+          { resolvedAt: null, updatedAt: { gte: rangeFrom } },
+        ],
+      },
+      _count: true,
+    }),
   ]);
+
+  // Assemble the per-property rows. A property with no devices still appears —
+  // "no devices registered" is exactly the fact a coverage gap needs to show.
+  const countFor = (propertyId: string, status: DeviceStatus) =>
+    deviceCounts.find((d) => d.propertyId === propertyId && d.currentStatus === status)?._count ?? 0;
+
+  const propertyRows = properties.map((p) => {
+    const online = countFor(p.id, DeviceStatus.ONLINE);
+    const offline = countFor(p.id, DeviceStatus.OFFLINE);
+    const unknown = countFor(p.id, DeviceStatus.UNKNOWN);
+    return {
+      ...p,
+      online,
+      offline,
+      unknown,
+      total: online + offline + unknown,
+      open: openTicketCounts.find((t) => t.propertyId === p.id)?._count ?? 0,
+      resolved: resolvedCounts.find((t) => t.propertyId === p.id)?._count ?? 0,
+    };
+  });
 
   const propertiesWithIssues = new Set(openTickets.map((t) => t.propertyId)).size;
   // Task 10 (display-only, spec §9): escalation is a placeholder threshold
@@ -112,11 +173,11 @@ export default async function NetworkDashboardPage() {
     (t) => escalationLevel({ openedAt: t.openedAt, now, status: t.status }) === "ESCALATED",
   ).length;
   const avgResolutionMin =
-    resolvedLast30d.length === 0
+    resolvedInRange.length === 0
       ? null
       : Math.round(
-          resolvedLast30d.reduce((sum, t) => sum + (t.downDurationMin ?? 0), 0) /
-            resolvedLast30d.length,
+          resolvedInRange.reduce((sum, t) => sum + (t.downDurationMin ?? 0), 0) /
+            resolvedInRange.length,
         );
 
   return (
@@ -158,6 +219,8 @@ export default async function NetworkDashboardPage() {
         </p>
       )}
 
+      <DashboardRangeFilter />
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <SummaryCard
           label="Open tickets"
@@ -185,15 +248,78 @@ export default async function NetworkDashboardPage() {
           tone="bg-orange-50 text-orange-800 ring-orange-200"
         />
         <SummaryCard
-          label="Resolved (30d)"
-          value={resolvedCount30d}
+          label={`Resolved · ${range.label}`}
+          value={resolvedCountInRange}
           tone="bg-emerald-50 text-emerald-800 ring-emerald-200"
         />
         <SummaryCard
-          label="Avg resolution time (30d)"
+          label={`Avg resolution time · ${range.label}`}
           value={avgResolutionMin === null ? "—" : `${avgResolutionMin} min`}
           tone="bg-slate-50 text-slate-700 ring-slate-200"
         />
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white">
+        <h2 className="border-b border-slate-200 px-4 py-3 text-sm font-bold text-slate-900">
+          Status by property
+        </h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Property</th>
+                <th className="px-4 py-3">Devices</th>
+                <th className="px-4 py-3">Online</th>
+                <th className="px-4 py-3">Offline</th>
+                <th className="px-4 py-3">Unverifiable</th>
+                <th className="px-4 py-3">Open tickets</th>
+                <th className="px-4 py-3">Resolved · {range.label}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {propertyRows.map((p) => (
+                <tr key={p.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/network/properties/${p.id}`}
+                      className="font-semibold text-slate-900 hover:underline"
+                    >
+                      {p.shortCode}
+                    </Link>{" "}
+                    <span className="text-slate-400">{p.name}</span>
+                  </td>
+                  {/* A property with zero devices is a COVERAGE GAP, not a
+                      healthy one. Say so rather than printing a bare 0 that
+                      reads like "nothing wrong here". */}
+                  <td className="px-4 py-3 text-slate-700">
+                    {p.total === 0 ? (
+                      <span className="text-amber-700">not monitored</span>
+                    ) : (
+                      p.total
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{p.total === 0 ? "—" : p.online}</td>
+                  <td
+                    className={`px-4 py-3 ${p.offline > 0 ? "font-semibold text-amber-800" : "text-slate-400"}`}
+                  >
+                    {p.total === 0 ? "—" : p.offline}
+                  </td>
+                  <td
+                    className={`px-4 py-3 ${p.unknown > 0 ? "font-semibold text-violet-800" : "text-slate-400"}`}
+                  >
+                    {p.total === 0 ? "—" : p.unknown}
+                  </td>
+                  <td
+                    className={`px-4 py-3 ${p.open > 0 ? "font-semibold text-red-800" : "text-slate-400"}`}
+                  >
+                    {p.open}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{p.resolved}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white">

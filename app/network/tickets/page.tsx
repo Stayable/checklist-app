@@ -96,6 +96,14 @@ export default async function NetworkTicketsPage({
 
   const linkFor = (status?: string) => hrefWith({ status });
 
+  // Export carries every active filter/sort param, so the file matches the list
+  // on screen rather than silently exporting everything.
+  const exportParams = new URLSearchParams();
+  for (const [k, v] of Object.entries(sp)) if (v) exportParams.set(k, v);
+  const exportHref = `/api/network/tickets/export${
+    exportParams.toString() ? `?${exportParams.toString()}` : ""
+  }`;
+
   const sortHref = (key: TicketSortKey) =>
     hrefWith({
       sort: key,
@@ -122,12 +130,22 @@ export default async function NetworkTicketsPage({
         title="Tickets"
         subtitle={`${filters.status ? filters.status.replace(/_/g, " ") : "Open"} tickets`}
         actions={
-          <Link
-            href="/network"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Dashboard →
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* Carries every active filter/sort param, so the file is exactly
+                the list on screen rather than "all tickets". */}
+            <a
+              href={exportHref}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Export CSV
+            </a>
+            <Link
+              href="/network"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Dashboard →
+            </Link>
+          </div>
         }
       />
 
