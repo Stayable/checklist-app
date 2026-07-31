@@ -98,10 +98,20 @@ export default async function WifiPortfolioPage({
       {failed.length > 0 && (
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
           <span className="font-semibold">
-            {failed.length} propert{failed.length === 1 ? "y" : "ies"} could not be read:
+            {failed.length} propert{failed.length === 1 ? "y" : "ies"} could not be refreshed:
           </span>{" "}
-          {failed.map((f) => `${f.shortCode} (${f.error})`).join(", ")}. Those rows show “—” because
-          the request <em>failed</em>, not because the numbers are zero.
+          {failed
+            .map(
+              (f) =>
+                `${f.shortCode} (${f.error === "rate_limited" ? "rate-limited" : f.error}${
+                  f.staleSince ? `, showing figures from ${formatInET(f.staleSince)}` : ""
+                })`,
+            )
+            .join(", ")}
+          .{" "}
+          {failed.every((f) => f.staleSince)
+            ? "Those rows show the last good reading, not live numbers."
+            : "Rows showing “—” failed outright — that is not a zero."}
         </p>
       )}
 

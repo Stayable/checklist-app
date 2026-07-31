@@ -43,6 +43,7 @@ function nullSummary(
     shortCode: property.shortCode,
     configured,
     error,
+    staleSince: null,
     totalGuests: null,
     onlineNow: null,
     avgDwellMin: null,
@@ -69,14 +70,38 @@ function nullSummary(
  */
 const SPOTIPO_BASE = "https://api.spotipo.com";
 const REQUEST_TIMEOUT_MS = 15_000;
+
 /**
- * Registered-guest totals barely move minute to minute, and Kate saw the counts
- * shift on every refresh with some properties randomly blank — the signature of
- * 8 uncached upstream calls per page view, a few of them timing out each time.
- * A short cache makes a refresh cheap and the numbers stable.
+ * ── Why this module paces itself (2026-07-31) ────────────────────────────────
+ *
+ * Kyle reported properties showing "unreachable", and a DIFFERENT set of them on
+ * every refresh. Measured against the live API:
+ *
+ *   8 requests in parallel  → 4 × 200, 4 × 429, and every request for the next
+ *                             minute also 429
+ *   8 requests serially, 300ms apart → 8 × 200, repeatably
+ *
+ * So Spotipo rate-limits, we were tripping it on every page view, and whichever
+ * 4 requests happened to win the race rendered — hence the shuffling. It was
+ * never a reachability problem. The API returns **no** rate-limit headers (no
+ * Retry-After, no X-RateLimit-*), so there is nothing to obey; we self-pace.
+ *
+ * An earlier pass at this symptom cached successes for 60s but deliberately did
+ * NOT cache failures, "so a failure is retried on the next view". That made it
+ * worse: the failures were the rate-limited calls, and retrying them on every
+ * view is what kept the limit tripped. Reversed below — see serveStale.
  */
-const CACHE_TTL_MS = 60_000;
+const REQUEST_GAP_MS = 350; // 300ms measured clean; 50ms margin
+/** Guest totals move slowly; a long TTL keeps the paced fan-out rare. */
+const CACHE_TTL_MS = 10 * 60_000;
+/** Beyond the TTL a cached value is still shown rather than a blank, up to here. */
+const STALE_MAX_MS = 60 * 60_000;
+
 const cache = new Map<string, { at: number; value: WifiSiteSummary }>();
+/** In-flight fan-out, so two concurrent renders don't double the request rate. */
+let inFlight: Promise<WifiSiteSummary[]> | null = null;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * One site's guest summary from the live Spotipo API.
@@ -110,6 +135,18 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
   const cached = cache.get(property.id);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
+  /**
+   * A number that was right a few minutes ago beats a blank that moves around.
+   * On any failure we fall back to the last good value, marked `stale` with the
+   * time it was read, and only give up once it is older than STALE_MAX_MS.
+   */
+  const serveStale = (error: WifiSiteSummary["error"]): WifiSiteSummary => {
+    if (cached && Date.now() - cached.at < STALE_MAX_MS) {
+      return { ...cached.value, error, staleSince: new Date(cached.at) };
+    }
+    return nullSummary(property, true, error);
+  };
+
   try {
     const res = await fetch(
       `${SPOTIPO_BASE}/ext/${encodeURIComponent(config.siteId)}/api/v1/guest/?per_page=1`,
@@ -122,7 +159,10 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
     if (res.status === 401 || res.status === 403) {
       return nullSummary(property, true, "unauthorized");
     }
-    if (!res.ok) return nullSummary(property, true, "unreachable");
+    // 429 is its own state. Calling it "unreachable" sent Kyle looking for a
+    // network fault at the properties when the limit was ours to respect.
+    if (res.status === 429) return serveStale("rate_limited");
+    if (!res.ok) return serveStale("unreachable");
 
     const body: unknown = await res.json();
     const total = readTotalCount(body);
@@ -132,6 +172,7 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
       shortCode: property.shortCode,
       configured: true,
       error: null,
+      staleSince: null,
       totalGuests: total,
       onlineNow: null, // filled by lib/network/wifi-live.server.ts (UniFi)
       avgDwellMin: null,
@@ -145,7 +186,7 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
     // Never throw out of the fetch seam — one site's failure must not break the
     // rest of the portfolio. Reported as `unreachable` so the UI can say so
     // instead of rendering an unexplained blank.
-    return nullSummary(property, true, "unreachable");
+    return serveStale("unreachable");
   }
 }
 
@@ -159,19 +200,46 @@ function readTotalCount(body: unknown): number | null {
 }
 
 /**
- * Parallel fan-out across every configured (or not) property. Uses
- * `Promise.allSettled` so the shape/parallelism is correct for when real
- * creds land and a real site can genuinely reject; `fetchSiteSummary` itself
- * never throws today, but a rejected settlement is still degraded to a null
- * summary rather than failing the whole call.
+ * SEQUENTIAL fan-out across every property, paced by REQUEST_GAP_MS.
+ *
+ * Deliberately not parallel: 8 concurrent requests trip Spotipo's rate limit
+ * and roughly half come back 429 (see the pacing note at the top of this file).
+ * Serial with a 350ms gap returns 8/8 repeatably. Cold cost is ~5s once every
+ * CACHE_TTL_MS; cache hits skip the network entirely and cost nothing, so a
+ * refresh is instant.
+ *
+ * Single-flighted: concurrent renders share one fan-out instead of doubling the
+ * request rate and re-tripping the very limit this is pacing around.
  */
 export async function fetchPortfolioSummaries(
   properties: WifiProperty[],
 ): Promise<WifiSiteSummary[]> {
-  const results = await Promise.allSettled(properties.map((p) => fetchSiteSummary(p)));
-  return results.map((r, i) =>
-    r.status === "fulfilled"
-      ? r.value
-      : nullSummary(properties[i], isSpotipoConfigured(properties[i]), "unreachable"),
-  );
+  if (inFlight !== null) return inFlight;
+
+  const run = async (): Promise<WifiSiteSummary[]> => {
+    const out: WifiSiteSummary[] = [];
+    for (const [i, property] of properties.entries()) {
+      // Decided BEFORE the call: a successful fetch writes the cache, so asking
+      // afterwards would always look like a hit and pacing would never happen.
+      const entry = cache.get(property.id);
+      const willHitNetwork =
+        isSpotipoConfigured(property) &&
+        !(entry !== undefined && Date.now() - entry.at < CACHE_TTL_MS);
+
+      try {
+        out.push(await fetchSiteSummary(property));
+      } catch {
+        out.push(nullSummary(property, isSpotipoConfigured(property), "unreachable"));
+      }
+
+      // Only real network calls need spacing; cache hits must not add dead time.
+      if (willHitNetwork && i < properties.length - 1) await sleep(REQUEST_GAP_MS);
+    }
+    return out;
+  };
+
+  inFlight = run().finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
 }

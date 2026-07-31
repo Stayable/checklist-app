@@ -17,7 +17,14 @@ export type WifiSiteSummary = {
    * blanks, which is the bug Kate hit: some properties silently unfilled with
    * no way to tell whether it was broken or just quiet.
    */
-  error: "unreachable" | "unauthorized" | null;
+  error: "unreachable" | "unauthorized" | "rate_limited" | null;
+  /**
+   * Set when the numbers shown are a cached value being served past its TTL
+   * because the live read failed. `error` says why the refresh failed;
+   * `staleSince` says how old the figures actually are. Without this pairing a
+   * stale number is indistinguishable from a fresh one.
+   */
+  staleSince: Date | null;
   totalGuests: number | null;
   onlineNow: number | null;
   avgDwellMin: number | null;

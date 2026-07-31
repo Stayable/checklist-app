@@ -13,6 +13,7 @@ function site(overrides: Partial<WifiSiteSummary>): WifiSiteSummary {
     shortCode: "LL",
     configured: false,
     error: null,
+    staleSince: null,
     totalGuests: null,
     onlineNow: null,
     avgDwellMin: null,
