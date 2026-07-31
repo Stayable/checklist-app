@@ -695,6 +695,12 @@ model Ticket {
   resolutionNotes String?    @map("resolution_notes")
   resolvedAt    DateTime?    @map("resolved_at") @db.Timestamptz
   downDurationMin Int?       @map("down_duration_min")
+  // When this ticket crossed the escalation threshold and the escalation
+  // notification was queued (Kyle 2026-08-01). Escalation used to be computed
+  // on read for a badge only; notifying needs persistence, because "has this
+  // already been announced?" cannot be derived from openedAt alone. Acts as the
+  // idempotency key for the escalation sweep — set once, never cleared.
+  escalatedAt   DateTime?    @map("escalated_at") @db.Timestamptz
   teamsNotified Boolean      @default(false) @map("teams_notified")
   teamsMessageId String?     @map("teams_message_id")
   teamsMessageUrl String?    @map("teams_message_url")
@@ -715,6 +721,8 @@ model Ticket {
   @@index([status, openedAt])
   @@index([deviceId, status])
   @@index([parentTicketId])
+  // Drives the escalation sweep's only query: open tickets not yet escalated.
+  @@index([status, escalatedAt])
   @@map("tickets")
 }
 

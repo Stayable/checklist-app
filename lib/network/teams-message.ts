@@ -54,6 +54,61 @@ export function buildResolutionReply(params: ResolutionReplyParams): string {
   ].join("\n");
 }
 
+export interface EscalationMessageParams {
+  propertyName: string;
+  propertyShortCode: string;
+  deviceName: string | null;
+  alertMessage: string;
+  openedAt: Date;
+  ageHours: number;
+  thresholdHours: number;
+  ticketNumber: string;
+  ticketUrl: string;
+  /** Who to pull in. Rendered as text — see the @-mention note below. */
+  notifyName: string;
+  notifyEmail: string;
+}
+
+/**
+ * Escalation post for the General channel (Kyle 2026-08-01).
+ *
+ * ON @-MENTIONS: a genuine Teams @-mention requires an `msteams` mention entity
+ * in the Adaptive Card *and* a Power Automate flow that passes it through, and
+ * that flow is not something this codebase can see or verify. So the escalation
+ * contact is named in plain text here — visible and unambiguous — and the real
+ * notification guarantee comes from the email the sweep also sends. Claiming a
+ * tag that silently renders as literal text would be worse than not tagging.
+ */
+export function buildEscalationMessage(params: EscalationMessageParams): string {
+  const {
+    propertyName,
+    propertyShortCode,
+    deviceName,
+    alertMessage,
+    openedAt,
+    ageHours,
+    thresholdHours,
+    ticketNumber,
+    ticketUrl,
+    notifyName,
+    notifyEmail,
+  } = params;
+  return [
+    "⚠️ Ticket Escalated",
+    "",
+    `Property: ${propertyName} (${propertyShortCode})`,
+    `Device: ${deviceName ?? "Property-wide — no single device"}`,
+    `Issue: ${alertMessage}`,
+    `Opened: ${formatInET(openedAt)}`,
+    `Open for: ${ageHours} h — past the ${thresholdHours} h escalation threshold`,
+    `Ticket: ${ticketNumber}`,
+    "",
+    `${notifyName} (${notifyEmail}) — please pick this up.`,
+    "",
+    `[View Ticket] → ${ticketUrl}`,
+  ].join("\n");
+}
+
 export interface MassOutageMessageParams {
   propertyName: string;
   deviceCount: number;

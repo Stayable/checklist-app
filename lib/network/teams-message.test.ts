@@ -1,10 +1,60 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildEscalationMessage,
   buildMassOutageCheckReply,
   buildMassOutageMessage,
   buildResolutionReply,
   buildTicketCreatedMessage,
 } from "./teams-message";
+
+describe("buildEscalationMessage", () => {
+  const params = {
+    propertyName: "Kissimmee West",
+    propertyShortCode: "KW",
+    deviceName: "SW-Lobby",
+    alertMessage: "Switch offline",
+    openedAt: new Date("2026-08-01T08:00:00Z"),
+    ageHours: 4,
+    thresholdHours: 4,
+    ticketNumber: "TKT-20260801-003",
+    ticketUrl: "https://ops.rentstayable.com/network/tickets/abc",
+    notifyName: "Gerardo",
+    notifyEmail: "gerardo@rentstayable.com",
+  };
+
+  it("identifies the property by name and short code", () => {
+    expect(buildEscalationMessage(params)).toContain("Kissimmee West (KW)");
+  });
+
+  it("names who should pick it up, with their address", () => {
+    const msg = buildEscalationMessage(params);
+    expect(msg).toContain("Gerardo");
+    expect(msg).toContain("gerardo@rentstayable.com");
+    expect(msg).toContain("please pick this up");
+  });
+
+  it("states both the age and the threshold it passed", () => {
+    // "Open for 4 h" alone doesn't tell a reader whether that is bad.
+    expect(buildEscalationMessage(params)).toContain("Open for: 4 h — past the 4 h");
+  });
+
+  it("describes a device-less mass-outage parent as property-wide", () => {
+    const msg = buildEscalationMessage({ ...params, deviceName: null });
+    expect(msg).toContain("Property-wide");
+    // Must never render a bare "null" where a device name goes.
+    expect(msg).not.toContain("null");
+  });
+
+  it("renders the opened time in ET", () => {
+    // 08:00 UTC is 04:00 ET in August; a UTC render would misstate it by 4 h,
+    // which matters when the message is about elapsed time.
+    expect(buildEscalationMessage(params)).toContain("Opened: Aug 1, 2026 4:00 AM ET");
+  });
+
+  it("links to the ticket", () => {
+    expect(buildEscalationMessage(params)).toContain(params.ticketUrl);
+  });
+});
 
 // Spec §5.3 / §5.5 exact message templates. Pure string builders — assert the
 // literal shape so a future edit can't silently drift from the spec.

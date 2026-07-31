@@ -4,6 +4,7 @@ import { decideTimerAction } from "@/lib/network/ticketing";
 import { createStandardTicket, hasOpenTicketForDevice } from "@/lib/network/ticketing.server";
 import { runMassOutageCheck } from "@/lib/network/mass-outage.server";
 import { deliverPendingTeamsNotifications } from "@/lib/network/teams-deliver.server";
+import { runEscalationSweep } from "@/lib/network/escalate.server";
 import { TEAMS_PROPERTY_SELECT } from "@/lib/network/teams-config";
 
 // Standard ticket-timer sweep (DevSpec §5.2) + mass-outage resolution sweep
@@ -131,6 +132,17 @@ async function handle(req: Request) {
   }
   const result = await run();
 
+  // Escalation sweep (Kyle 2026-08-01). BEFORE the delivery sweep, so a ticket
+  // that escalates on this tick is also posted on this tick rather than waiting
+  // a further minute. Own try/catch for the same reason as Teams below.
+  let escalation;
+  try {
+    escalation = await runEscalationSweep(new Date());
+  } catch (err) {
+    console.error("network-timers: escalation sweep failed", err);
+    escalation = { escalated: 0, remaining: 0, emailed: 0, emailFailed: 0, error: true };
+  }
+
   // Deliver Teams notifications queued by the lifecycle transactions that just
   // committed (theirs, or an earlier tick's). Runs after `run()` and in its own
   // try/catch so a Teams outage can never affect ticket-timer processing — the
@@ -140,10 +152,10 @@ async function handle(req: Request) {
     teams = await deliverPendingTeamsNotifications();
   } catch (err) {
     console.error("network-timers: teams delivery sweep failed", err);
-    teams = { configured: true, attempted: 0, sent: 0, failed: 0, error: true };
+    teams = { configured: true, attempted: 0, sent: 0, failed: 0, rerouted: 0, error: true };
   }
 
-  const outcome = { ok: true, ...result, teams };
+  const outcome = { ok: true, ...result, escalation, teams };
   console.log("[network-timers]", JSON.stringify(outcome));
   return NextResponse.json(outcome);
 }

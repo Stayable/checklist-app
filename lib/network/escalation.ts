@@ -9,13 +9,24 @@ import { formatInET } from "../datetime";
  */
 
 /**
- * Escalation threshold — PLACEHOLDER, pending Kate/Christopher confirmation
- * (same status as the checklist SLA defaults in ADR-014). Display-only:
- * drives no notifications, emails, or Teams posts in v1.
+ * Escalation threshold — still unconfirmed by Kate/Christopher (same status as
+ * the checklist SLA defaults in ADR-014), but **no longer display-only**: as of
+ * 2026-08-01 crossing it posts to the General Teams channel and emails the
+ * escalation contact. So this number now decides when a real person gets
+ * interrupted, and confirming it matters more than it did as a badge threshold.
  */
 export const ESCALATION_THRESHOLD_HOURS = 4;
 
 const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * The instant a ticket opened at `openedAt` becomes escalated. Pure; exists so
+ * the sweep can express its query as a single `openedAt < cutoff` bound instead
+ * of loading every open ticket and filtering in memory.
+ */
+export function escalationCutoff(now: Date): Date {
+  return new Date(now.getTime() - ESCALATION_THRESHOLD_HOURS * HOUR_MS);
+}
 
 /**
  * True when `openedAt` falls in the overnight window — 10 PM to 8 AM

@@ -1,9 +1,41 @@
 import { describe, expect, it } from "vitest";
-import { ESCALATION_THRESHOLD_HOURS, escalationLevel, isOvernight } from "./escalation";
+import {
+  ESCALATION_THRESHOLD_HOURS,
+  escalationCutoff,
+  escalationLevel,
+  isOvernight,
+} from "./escalation";
 
-// Spec §9 display-only escalation + overnight tagging. Both drive no
-// notifications in v1 (escalation threshold is a documented placeholder,
-// like the SLA defaults) — pure, dependency-free like lib/network/ticket-age.ts.
+// Spec §9 escalation + overnight tagging. Pure and dependency-free like
+// lib/network/ticket-age.ts. Overnight is still display-only; escalation is NOT
+// — as of 2026-08-01 crossing the threshold posts to Teams and emails the
+// escalation contact (lib/network/escalate.server.ts), so these boundaries now
+// decide when a person gets interrupted.
+
+describe("escalationCutoff", () => {
+  it("is exactly the threshold behind now", () => {
+    const now = new Date("2026-08-01T12:00:00Z");
+    expect(escalationCutoff(now)).toEqual(new Date("2026-08-01T08:00:00Z"));
+  });
+
+  it("agrees with escalationLevel at the boundary", () => {
+    // The sweep queries `openedAt < cutoff` while the badge calls
+    // escalationLevel. If these ever disagree, a ticket shows as Escalated on
+    // the dashboard but never triggers a notification, or vice versa.
+    const now = new Date("2026-08-01T12:00:00Z");
+    const cutoff = escalationCutoff(now);
+    const justPast = new Date(cutoff.getTime() - 1000);
+    const justInside = new Date(cutoff.getTime() + 1000);
+    expect(escalationLevel({ openedAt: justPast, now, status: "OPEN" })).toBe("ESCALATED");
+    expect(escalationLevel({ openedAt: justInside, now, status: "OPEN" })).toBe("NONE");
+  });
+
+  it("uses the documented threshold, not a second hardcoded number", () => {
+    const now = new Date("2026-08-01T12:00:00Z");
+    const hours = (now.getTime() - escalationCutoff(now).getTime()) / 3_600_000;
+    expect(hours).toBe(ESCALATION_THRESHOLD_HOURS);
+  });
+});
 
 describe("isOvernight", () => {
   // 2026-07-25 is EDT (UTC-4): 22:00 ET == 2026-07-26T02:00:00Z.
