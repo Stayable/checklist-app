@@ -18,29 +18,50 @@ const API_BASE = "https://api.ui.com";
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export type UnifiFetchResult =
-  | { ok: true; snapshot: UnifiSnapshot; keysUsed: number; keysFailed: number }
+  | {
+      ok: true;
+      snapshot: UnifiSnapshot;
+      keysUsed: number;
+      keysFailed: number;
+      /** Fabrics whose key errored this poll — named, so a dead key is diagnosable. */
+      fabricsFailed: UnifiFabric[];
+    }
   | { ok: false; configured: boolean; error: string };
 
 /**
- * Every configured API key, in precedence order.
+ * The Site Manager "fabrics" the estate's consoles are split across.
  *
- * MULTIPLE ACCOUNTS (2026-07-29): the estate's 19 consoles are split across more
- * than one Ubiquiti account — the original key sees only 5, which is finding N1.
- * A key per account is therefore normal, not a workaround, so keys are read as
- * `UNIFI_API_KEY` plus `UNIFI_API_KEY_2 … UNIFI_API_KEY_9` and every one is
- * polled. Numbering stops at 9 deliberately: an unbounded scan over env would
- * make a typo like `UNIFI_API_KEY_10` silently do nothing.
+ * MULTIPLE ACCOUNTS (2026-07-29, renamed 2026-07-31): the 19 consoles are not
+ * visible to any single Ubiquiti account — finding N1. Ubiquiti organises them
+ * into three fabrics (Stayable Central / Independent Sites / North), each with
+ * its own API key, so a key per fabric is the vendor's own structure rather than
+ * a workaround. Keys are named after the fabric instead of numbered
+ * (`UNIFI_API_KEY_2`) because a number says nothing about which sites went dark
+ * when one key is revoked.
  */
-export function unifiApiKeys(env: Record<string, string | undefined> = process.env): string[] {
-  const keys: string[] = [];
-  const push = (raw: string | undefined) => {
-    const v = typeof raw === "string" ? raw.trim() : "";
-    // De-duplicate: the same key pasted into two slots would otherwise double
+export const UNIFI_FABRICS = ["CENTRAL", "INDEPENDENT", "NORTH"] as const;
+export type UnifiFabric = (typeof UNIFI_FABRICS)[number];
+
+export type UnifiApiKey = { fabric: UnifiFabric; key: string };
+
+/** Env var name carrying a fabric's key. */
+export function unifiKeyEnvName(fabric: UnifiFabric): string {
+  return `UNIFI_API_KEY_${fabric}`;
+}
+
+/**
+ * Every configured API key with the fabric it belongs to, in declaration order.
+ * A fabric with no key set is simply absent — the poller degrades per-fabric.
+ */
+export function unifiApiKeys(env: Record<string, string | undefined> = process.env): UnifiApiKey[] {
+  const keys: UnifiApiKey[] = [];
+  for (const fabric of UNIFI_FABRICS) {
+    const raw = env[unifiKeyEnvName(fabric)];
+    const key = typeof raw === "string" ? raw.trim() : "";
+    // De-duplicate: the same key pasted into two fabrics would otherwise double
     // every request and every host, for no benefit.
-    if (v.length > 0 && !keys.includes(v)) keys.push(v);
-  };
-  push(env.UNIFI_API_KEY);
-  for (let i = 2; i <= 9; i++) push(env[`UNIFI_API_KEY_${i}`]);
+    if (key.length > 0 && !keys.some((k) => k.key === key)) keys.push({ fabric, key });
+  }
   return keys;
 }
 
@@ -165,35 +186,41 @@ export async function fetchUnifiSnapshot(): Promise<UnifiFetchResult> {
   }
 
   const perKey = await Promise.all(
-    keys.map(async (apiKey): Promise<UnifiSnapshot | { error: string }> => {
+    keys.map(async ({ fabric, key }): Promise<UnifiSnapshot | { fabric: UnifiFabric; error: string }> => {
       try {
         const [hostsPayload, devicesPayload] = await Promise.all([
-          getJson("/v1/hosts", apiKey),
-          getJson("/v1/devices", apiKey),
+          getJson("/v1/hosts", key),
+          getJson("/v1/devices", key),
         ]);
         return {
           hosts: parseHosts(hostsPayload),
           deviceGroups: parseDeviceGroups(devicesPayload),
         };
       } catch (error) {
-        return { error: error instanceof Error ? error.message : "unifi_fetch_failed" };
+        return { fabric, error: error instanceof Error ? error.message : "unifi_fetch_failed" };
       }
     }),
   );
 
   const good = perKey.filter((r): r is UnifiSnapshot => !("error" in r));
-  const failed = perKey.filter((r): r is { error: string } => "error" in r);
+  const failed = perKey.filter((r): r is { fabric: UnifiFabric; error: string } => "error" in r);
 
-  // One bad key must not blind us to the accounts that DID answer — a revoked or
+  // One bad key must not blind us to the fabrics that DID answer — a revoked or
   // mistyped key would otherwise take the whole fleet's monitoring down with it.
   // Only a total failure is reported as a failure.
   if (good.length === 0) {
     return {
       ok: false,
       configured: true,
-      error: failed[0]?.error ?? "unifi_fetch_failed",
+      error: failed[0] ? `${failed[0].fabric}: ${failed[0].error}` : "unifi_fetch_failed",
     };
   }
 
-  return { ok: true, snapshot: mergeSnapshots(good), keysUsed: keys.length, keysFailed: failed.length };
+  return {
+    ok: true,
+    snapshot: mergeSnapshots(good),
+    keysUsed: keys.length,
+    keysFailed: failed.length,
+    fabricsFailed: failed.map((f) => f.fabric),
+  };
 }

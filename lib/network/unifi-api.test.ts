@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { mergeSnapshots, parseDeviceGroups, parseHosts, unifiApiKeys } from "./unifi-api";
+import {
+  UNIFI_FABRICS,
+  mergeSnapshots,
+  parseDeviceGroups,
+  parseHosts,
+  unifiApiKeys,
+  unifiKeyEnvName,
+} from "./unifi-api";
 
 // Fixtures below are trimmed from a real 2026-07-27 Site Manager response.
 
@@ -93,37 +100,53 @@ describe("parseDeviceGroups", () => {
   });
 });
 
-// --- Multi-account support (2026-07-29) --------------------------------------
+// --- Per-fabric keys (2026-07-29, renamed to fabrics 2026-07-31) -------------
 
 describe("unifiApiKeys", () => {
   it("returns nothing when no key is set", () => {
     expect(unifiApiKeys({})).toEqual([]);
   });
 
-  it("reads the primary key", () => {
-    expect(unifiApiKeys({ UNIFI_API_KEY: "a" })).toEqual(["a"]);
-  });
-
-  it("reads numbered keys in order after the primary", () => {
+  it("reads all three fabrics in declaration order", () => {
     expect(
-      unifiApiKeys({ UNIFI_API_KEY: "a", UNIFI_API_KEY_2: "b", UNIFI_API_KEY_3: "c" }),
-    ).toEqual(["a", "b", "c"]);
+      unifiApiKeys({
+        UNIFI_API_KEY_NORTH: "n",
+        UNIFI_API_KEY_CENTRAL: "c",
+        UNIFI_API_KEY_INDEPENDENT: "i",
+      }),
+    ).toEqual([
+      { fabric: "CENTRAL", key: "c" },
+      { fabric: "INDEPENDENT", key: "i" },
+      { fabric: "NORTH", key: "n" },
+    ]);
   });
 
-  it("works when only a numbered key is set", () => {
-    expect(unifiApiKeys({ UNIFI_API_KEY_2: "b" })).toEqual(["b"]);
+  it("works when only one fabric is configured", () => {
+    expect(unifiApiKeys({ UNIFI_API_KEY_NORTH: "n" })).toEqual([{ fabric: "NORTH", key: "n" }]);
   });
 
-  it("de-duplicates the same key pasted twice", () => {
-    expect(unifiApiKeys({ UNIFI_API_KEY: "a", UNIFI_API_KEY_2: "a" })).toEqual(["a"]);
+  it("de-duplicates the same key pasted into two fabrics", () => {
+    expect(unifiApiKeys({ UNIFI_API_KEY_CENTRAL: "a", UNIFI_API_KEY_NORTH: "a" })).toEqual([
+      { fabric: "CENTRAL", key: "a" },
+    ]);
   });
 
   it("ignores empty and whitespace-only values, and trims", () => {
-    expect(unifiApiKeys({ UNIFI_API_KEY: "  a  ", UNIFI_API_KEY_2: "   " })).toEqual(["a"]);
+    expect(
+      unifiApiKeys({ UNIFI_API_KEY_CENTRAL: "  a  ", UNIFI_API_KEY_NORTH: "   " }),
+    ).toEqual([{ fabric: "CENTRAL", key: "a" }]);
   });
 
-  it("stops at 9 — a typo'd UNIFI_API_KEY_10 is not silently honoured", () => {
-    expect(unifiApiKeys({ UNIFI_API_KEY_10: "ten" })).toEqual([]);
+  it("no longer honours the retired numbered names", () => {
+    expect(unifiApiKeys({ UNIFI_API_KEY: "old", UNIFI_API_KEY_2: "older" })).toEqual([]);
+  });
+
+  it("names the env var for each fabric", () => {
+    expect(UNIFI_FABRICS.map(unifiKeyEnvName)).toEqual([
+      "UNIFI_API_KEY_CENTRAL",
+      "UNIFI_API_KEY_INDEPENDENT",
+      "UNIFI_API_KEY_NORTH",
+    ]);
   });
 });
 

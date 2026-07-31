@@ -58,7 +58,7 @@ export async function fetchLiveClientsByProperty(
   const keys = unifiApiKeys();
   const byProperty = new Map<string, LiveClients>();
 
-  for (const key of keys) {
+  for (const { key } of keys) {
     try {
       const res = await fetch(`${API_BASE}/v1/sites`, {
         headers: { "X-API-KEY": key, Accept: "application/json" },

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { ingestWebhook } from "./ingest.server";
 import { allocateTicketNumber } from "./ticketing.server";
 import { monitoredHosts } from "./unifi-hosts";
-import { fetchUnifiSnapshot } from "./unifi-api";
+import { fetchUnifiSnapshot, isUnifiConfigured, type UnifiFabric } from "./unifi-api";
 import { decidePoll, type BlindHost, type ObservedDevice, type PollDecision } from "./unifi-poll";
 
 // UniFi poller orchestration (T11, 2026-07-27).
@@ -26,9 +26,11 @@ export type PollOutcome = {
   configured: boolean;
   ok: boolean;
   error?: string;
-  /** How many API keys answered, and how many failed (multi-account estates). */
+  /** How many API keys answered, and how many failed (one key per fabric). */
   keysUsed: number;
   keysFailed: number;
+  /** Which fabrics' keys errored — a bare count doesn't say which sites went dark. */
+  fabricsFailed?: UnifiFabric[];
   hostsPolled: number;
   devicesObserved: number;
   /** Inventory rows that failed to write — surfaces a lagging DB, not a 500. */
@@ -319,6 +321,7 @@ export async function runUnifiPoll(now: Date = new Date()): Promise<PollOutcome>
     ok: true,
     keysUsed: fetched.keysUsed,
     keysFailed: fetched.keysFailed,
+    fabricsFailed: fetched.fabricsFailed,
     hostsPolled: monitored.length,
     devicesObserved: inventory.count,
     devicesFailed: inventory.failed,
@@ -332,5 +335,5 @@ export async function runUnifiPoll(now: Date = new Date()): Promise<PollOutcome>
 }
 
 function isConfiguredForReport(): boolean {
-  return Boolean(process.env.UNIFI_API_KEY);
+  return isUnifiConfigured();
 }
