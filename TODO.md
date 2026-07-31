@@ -28,8 +28,8 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 | 2 | ⏸ ~~Deploy the branch, then screenshot `/legal/opt-in`~~ | **PARKED 2026-07-30.** Twilio A2P work is on hold. Page remains built-but-never-opened-in-a-browser on the branch |
 | 3 | ⏸ ~~Publish the privacy-policy amendment~~ | **PARKED 2026-07-30.** Text stays ready at `docs/component-ii/PrivacyPolicyMessagingAmendment_RISE8_073026.md`; it cites `ops.` URLs that are not live, so publishing it now would put dead links in a legal document |
 | 4 | 🧑 **Add the 7 remaining `STRIPE_SECRET_KEY_<CODE>`** | Revenue currently covers Jacksonville West only |
-| 5 | **Build Kate's remaining requests** ▶ | Date range on the network dashboard, per-property monitoring breakdown, resolved-per-property, **ticket CSV export**. Ticket filters shipped (`7b10de0`). All pure DB work, no vendor dependency |
-| 6 | 🧑 **Chase the third UniFi account** | JW + JN still unreachable — see §Q1 |
+| 5 | ✅ **Kate's dashboard asks — DONE 2026-08-01** (`038ff46`) | Ticket CSV export · dashboard date range · per-property status table · resolved-per-property. Remaining slice of her ask: the **console filter** on tickets (display shipped, filter did not) |
+| 6 | ~~🧑 Chase the third UniFi account~~ ✅ **CLOSED 2026-07-31** | Three per-fabric keys reach the whole estate. JW and JN are monitored |
 | 7 | ~~🧑 Orlando: 46 of 92 cameras offline~~ **RETRACTED 2026-07-31 — it was an artefact.** Real figure: **2 of 92** | The 46 came from reading a decommissioned recorder's stale device list. The genuinely-down set is **Lakeland (13) and St. Augustine (10)** — that is where to look |
 
 **Who decides:** **Kyle develops, Kate reviews, both share every decision.** No sign-off chain, no approval gates. **Rob monitors the launched app only and gates nothing** — never add a "pending sign-off" state for anyone but Kyle or Kate. Crystal, Gerardo, Karla and Christopher supply ops ground truth or content: inputs, never approvals.
@@ -174,10 +174,10 @@ All pure DB work — no vendor dependency, no credentials needed.
 | P1 | [x] | **Console attribution** (2026-07-31, `103d715`). `Device.consoleHostId` + `consoleLabel()`; shown under the device name on the ticket list ("on Orlando-NVR2"), on the device page, and as a Console column per property |
 | P1 | [ ] | **Console FILTER on tickets** — display shipped, the filter did not. `consoleOptions()` already exists for the `<select>` |
 | P1 | [ ] | Property filter exists; a combined property+console+type filter bar is still Kate's full ask |
-| P1 | [ ] | **Date range on the network dashboard** (tickets/resolved), distinct from the WiFi revenue range |
-| P1 | [ ] | **Overall + per-property monitoring breakdown** on the dashboard |
-| P1 | [ ] | **Resolved count per property** |
-| P1 | [ ] | **Export tickets list (CSV)** |
+| P1 | [x] | **Date range on the network dashboard** (2026-08-01, `038ff46`). Reuses the WiFi range helper so "30d" means the same on both screens. Scoped to RESOLVED work and labelled so — open tickets and device status are present-tense, and a historical window over "what is broken now" would be a confidently wrong number |
+| P1 | [x] | **Per-property status table** on the dashboard (2026-08-01, `038ff46`): devices / online / offline / unverifiable / open / resolved-in-range, from grouped aggregates not N+1. A property with zero devices reads **"not monitored"**, never a bare 0 |
+| P1 | [x] | **Resolved count per property** — the last column of that table |
+| P1 | [x] | **Export tickets list (CSV)** (2026-08-01, `038ff46`). `/api/network/tickets/export` reads the same params through the same helpers as the list, so the file IS the screen. 14 columns, RBAC-guarded, 10k cap. `lib/csv.ts` hand-rolled + tested (quoting failures are silent; a device named `AC Pro, Rm 2` would shift every later column) |
 | P2 | [ ] | Kate: AP counts look too low — investigated, see §Q2. Likely non-UniFi APs, not a reporting defect |
 
 ## B3 — Hardening before webhooks are public · P1
@@ -202,7 +202,9 @@ All pure DB work — no vendor dependency, no credentials needed.
 |---|---|---|
 | P1 | [x] | Teams delivery via Power Automate webhook — **built + configured in prod** (verified `teams.configured: true`). Delivery is post-commit off the 1-min cron. **Untested end-to-end** only because no ticket has ever been created; the first KW outage exercises it. Send-only as configured: no message id back, so no threading | §Q5 |
 | P1 | [ ] | **Ticket close should REPLY to the created-ticket message, not post separately** (Kyle 2026-07-28). Schema is already ready (`Ticket.teamsMessageId` / `teamsMessageUrl`, unused). Two paths — see §Q25. Wanted because an outage generates several posts and a loose "resolved" message makes the channel unreadable exactly when someone is reconstructing what happened |
-| P1 | [x] | **Guest WiFi LIVE 2026-07-29** (`a3b2de6`, `1493983`, `5d5c866`). Credentials resolve **env-first** (`SPOTIPO_API_KEY` + `SPOTIPO_SITE_ID_<CODE>`); real guest counts for **8/8 sites (669 total)**. WiFi page now reads **three sources**: guests ← Spotipo · **online-now ← UniFi site statistics** · **revenue ← Stripe per property**. Date range (7d/30d/MTD/90d/12m) applies to revenue only |
+| P1 | [x] | **Guest WiFi LIVE 2026-07-29** (`a3b2de6`, `1493983`, `5d5c866`). Credentials resolve **env-first** (`SPOTIPO_API_KEY` + `SPOTIPO_SITE_ID_<CODE>`); real guest counts for **8/8 sites (669 total)**. Date range (7d/30d/MTD/90d/12m) applies to revenue only |
+| P1 | [x] | **WiFi page re-scoped to TWO sources — Spotipo + Stripe** (2026-08-01, `97dbd5c`, `a272315`). Kyle's call: it is a guest page, so it uses the guest systems. **UniFi removed entirely** (`wifi-live.server.ts` + `/api/network/wifi/online` deleted) — it counted network clients, so switches, cameras and staff laptops were being totalled into a figure labelled guests. **"Guests active now" rebuilt from Spotipo alone**: per-guest `last_seen_at` + a ~1-min portal heartbeat + newest-first ordering ⇒ page-walk with early exit. Live: 8/8 sites, **136 active of 699 registered**. ⚠ Counts guest RECORDS, not devices — Spotipo has no per-device id at all |
+| P1 | [x] | **Spotipo rate-limit fix** (2026-07-31, `5a3f4a4`). The "unreachable properties that change every refresh" bug was 8 parallel requests tripping a rate limit — 4×200, 4×429. Now serial at 350ms, single-flighted, 10-min cache, and a failure serves the last good value as **stale with a timestamp** rather than a blank. Also: **403 is a throttle on this API, not only bad credentials** — it was blanking rows permanently |
 | P2 | [x] | ~~At-rest encryption for `Property.spotipoApiKey`~~ — **moot**: keys now live in env, never in the DB, so they are absent from backups, query logs and every `Property` read. Closes open decision D6 |
 | P2 | [ ] | 7 of 8 properties still need `STRIPE_SECRET_KEY_<CODE>` — revenue shows JW only |
 | P3 | [ ] | T8 — Teams reply → `TicketNote` (**requires Graph**, impossible on the webhook) |
