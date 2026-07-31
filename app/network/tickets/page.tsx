@@ -7,6 +7,7 @@ import { AgeBadge } from "@/components/network/AgeBadge";
 import { EscalationBadges } from "@/components/network/EscalationBadges";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
 import { deviceTypeLabel } from "@/lib/network/device-type";
+import { consoleLabel } from "@/lib/network/unifi-hosts";
 import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 import {
   parseTicketFilters,
@@ -70,7 +71,7 @@ export default async function NetworkTicketsPage({
       take: 200,
       include: {
         property: { select: { shortCode: true } },
-        device: { select: { name: true, type: true } },
+        device: { select: { name: true, type: true, consoleHostId: true } },
       },
     }),
     db.property.findMany({
@@ -191,7 +192,14 @@ export default async function NetworkTicketsPage({
                     <td className="px-4 py-3 text-slate-700">{t.property.shortCode}</td>
                     <td className="px-4 py-3 text-slate-700">{t.ticketType}</td>
                     <td className="px-4 py-3 text-slate-700">{t.status.replace(/_/g, " ")}</td>
-                    <td className="px-4 py-3 text-slate-700">{t.device?.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {t.device?.name ?? "—"}
+                      {t.device?.consoleHostId && (
+                        <span className="block text-xs text-slate-400">
+                          on {consoleLabel(t.device.consoleHostId)}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-slate-700">
                       {deviceTypeLabel(t.device?.type)}
                     </td>

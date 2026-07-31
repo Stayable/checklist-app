@@ -294,3 +294,142 @@ describe("decidePoll — transitions only", () => {
     expect(decision.observedDevices).toHaveLength(1);
   });
 });
+
+// --- Two consoles, one device (2026-07-31) ----------------------------------
+//
+// Regression cover for the Orlando flap: 44 cameras re-homed from Orlando-NVR
+// to Orlando-NVR2 were listed by BOTH recorders at the same property with
+// opposite statuses. One event per sighting made the verdict alternate every
+// tick — 704 PROBLEM/RECOVERY events in 40 minutes for cameras that were up.
+
+const OR_OLD: UnifiHostEntry = {
+  hostId: "host-or-nvr1",
+  label: "Orlando-NVR",
+  propertyRef: "8700",
+  monitored: true,
+};
+const OR_NEW: UnifiHostEntry = {
+  hostId: "host-or-nvr2",
+  label: "Orlando-NVR2",
+  propertyRef: "8700",
+  monitored: true,
+};
+
+/** The same MAC under both recorders: stale-offline on the old, live on the new. */
+function twoConsoleSnapshot(oldStatus: string, newStatus: string): UnifiSnapshot {
+  return {
+    hosts: [
+      { id: OR_OLD.hostId, state: "connected", hostname: OR_OLD.label },
+      { id: OR_NEW.hostId, state: "connected", hostname: OR_NEW.label },
+    ],
+    deviceGroups: [
+      { hostId: OR_OLD.hostId, devices: [device({ mac: "CAM1", name: "G5 Bullet", status: oldStatus })] },
+      { hostId: OR_NEW.hostId, devices: [device({ mac: "CAM1", name: "B2-RM2204", status: newStatus })] },
+    ],
+  };
+}
+
+describe("decidePoll — one device reported by two consoles", () => {
+  it("records the device once, not once per console", () => {
+    const decision = decidePoll({
+      snapshot: twoConsoleSnapshot("offline", "online"),
+      known: [],
+      monitored: [OR_OLD, OR_NEW],
+      now: NOW,
+    });
+    expect(decision.observedDevices).toHaveLength(1);
+  });
+
+  it("ONLINE wins — a stale recorder cannot report a live camera as down", () => {
+    const decision = decidePoll({
+      snapshot: twoConsoleSnapshot("offline", "online"),
+      known: [],
+      monitored: [OR_OLD, OR_NEW],
+      now: NOW,
+    });
+    expect(decision.observedDevices[0]?.status).toBe("ONLINE");
+    // First sighting while ONLINE emits nothing (no RECOVERY from nothing).
+    expect(decision.events).toEqual([]);
+  });
+
+  it("wins regardless of console order in the registry", () => {
+    const forward = decidePoll({
+      snapshot: twoConsoleSnapshot("offline", "online"),
+      known: [],
+      monitored: [OR_OLD, OR_NEW],
+      now: NOW,
+    });
+    const reversed = decidePoll({
+      snapshot: twoConsoleSnapshot("offline", "online"),
+      known: [],
+      monitored: [OR_NEW, OR_OLD],
+      now: NOW,
+    });
+    expect(forward.observedDevices[0]?.status).toBe(reversed.observedDevices[0]?.status);
+    expect(forward.observedDevices[0]?.consoleHostId).toBe(OR_NEW.hostId);
+    expect(reversed.observedDevices[0]?.consoleHostId).toBe(OR_NEW.hostId);
+  });
+
+  it("takes the live console's name, not the stale generic model name", () => {
+    const decision = decidePoll({
+      snapshot: twoConsoleSnapshot("offline", "online"),
+      known: [],
+      monitored: [OR_OLD, OR_NEW],
+      now: NOW,
+    });
+    expect(decision.observedDevices[0]?.name).toBe("B2-RM2204");
+  });
+
+  it("does NOT flap: a device already ONLINE emits nothing on the next tick", () => {
+    const decision = decidePoll({
+      snapshot: twoConsoleSnapshot("offline", "online"),
+      known: [{ deviceKey: "CAM1_8700", currentStatus: "ONLINE" }],
+      monitored: [OR_OLD, OR_NEW],
+      now: NOW,
+    });
+    expect(decision.events).toEqual([]);
+  });
+
+  it("still reports OFFLINE when BOTH consoles agree it is down", () => {
+    const decision = decidePoll({
+      snapshot: twoConsoleSnapshot("offline", "offline"),
+      known: [{ deviceKey: "CAM1_8700", currentStatus: "ONLINE" }],
+      monitored: [OR_OLD, OR_NEW],
+      now: NOW,
+    });
+    expect(decision.observedDevices[0]?.status).toBe("OFFLINE");
+    expect(decision.events).toHaveLength(1);
+    expect(decision.events[0]?.eventType).toBe("PROBLEM");
+  });
+
+  it("attributes the device to the console that reports it", () => {
+    const decision = decidePoll({
+      snapshot: snapshot("connected", [device({ mac: "AA1" })]),
+      known: [],
+      monitored: [KW],
+      now: NOW,
+    });
+    expect(decision.observedDevices[0]?.consoleHostId).toBe(KW.hostId);
+  });
+
+  it("a blind console cannot force UNKNOWN on a device a healthy console can see", () => {
+    const decision = decidePoll({
+      snapshot: {
+        hosts: [
+          { id: OR_OLD.hostId, state: "disconnected", hostname: OR_OLD.label },
+          { id: OR_NEW.hostId, state: "connected", hostname: OR_NEW.label },
+        ],
+        deviceGroups: [
+          { hostId: OR_OLD.hostId, devices: [device({ mac: "CAM1", status: "offline" })] },
+          { hostId: OR_NEW.hostId, devices: [device({ mac: "CAM1", status: "online" })] },
+        ],
+      },
+      known: [],
+      monitored: [OR_OLD, OR_NEW],
+      now: NOW,
+    });
+    expect(decision.blindHosts).toHaveLength(1);
+    expect(decision.unknownDeviceKeys).toEqual([]); // seen for real by NVR2
+    expect(decision.observedDevices[0]?.status).toBe("ONLINE");
+  });
+});

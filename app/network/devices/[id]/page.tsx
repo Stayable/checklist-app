@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { isRecurringDevice } from "@/lib/network/ticket-age";
 import { deviceTypeLabel } from "@/lib/network/device-type";
+import { consoleLabel } from "@/lib/network/unifi-hosts";
 
 // NETWORK device history (spec §6.4): per-device event log + all tickets +
 // "Recurring" badge (>= 3 tickets in the trailing 30 days). Access is
@@ -60,6 +61,7 @@ export default async function DeviceDetailPage({
         </h1>
         <p className="text-sm text-slate-500">
           {deviceTypeLabel(device.type)} · {device.source} · {device.currentStatus}
+          {device.consoleHostId ? ` · on ${consoleLabel(device.consoleHostId)}` : ""}
           {device.lastSeenAt ? ` · last seen ${formatInET(device.lastSeenAt)}` : ""}
         </p>
       </header>

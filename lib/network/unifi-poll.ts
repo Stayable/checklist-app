@@ -89,9 +89,21 @@ export type ObservedDevice = {
   deviceIdent: string;
   name: string;
   propertyRef: string;
+  /** Site Manager host id of the console reporting this device — the one whose
+   *  view won dedupe. Resolved to a label via lib/network/unifi-hosts.ts. */
+  consoleHostId: string;
   type: DeviceType;
   source: DeviceSource;
   status: "ONLINE" | "OFFLINE";
+};
+
+/** One (device, console) pair as reported in a single tick, pre-dedupe. */
+type Sighting = {
+  deviceKey: string;
+  hostId: string;
+  propertyRef: string;
+  device: UnifiApiDevice;
+  online: boolean;
 };
 
 export type PollDecision = {
@@ -181,6 +193,9 @@ export function decidePoll(input: {
   const blindHosts: BlindHost[] = [];
   const unknownDeviceKeys: string[] = [];
   const healthyHostIds: string[] = [];
+  // Every (device, console) pair seen this tick, before dedupe. See the
+  // "one physical device, one verdict" block below for why this is two passes.
+  const sightings: Sighting[] = [];
 
   for (const entry of monitored) {
     const propertyRef = entry.propertyRef;
@@ -210,40 +225,84 @@ export function decidePoll(input: {
     healthyHostIds.push(entry.hostId);
 
     for (const device of devices) {
-      const deviceKey = deviceKeyFor(device.mac, propertyRef);
-      const online = (device.status ?? "").toLowerCase() === "online";
-      const previous = knownByKey.get(deviceKey);
-
-      observedDevices.push({
-        deviceKey,
-        deviceIdent: device.mac.toUpperCase(),
-        name: device.name || device.mac,
+      sightings.push({
+        deviceKey: deviceKeyFor(device.mac, propertyRef),
+        hostId: entry.hostId,
         propertyRef,
-        type: classifyDeviceType(device),
-        source: classifyDeviceSource(device),
-        status: online ? "ONLINE" : "OFFLINE",
-      });
-
-      const isTransition = online
-        ? previous === "OFFLINE" || previous === "UNKNOWN"
-        : previous !== "OFFLINE"; // includes first sighting while offline
-
-      if (!isTransition) continue;
-
-      events.push({
-        deviceIdent: device.mac.toUpperCase(),
-        deviceName: device.name || device.mac,
-        propertyRef,
-        eventType: online ? "RECOVERY" : "PROBLEM",
-        source: classifyDeviceSource(device),
-        deviceType: classifyDeviceType(device),
-        alertMessage: online
-          ? null
-          : `${device.model || "device"} ${device.name || device.mac} is offline (UniFi poll)`,
-        occurredAt: now,
+        device,
+        online: (device.status ?? "").toLowerCase() === "online",
       });
     }
   }
 
-  return { events, observedDevices, blindHosts, unknownDeviceKeys, healthyHostIds };
+  // ── One physical device, one verdict per tick ────────────────────────────
+  //
+  // A device can be listed by TWO consoles at the same property, and they can
+  // disagree. Real case (2026-07-31): 44 Orlando cameras were re-homed from
+  // Orlando-NVR to Orlando-NVR2. The old recorder still lists them as `offline`
+  // under generic model names ("G5 Bullet"); the new one lists the same MACs as
+  // `online` under real room names ("B2-RM2204").
+  //
+  // deviceKey is MAC+property, so both views collapse onto one row. Emitting an
+  // event per sighting made the two verdicts alternate every tick — PROBLEM,
+  // RECOVERY, PROBLEM — producing 704 events in 40 minutes, tickets and Teams
+  // posts for cameras that were never down.
+  //
+  // ONLINE WINS. Reachable from any trustworthy console means reachable; a
+  // console that has lost a device it no longer owns is not evidence of an
+  // outage. The winning sighting also supplies the name and the console
+  // attribution, so the live recorder's real room name beats the stale generic.
+  const winner = new Map<string, Sighting>();
+  for (const s of sightings) {
+    const current = winner.get(s.deviceKey);
+    if (current === undefined || (!current.online && s.online)) winner.set(s.deviceKey, s);
+  }
+
+  for (const s of winner.values()) {
+    const { device, online, propertyRef, deviceKey } = s;
+    const previous = knownByKey.get(deviceKey);
+
+    observedDevices.push({
+      deviceKey,
+      deviceIdent: device.mac.toUpperCase(),
+      name: device.name || device.mac,
+      propertyRef,
+      consoleHostId: s.hostId,
+      type: classifyDeviceType(device),
+      source: classifyDeviceSource(device),
+      status: online ? "ONLINE" : "OFFLINE",
+    });
+
+    const isTransition = online
+      ? previous === "OFFLINE" || previous === "UNKNOWN"
+      : previous !== "OFFLINE"; // includes first sighting while offline
+
+    if (!isTransition) continue;
+
+    events.push({
+      deviceIdent: device.mac.toUpperCase(),
+      deviceName: device.name || device.mac,
+      propertyRef,
+      eventType: online ? "RECOVERY" : "PROBLEM",
+      source: classifyDeviceSource(device),
+      deviceType: classifyDeviceType(device),
+      alertMessage: online
+        ? null
+        : `${device.model || "device"} ${device.name || device.mac} is offline (UniFi poll)`,
+      occurredAt: now,
+    });
+  }
+
+  // A device sitting under both a blind console and a healthy one has been seen
+  // for real — the blind console must not drag it to UNKNOWN. Dedupe too: two
+  // blind consoles listing the same device would otherwise repeat the key.
+  const unknownNotSeen = [...new Set(unknownDeviceKeys)].filter((k) => !winner.has(k));
+
+  return {
+    events,
+    observedDevices,
+    blindHosts,
+    unknownDeviceKeys: unknownNotSeen,
+    healthyHostIds,
+  };
 }

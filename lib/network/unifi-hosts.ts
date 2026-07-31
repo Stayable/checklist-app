@@ -234,6 +234,27 @@ export function findHostEntry(
   return registry.find((entry) => entry.hostId === hostId) ?? null;
 }
 
+/**
+ * Display label for the console a device is reported by.
+ *
+ * Falls back to a truncated host id for a console that is no longer registered
+ * — a device row keeps whichever console last reported it, and showing a stub
+ * id is more honest than a blank that reads as "no console".
+ */
+export function consoleLabel(hostId: string | null | undefined): string {
+  if (!hostId) return "—";
+  return findHostEntry(hostId)?.label ?? `${hostId.slice(0, 12)}…`;
+}
+
+/** Monitored consoles as filter options, grouped sensibly for a <select>. */
+export function consoleOptions(
+  registry: readonly UnifiHostEntry[] = UNIFI_HOST_REGISTRY,
+): { hostId: string; label: string }[] {
+  return monitoredHosts(registry)
+    .map((e) => ({ hostId: e.hostId, label: e.label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 /** All consoles registered to one property (N3: may be more than one). */
 export function hostsForProperty(
   propertyRef: string,

@@ -78,6 +78,7 @@ async function upsertInventory(
           type: device.type,
           source: device.source,
           propertyId,
+          consoleHostId: device.consoleHostId,
           currentStatus:
             device.status === "ONLINE" ? DeviceStatus.ONLINE : DeviceStatus.OFFLINE,
           lastSeenAt: device.status === "ONLINE" ? now : null,
@@ -86,6 +87,9 @@ async function upsertInventory(
           name: device.name,
           type: device.type,
           source: device.source,
+          // Re-homed hardware moves between recorders (Orlando, 2026-07-31), so
+          // the console is refreshed every tick rather than pinned at create.
+          consoleHostId: device.consoleHostId,
           ...(device.status === "ONLINE" ? { lastSeenAt: now } : {}),
         },
       });

@@ -1,0 +1,12 @@
+-- Records which UniFi console reports each device (2026-07-31).
+--
+-- Additive and nullable, so it is safe to apply to a live database while the
+-- previous build is still serving: existing rows read NULL and the next 2-min
+-- poll backfills every polled device. No backfill job, no downtime.
+--
+-- Not an FK: the console registry is a code constant (lib/network/unifi-hosts.ts),
+-- not a table. Labels resolve from it at render time.
+--
+-- Authored by hand rather than `prisma migrate diff` because the shared dev DB
+-- was unreachable; it is a single ADD COLUMN and matches the schema exactly.
+ALTER TABLE "devices" ADD COLUMN "console_host_id" TEXT;

@@ -618,6 +618,12 @@ model Device {
   type          DeviceType
   source        DeviceSource
   propertyId    String       @map("property_id") @db.Uuid
+  /// Site Manager host id of the console this device is reported by. Nullable:
+  /// webhook-sourced devices have no console, and rows predating 2026-07-31 are
+  /// backfilled by the next poll rather than by a migration. Deliberately not an
+  /// FK — the console registry is a code constant (lib/network/unifi-hosts.ts),
+  /// not a table, and labels are resolved from it at render time.
+  consoleHostId String?      @map("console_host_id")
   lastSeenAt    DateTime?    @map("last_seen_at") @db.Timestamptz
   currentStatus DeviceStatus @default(UNKNOWN) @map("current_status")
   createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
