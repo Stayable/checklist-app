@@ -51,10 +51,9 @@ export default async function WifiPropertyPage({
             label="Total guests"
             value={summary.totalGuests === null ? "—" : String(summary.totalGuests)}
           />
-          <WifiStatCard
-            label="Online now"
-            value={summary.onlineNow === null ? "—" : String(summary.onlineNow)}
-          />
+          {/* "Online now" removed 2026-08-01 — it was a UniFi network-client
+              count on a guest page. Spotipo exposes no online aggregate, and a
+              wrong number is worse than an absent one. See §Q30. */}
           <WifiStatCard
             label="Avg dwell"
             value={summary.avgDwellMin === null ? "—" : `${Math.round(summary.avgDwellMin)} min`}

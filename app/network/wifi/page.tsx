@@ -4,7 +4,6 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { WifiStatCard } from "@/components/network/WifiStatCard";
 import { formatInET } from "@/lib/datetime";
 import { fetchPortfolioSummaries } from "@/lib/network/spotipo.server";
-import { fetchLiveClientsByProperty } from "@/lib/network/wifi-live.server";
 import { fetchPropertyRevenue, type PropertyRevenue } from "@/lib/network/wifi-revenue.server";
 import { WifiRangeFilter } from "./WifiRangeFilter";
 import { resolveRange } from "@/lib/network/wifi-range";
@@ -12,15 +11,19 @@ import { resolveRange } from "@/lib/network/wifi-range";
 // Guest WiFi portfolio view (spec §11.5). Read-only — no ticketing here.
 // Access is guarded once by app/network/layout.tsx.
 //
-// THREE SOURCES, because no single vendor has all of it (each established by
-// probing the live APIs on 2026-07-29, not by reading docs):
-//   · registered guests → Spotipo  — metadata.total_count, the ONLY thing its
+// TWO SOURCES, by decision (Kyle 2026-08-01): this is a GUEST page, so it leans
+// on the guest systems only.
+//   · registered guests → Spotipo  — metadata.total_count, the ONLY aggregate its
 //                                    API exposes; every other path 404s
-//   · online right now  → UniFi    — site statistics (wifiClient + guestClient).
-//                                    Spotipo has no online field at all, which is
-//                                    why this used to render blank
 //   · revenue           → Stripe   — one account per property, so the key IS the
 //                                    attribution, and it is genuinely date-filterable
+//
+// UniFi was previously the source of "online now" and has been REMOVED. It
+// counts network clients, not guests — switches, cameras and staff laptops were
+// being totalled into a figure labelled guests, and it made a business metric
+// depend on console registration. Spotipo exposes no online aggregate, so rather
+// than substitute a wrong number the column is gone; see §Q30 for the honest
+// route to a real one (per-guest `last_seen_at`, which needs pagination).
 //
 // The date range applies to REVENUE ONLY. Spotipo ignores date params (verified:
 // identical total_count for any range), so guest figures are lifetime counts and
@@ -48,26 +51,26 @@ export default async function WifiPortfolioPage({
     orderBy: { shortCode: "asc" },
   });
 
-  const [sites, liveClients, revenueEntries] = await Promise.all([
+  // TWO SOURCES ONLY — Spotipo and Stripe (Kyle 2026-08-01).
+  //
+  // The UniFi feed that previously supplied "online now" is deliberately gone.
+  // This page is about GUESTS, and UniFi counts network clients: a switch, a
+  // camera and a staff laptop all landed in a figure labelled guests. Mixing an
+  // infrastructure source into a guest page made the number quietly wrong and
+  // made the page depend on console registration for a business metric.
+  const [sites, revenueEntries] = await Promise.all([
     fetchPortfolioSummaries(properties),
-    fetchLiveClientsByProperty(),
     Promise.all(
       properties.map(async (p) => [p.shortCode, await fetchPropertyRevenue(p.shortCode, range.from)] as const),
     ),
   ]);
 
   const revenueByCode = new Map(revenueEntries);
-  const refById = new Map(properties.map((p) => [p.id, p.propertyId]));
 
   const rows = sites.map((s) => {
-    const ref = refById.get(s.propertyId);
-    const live = ref ? liveClients.get(ref) : undefined;
     const rev = revenueByCode.get(s.shortCode);
     return {
       ...s,
-      // "Online" = portal guests + WiFi clients the console reports right now.
-      onlineNow: live ? live.guestClients + live.wifiClients : null,
-      wiredClients: live?.wiredClients ?? null,
       revenue: rev?.ok ? rev.revenue : null,
       revenueReason: rev?.ok ? null : (rev?.reason ?? "not_configured"),
     };
@@ -76,12 +79,11 @@ export default async function WifiPortfolioPage({
   const totals = rows.reduce(
     (a, r) => ({
       guests: a.guests + (r.totalGuests ?? 0),
-      online: a.online + (r.onlineNow ?? 0),
       net: a.net + (r.revenue?.net ?? 0),
       gross: a.gross + (r.revenue?.gross ?? 0),
       revenueSites: a.revenueSites + (r.revenue ? 1 : 0),
     }),
-    { guests: 0, online: 0, net: 0, gross: 0, revenueSites: 0 },
+    { guests: 0, net: 0, gross: 0, revenueSites: 0 },
   );
 
   const failed = rows.filter((r) => r.error !== null);
@@ -90,7 +92,7 @@ export default async function WifiPortfolioPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Guest WiFi"
-        subtitle="Registered guests (Spotipo) · live clients (UniFi) · revenue (Stripe)"
+        subtitle="Registered guests (Spotipo) · revenue (Stripe)"
       />
 
       <WifiRangeFilter />
@@ -117,7 +119,6 @@ export default async function WifiPortfolioPage({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <WifiStatCard label="Registered guests (all time)" value={String(totals.guests)} />
-        <WifiStatCard label="Online now" value={String(totals.online)} />
         <WifiStatCard
           label={`Net revenue · ${range.label}`}
           value={totals.revenueSites === 0 ? "—" : `$${totals.net.toFixed(2)}`}
@@ -146,8 +147,6 @@ export default async function WifiPortfolioPage({
               <tr>
                 <th className="px-4 py-3">Property</th>
                 <th className="px-4 py-3">Guests (all time)</th>
-                <th className="px-4 py-3">Online now</th>
-                <th className="px-4 py-3">Wired</th>
                 <th className="px-4 py-3">Net · {range.label}</th>
                 <th className="px-4 py-3">Gross</th>
                 <th className="px-4 py-3">Txns</th>
@@ -172,9 +171,14 @@ export default async function WifiPortfolioPage({
                       <span className="ml-2 text-xs text-slate-400">not configured</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{s.totalGuests ?? "—"}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{s.onlineNow ?? "—"}</td>
-                  <td className="px-4 py-3 text-slate-500">{s.wiredClients ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {s.totalGuests ?? "—"}
+                    {s.staleSince && (
+                      <span className="block text-xs text-slate-400">
+                        as of {formatInET(s.staleSince)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900">{money(s.revenue)}</td>
                   <td className="px-4 py-3 text-slate-600">
                     {s.revenue === null ? "—" : `$${s.revenue.gross.toFixed(2)}`}
@@ -196,10 +200,11 @@ export default async function WifiPortfolioPage({
       </div>
 
       <p className="text-xs text-slate-400">
+        Two sources only: <strong>Spotipo</strong> for guests, <strong>Stripe</strong> for revenue.
         Guest totals are lifetime counts — Spotipo&apos;s API ignores date filters, so the period
-        above applies to revenue only. “Online now” is what the UniFi consoles report this minute
-        (portal guests + WiFi clients), cached for up to a minute so a page refresh does not
-        re-poll every site. Revenue window: {formatInET(range.from, "MMM d, yyyy")} → now ET.
+        above applies to revenue only. Spotipo requests are paced and cached for 10 minutes because
+        the API rate-limits concurrent reads. Revenue window:{" "}
+        {formatInET(range.from, "MMM d, yyyy")} → now ET.
       </p>
     </div>
   );

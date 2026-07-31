@@ -118,9 +118,15 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  *    /stats/, /report/, /analytics/, /transaction/, /payment/, /session/ and
  *    /voucher/ all 404. Spec §11's revenue field does not merely lack
  *    confirmation — it appears not to exist on this API surface. Stays null.
- *  - **onlineNow** is NOT AVAILABLE either. There is no online flag; deriving it
- *    from `last_seen_at` would require assuming how often Spotipo refreshes that
- *    stamp, which is a guess we would then display as a fact. Stays null.
+ *  - **onlineNow** has no aggregate. There is no online flag and no online/status
+ *    filter (verified 2026-08-01: `?online=true`, `?status=online`, `?is_online=1`
+ *    all return the unfiltered total). It COULD be derived by counting guests
+ *    whose per-record `last_seen_at` is recent — that stamp is live, a JW guest
+ *    read 8 seconds old — but that means paginating every guest record on every
+ *    read, and those records are PII. Not built; see §Q30. Stays null.
+ *
+ *    ⚠ `last_seen_at` has no timezone suffix ("2026-07-31T16:38:35") and is UTC.
+ *    `new Date(...)` would parse it as LOCAL time — append "Z" before parsing.
  *  - **avgDwellMin** has no source field. Stays null.
  *
  * `per_page=1` is deliberate: we need the count from `metadata`, not the guest
@@ -156,8 +162,16 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
         cache: "no-store",
       },
     );
-    if (res.status === 401 || res.status === 403) {
-      return nullSummary(property, true, "unauthorized");
+    // 401 is unambiguous: bad credentials, nothing to wait out.
+    if (res.status === 401) return nullSummary(property, true, "unauthorized");
+
+    // 403 is AMBIGUOUS on this API. Observed 2026-08-01: after a burst of
+    // requests a key that had just returned 200 started returning 403 for every
+    // page size — so Spotipo uses it as a harder throttle as well as for a bad
+    // key. Distinguish by evidence: if this site has ever succeeded, the key
+    // works and this is throttling; if it never has, treat it as auth.
+    if (res.status === 403) {
+      return cached ? serveStale("rate_limited") : nullSummary(property, true, "unauthorized");
     }
     // 429 is its own state. Calling it "unreachable" sent Kyle looking for a
     // network fault at the properties when the limit was ours to respect.
@@ -174,7 +188,7 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
       error: null,
       staleSince: null,
       totalGuests: total,
-      onlineNow: null, // filled by lib/network/wifi-live.server.ts (UniFi)
+      onlineNow: null, // Spotipo exposes no online aggregate — see §Q30
       avgDwellMin: null,
       revenue: null, // filled by lib/network/wifi-revenue.server.ts (Stripe)
     };
