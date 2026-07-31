@@ -15,6 +15,7 @@ function site(overrides: Partial<WifiSiteSummary>): WifiSiteSummary {
     error: null,
     staleSince: null,
     totalGuests: null,
+    onlineTruncated: false,
     onlineNow: null,
     avgDwellMin: null,
     revenue: null,

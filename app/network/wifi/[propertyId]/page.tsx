@@ -1,3 +1,4 @@
+import { ACTIVE_WINDOW_MIN } from "@/lib/network/spotipo-active";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -51,9 +52,14 @@ export default async function WifiPropertyPage({
             label="Total guests"
             value={summary.totalGuests === null ? "—" : String(summary.totalGuests)}
           />
-          {/* "Online now" removed 2026-08-01 — it was a UniFi network-client
-              count on a guest page. Spotipo exposes no online aggregate, and a
-              wrong number is worse than an absent one. See §Q30. */}
+          <WifiStatCard
+            label={`Active now (${ACTIVE_WINDOW_MIN} min)`}
+            value={
+              summary.onlineNow === null
+                ? "—"
+                : `${summary.onlineNow}${summary.onlineTruncated ? "+" : ""}`
+            }
+          />
           <WifiStatCard
             label="Avg dwell"
             value={summary.avgDwellMin === null ? "—" : `${Math.round(summary.avgDwellMin)} min`}

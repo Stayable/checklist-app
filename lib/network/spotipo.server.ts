@@ -1,6 +1,7 @@
 import type { Property } from "@prisma/client";
 import type { WifiSiteSummary } from "./spotipo";
 import { isSpotipoConfiguredFor, resolveSpotipoConfig } from "./spotipo-config";
+import { tallyPage } from "./spotipo-active";
 
 // Guest WiFi (Spotipo) fetch seam: SCAFFOLD + DEGRADE (Task 9, Kyle
 // 2026-07-25 — no Spotipo siteids/API keys, no confirmed response shape).
@@ -46,6 +47,7 @@ function nullSummary(
     staleSince: null,
     totalGuests: null,
     onlineNow: null,
+    onlineTruncated: false,
     avgDwellMin: null,
     revenue: null,
   };
@@ -98,6 +100,9 @@ const CACHE_TTL_MS = 10 * 60_000;
 const STALE_MAX_MS = 60 * 60_000;
 
 const cache = new Map<string, { at: number; value: WifiSiteSummary }>();
+/** "Active now" needs its own short TTL — see fetchSiteSummary. */
+const ACTIVE_TTL_MS = 2 * 60_000;
+const activeCache = new Map<string, { at: number; value: { active: number; truncated: boolean } }>();
 /** In-flight fan-out, so two concurrent renders don't double the request rate. */
 let inFlight: Promise<WifiSiteSummary[]> | null = null;
 
@@ -118,28 +123,52 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  *    /stats/, /report/, /analytics/, /transaction/, /payment/, /session/ and
  *    /voucher/ all 404. Spec §11's revenue field does not merely lack
  *    confirmation — it appears not to exist on this API surface. Stays null.
- *  - **onlineNow** has no aggregate. There is no online flag and no online/status
- *    filter (verified 2026-08-01: `?online=true`, `?status=online`, `?is_online=1`
- *    all return the unfiltered total). It COULD be derived by counting guests
- *    whose per-record `last_seen_at` is recent — that stamp is live, a JW guest
- *    read 8 seconds old — but that means paginating every guest record on every
- *    read, and those records are PII. Not built; see §Q30. Stays null.
- *
- *    ⚠ `last_seen_at` has no timezone suffix ("2026-07-31T16:38:35") and is UTC.
- *    `new Date(...)` would parse it as LOCAL time — append "Z" before parsing.
+ *  - **onlineNow** has no aggregate and no online/status filter (verified
+ *    2026-08-01: `?online=true`, `?status=online`, `?is_online=1` all return the
+ *    unfiltered total, and /device/ /client/ /session/ /online/ /connection/ all
+ *    404 — confirmed real 404s, with a control request returning 200 either
+ *    side). It is instead DERIVED from `last_seen_at`; see fetchActiveGuests.
  *  - **avgDwellMin** has no source field. Stays null.
  *
- * `per_page=1` is deliberate: we need the count from `metadata`, not the guest
- * records. Those records are PII (names, emails, phone numbers) and this feature
- * has no business reading — let alone storing — them, so we ask for the smallest
- * page the API will give us and discard `items` entirely. Nothing here persists.
+ * The TOTAL uses `per_page=1` deliberately: we need `metadata.total_count`, not
+ * the guest records. Those records are PII (names, emails, phone numbers), so
+ * the cheapest possible page is requested and `items` discarded.
+ *
+ * The ACTIVE count cannot avoid reading records — the signal lives on them. It
+ * reads `last_seen_at` and nothing else, counts, and drops them. Nothing about a
+ * guest is cached, logged or persisted at any point.
  */
-export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSiteSummary> {
+export async function fetchSiteSummary(
+  property: WifiProperty,
+  now: Date = new Date(),
+): Promise<WifiSiteSummary> {
   const config = resolveSpotipoConfig(property);
   if (config === null) return nullSummary(property, false);
 
+  // "Active now" gets its OWN, much shorter TTL than the lifetime guest total.
+  // Sharing the 10-minute cache would put a ten-minute-old number under a label
+  // that says "now" — the totals barely move, this one is the whole point.
+  const activeCached = activeCache.get(property.id);
+  const activeFresh =
+    activeCached && now.getTime() - activeCached.at < ACTIVE_TTL_MS
+      ? activeCached.value
+      : await fetchActiveGuests(config, now).then((r) => {
+          if (r !== null) activeCache.set(property.id, { at: now.getTime(), value: r });
+          // A failed read serves the last known value if it is still recent,
+          // rather than flipping the tile to "—" for one bad request.
+          return r ?? (activeCached && now.getTime() - activeCached.at < STALE_MAX_MS
+            ? activeCached.value
+            : null);
+        });
+
+  const withActive = (s: WifiSiteSummary): WifiSiteSummary => ({
+    ...s,
+    onlineNow: activeFresh?.active ?? null,
+    onlineTruncated: activeFresh?.truncated ?? false,
+  });
+
   const cached = cache.get(property.id);
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
+  if (cached && now.getTime() - cached.at < CACHE_TTL_MS) return withActive(cached.value);
 
   /**
    * A number that was right a few minutes ago beats a blank that moves around.
@@ -148,9 +177,9 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
    */
   const serveStale = (error: WifiSiteSummary["error"]): WifiSiteSummary => {
     if (cached && Date.now() - cached.at < STALE_MAX_MS) {
-      return { ...cached.value, error, staleSince: new Date(cached.at) };
+      return withActive({ ...cached.value, error, staleSince: new Date(cached.at) });
     }
-    return nullSummary(property, true, error);
+    return withActive(nullSummary(property, true, error));
   };
 
   try {
@@ -188,20 +217,88 @@ export async function fetchSiteSummary(property: WifiProperty): Promise<WifiSite
       error: null,
       staleSince: null,
       totalGuests: total,
-      onlineNow: null, // Spotipo exposes no online aggregate — see §Q30
+      // Overwritten by withActive() below; the cached copy deliberately holds
+      // null so a 10-minute-old "active" figure can never be served from it.
+      onlineNow: null,
+      onlineTruncated: false,
       avgDwellMin: null,
       revenue: null, // filled by lib/network/wifi-revenue.server.ts (Stripe)
     };
     // Only successes are cached — a failure must be retried on the next view,
     // not remembered for a minute.
-    cache.set(property.id, { at: Date.now(), value: summary });
-    return summary;
+    cache.set(property.id, { at: now.getTime(), value: summary });
+    return withActive(summary);
   } catch {
     // Never throw out of the fetch seam — one site's failure must not break the
     // rest of the portfolio. Reported as `unreachable` so the UI can say so
     // instead of rendering an unexplained blank.
     return serveStale("unreachable");
   }
+}
+
+/** Largest page the API accepts — 40 and 100 both 403 (measured 2026-08-01). */
+const GUEST_PAGE_SIZE = 20;
+/** Safety stop. At a very busy site this bounds the read; the UI says if it hit. */
+const MAX_ACTIVE_PAGES = 6;
+
+/**
+ * Counts guests currently on the network by walking the guest list newest-first
+ * and stopping at the first record outside the active window.
+ *
+ * Cheap because the list is ordered by `last_seen_at` DESC: JW needed 3 pages of
+ * its 10, LL needed 2. Bounded by MAX_ACTIVE_PAGES so a busy site cannot turn a
+ * page render into a 10-request crawl.
+ *
+ * PII: these pages contain names and emails. They are counted and dropped — no
+ * field other than `last_seen_at` is read, nothing is cached, nothing is logged.
+ *
+ * Returns null (not 0) when the first page fails: an unknown count must not
+ * render as "nobody is connected".
+ */
+async function fetchActiveGuests(
+  config: { siteId: string; apiKey: string },
+  now: Date,
+): Promise<{ active: number; truncated: boolean } | null> {
+  let active = 0;
+
+  for (let page = 1; page <= MAX_ACTIVE_PAGES; page++) {
+    if (page > 1) await sleep(REQUEST_GAP_MS);
+
+    let body: unknown;
+    try {
+      const res = await fetch(
+        `${SPOTIPO_BASE}/ext/${encodeURIComponent(config.siteId)}/api/v1/guest/` +
+          `?per_page=${GUEST_PAGE_SIZE}&page=${page}`,
+        {
+          headers: { "Authentication-Token": config.apiKey, Accept: "application/json" },
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+          cache: "no-store",
+        },
+      );
+      if (!res.ok) return page === 1 ? null : { active, truncated: true };
+      body = await res.json();
+    } catch {
+      return page === 1 ? null : { active, truncated: true };
+    }
+
+    const items = isRecordArray(body) ?? [];
+    const tally = tallyPage(items, now);
+    active += tally.active;
+
+    // Boundary crossed, or a short/empty page = end of list.
+    if (tally.boundaryCrossed || items.length < GUEST_PAGE_SIZE) {
+      return { active, truncated: false };
+    }
+  }
+
+  // Ran out of pages while every record was still live — the count is a floor.
+  return { active, truncated: true };
+}
+
+function isRecordArray(body: unknown): { last_seen_at?: unknown }[] | null {
+  if (typeof body !== "object" || body === null) return null;
+  const items = (body as { items?: unknown }).items;
+  return Array.isArray(items) ? (items as { last_seen_at?: unknown }[]) : null;
 }
 
 /** Pulls metadata.total_count defensively; null if the shape isn't what we saw. */

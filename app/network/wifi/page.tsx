@@ -7,23 +7,29 @@ import { fetchPortfolioSummaries } from "@/lib/network/spotipo.server";
 import { fetchPropertyRevenue, type PropertyRevenue } from "@/lib/network/wifi-revenue.server";
 import { WifiRangeFilter } from "./WifiRangeFilter";
 import { resolveRange } from "@/lib/network/wifi-range";
+import { ACTIVE_WINDOW_MIN } from "@/lib/network/spotipo-active";
 
 // Guest WiFi portfolio view (spec §11.5). Read-only — no ticketing here.
 // Access is guarded once by app/network/layout.tsx.
 //
 // TWO SOURCES, by decision (Kyle 2026-08-01): this is a GUEST page, so it leans
 // on the guest systems only.
-//   · registered guests → Spotipo  — metadata.total_count, the ONLY aggregate its
-//                                    API exposes; every other path 404s
+//   · registered guests → Spotipo  — metadata.total_count, the only aggregate
+//                                    its API exposes
+//   · guests active now → Spotipo  — DERIVED, by counting guest records whose
+//                                    captive-portal `last_seen_at` is inside the
+//                                    window (lib/network/spotipo-active.ts)
 //   · revenue           → Stripe   — one account per property, so the key IS the
 //                                    attribution, and it is genuinely date-filterable
 //
-// UniFi was previously the source of "online now" and has been REMOVED. It
-// counts network clients, not guests — switches, cameras and staff laptops were
-// being totalled into a figure labelled guests, and it made a business metric
-// depend on console registration. Spotipo exposes no online aggregate, so rather
-// than substitute a wrong number the column is gone; see §Q30 for the honest
-// route to a real one (per-guest `last_seen_at`, which needs pagination).
+// UniFi previously supplied "online now" and has been REMOVED (Kyle 2026-08-01).
+// It counts network clients, not guests — switches, cameras and staff laptops
+// were being totalled into a figure labelled guests, and it made a business
+// metric depend on console registration.
+//
+// ⚠ The replacement counts GUEST RECORDS, not devices: Spotipo exposes no
+// per-device identifier anywhere. One person on a phone and a laptop may count
+// once. The page says so rather than implying a device count.
 //
 // The date range applies to REVENUE ONLY. Spotipo ignores date params (verified:
 // identical total_count for any range), so guest figures are lifetime counts and
@@ -79,11 +85,13 @@ export default async function WifiPortfolioPage({
   const totals = rows.reduce(
     (a, r) => ({
       guests: a.guests + (r.totalGuests ?? 0),
+      active: a.active + (r.onlineNow ?? 0),
+      activeTruncated: a.activeTruncated || r.onlineTruncated,
       net: a.net + (r.revenue?.net ?? 0),
       gross: a.gross + (r.revenue?.gross ?? 0),
       revenueSites: a.revenueSites + (r.revenue ? 1 : 0),
     }),
-    { guests: 0, net: 0, gross: 0, revenueSites: 0 },
+    { guests: 0, active: 0, activeTruncated: false, net: 0, gross: 0, revenueSites: 0 },
   );
 
   const failed = rows.filter((r) => r.error !== null);
@@ -92,7 +100,7 @@ export default async function WifiPortfolioPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Guest WiFi"
-        subtitle="Registered guests (Spotipo) · revenue (Stripe)"
+        subtitle="Registered + active guests (Spotipo) · revenue (Stripe)"
       />
 
       <WifiRangeFilter />
@@ -119,6 +127,10 @@ export default async function WifiPortfolioPage({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <WifiStatCard label="Registered guests (all time)" value={String(totals.guests)} />
+        <WifiStatCard
+          label={`Guests active now (last ${ACTIVE_WINDOW_MIN} min)`}
+          value={`${totals.active}${totals.activeTruncated ? "+" : ""}`}
+        />
         <WifiStatCard
           label={`Net revenue · ${range.label}`}
           value={totals.revenueSites === 0 ? "—" : `$${totals.net.toFixed(2)}`}
@@ -147,6 +159,7 @@ export default async function WifiPortfolioPage({
               <tr>
                 <th className="px-4 py-3">Property</th>
                 <th className="px-4 py-3">Guests (all time)</th>
+                <th className="px-4 py-3">Active now</th>
                 <th className="px-4 py-3">Net · {range.label}</th>
                 <th className="px-4 py-3">Gross</th>
                 <th className="px-4 py-3">Txns</th>
@@ -179,6 +192,9 @@ export default async function WifiPortfolioPage({
                       </span>
                     )}
                   </td>
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {s.onlineNow === null ? "—" : `${s.onlineNow}${s.onlineTruncated ? "+" : ""}`}
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900">{money(s.revenue)}</td>
                   <td className="px-4 py-3 text-slate-600">
                     {s.revenue === null ? "—" : `$${s.revenue.gross.toFixed(2)}`}
@@ -202,8 +218,12 @@ export default async function WifiPortfolioPage({
       <p className="text-xs text-slate-400">
         Two sources only: <strong>Spotipo</strong> for guests, <strong>Stripe</strong> for revenue.
         Guest totals are lifetime counts — Spotipo&apos;s API ignores date filters, so the period
-        above applies to revenue only. Spotipo requests are paced and cached for 10 minutes because
-        the API rate-limits concurrent reads. Revenue window:{" "}
+        above applies to revenue only. <strong>Active now</strong> counts guest records whose
+        captive-portal session was seen in the last {ACTIVE_WINDOW_MIN} minutes (the portal
+        heartbeats about once a minute). It counts <em>guests</em>, not devices — Spotipo exposes no
+        per-device identifier, so one person on two devices may count once. A “+” means the count is
+        a floor: the read hit its page limit while guests were still live. Requests are paced and
+        cached because the API rate-limits concurrent reads. Revenue window:{" "}
         {formatInET(range.from, "MMM d, yyyy")} → now ET.
       </p>
     </div>

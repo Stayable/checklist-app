@@ -26,6 +26,12 @@ export type WifiSiteSummary = {
    */
   staleSince: Date | null;
   totalGuests: number | null;
+  /**
+   * True when the active-guest walk hit its page cap before reaching the end of
+   * the live block, so `onlineNow` is a floor rather than an exact count. The UI
+   * must show it as "120+", never as a flat 120.
+   */
+  onlineTruncated: boolean;
   onlineNow: number | null;
   avgDwellMin: number | null;
   /**
