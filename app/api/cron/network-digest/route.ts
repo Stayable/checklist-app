@@ -3,9 +3,10 @@ import { NotificationChannel, NotificationStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { etDayStartUtc, etYYYYMMDD, formatInET } from "@/lib/datetime";
 import { loadNetworkOverview } from "@/lib/network/overview.server";
-import { buildDailyDigest, digestTitle } from "@/lib/network/digest";
+import { buildDailyDigest, buildDailyDigestCard, digestTitle } from "@/lib/network/digest";
 import { resolveRange } from "@/lib/network/wifi-range";
-import { GENERAL_TARGET, isAnyTeamsWebhookConfigured } from "@/lib/network/teams-routing";
+import { postTeamsCard } from "@/lib/network/teams-webhook";
+import { GENERAL_TARGET, resolveTeamsWebhook } from "@/lib/network/teams-routing";
 
 // 9 AM ET daily network digest → the General Teams channel (Kyle 2026-08-01).
 //
@@ -17,10 +18,20 @@ import { GENERAL_TARGET, isAnyTeamsWebhookConfigured } from "@/lib/network/teams
 // year-round, costs 23 no-op invocations a day, and keeps the "all datetimes are
 // ET" discipline of ADR-013 instead of quietly excepting this one job.
 //
-// Idempotency: at most one digest per ET day, enforced by looking for a digest
-// NotificationLog row created since the ET day start. Without that, a retry, a
-// redeploy mid-hour, or overlapping invocations inside the 9 AM hour would each
-// post again.
+// Idempotency: at most one SUCCESSFUL digest per ET day, enforced by looking for
+// a non-FAILED digest NotificationLog row created since the ET day start.
+// Without that, a retry, a redeploy mid-hour, or overlapping invocations inside
+// the 9 AM hour would each post again. A FAILED row deliberately does NOT count,
+// so a transient Teams outage at 9:00 is retried at 10:00 rather than skipping
+// the day silently.
+//
+// WHY THIS POSTS DIRECTLY instead of queueing a PENDING row for the 1-minute
+// sweep like every other Teams notification: the digest's property table has to
+// be a structured Adaptive Card ColumnSet, because a TextBlock collapses the
+// space padding a text table depends on (verified live 2026-08-01). Card
+// structure can't survive a round trip through NotificationLog, whose body is a
+// string. The queue exists to keep HTTP calls out of open transactions — and
+// this route has no transaction — so posting inline costs nothing here.
 //
 // Auth mirrors the other cron routes: fail-closed in production when
 // CRON_SECRET is unset, dev-open otherwise.
@@ -60,7 +71,11 @@ async function handle(req: Request) {
   const dayStart = etDayStartUtc(etYYYYMMDD(now));
   if (!dryRun) {
     const alreadySent = await db.notificationLog.count({
-      where: { event: DIGEST_EVENT, createdAt: { gte: dayStart } },
+      where: {
+        event: DIGEST_EVENT,
+        createdAt: { gte: dayStart },
+        status: { not: NotificationStatus.FAILED },
+      },
     });
     if (alreadySent > 0) {
       return NextResponse.json({ ok: true, skipped: "already_sent_today" });
@@ -72,24 +87,33 @@ async function handle(req: Request) {
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
   const title = digestTitle(now);
-  const body = buildDailyDigest({
+  const digestParams = {
     overview,
     now,
     rangeLabel: range.label,
     dashboardUrl: `${base}/network`,
-  });
+  };
+  // Text version is what gets stored and what a human reads in the log; the card
+  // is what Teams renders. Both come from the same overview and the same cell
+  // helpers, so they cannot disagree about a number.
+  const body = buildDailyDigest(digestParams);
+  const card = buildDailyDigestCard(digestParams);
 
   if (dryRun) {
-    return NextResponse.json({ ok: true, dryRun: true, hourET, title, body });
+    return NextResponse.json({ ok: true, dryRun: true, hourET, title, body, card });
   }
 
-  const queued = isAnyTeamsWebhookConfigured();
+  const destination = resolveTeamsWebhook(GENERAL_TARGET);
+  const result = destination
+    ? await postTeamsCard(destination.url, title, card, body)
+    : ({ ok: false, error: "teams_target_not_configured:GENERAL" } as const);
+
   await db.notificationLog.create({
     data: {
       userId: null,
       channel: NotificationChannel.TEAMS,
-      status: queued ? NotificationStatus.PENDING : NotificationStatus.SKIPPED,
-      error: queued ? null : "teams_not_configured",
+      status: result.ok ? NotificationStatus.SENT : NotificationStatus.FAILED,
+      error: result.ok ? null : result.error,
       event: DIGEST_EVENT,
       title,
       body,
@@ -101,10 +125,13 @@ async function handle(req: Request) {
     },
   });
 
-  // Delivered by the 1-minute network-timers sweep, same as every other Teams
-  // row — so the digest lands within a minute of 9:00 AM ET. Not posted here:
-  // one queue, one retry story, one audit trail.
-  const outcome = { ok: true, queued, hourET, target: GENERAL_TARGET };
+  const outcome = {
+    ok: true,
+    sent: result.ok,
+    error: result.ok ? undefined : result.error,
+    hourET,
+    target: GENERAL_TARGET,
+  };
   console.log("[network-digest]", JSON.stringify(outcome));
   return NextResponse.json(outcome);
 }

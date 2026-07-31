@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TicketStatus } from "@prisma/client";
-import { buildDailyDigest, digestTitle } from "./digest";
+import { buildDailyDigest, buildDailyDigestCard, digestTitle } from "./digest";
 import type {
   NetworkOpenTicket,
   NetworkOverview,
@@ -208,5 +208,109 @@ describe("buildDailyDigest — oldest open", () => {
       overview({ openTicketList: [ticket({ openedAt: new Date("2026-08-02T01:30:00Z") })] }),
     );
     expect(text).toContain("1 Aug 21:30 ET");
+  });
+});
+
+// ── Card rendering ──────────────────────────────────────────────────────────
+// Teams renders the Adaptive Card, not the `text` field (confirmed live
+// 2026-08-01 from the flow's own attribution footer). And a TextBlock collapses
+// runs of spaces, so the padded text table arrived squashed. These tests pin the
+// property that fixes it: the table must be STRUCTURE, never padding.
+
+const buildCard = (o: NetworkOverview) =>
+  buildDailyDigestCard({
+    overview: o,
+    now: new Date("2026-08-01T13:00:00Z"),
+    rangeLabel: "Last 30 days",
+    dashboardUrl: DASHBOARD,
+  });
+
+type Card = Record<string, unknown>;
+const findColumnSet = (els: Card[]) => els.find((e) => e.type === "ColumnSet") as
+  | { columns: { items: { text: string }[] }[] }
+  | undefined;
+
+describe("buildDailyDigestCard", () => {
+  const twoProps = () =>
+    overview({
+      properties: [
+        property({ shortCode: "KW", total: 12, offline: 1, unknown: 0, open: 1, resolved: 5 }),
+        property({ id: "p2", shortCode: "OR", total: 92, offline: 46, unknown: 0, open: 2, resolved: 9 }),
+      ],
+    });
+
+  it("renders the property table as a ColumnSet, not a text block", () => {
+    expect(findColumnSet(buildCard(twoProps()))).toBeDefined();
+  });
+
+  it("NEVER pads cells with runs of spaces — that is the bug this replaced", () => {
+    const cols = findColumnSet(buildCard(twoProps()))!;
+    for (const col of cols.columns) {
+      for (const item of col.items) {
+        expect(item.text).not.toMatch(/ {2,}/);
+        // Nor a dashed rule row, which only exists to fake a border in text.
+        expect(item.text).not.toMatch(/^-{2,}$/);
+      }
+    }
+  });
+
+  it("gives every column a header plus one cell per property, in order", () => {
+    const cols = findColumnSet(buildCard(twoProps()))!;
+    expect(cols.columns).toHaveLength(6);
+    const site = cols.columns[0]!.items.map((i) => i.text);
+    expect(site).toEqual(["Site", "KW", "OR"]);
+    const offline = cols.columns[2]!.items.map((i) => i.text);
+    expect(offline).toEqual(["Off", "1", "46"]);
+  });
+
+  it("keeps every column the same length, so rows can't shear apart", () => {
+    const cols = findColumnSet(buildCard(twoProps()))!;
+    const lengths = new Set(cols.columns.map((c) => c.items.length));
+    expect(lengths.size).toBe(1);
+  });
+
+  it("puts the overview numbers in a FactSet", () => {
+    const els = buildCard(overview({ cards: { openTickets: 7, escalated: 2 } }));
+    const facts = els.find((e) => e.type === "FactSet") as
+      | { facts: { title: string; value: string }[] }
+      | undefined;
+    expect(facts).toBeDefined();
+    expect(facts!.facts).toEqual(
+      expect.arrayContaining([
+        { title: "Open tickets", value: "7" },
+        { title: "Escalated", value: "2" },
+      ]),
+    );
+  });
+
+  it("agrees with the text version on every table number", () => {
+    // The two renderings share the cell helpers; this is the regression guard
+    // that says they still do. A card that disagrees with the logged body would
+    // make the audit trail useless.
+    const o = twoProps();
+    const cols = findColumnSet(buildCard(o))!;
+    const text = build(o);
+    for (const col of cols.columns) {
+      for (const cell of col.items.slice(1)) expect(text).toContain(cell.text);
+    }
+  });
+
+  it("carries the unmonitored warning as an Attention-coloured block", () => {
+    const els = buildCard(overview({ cards: { devicesTotal: 0 } })) as Card[];
+    const warn = els.find((e) => typeof e.text === "string" && String(e.text).includes("not an all-clear"));
+    expect(warn).toBeDefined();
+    expect(warn!.color).toBe("Attention");
+    // Still first, for the same reason as the text version.
+    expect(els.indexOf(warn!)).toBe(0);
+  });
+
+  it("survives a portfolio with no active properties", () => {
+    const els = buildCard(overview({ properties: [] }));
+    expect(findColumnSet(els)).toBeUndefined();
+    expect(JSON.stringify(els)).toContain("No active properties");
+  });
+
+  it("links the dashboard as markdown, which a TextBlock does render", () => {
+    expect(JSON.stringify(buildCard(overview()))).toContain(`[Dashboard](${DASHBOARD})`);
   });
 });

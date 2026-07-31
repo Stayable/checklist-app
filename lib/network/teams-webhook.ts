@@ -26,19 +26,29 @@
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
+/** One Adaptive Card body element. Loosely typed — we emit a small, fixed set. */
+export type CardElement = Record<string, unknown>;
+
 /**
- * Builds the request body.
+ * Wraps Adaptive Card body elements in the request body.
  *
- * Carries BOTH a top-level `text` and an Adaptive Card attachment on purpose:
- * a Workflows flow may reference either `triggerBody()?['text']` or the card
- * attachment depending on how it was authored, and both shapes were accepted
- * by the live endpoint during probing. Sending both means delivery doesn't
- * depend on guessing the flow's internals.
+ * Carries BOTH a top-level `text` and the card attachment on purpose: a
+ * Workflows flow may reference either `triggerBody()?['text']` or the card
+ * attachment depending on how it was authored, and both shapes were accepted by
+ * the live endpoint during probing. Sending both means delivery doesn't depend
+ * on guessing the flow's internals.
+ *
+ * ⚠ VERIFIED 2026-08-01: Kyle's flow renders **the card**, not `text`. So the
+ * card body is what has to be right; `text` is a fallback for a differently
+ * authored flow, and for anyone reading the payload in a log.
  */
-export function buildTeamsWebhookPayload(title: string, body: string): Record<string, unknown> {
+export function buildTeamsCardPayload(
+  title: string,
+  elements: CardElement[],
+  fallbackText: string,
+): Record<string, unknown> {
   return {
-    // Plain-text fallback — also what a text-referencing flow posts.
-    text: `**${title}**\n\n${body}`,
+    text: `**${title}**\n\n${fallbackText}`,
     type: "message",
     attachments: [
       {
@@ -49,12 +59,25 @@ export function buildTeamsWebhookPayload(title: string, body: string): Record<st
           version: "1.4",
           body: [
             { type: "TextBlock", text: title, weight: "Bolder", size: "Medium", wrap: true },
-            { type: "TextBlock", text: body, wrap: true },
+            ...elements,
           ],
         },
       },
     ],
   };
+}
+
+/**
+ * The plain-text message shape — one wrapped TextBlock under the title.
+ *
+ * ⚠ A TextBlock renders as markdown-ish rich text, which **collapses runs of
+ * spaces**. Confirmed live 2026-08-01: a space-padded table posted through here
+ * arrived with its columns squashed together. So never use this for tabular
+ * content — build a ColumnSet and pass it to buildTeamsCardPayload instead
+ * (lib/network/digest.ts does exactly that).
+ */
+export function buildTeamsWebhookPayload(title: string, body: string): Record<string, unknown> {
+  return buildTeamsCardPayload(title, [{ type: "TextBlock", text: body, wrap: true }], body);
 }
 
 export type TeamsPostResult = { ok: true; status: number } | { ok: false; error: string };
@@ -69,18 +92,14 @@ export type TeamsPostResult = { ok: true; status: number } | { ok: false; error:
  * accented Spanish, so omitting this would fail intermittently on ordinary
  * wording.
  */
-export async function postTeamsWebhook(
-  url: string,
-  title: string,
-  body: string,
-): Promise<TeamsPostResult> {
+async function post(url: string, payload: Record<string, unknown>): Promise<TeamsPostResult> {
   if (!url) return { ok: false, error: "teams_webhook_not_configured" };
 
   try {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify(buildTeamsWebhookPayload(title, body)),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
@@ -94,4 +113,23 @@ export async function postTeamsWebhook(
       error: error instanceof Error ? error.message : "teams_webhook_failed",
     };
   }
+}
+
+/** Plain-text message. See buildTeamsWebhookPayload on why not for tables. */
+export async function postTeamsWebhook(
+  url: string,
+  title: string,
+  body: string,
+): Promise<TeamsPostResult> {
+  return post(url, buildTeamsWebhookPayload(title, body));
+}
+
+/** Structured-card message — used by the digest for its aligned table. */
+export async function postTeamsCard(
+  url: string,
+  title: string,
+  elements: CardElement[],
+  fallbackText: string,
+): Promise<TeamsPostResult> {
+  return post(url, buildTeamsCardPayload(title, elements, fallbackText));
 }
