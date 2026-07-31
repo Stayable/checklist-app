@@ -74,12 +74,21 @@ export function ShellChrome({
         </nav>
 
         <div className="mt-4 flex flex-col gap-3 border-t border-white/10 px-2 pt-4">
+          {/* The account link used to be the user's NAME alone, which reads as a
+              label rather than a destination — Kyle couldn't find where to change
+              a password (2026-07-31). Name still shown (it answers "who am I
+              signed in as"), with an explicit sub-label for what the link does. */}
           <Link
             href="/profile"
-            className="flex items-center gap-2 truncate text-sm font-semibold hover:text-slate-200"
+            className="flex items-center gap-2 truncate text-sm hover:text-slate-200"
           >
             <User className="h-4 w-4 shrink-0" />
-            <span className="truncate">{name}</span>
+            <span className="min-w-0 truncate">
+              <span className="block truncate font-semibold">{name}</span>
+              <span className="block truncate text-xs font-normal text-slate-400">
+                Profile &amp; password
+              </span>
+            </span>
           </Link>
           {showPicker && (
             <PropertyPicker properties={properties} current={currentPropertyId} />
