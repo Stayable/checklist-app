@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DeviceStatus, TicketStatus } from "@prisma/client";
+import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -7,15 +7,18 @@ import { AgeBadge } from "@/components/network/AgeBadge";
 import { EscalationBadges } from "@/components/network/EscalationBadges";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
 import { escalationLevel, isOvernight } from "@/lib/network/escalation";
-import { isTeamsGraphConfigured } from "@/lib/network/teams-config";
+import { isAnyTeamsWebhookConfigured } from "@/lib/network/teams-routing";
+import { loadNetworkOverview } from "@/lib/network/overview.server";
 import { resolveRange } from "@/lib/network/wifi-range";
 import { DashboardRangeFilter } from "./DashboardRangeFilter";
 
 // NETWORK portfolio dashboard (spec §6.1). Access is guarded once by
 // app/network/layout.tsx. Portfolio-wide — no property scoping (see
 // lib/rbac.ts canAccessNetwork).
-
-const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];
+//
+// The cards and the per-property table come from lib/network/overview.server.ts,
+// shared with the 9 AM ET Teams digest so the two can never disagree about how
+// many tickets are open.
 
 function SummaryCard({
   label,
@@ -44,47 +47,14 @@ export default async function NetworkDashboardPage({
   // and device status are present-tense facts, and filtering "what is broken
   // right now" by a historical window would be meaningless.
   const range = resolveRange((await searchParams).range, now);
-  const rangeFrom = range.from;
 
-  const [
-    openTickets,
-    devicesOffline,
-    devicesUnknown,
-    devicesTotal,
-    resolvedInRange,
-    recentlyClosed,
-    resolvedCountInRange,
-    properties,
-    deviceCounts,
-    openTicketCounts,
-    resolvedCounts,
-  ] = await Promise.all([
-    db.ticket.findMany({
-      where: { status: { in: OPEN_STATUSES } },
-      orderBy: { openedAt: "asc" },
-      include: {
-        property: { select: { shortCode: true } },
-        device: { select: { name: true } },
-      },
-    }),
-    db.device.count({ where: { currentStatus: DeviceStatus.OFFLINE } }),
-    // N4: devices whose console can't be reached are UNKNOWN, not OFFLINE, so
-    // they must be counted and shown separately — an unmonitored fleet must
-    // never render as a healthy one.
-    db.device.count({ where: { currentStatus: DeviceStatus.UNKNOWN } }),
-    db.device.count(),
-    db.ticket.findMany({
-      where: {
-        status: TicketStatus.RESOLVED,
-        resolvedAt: { gte: rangeFrom },
-        downDurationMin: { not: null },
-      },
-      select: { downDurationMin: true },
-    }),
+  const [overview, recentlyClosed] = await Promise.all([
+    loadNetworkOverview({ now, rangeFrom: range.from }),
     // Recently closed work (Kate's request 2026-07-28). RESOLVED and CLOSED
     // together: the distinction is internal bookkeeping, and a dashboard reader
     // asking "what got fixed" means both. Ordered by when it actually finished,
     // falling back to updatedAt for rows closed without a resolvedAt stamp.
+    // Stays here rather than in the shared loader — the digest doesn't post it.
     db.ticket.findMany({
       where: { status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } },
       orderBy: [{ resolvedAt: "desc" }, { updatedAt: "desc" }],
@@ -103,82 +73,22 @@ export default async function NetworkDashboardPage({
         device: { select: { name: true } },
       },
     }),
-    // Resolved-work counter (Kyle 2026-07-29). Counts RESOLVED *and* CLOSED,
-    // because in this codebase they are functionally the same terminal state and
-    // a reader asking "how much got fixed" means both. Falls back to updatedAt
-    // for rows closed by hand without a resolvedAt stamp — otherwise manually
-    // closed tickets would be invisible here.
-    db.ticket.count({
-      where: {
-        status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] },
-        OR: [
-          { resolvedAt: { gte: rangeFrom } },
-          { resolvedAt: null, updatedAt: { gte: rangeFrom } },
-        ],
-      },
-    }),
-
-    // ── Per-property status table (Kyle 2026-08-01) ────────────────────────
-    // Three grouped aggregates rather than a query per property: 8 properties
-    // today, but this is the page every new property lands on and N+1 here
-    // would degrade quietly as the portfolio grows.
-    db.property.findMany({
-      where: { active: true },
-      select: { id: true, shortCode: true, name: true },
-      orderBy: { shortCode: "asc" },
-    }),
-    db.device.groupBy({ by: ["propertyId", "currentStatus"], _count: true }),
-    db.ticket.groupBy({
-      by: ["propertyId"],
-      where: { status: { in: OPEN_STATUSES } },
-      _count: true,
-    }),
-    db.ticket.groupBy({
-      by: ["propertyId"],
-      where: {
-        status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] },
-        OR: [
-          { resolvedAt: { gte: rangeFrom } },
-          { resolvedAt: null, updatedAt: { gte: rangeFrom } },
-        ],
-      },
-      _count: true,
-    }),
   ]);
 
-  // Assemble the per-property rows. A property with no devices still appears —
-  // "no devices registered" is exactly the fact a coverage gap needs to show.
-  const countFor = (propertyId: string, status: DeviceStatus) =>
-    deviceCounts.find((d) => d.propertyId === propertyId && d.currentStatus === status)?._count ?? 0;
-
-  const propertyRows = properties.map((p) => {
-    const online = countFor(p.id, DeviceStatus.ONLINE);
-    const offline = countFor(p.id, DeviceStatus.OFFLINE);
-    const unknown = countFor(p.id, DeviceStatus.UNKNOWN);
-    return {
-      ...p,
-      online,
-      offline,
-      unknown,
-      total: online + offline + unknown,
-      open: openTicketCounts.find((t) => t.propertyId === p.id)?._count ?? 0,
-      resolved: resolvedCounts.find((t) => t.propertyId === p.id)?._count ?? 0,
-    };
-  });
-
-  const propertiesWithIssues = new Set(openTickets.map((t) => t.propertyId)).size;
-  // Task 10 (display-only, spec §9): escalation is a placeholder threshold
-  // and drives no notifications — see lib/network/escalation.ts.
-  const escalatedCount = openTickets.filter(
-    (t) => escalationLevel({ openedAt: t.openedAt, now, status: t.status }) === "ESCALATED",
-  ).length;
-  const avgResolutionMin =
-    resolvedInRange.length === 0
-      ? null
-      : Math.round(
-          resolvedInRange.reduce((sum, t) => sum + (t.downDurationMin ?? 0), 0) /
-            resolvedInRange.length,
-        );
+  const {
+    cards: {
+      openTickets: openTicketCount,
+      escalated: escalatedCount,
+      devicesOffline,
+      devicesUnknown,
+      devicesTotal,
+      propertiesWithIssues,
+      resolvedInRange: resolvedCountInRange,
+      avgResolutionMin,
+    },
+    properties: propertyRows,
+    openTicketList: openTickets,
+  } = overview;
 
   return (
     <div className="flex flex-col gap-6">
@@ -213,7 +123,7 @@ export default async function NetworkDashboardPage({
         </p>
       )}
 
-      {!isTeamsGraphConfigured() && (
+      {!isAnyTeamsWebhookConfigured() && (
         <p className="text-xs text-slate-400">
           Teams notifications: not configured — ticket events are logged, not posted.
         </p>
@@ -224,7 +134,7 @@ export default async function NetworkDashboardPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <SummaryCard
           label="Open tickets"
-          value={openTickets.length}
+          value={openTicketCount}
           tone="bg-red-50 text-red-800 ring-red-200"
         />
         <SummaryCard
@@ -358,9 +268,9 @@ export default async function NetworkDashboardPage({
                           {t.ticketNumber}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-slate-700">{t.property.shortCode}</td>
+                      <td className="px-4 py-3 text-slate-700">{t.propertyShortCode}</td>
                       <td className="px-4 py-3 text-slate-700">{t.ticketType}</td>
-                      <td className="px-4 py-3 text-slate-700">{t.device?.name ?? "—"}</td>
+                      <td className="px-4 py-3 text-slate-700">{t.deviceName ?? "—"}</td>
                       <td className="px-4 py-3">
                         <AgeBadge bucket={bucket} />
                       </td>

@@ -1,0 +1,197 @@
+import { DeviceStatus, TicketStatus } from "@prisma/client";
+import { db } from "@/lib/db";
+import { escalationLevel } from "./escalation";
+
+// The numbers behind the /network dashboard (extracted 2026-08-01).
+//
+// Extracted from app/network/page.tsx because the 9 AM ET Teams digest posts the
+// same two things — the overview cards and the status-by-property table — and
+// two independent copies of these aggregates would drift. When they drift, the
+// digest and the dashboard disagree about how many tickets are open, and nobody
+// can tell which one is lying. One query set, two renderers.
+//
+// Portfolio-wide, no property scoping — matches the dashboard's own posture
+// (see lib/rbac.ts canAccessNetwork; /network is CORPORATE/ADMIN/NETWORK_TECH).
+
+export const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];
+
+/** Terminal states. Treated as one thing: a reader asking "what got fixed"
+ * means both, and the RESOLVED/CLOSED split is internal bookkeeping. */
+const DONE_STATUSES: TicketStatus[] = [TicketStatus.RESOLVED, TicketStatus.CLOSED];
+
+export type NetworkOverviewCards = {
+  openTickets: number;
+  escalated: number;
+  devicesOffline: number;
+  devicesUnknown: number;
+  devicesTotal: number;
+  propertiesWithIssues: number;
+  resolvedInRange: number;
+  avgResolutionMin: number | null;
+};
+
+export type NetworkPropertyRow = {
+  id: string;
+  shortCode: string;
+  name: string;
+  online: number;
+  offline: number;
+  unknown: number;
+  total: number;
+  open: number;
+  resolved: number;
+};
+
+export type NetworkOpenTicket = {
+  id: string;
+  ticketNumber: string;
+  ticketType: string;
+  status: TicketStatus;
+  openedAt: Date;
+  propertyId: string;
+  propertyShortCode: string;
+  deviceName: string | null;
+};
+
+export type NetworkOverview = {
+  cards: NetworkOverviewCards;
+  properties: NetworkPropertyRow[];
+  /** Returned so the dashboard's open-ticket table and the `escalated` card
+   * come from one read rather than two that could disagree. */
+  openTicketList: NetworkOpenTicket[];
+};
+
+/**
+ * `rangeFrom` bounds the resolved/avg-resolution figures only. Open tickets and
+ * device status are present-tense facts — filtering "what is broken right now"
+ * by a historical window would be meaningless.
+ */
+export async function loadNetworkOverview(params: {
+  now: Date;
+  rangeFrom: Date;
+}): Promise<NetworkOverview> {
+  const { now, rangeFrom } = params;
+
+  // Resolved-in-range needs the updatedAt fallback: a ticket closed by hand
+  // without a resolvedAt stamp would otherwise be invisible in every count here.
+  const resolvedInRangeWhere = {
+    status: { in: DONE_STATUSES },
+    OR: [
+      { resolvedAt: { gte: rangeFrom } },
+      { resolvedAt: null, updatedAt: { gte: rangeFrom } },
+    ],
+  };
+
+  const [
+    openTickets,
+    devicesOffline,
+    devicesUnknown,
+    devicesTotal,
+    resolvedDurations,
+    resolvedCountInRange,
+    properties,
+    deviceCounts,
+    openTicketCounts,
+    resolvedCounts,
+  ] = await Promise.all([
+    db.ticket.findMany({
+      where: { status: { in: OPEN_STATUSES } },
+      orderBy: { openedAt: "asc" },
+      select: {
+        id: true,
+        ticketNumber: true,
+        ticketType: true,
+        status: true,
+        openedAt: true,
+        propertyId: true,
+        property: { select: { shortCode: true } },
+        device: { select: { name: true } },
+      },
+    }),
+    db.device.count({ where: { currentStatus: DeviceStatus.OFFLINE } }),
+    // N4: devices whose console can't be reached are UNKNOWN, not OFFLINE, so
+    // they must be counted separately — an unmonitored fleet must never render
+    // as a healthy one.
+    db.device.count({ where: { currentStatus: DeviceStatus.UNKNOWN } }),
+    db.device.count(),
+    db.ticket.findMany({
+      where: {
+        status: TicketStatus.RESOLVED,
+        resolvedAt: { gte: rangeFrom },
+        downDurationMin: { not: null },
+      },
+      select: { downDurationMin: true },
+    }),
+    db.ticket.count({ where: resolvedInRangeWhere }),
+
+    // Grouped aggregates rather than a query per property: 8 properties today,
+    // but this is the page every new property lands on and N+1 here would
+    // degrade quietly as the portfolio grows.
+    db.property.findMany({
+      where: { active: true },
+      select: { id: true, shortCode: true, name: true },
+      orderBy: { shortCode: "asc" },
+    }),
+    db.device.groupBy({ by: ["propertyId", "currentStatus"], _count: true }),
+    db.ticket.groupBy({
+      by: ["propertyId"],
+      where: { status: { in: OPEN_STATUSES } },
+      _count: true,
+    }),
+    db.ticket.groupBy({ by: ["propertyId"], where: resolvedInRangeWhere, _count: true }),
+  ]);
+
+  const countFor = (propertyId: string, status: DeviceStatus) =>
+    deviceCounts.find((d) => d.propertyId === propertyId && d.currentStatus === status)?._count ?? 0;
+
+  // A property with no devices still appears — "no devices registered" is
+  // exactly the fact a coverage gap needs to show.
+  const propertyRows: NetworkPropertyRow[] = properties.map((p) => {
+    const online = countFor(p.id, DeviceStatus.ONLINE);
+    const offline = countFor(p.id, DeviceStatus.OFFLINE);
+    const unknown = countFor(p.id, DeviceStatus.UNKNOWN);
+    return {
+      ...p,
+      online,
+      offline,
+      unknown,
+      total: online + offline + unknown,
+      open: openTicketCounts.find((t) => t.propertyId === p.id)?._count ?? 0,
+      resolved: resolvedCounts.find((t) => t.propertyId === p.id)?._count ?? 0,
+    };
+  });
+
+  const avgResolutionMin =
+    resolvedDurations.length === 0
+      ? null
+      : Math.round(
+          resolvedDurations.reduce((sum, t) => sum + (t.downDurationMin ?? 0), 0) /
+            resolvedDurations.length,
+        );
+
+  return {
+    cards: {
+      openTickets: openTickets.length,
+      escalated: openTickets.filter(
+        (t) => escalationLevel({ openedAt: t.openedAt, now, status: t.status }) === "ESCALATED",
+      ).length,
+      devicesOffline,
+      devicesUnknown,
+      devicesTotal,
+      propertiesWithIssues: new Set(openTickets.map((t) => t.propertyId)).size,
+      resolvedInRange: resolvedCountInRange,
+      avgResolutionMin,
+    },
+    properties: propertyRows,
+    openTicketList: openTickets.map((t) => ({
+      id: t.id,
+      ticketNumber: t.ticketNumber,
+      ticketType: t.ticketType,
+      status: t.status,
+      openedAt: t.openedAt,
+      propertyId: t.propertyId,
+      propertyShortCode: t.property.shortCode,
+      deviceName: t.device?.name ?? null,
+    })),
+  };
+}
