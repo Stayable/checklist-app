@@ -10,6 +10,8 @@ import { deviceTypeLabel } from "@/lib/network/device-type";
 import { consoleLabel } from "@/lib/network/unifi-hosts";
 import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 import {
+  ALL_STATUSES,
+  OPEN_STATUSES,
   parseTicketFilters,
   ticketOrderBy,
   ticketWhereFilters,
@@ -22,7 +24,14 @@ import { TicketFilters } from "./TicketFilters";
 // pattern). Sortable columns, also URL-driven. Access is guarded once by
 // app/network/layout.tsx.
 
-const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];
+/**
+ * Rows the on-screen table renders. The CSV export has its own, much larger
+ * cap — a manager scanning a table wants the recent slice, a manager exporting
+ * wants the lot. When this cap actually bites the page says so (see below):
+ * with the "All" tab now reachable, a silently truncated table would read as
+ * "that's everything" when it isn't.
+ */
+const LIST_LIMIT = 200;
 
 // Carried Task-6 Minor #4: the generated all-status tab set used to include
 // a standalone "OPEN" tab (OPEN status only) alongside the combined "Open"
@@ -63,12 +72,9 @@ export default async function NetworkTicketsPage({
   const now = new Date();
   const [tickets, properties] = await Promise.all([
     db.ticket.findMany({
-      where: {
-        status: filters.status ?? { in: OPEN_STATUSES },
-        ...ticketWhereFilters(filters),
-      },
+      where: ticketWhereFilters(filters),
       orderBy,
-      take: 200,
+      take: LIST_LIMIT,
       include: {
         property: { select: { shortCode: true } },
         device: { select: { name: true, type: true, consoleHostId: true } },
@@ -128,7 +134,11 @@ export default async function NetworkTicketsPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Tickets"
-        subtitle={`${filters.status ? filters.status.replace(/_/g, " ") : "Open"} tickets`}
+        subtitle={
+          filters.status === ALL_STATUSES
+            ? "All tickets, every status"
+            : `${filters.status ? filters.status.replace(/_/g, " ") : "Open"} tickets`
+        }
         actions={
           <div className="flex items-center gap-2">
             {/* Carries every active filter/sort param, so the file is exactly
@@ -165,9 +175,29 @@ export default async function NetworkTicketsPage({
             {s.replace(/_/g, " ")}
           </Link>
         ))}
+        {/* "All" (Kyle 2026-08-01) — the only tab that applies no status
+            constraint, and so the one to sit on before exporting everything.
+            Last in the row because it is the widest net, not a peer of the
+            individual statuses. */}
+        <Link
+          href={linkFor(ALL_STATUSES)}
+          className={`rounded-full px-3 py-1 font-semibold ${filters.status === ALL_STATUSES ? "bg-slate-900 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+        >
+          All
+        </Link>
       </div>
 
       <TicketFilters properties={properties} />
+
+      {tickets.length === LIST_LIMIT && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+          <span className="font-semibold">
+            Showing the first {LIST_LIMIT} tickets only.
+          </span>{" "}
+          More match these filters than the table displays — narrow the date range, or use
+          Export CSV, which covers the full set.
+        </p>
+      )}
 
       {tickets.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center text-sm text-slate-400">

@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import { DeviceType, TicketStatus, TicketType } from "@prisma/client";
 import { etDayStartUtc, nextYMD } from "../datetime";
 import {
+  ALL_STATUSES,
   DEFAULT_SORT_DIR,
   DEFAULT_SORT_KEY,
+  OPEN_STATUSES,
   parseTicketFilters,
   TICKET_SORT_KEYS,
   ticketOrderBy,
+  ticketStatusWhere,
   ticketWhereFilters,
 } from "./ticket-filters";
 
@@ -37,6 +40,13 @@ describe("parseTicketFilters", () => {
 
   it("rejects a junk status (falls back to null, not a throw)", () => {
     expect(parseTicketFilters({ status: "not-a-status" }).status).toBeNull();
+  });
+
+  it("parses the ALL sentinel as its own value, distinct from null", () => {
+    expect(parseTicketFilters({ status: "ALL" }).status).toBe(ALL_STATUSES);
+    // The distinction is the whole point: null means "defaulted to open",
+    // ALL means "the user asked for every status".
+    expect(parseTicketFilters({}).status).not.toBe(ALL_STATUSES);
   });
 
   it("parses a valid ticket type", () => {
@@ -93,8 +103,35 @@ describe("parseTicketFilters", () => {
   });
 });
 
+describe("ticketStatusWhere", () => {
+  it("defaults an absent status to the open view", () => {
+    expect(ticketStatusWhere(null)).toEqual({ in: OPEN_STATUSES });
+  });
+
+  it("narrows to one status when one is given", () => {
+    expect(ticketStatusWhere(TicketStatus.CLOSED)).toBe(TicketStatus.CLOSED);
+  });
+
+  it("applies NO status constraint for ALL", () => {
+    // undefined, not {} and not a list of every status: Prisma reads an
+    // undefined field as "don't filter on this". Spelling every status out
+    // instead would silently miss any status added to the enum later.
+    expect(ticketStatusWhere(ALL_STATUSES)).toBeUndefined();
+  });
+
+  it("ALL really does include the terminal statuses the open view hides", () => {
+    // Guards the actual regression risk: if ALL ever resolved to the open
+    // default, "export everything" would quietly export open tickets only.
+    const openOnly = ticketStatusWhere(null) as { in: TicketStatus[] };
+    expect(openOnly.in).not.toContain(TicketStatus.CLOSED);
+    expect(openOnly.in).not.toContain(TicketStatus.RESOLVED);
+    expect(ticketStatusWhere(ALL_STATUSES)).not.toEqual(openOnly);
+  });
+});
+
 describe("ticketWhereFilters", () => {
   const none = {
+    status: null,
     ticketType: null,
     propertyId: null,
     deviceType: null,
@@ -102,13 +139,19 @@ describe("ticketWhereFilters", () => {
     toExclusive: null,
   };
 
-  it("is empty when nothing is set", () => {
-    expect(ticketWhereFilters(none)).toEqual({});
+  it("carries only the default open-status clause when nothing else is set", () => {
+    expect(ticketWhereFilters(none)).toEqual({ status: { in: OPEN_STATUSES } });
+  });
+
+  it("drops the status clause entirely for ALL", () => {
+    const where = ticketWhereFilters({ ...none, status: ALL_STATUSES });
+    expect(where.status).toBeUndefined();
   });
 
   it("includes only the openedAt bounds that are set", () => {
     const from = new Date("2026-07-01T04:00:00Z");
     expect(ticketWhereFilters({ ...none, from })).toEqual({
+      status: { in: OPEN_STATUSES },
       openedAt: { gte: from },
     });
   });
@@ -118,12 +161,14 @@ describe("ticketWhereFilters", () => {
     const toExclusive = new Date("2026-08-01T04:00:00Z");
     const where = ticketWhereFilters({
       ...none,
+      status: TicketStatus.RESOLVED,
       ticketType: TicketType.MASS_OUTAGE,
       propertyId: "prop-1",
       from,
       toExclusive,
     });
     expect(where).toEqual({
+      status: TicketStatus.RESOLVED,
       ticketType: TicketType.MASS_OUTAGE,
       propertyId: "prop-1",
       openedAt: { gte: from, lt: toExclusive },
@@ -132,6 +177,7 @@ describe("ticketWhereFilters", () => {
 
   it("filters on the linked device's type", () => {
     expect(ticketWhereFilters({ ...none, deviceType: DeviceType.CAMERA })).toEqual({
+      status: { in: OPEN_STATUSES },
       device: { is: { type: DeviceType.CAMERA } },
     });
   });
@@ -150,9 +196,23 @@ describe("ticketWhereFilters", () => {
       deviceType: DeviceType.SWITCH,
     });
     expect(where).toEqual({
+      status: { in: OPEN_STATUSES },
       propertyId: "prop-1",
       device: { is: { type: DeviceType.SWITCH } },
     });
+  });
+
+  it("ALL still honours the other filters — it widens status only", () => {
+    const from = new Date("2026-07-01T04:00:00Z");
+    const where = ticketWhereFilters({
+      ...none,
+      status: ALL_STATUSES,
+      propertyId: "prop-1",
+      from,
+    });
+    expect(where.status).toBeUndefined();
+    expect(where.propertyId).toBe("prop-1");
+    expect(where.openedAt).toEqual({ gte: from });
   });
 });
 

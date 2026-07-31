@@ -11,9 +11,24 @@ import { parseDeviceType } from "./device-type";
 // Filters
 // ---------------------------------------------------------------------------
 
+/** The statuses the default (unfiltered) view shows — "still needs attention". */
+export const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];
+
+/**
+ * Sentinel for the "All" tab (Kyle 2026-08-01). Deliberately NOT a member of
+ * TicketStatus and not `null` either, because those two already mean different
+ * things here: `null` is "no status param supplied" and defaults to the open
+ * view. Without a third value there is no way to ask for every status, which is
+ * what an export-everything needs.
+ */
+export const ALL_STATUSES = "ALL" as const;
+
+export type TicketStatusFilter = TicketStatus | typeof ALL_STATUSES | null;
+
 export type TicketFilters = {
-  /** null = "not specified" — the page decides its own default (open tab). */
-  status: TicketStatus | null;
+  /** null = "not specified" → defaults to the open view. `"ALL"` = no status
+   * filter at all. See ticketStatusWhere. */
+  status: TicketStatusFilter;
   ticketType: TicketType | null;
   /** Not validated against the real Property table here (pure fn, no DB) — an
    * unknown id just matches zero rows, same posture as the existing assignee
@@ -40,7 +55,12 @@ export type TicketFilterParams = {
 };
 
 export function parseTicketFilters(params: TicketFilterParams): TicketFilters {
-  const status = params.status && params.status in TicketStatus ? (params.status as TicketStatus) : null;
+  const status: TicketStatusFilter =
+    params.status === ALL_STATUSES
+      ? ALL_STATUSES
+      : params.status && params.status in TicketStatus
+        ? (params.status as TicketStatus)
+        : null;
   const ticketType =
     params.ticketType && params.ticketType in TicketType ? (params.ticketType as TicketType) : null;
   const propertyId = params.propertyId ? params.propertyId : null;
@@ -56,17 +76,41 @@ export function parseTicketFilters(params: TicketFilterParams): TicketFilters {
 }
 
 /**
- * Builds the Prisma `where` fragment for the non-status filters (ticketType,
- * property, device type, date range). Status is deliberately excluded — the
- * page owns the "no status param means open tab" default and composes it itself.
+ * The status clause for one parsed filter value.
+ *
+ *  - `"ALL"`  → `undefined`, i.e. no status constraint. Prisma treats an
+ *               `undefined` field as "don't filter on this", which is exactly
+ *               what the All tab means.
+ *  - `null`   → the open view (OPEN + IN_PROGRESS), the default when no status
+ *               param is present.
+ *  - a status → that status alone.
+ */
+export function ticketStatusWhere(
+  status: TicketStatusFilter,
+): Prisma.TicketWhereInput["status"] {
+  if (status === ALL_STATUSES) return undefined;
+  if (status === null) return { in: OPEN_STATUSES };
+  return status;
+}
+
+/**
+ * Builds the whole Prisma `where` for a parsed filter set — status included.
+ *
+ * Status used to be excluded here so the page could own the "no param means
+ * open" default, which meant the page and the CSV route each carried their own
+ * copy of `filters.status ?? { in: OPEN_STATUSES }`. Adding a third status
+ * state ("All") to two independent copies is how an export silently stops
+ * matching the screen it was launched from, so the default now lives here, in
+ * one tested place, and both call sites spread this verbatim.
  */
 export function ticketWhereFilters(
   filters: Pick<
     TicketFilters,
-    "ticketType" | "propertyId" | "deviceType" | "from" | "toExclusive"
+    "status" | "ticketType" | "propertyId" | "deviceType" | "from" | "toExclusive"
   >,
 ): Prisma.TicketWhereInput {
   return {
+    status: ticketStatusWhere(filters.status),
     ...(filters.ticketType ? { ticketType: filters.ticketType } : {}),
     ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
     // `is:` on an optional to-one relation matches only rows that HAVE a device,

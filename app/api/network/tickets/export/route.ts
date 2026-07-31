@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { TicketStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canAccessNetwork } from "@/lib/rbac";
@@ -17,8 +16,6 @@ import { parseTicketFilters, ticketOrderBy, ticketWhereFilters } from "@/lib/net
 //
 // Node runtime: the export can be large and streams a plain string body.
 export const runtime = "nodejs";
-
-const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];
 
 /** Hard cap. Beyond this the answer is a report, not a spreadsheet download. */
 const MAX_ROWS = 10_000;
@@ -42,12 +39,12 @@ export async function GET(request: Request) {
   const { orderBy } = ticketOrderBy(sp.get("sort") ?? undefined, sp.get("dir") ?? undefined);
 
   const tickets = await db.ticket.findMany({
-    where: {
-      status: filters.status ?? { in: OPEN_STATUSES },
-      ...ticketWhereFilters(filters),
-    },
+    where: ticketWhereFilters(filters),
     orderBy,
-    take: MAX_ROWS,
+    // One row over the cap, purely to detect that the cap bit. Sliced off
+    // before writing — a truncated spreadsheet that doesn't say it's truncated
+    // is worse than no spreadsheet, because it gets totalled.
+    take: MAX_ROWS + 1,
     include: {
       property: { select: { shortCode: true, name: true } },
       device: { select: { name: true, type: true, consoleHostId: true } },
@@ -71,7 +68,8 @@ export async function GET(request: Request) {
     "Resolution notes",
   ];
 
-  const rows = tickets.map((t) => [
+  const truncated = tickets.length > MAX_ROWS;
+  const rows = tickets.slice(0, MAX_ROWS).map((t) => [
     t.ticketNumber,
     t.status,
     t.ticketType,
@@ -90,6 +88,16 @@ export async function GET(request: Request) {
     t.resolutionNotes,
   ]);
 
+  // A truncated file announces itself IN the file, as a final row. A response
+  // header would be invisible to the person who opens the spreadsheet, and they
+  // are the one at risk of totalling a partial column and believing the answer.
+  if (truncated) {
+    rows.push([
+      `TRUNCATED — export capped at ${MAX_ROWS} rows; more tickets match these filters. Narrow the date range and export again.`,
+      ...Array(header.length - 1).fill(""),
+    ]);
+  }
+
   // formatDateInET, not formatInET — the latter appends an " ET" suffix, which
   // is right in the UI and wrong in a filename.
   const today = formatDateInET(new Date(), "yyyy-MM-dd");
@@ -98,6 +106,9 @@ export async function GET(request: Request) {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="${csvFilename("network-tickets", today)}"`,
       "Cache-Control": "no-store",
+      // Machine-readable counterpart to the in-file row above, for anyone
+      // scripting against this endpoint rather than opening the file.
+      ...(truncated ? { "X-Export-Truncated": "true" } : {}),
     },
   });
 }
