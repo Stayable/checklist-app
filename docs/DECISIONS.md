@@ -941,6 +941,48 @@ Kate's DevSpec (`docs/superpowers/plans/2026-07-25-network-monitoring-ticketing.
 
 ---
 
+## ADR-027: Per-channel Teams routing, escalation notifications, 9 AM ET digest
+
+**Date:** 2026-08-01
+**Status:** Accepted
+**Decided by:** Kyle (webhooks + requirements), implemented same day
+**Amends:** ADR-026 §3 (Teams delivery) and §8 (escalation is display-only)
+
+### Context
+Kyle supplied nine Power Automate "Workflows" webhook URLs — one **General** channel plus one per property — and a notification model that the built system did not have:
+
+- **General** — the overview cards + status-by-property table every morning at **9 AM EST**, and a **realtime** post whenever a ticket **escalates**, notifying Gerardo (`gerardo@rentstayable.com`).
+- **Per property** — a post when a ticket is **created** and when it is **resolved**.
+
+Three gaps against what existed: delivery was hardcoded to one `TEAMS_WEBHOOK_URL`; escalation was explicitly display-only (ADR-026 §8) with no stored state to notify from; and there was no digest job at all.
+
+### Decisions
+
+1. **Webhook URLs live in env, keyed by routing target** — `TEAMS_WEBHOOK_URL_GENERAL` and `TEAMS_WEBHOOK_URL_<SHORTCODE>`. These URLs are **credentials**: the `sig=` query parameter is the only authentication, so anyone holding one can post to the channel as us. Same reasoning that moved the Spotipo keys out of `Property.spotipoApiKey` into env and closed open decision D6. Rejected a `Property.teamsWebhookUrl` column for exactly that reason.
+
+2. **The database stores a routing key, not a URL.** A queued `NotificationLog` row carries `target = "GENERAL" | "<CODE>"`; the URL is resolved from env at delivery time (`lib/network/teams-routing.ts`). `NotificationLog` is keep-forever, so storing the URL would put a live credential in every backup and query log of that table, permanently.
+
+3. **A property with no channel falls back to General, flagged `rerouted`** — never dropped. A misrouted post is visible and fixable; a dropped one leaves a property looking monitored while telling nobody it broke. Same principle as N4's `UNKNOWN`-not-`OFFLINE` device state. The legacy `TEAMS_WEBHOOK_URL` remains a fallback for **General only** — letting it catch property events would quietly funnel all eight properties into the old "Network Tickets (test)" channel and appear to work.
+
+4. **Escalation becomes a real event, via `Ticket.escalatedAt`** (migration `20260801120000_add_ticket_escalated_at`). Reverses ADR-026 §8's display-only stance for escalation specifically; the overnight tag stays display-only. Persistence is required because "has this already been announced?" is not derivable from `openedAt` — without it the 1-minute sweep would re-announce every escalated ticket every minute. The stamp is written conditionally on it still being `NULL`, making it the idempotency lock. **Claim-then-notify**: a crash between the two loses one notification, which is the correct failure direction — a missed post is recoverable from the dashboard, a duplicated 2 AM page erodes trust in the whole alerting rail.
+
+5. **Escalation notifies twice: Teams General *and* email.** A genuine Teams `@`-mention needs the Power Automate flow to construct a mention entity, and that flow is not visible to or verifiable from this codebase. Rather than ship a "tag" that may silently render as literal text, the post names the contact in plain text and an email to `NETWORK_ESCALATION_EMAIL` (default `gerardo@rentstayable.com`) is the notification we can stand behind. If the flow is later taught to mention, the email becomes redundant rather than wrong.
+
+6. **The digest cron runs hourly and gates on the ET hour**, rather than one daily UTC schedule. Vercel cron is UTC-only and `America/New_York` shifts twice a year: `0 13 * * *` is 9 AM in EDT but 8 AM in EST, and `0 14` is the reverse — no fixed UTC schedule delivers 9 AM ET year-round. 23 no-op invocations a day buys an exact time and keeps ADR-013's "everything in ET" discipline instead of excepting this one job. Idempotency is one digest per ET day, guarded on a digest row existing since the ET day start.
+
+7. **Dashboard aggregates extracted to `lib/network/overview.server.ts`**, shared by `/network` and the digest. Two copies of these queries would drift, and a digest that disagrees with the dashboard about how many tickets are open gives a reader no way to tell which is lying.
+
+8. **Escalation is routed to General, not the property channel** — by the time a ticket has sat unattended past the threshold, the property's own channel has already had its chance.
+
+### Consequences
+- Nine env vars to maintain per environment instead of one; `describeTeamsRouting` exists so "why is this property's channel quiet?" is answerable without reading env by hand.
+- `ESCALATION_THRESHOLD_HOURS = 4` is **still unconfirmed** by Kate/Christopher but now decides when a person is interrupted rather than how a badge renders. Confirming it matters more than it did under ADR-026.
+- **First deploy after the migration will announce a backlog**: `escalated_at` starts `NULL`, so every open ticket already past 4 hours is newly escalated at once. The sweep caps announcements at 5 per tick so that drains gradually instead of firing as one burst.
+- Threading (§Q25) is **still not solved** — the webhook returns no message id, so a resolution still posts as its own message rather than a reply. Per-property channels reduce the readability problem that request was about, but do not close it. Graph remains the only path to real threading and to T8 reply-ingestion.
+- ADR-026 §3's Graph seam is untouched and still the migration path.
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```
