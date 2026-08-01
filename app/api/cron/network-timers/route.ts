@@ -140,7 +140,7 @@ async function handle(req: Request) {
     escalation = await runEscalationSweep(new Date());
   } catch (err) {
     console.error("network-timers: escalation sweep failed", err);
-    escalation = { escalated: 0, remaining: 0, emailed: 0, emailFailed: 0, error: true };
+    escalation = { escalated: 0, remaining: 0, error: true };
   }
 
   // Deliver Teams notifications queued by the lifecycle transactions that just

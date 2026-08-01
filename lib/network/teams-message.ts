@@ -64,9 +64,8 @@ export interface EscalationMessageParams {
   thresholdHours: number;
   ticketNumber: string;
   ticketUrl: string;
-  /** Who to pull in. Rendered as text — see the @-mention note below. */
+  /** Who to pull in. Rendered as plain text — see the @-mention note below. */
   notifyName: string;
-  notifyEmail: string;
 }
 
 /**
@@ -74,10 +73,14 @@ export interface EscalationMessageParams {
  *
  * ON @-MENTIONS: a genuine Teams @-mention requires an `msteams` mention entity
  * in the Adaptive Card *and* a Power Automate flow that passes it through, and
- * that flow is not something this codebase can see or verify. So the escalation
- * contact is named in plain text here — visible and unambiguous — and the real
- * notification guarantee comes from the email the sweep also sends. Claiming a
- * tag that silently renders as literal text would be worse than not tagging.
+ * that flow is not something this codebase can see or verify. So the contact is
+ * named in plain text — visible and unambiguous. Claiming a tag that silently
+ * renders as literal text would be worse than not tagging. Making it a real
+ * mention is a flow-side change (Kyle, Monday).
+ *
+ * No email address is rendered. An earlier version printed one because the sweep
+ * also emailed; escalation is Teams-only now (Kyle, 2026-08-02), so an address in
+ * the post would imply a delivery path that does not exist.
  */
 export function buildEscalationMessage(params: EscalationMessageParams): string {
   const {
@@ -91,7 +94,6 @@ export function buildEscalationMessage(params: EscalationMessageParams): string 
     ticketNumber,
     ticketUrl,
     notifyName,
-    notifyEmail,
   } = params;
   return [
     "⚠️ Ticket Escalated",
@@ -103,7 +105,7 @@ export function buildEscalationMessage(params: EscalationMessageParams): string 
     `Open for: ${ageHours} h — past the ${thresholdHours} h escalation threshold`,
     `Ticket: ${ticketNumber}`,
     "",
-    `${notifyName} (${notifyEmail}) — please pick this up.`,
+    `${notifyName} — please pick this up.`,
     "",
     `[View Ticket] → ${ticketUrl}`,
   ].join("\n");

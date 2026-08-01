@@ -19,18 +19,22 @@ describe("buildEscalationMessage", () => {
     ticketNumber: "TKT-20260801-003",
     ticketUrl: "https://ops.rentstayable.com/network/tickets/abc",
     notifyName: "Gerardo",
-    notifyEmail: "gerardo@rentstayable.com",
   };
 
   it("identifies the property by name and short code", () => {
     expect(buildEscalationMessage(params)).toContain("Kissimmee West (KW)");
   });
 
-  it("names who should pick it up, with their address", () => {
+  it("names who should pick it up", () => {
     const msg = buildEscalationMessage(params);
     expect(msg).toContain("Gerardo");
-    expect(msg).toContain("gerardo@rentstayable.com");
     expect(msg).toContain("please pick this up");
+  });
+
+  it("renders NO email address — escalation is Teams-only", () => {
+    // Kyle 2026-08-02: no email for Gerardo. Printing an address would imply a
+    // delivery path that no longer exists.
+    expect(buildEscalationMessage(params)).not.toMatch(/@/);
   });
 
   it("states both the age and the threshold it passed", () => {

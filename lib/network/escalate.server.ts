@@ -4,7 +4,6 @@ import {
   TicketStatus,
 } from "@prisma/client";
 import { db } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
 import { formatInET } from "@/lib/datetime";
 import { ESCALATION_THRESHOLD_HOURS, escalationCutoff } from "./escalation";
 import { buildEscalationMessage } from "./teams-message";
@@ -16,31 +15,27 @@ import { GENERAL_TARGET, isAnyTeamsWebhookConfigured } from "./teams-routing";
 // -> and notify/tag Gerardo". Escalation was a computed badge until now; this
 // turns the threshold crossing into an event that fires exactly once per ticket.
 //
-// TWO CHANNELS, ON PURPOSE:
-//   * a Teams post to the GENERAL channel — where the daily digest also lands,
-//     so escalations sit alongside the portfolio view rather than in one
-//     property's channel where only that manager looks;
-//   * an email to the escalation contact — because the Power Automate webhook
-//     cannot be verified to render a real @-mention (see buildEscalationMessage).
-//     Kyle asked for Gerardo to be notified, and an email is a notification we
-//     can actually stand behind. If the flow is later taught to mention him, the
-//     email becomes redundant rather than wrong.
+// TEAMS ONLY — NO EMAIL (Kyle, 2026-08-02).
+//
+// An earlier version also emailed the escalation contact, on the reasoning that a
+// real Teams @-mention couldn't be verified from here so email was the delivery
+// we could stand behind. Kyle's call is that escalation stays in Teams: "do not
+// do email for gerardo". So this posts to the GENERAL channel and nothing else.
+// General rather than the property's own channel because by the time a ticket has
+// sat past the threshold, that property's channel has already had its chance.
+//
+// The post names the contact in plain text. Turning that into a real @-mention is
+// Kyle's Monday task and needs the Power Automate flow to construct a mention
+// entity — which is why the name is configurable here and why no code in this
+// file claims to have tagged anybody.
 //
 // Runs off the existing 1-minute network-timers cron, so worst-case latency to
 // an escalation post is ~1 minute after the 4-hour mark.
 
-/**
- * Who gets the escalation email. Overridable so this doesn't need a code change
- * when the on-call person changes; defaults to the address Kyle specified.
- */
-const DEFAULT_ESCALATION_EMAIL = "gerardo@rentstayable.com";
 const DEFAULT_ESCALATION_NAME = "Gerardo";
 
-function escalationContact(): { email: string; name: string } {
-  return {
-    email: process.env.NETWORK_ESCALATION_EMAIL?.trim() || DEFAULT_ESCALATION_EMAIL,
-    name: process.env.NETWORK_ESCALATION_NAME?.trim() || DEFAULT_ESCALATION_NAME,
-  };
+function escalationName(): string {
+  return process.env.NETWORK_ESCALATION_NAME?.trim() || DEFAULT_ESCALATION_NAME;
 }
 
 /**
@@ -59,8 +54,6 @@ export type EscalationSweepOutcome = {
   escalated: number;
   /** Open tickets past the threshold still awaiting announcement after this tick. */
   remaining: number;
-  emailed: number;
-  emailFailed: number;
 };
 
 function ticketUrl(ticketId: string): string {
@@ -103,11 +96,9 @@ export async function runEscalationSweep(now = new Date()): Promise<EscalationSw
     db.ticket.count({ where }),
   ]);
 
-  const contact = escalationContact();
+  const notifyName = escalationName();
   const queued = isAnyTeamsWebhookConfigured();
   let escalated = 0;
-  let emailed = 0;
-  let emailFailed = 0;
 
   for (const ticket of due) {
     const ageHours = Math.floor((now.getTime() - ticket.openedAt.getTime()) / 3_600_000);
@@ -121,8 +112,7 @@ export async function runEscalationSweep(now = new Date()): Promise<EscalationSw
       thresholdHours: ESCALATION_THRESHOLD_HOURS,
       ticketNumber: ticket.ticketNumber,
       ticketUrl: ticketUrl(ticket.id),
-      notifyName: contact.name,
-      notifyEmail: contact.email,
+      notifyName,
     });
     const title = `⚠️ Escalated: ${ticket.ticketNumber} — ${ticket.property.shortCode} open ${ageHours} h`;
 
@@ -156,32 +146,6 @@ export async function runEscalationSweep(now = new Date()): Promise<EscalationSw
           entityId: ticket.id,
         },
       });
-
-      // Sent inline rather than queued: Resend is a single fast call, this runs
-      // outside any transaction, and lib/email.ts never throws. Mirrors
-      // lib/notify.server.ts's post-commit send.
-      const mail = await sendEmail({
-        to: contact.email,
-        subject: title,
-        text: body,
-      });
-      if (mail.ok) emailed += 1;
-      else emailFailed += 1;
-
-      await db.notificationLog.create({
-        data: {
-          userId: null,
-          channel: NotificationChannel.EMAIL,
-          status: mail.ok ? NotificationStatus.SENT : NotificationStatus.FAILED,
-          error: mail.ok ? null : mail.error,
-          event: "network_ticket_escalated",
-          title,
-          body,
-          target: contact.email,
-          entityType: "ticket",
-          entityId: ticket.id,
-        },
-      });
     } catch (err) {
       // Leave whatever was already stamped stamped: re-announcing on the next
       // tick is worse than losing one notification, and the ticket is still
@@ -193,10 +157,5 @@ export async function runEscalationSweep(now = new Date()): Promise<EscalationSw
     }
   }
 
-  return {
-    escalated,
-    remaining: Math.max(0, totalDue - escalated),
-    emailed,
-    emailFailed,
-  };
+  return { escalated, remaining: Math.max(0, totalDue - escalated) };
 }
