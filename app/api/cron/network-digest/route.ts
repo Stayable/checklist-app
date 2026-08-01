@@ -7,6 +7,8 @@ import { buildDailyDigest, buildDailyDigestCard, digestTitle } from "@/lib/netwo
 import { resolveRange } from "@/lib/network/wifi-range";
 import { postTeamsCard } from "@/lib/network/teams-webhook";
 import { GENERAL_TARGET, resolveTeamsWebhook } from "@/lib/network/teams-routing";
+import { fetchPortfolioSummaries } from "@/lib/network/spotipo.server";
+import type { GuestLive } from "@/lib/network/digest";
 
 // 9 AM ET daily network digest → the General Teams channel (Kyle 2026-08-01).
 //
@@ -51,6 +53,42 @@ function authorized(req: Request): boolean {
   return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
+/**
+ * Live guests-online per property (Kyle 2026-08-01, "add realtime values").
+ *
+ * Returns `undefined` on any failure, which drops the guest column and fact from
+ * the digest entirely rather than filling it with zeros. A zero would read as
+ * "nobody is on the guest WiFi" — an alarming and wrong claim — where an absent
+ * column just means we didn't ask. The daily network status must not depend on a
+ * guest-WiFi vendor being up.
+ *
+ * `fetchPortfolioSummaries` already paces itself (serial, 350 ms apart,
+ * single-flighted, 10-minute cache) because parallel calls trip Spotipo's rate
+ * limit — see its header comment. Eight sites therefore cost ~3 s here.
+ */
+async function loadGuestsLive(): Promise<Record<string, GuestLive> | undefined> {
+  try {
+    const properties = await db.property.findMany({
+      where: { active: true },
+      select: { id: true, shortCode: true, spotipoSiteId: true, spotipoApiKey: true },
+      orderBy: { shortCode: "asc" },
+    });
+    const summaries = await fetchPortfolioSummaries(properties);
+    const out: Record<string, GuestLive> = {};
+    for (const s of summaries) {
+      out[s.propertyId] = {
+        onlineNow: s.onlineNow,
+        truncated: s.onlineTruncated,
+        configured: s.configured,
+      };
+    }
+    return out;
+  } catch (err) {
+    console.error("network-digest: guest figures unavailable, omitting them", err);
+    return undefined;
+  }
+}
+
 async function handle(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -84,6 +122,7 @@ async function handle(req: Request) {
 
   const range = resolveRange(DIGEST_RANGE, now);
   const overview = await loadNetworkOverview({ now, rangeFrom: range.from });
+  const guests = await loadGuestsLive();
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
   const title = digestTitle(now);
@@ -92,6 +131,7 @@ async function handle(req: Request) {
     now,
     rangeLabel: range.label,
     dashboardUrl: `${base}/network`,
+    guests,
   };
   // Text version is what gets stored and what a human reads in the log; the card
   // is what Teams renders. Both come from the same overview and the same cell

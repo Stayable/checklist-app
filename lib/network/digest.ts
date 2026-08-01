@@ -15,6 +15,21 @@ import type { NetworkOverview } from "./overview.server";
 // Type-only import of NetworkOverview — this file is safe to use anywhere,
 // despite the `.server` module it borrows the shape from.
 
+/**
+ * Live guest-WiFi figure for one property (Kyle 2026-08-01, "add realtime
+ * values"). Deliberately passed IN rather than loaded by the overview: the
+ * overview is a pure database read shared with the dashboard, and Spotipo is a
+ * rate-limited third party. Keeping it out here means the dashboard never grows
+ * a vendor dependency it doesn't need, and the digest degrades on its own.
+ */
+export type GuestLive = {
+  /** Guests seen in the last few minutes. null = unknown, NOT zero. */
+  onlineNow: number | null;
+  /** True when the page-walk stopped early, so the real figure is higher. */
+  truncated: boolean;
+  configured: boolean;
+};
+
 export type DigestParams = {
   overview: NetworkOverview;
   now: Date;
@@ -22,7 +37,44 @@ export type DigestParams = {
   rangeLabel: string;
   /** Absolute URL of the dashboard, so a reader can go from post to detail. */
   dashboardUrl: string;
+  /**
+   * Guests per property id. Omit entirely to drop the guest column and fact —
+   * which is what happens if Spotipo is down, so an outage costs the guest
+   * figures and nothing else.
+   */
+  guests?: Record<string, GuestLive>;
 };
+
+/**
+ * One property's guest cell. `—` covers all three not-a-number cases (no data,
+ * unconfigured, unreachable) because a chat table has no room to distinguish
+ * them, and every one of them means "don't read a zero here".
+ */
+function guestCell(guests: DigestParams["guests"], propertyId: string): string {
+  const g = guests?.[propertyId];
+  if (!g || !g.configured || g.onlineNow === null) return "—";
+  return `${g.onlineNow}${g.truncated ? "+" : ""}`;
+}
+
+/** Portfolio guest total, and whether any site is missing from it. */
+function guestTotals(params: DigestParams): { text: string; incomplete: boolean } | null {
+  const { guests, overview } = params;
+  if (!guests) return null;
+  let sum = 0;
+  let truncated = false;
+  let incomplete = false;
+  for (const p of overview.properties) {
+    const g = guests[p.id];
+    if (!g || !g.configured || g.onlineNow === null) {
+      incomplete = true;
+      continue;
+    }
+    sum += g.onlineNow;
+    truncated = truncated || g.truncated;
+  }
+  // A total that silently omits sites reads as the whole portfolio. Say so.
+  return { text: `${sum}${truncated ? "+" : ""}${incomplete ? " (partial)" : ""}`, incomplete };
+}
 
 export function digestTitle(now: Date): string {
   return `Network — daily status ${formatDateInET(now, "EEE d MMM yyyy")}`;
@@ -84,13 +136,14 @@ function showUnknownColumn(overview: NetworkOverview): boolean {
   return overview.properties.some((p) => p.unknown > 0);
 }
 
-function tableHeader(overview: NetworkOverview): string[] {
+function tableHeader(params: DigestParams): string[] {
   return [
     "",
     "Site",
     "Up",
     "Down",
-    ...(showUnknownColumn(overview) ? ["Unver."] : []),
+    ...(showUnknownColumn(params.overview) ? ["Unver."] : []),
+    ...(params.guests ? ["Guests"] : []),
     "Open",
     "Fixed",
   ];
@@ -104,7 +157,8 @@ function tableHeader(overview: NetworkOverview): string[] {
  * the total too, so one column answers both "how many are up" and "out of how
  * many" without spending a second column on it.
  */
-function tableRows(overview: NetworkOverview): string[][] {
+function tableRows(params: DigestParams): string[][] {
+  const { overview, guests } = params;
   const withUnknown = showUnknownColumn(overview);
   return rankedProperties(overview).map((p) => [
     healthGlyph(p),
@@ -114,6 +168,7 @@ function tableRows(overview: NetworkOverview): string[][] {
     p.total === 0 ? "none" : `${p.online}/${p.total}`,
     p.total === 0 ? "—" : String(p.offline),
     ...(withUnknown ? [p.total === 0 ? "—" : String(p.unknown)] : []),
+    ...(guests ? [guestCell(guests, p.id)] : []),
     String(p.open),
     String(p.resolved),
   ]);
@@ -124,17 +179,20 @@ function tableRows(overview: NetworkOverview): string[][] {
  * head to answer "how bad is it overall", which is the first question a digest
  * should answer.
  */
-function totalsRow(overview: NetworkOverview): string[] {
+function totalsRow(params: DigestParams): string[] {
+  const { overview } = params;
   const p = overview.properties;
   const sum = (pick: (r: (typeof p)[number]) => number) => p.reduce((n, r) => n + pick(r), 0);
-  const online = sum((r) => r.online);
-  const total = sum((r) => r.total);
+  const guestTotal = guestTotals(params);
   return [
     "",
     "All",
-    `${online}/${total}`,
+    `${sum((r) => r.online)}/${sum((r) => r.total)}`,
     String(sum((r) => r.offline)),
     ...(showUnknownColumn(overview) ? [String(sum((r) => r.unknown))] : []),
+    // Strip the "(partial)" suffix in the cell — it doesn't fit a table column
+    // and is stated in the Right-now facts instead.
+    ...(params.guests ? [guestTotal!.text.replace(" (partial)", "*")] : []),
     String(sum((r) => r.open)),
     String(sum((r) => r.resolved)),
   ];
@@ -154,12 +212,13 @@ function tableCaption(rangeLabel: string): string {
  * `digestTableCard` below instead. An earlier comment here claimed padding would
  * survive — that was a guess, and it was wrong.
  */
-function propertyTableText(overview: NetworkOverview, rangeLabel: string): string[] {
-  const header = tableHeader(overview);
-  const rows = tableRows(overview);
+function propertyTableText(params: DigestParams): string[] {
+  const { rangeLabel } = params;
+  const header = tableHeader(params);
+  const rows = tableRows(params);
   if (rows.length === 0) return [tableCaption(rangeLabel), "No active properties."];
 
-  const all = [header, ...rows, totalsRow(overview)];
+  const all = [header, ...rows, totalsRow(params)];
   const widths = header.map((_, i) => Math.max(...all.map((r) => [...(r[i] ?? "")].length)));
   const line = (cells: string[]) =>
     cells.map((c, i) => c.padEnd(widths[i]!)).join("  ").trimEnd();
@@ -174,7 +233,7 @@ function propertyTableText(overview: NetworkOverview, rangeLabel: string): strin
     rule,
     ...rows.map(line),
     rule,
-    line(totalsRow(overview)),
+    line(totalsRow(params)),
   ];
 }
 
@@ -187,8 +246,9 @@ function propertyTableText(overview: NetworkOverview, rangeLabel: string): strin
  * container itself, so it cannot drift, and it is one element instead of one per
  * property.
  */
-function digestTableCard(overview: NetworkOverview, rangeLabel: string): CardElement[] {
-  const rows = tableRows(overview);
+function digestTableCard(params: DigestParams): CardElement[] {
+  const { rangeLabel } = params;
+  const rows = tableRows(params);
   if (rows.length === 0) {
     return [
       { type: "TextBlock", text: tableCaption(rangeLabel), weight: "Bolder", wrap: true },
@@ -201,8 +261,8 @@ function digestTableCard(overview: NetworkOverview, rangeLabel: string): CardEle
     ];
   }
 
-  const header = tableHeader(overview);
-  const totals = totalsRow(overview);
+  const header = tableHeader(params);
+  const totals = totalsRow(params);
 
   return [
     { type: "TextBlock", text: tableCaption(rangeLabel), weight: "Bolder", wrap: true },
@@ -272,11 +332,14 @@ export function buildDailyDigest(params: DigestParams): string {
     );
   }
 
+  const guestTotal = guestTotals(params);
+
   lines.push(
     "Overview",
     `Devices up now: ${c.devicesTotal - c.devicesOffline - c.devicesUnknown} of ${c.devicesTotal}`,
     `Devices offline: ${c.devicesOffline}`,
     `Unverifiable (console unreachable): ${c.devicesUnknown}`,
+    ...(guestTotal ? [`Guests online now: ${guestTotal.text}`] : []),
     `Open tickets: ${c.openTickets}`,
     `Escalated: ${c.escalated}`,
     `Properties with issues: ${c.propertiesWithIssues}`,
@@ -295,7 +358,7 @@ export function buildDailyDigest(params: DigestParams): string {
     );
   }
 
-  lines.push(...propertyTableText(overview, rangeLabel), "");
+  lines.push(...propertyTableText(params), "");
   lines.push(...oldestOpenLines(overview), "");
   lines.push(`[Dashboard] → ${dashboardUrl}`);
 
@@ -343,6 +406,8 @@ export function buildDailyDigestCard(params: DigestParams): CardElement[] {
     ...extra,
   });
 
+  const guestTotal = guestTotals(params);
+
   elements.push(text(digestAsOf(now), { isSubtle: true, spacing: "None", size: "Small" }));
 
   if (c.devicesTotal === 0) {
@@ -367,6 +432,7 @@ export function buildDailyDigestCard(params: DigestParams): CardElement[] {
       },
       { title: "Devices offline", value: String(c.devicesOffline) },
       { title: "Unverifiable", value: String(c.devicesUnknown) },
+      ...(guestTotal ? [{ title: "Guests online", value: guestTotal.text }] : []),
       { title: "Open tickets", value: String(c.openTickets) },
       { title: "Escalated", value: String(c.escalated) },
       { title: "Properties with issues", value: String(c.propertiesWithIssues) },
@@ -393,7 +459,7 @@ export function buildDailyDigestCard(params: DigestParams): CardElement[] {
     );
   }
 
-  elements.push(...digestTableCard(overview, rangeLabel));
+  elements.push(...digestTableCard(params));
 
   const oldest = oldestOpenLines(overview);
   if (overview.openTicketList.length === 0) {

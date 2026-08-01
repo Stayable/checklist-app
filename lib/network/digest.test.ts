@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TicketStatus } from "@prisma/client";
-import { buildDailyDigest, buildDailyDigestCard, digestTitle } from "./digest";
+import { buildDailyDigest, buildDailyDigestCard, digestTitle, type GuestLive } from "./digest";
 import type {
   NetworkOpenTicket,
   NetworkOverview,
@@ -429,5 +429,109 @@ describe("buildDailyDigestCard", () => {
 
   it("links the dashboard as markdown, which a TextBlock does render", () => {
     expect(JSON.stringify(buildCard(overview()))).toContain(`[Dashboard](${DASHBOARD})`);
+  });
+});
+
+// ── Live guest figures (Kyle 2026-08-01, "add realtime values") ─────────────
+// Passed in rather than loaded by the overview, so the dashboard never grows a
+// Spotipo dependency and the digest degrades on its own.
+
+const guests = (m: Record<string, [number | null, boolean?, boolean?]>) =>
+  Object.fromEntries(
+    Object.entries(m).map(([id, [onlineNow, truncated = false, configured = true]]) => [
+      id,
+      { onlineNow, truncated, configured },
+    ]),
+  );
+
+const buildG = (o: NetworkOverview, g?: Record<string, GuestLive>) =>
+  buildDailyDigest({
+    overview: o,
+    now: new Date("2026-08-01T13:00:00Z"),
+    rangeLabel: "Last 30 days",
+    dashboardUrl: DASHBOARD,
+    guests: g,
+  });
+
+describe("buildDailyDigest — guests online", () => {
+  const sites = () =>
+    overview({
+      properties: [
+        property({ id: "a", shortCode: "LL", total: 118, offline: 13 }),
+        property({ id: "b", shortCode: "KW", total: 12 }),
+      ],
+    });
+
+  it("omits the column and the fact entirely when no guest data is supplied", () => {
+    const text = buildG(sites());
+    expect(text).not.toContain("Guests");
+  });
+
+  it("adds a Guests column and a portfolio total when data is supplied", () => {
+    const text = buildG(sites(), guests({ a: [22], b: [14] }));
+    expect(text).toContain("Guests");
+    expect(text).toContain("Guests online now: 36");
+    expect(text).toMatch(/LL\s+105\/118\s+13\s+22/);
+  });
+
+  it("shows a dash, never a zero, for a site that could not be read", () => {
+    // A 0 would claim nobody is on that guest network. "—" says we didn't get an
+    // answer, which is the truth and prompts a different reaction.
+    const text = buildG(sites(), guests({ a: [null], b: [14] }));
+    expect(text).toMatch(/LL\s+105\/118\s+13\s+—/);
+  });
+
+  it("shows a dash for an unconfigured site too", () => {
+    const text = buildG(sites(), guests({ a: [5, false, false], b: [14] }));
+    expect(text).toMatch(/LL\s+105\/118\s+13\s+—/);
+  });
+
+  it("marks the total partial when any site is missing from it", () => {
+    // A total that silently omits sites reads as the whole portfolio.
+    const text = buildG(sites(), guests({ a: [null], b: [14] }));
+    expect(text).toContain("Guests online now: 14 (partial)");
+  });
+
+  it("does not mark the total partial when every site reported", () => {
+    const text = buildG(sites(), guests({ a: [22], b: [14] }));
+    expect(text).toContain("Guests online now: 36");
+    expect(text).not.toContain("(partial)");
+  });
+
+  it("carries the '+' through when a site's page-walk was truncated", () => {
+    // The real figure is higher than counted; dropping the marker would state a
+    // precise number we know to be low.
+    const text = buildG(sites(), guests({ a: [22, true], b: [14] }));
+    expect(text).toContain("Guests online now: 36+");
+  });
+
+  it("adds the Guests column to the card too, in the right position", () => {
+    const cols = findColumnSet(
+      buildDailyDigestCard({
+        overview: sites(),
+        now: new Date("2026-08-01T13:00:00Z"),
+        rangeLabel: "Last 30 days",
+        dashboardUrl: DASHBOARD,
+        guests: guests({ a: [22], b: [14] }),
+      }),
+    )!;
+    // glyph · Site · Up · Down · Guests · Open · Fixed
+    expect(cols.columns).toHaveLength(7);
+    expect(cols.columns[4]!.items.map((i) => i.text)).toEqual(["Guests", "22", "14", "36"]);
+  });
+
+  it("puts Guests online in the card's Right-now facts, not the windowed ones", () => {
+    const els = buildDailyDigestCard({
+      overview: sites(),
+      now: new Date("2026-08-01T13:00:00Z"),
+      rangeLabel: "Last 30 days",
+      dashboardUrl: DASHBOARD,
+      guests: guests({ a: [22], b: [14] }),
+    }) as Card[];
+    const factSets = els.filter((e) => e.type === "FactSet") as unknown as {
+      facts: { title: string }[];
+    }[];
+    expect(factSets[0]!.facts.map((f) => f.title)).toContain("Guests online");
+    expect(factSets[1]!.facts.map((f) => f.title)).not.toContain("Guests online");
   });
 });
