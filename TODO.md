@@ -50,7 +50,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 | Track | Scope | Pri | State | Next phase |
 |---|---|---|---|---|
 | **A** | **Checklist App (StayCheck)** — the Connecteam replacement | **P0** | 🟢 Live in prod, ~60% of v1 | A6 (real content + geofences) |
-| **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live · **8 of 8 properties, 16 consoles, 596 devices** · lifecycle proven in prod | Kate's dashboard asks (date range, per-property breakdown, CSV) · §Q29 SA flap |
+| **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live · **8 of 8 properties, 16 consoles, 596 devices** · lifecycle proven in prod · **Teams notifications LAUNCHED 2026-08-02** (9 channels, escalation, 9 AM digest) | Watch the first 9 AM digest (Mon 3 Aug) · Gerardo @-mention (flow-side) · console filter · B3 hardening · §Q29 SA flap |
 | **C** | **Maintenance / Ticketing** (tenant + email desk) | P1 | 🔴 Nothing built, needs a spec | C0 (decide + spec) |
 | **D** | **Contractor Dispatch + WhatsApp + Scheduling** | P1 | ⏸ **PARKED 2026-07-30.** Shipped code stays live in prod (directory + jobs + match/rank + one-tap WhatsApp/call + signed job link) but no further work. The consent/invite rail (D8) stays unmerged on the branch | — parked; revisit at replan |
 | **E** | **Construction Progress / Scheduling** | P3 | ⛔ Concept, not decided | E0 (go / no-go) |
@@ -170,7 +170,7 @@ Schema (6 tables, 7 enums, `NETWORK_TECH` role) · pure helpers (event mapping, 
 | P2 | [ ] | Registry admin UI (promote the code constant to a `UnifiHost` table) — only needed when a non-developer must edit it |
 | P2 | [ ] | Verify Protect **camera-level** status (8 NVRs exist; none visible to this key yet) |
 
-## B2b — Kate's review requests (2026-07-28/29) ▶ **next build** · P1
+## B2b — Kate's review requests (2026-07-28/29) — ✅ **all shipped** · P1
 
 All pure DB work — no vendor dependency, no credentials needed.
 
