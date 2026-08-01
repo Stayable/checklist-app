@@ -11,18 +11,27 @@ import type {
 
 const DASHBOARD = "https://ops.rentstayable.com/network";
 
+/**
+ * `online` is DERIVED from total/offline/unknown unless given explicitly — an
+ * earlier version of this helper let a caller set total:12 offline:1 while online
+ * stayed 12, so the fixture described an impossible property and the assertions
+ * built on it were meaningless.
+ */
 function property(over: Partial<NetworkPropertyRow> = {}): NetworkPropertyRow {
+  const total = over.total ?? 12;
+  const offline = over.offline ?? 0;
+  const unknown = over.unknown ?? 0;
   return {
     id: "p1",
     shortCode: "KW",
     name: "Kissimmee West",
-    online: 12,
-    offline: 0,
-    unknown: 0,
-    total: 12,
     open: 0,
     resolved: 0,
     ...over,
+    total,
+    offline,
+    unknown,
+    online: over.online ?? Math.max(0, total - offline - unknown),
   };
 }
 
@@ -147,21 +156,84 @@ describe("buildDailyDigest — honesty about blind spots", () => {
 });
 
 describe("buildDailyDigest — status by property", () => {
+  const twoSites = () =>
+    overview({
+      properties: [
+        property({ shortCode: "KW", total: 12, offline: 1, open: 1, resolved: 5 }),
+        property({ id: "p2", shortCode: "OR", total: 92, offline: 46, open: 2, resolved: 9 }),
+      ],
+    });
+
   it("includes a row per property with its counts", () => {
-    const text = build(
-      overview({
-        properties: [
-          property({ shortCode: "KW", total: 12, offline: 1, unknown: 0, open: 1, resolved: 5 }),
-          property({ id: "p2", shortCode: "OR", total: 92, offline: 46, unknown: 0, open: 2, resolved: 9 }),
-        ],
-      }),
-    );
-    expect(text).toMatch(/KW\s+12\s+1\s+0\s+1\s+5/);
-    expect(text).toMatch(/OR\s+92\s+46\s+0\s+2\s+9/);
+    const text = build(twoSites());
+    expect(text).toMatch(/KW\s+11\/12\s+1\s+1\s+5/);
+    expect(text).toMatch(/OR\s+46\/92\s+46\s+2\s+9/);
   });
 
   it("labels the resolved column with the range so the number isn't ambiguous", () => {
     expect(build(overview())).toContain("Fixed = last 30 days");
+  });
+
+  it("totals the portfolio, so nobody has to add the column up by hand", () => {
+    const text = build(twoSites());
+    expect(text).toMatch(/All\s+57\/104\s+47\s+3\s+14/);
+  });
+
+  it("orders worst-first, not alphabetically — a digest is read in a hurry", () => {
+    const text = build(twoSites());
+    expect(text.indexOf("OR")).toBeLessThan(text.indexOf("KW"));
+  });
+
+  it("puts a property we are BLIND to above one with known-down devices", () => {
+    const text = build(
+      overview({
+        properties: [
+          property({ shortCode: "OR", total: 92, offline: 46 }),
+          property({ id: "p2", shortCode: "JN", total: 0 }),
+        ],
+      }),
+    );
+    // Being unable to see a site is worse than knowing 46 devices at another are
+    // down — the same rule that made unreachable devices UNKNOWN, not OFFLINE.
+    expect(text.indexOf("JN")).toBeLessThan(text.indexOf("OR"));
+  });
+
+  it("omits the Unverifiable column entirely when nothing is unverifiable", () => {
+    expect(build(overview())).not.toContain("Unver.");
+  });
+
+  it("adds the Unverifiable column as soon as any property has one", () => {
+    const text = build(overview({ properties: [property({ total: 12, unknown: 2 })] }));
+    expect(text).toContain("Unver.");
+  });
+});
+
+describe("buildDailyDigest — realtime framing", () => {
+  it("stamps when the figures were read, in ET", () => {
+    const text = build(overview());
+    expect(text).toContain("Live as of 1 Aug 9:00 AM ET");
+  });
+
+  it("says which figures are live and which are windowed", () => {
+    // Without this a reader scrolling back three days cannot tell whether they
+    // are looking at current state or history.
+    const text = build(overview());
+    expect(text).toContain("device status and open tickets are current");
+    expect(text).toContain("“Fixed” is a range");
+  });
+
+  it("reports devices UP as a ratio, not just an offline count", () => {
+    const text = build(
+      overview({ cards: { devicesTotal: 596, devicesOffline: 34, devicesUnknown: 0 } }),
+    );
+    expect(text).toContain("Devices up now: 562 of 596");
+  });
+
+  it("excludes unverifiable devices from the up count — they are not confirmed up", () => {
+    const text = build(
+      overview({ cards: { devicesTotal: 100, devicesOffline: 10, devicesUnknown: 5 } }),
+    );
+    expect(text).toContain("Devices up now: 85 of 100");
   });
 });
 
@@ -254,13 +326,41 @@ describe("buildDailyDigestCard", () => {
     }
   });
 
-  it("gives every column a header plus one cell per property, in order", () => {
+  it("gives every column a header, one cell per property, and a totals cell", () => {
     const cols = findColumnSet(buildCard(twoProps()))!;
+    // glyph · Site · Up · Down · Open · Fixed — no Unverifiable column, since
+    // neither fixture has unverifiable devices.
     expect(cols.columns).toHaveLength(6);
-    const site = cols.columns[0]!.items.map((i) => i.text);
-    expect(site).toEqual(["Site", "KW", "OR"]);
-    const offline = cols.columns[2]!.items.map((i) => i.text);
-    expect(offline).toEqual(["Off", "1", "46"]);
+    // Worst-first: OR (46 down) above KW (1 down), then the All row.
+    expect(cols.columns[1]!.items.map((i) => i.text)).toEqual(["Site", "OR", "KW", "All"]);
+    expect(cols.columns[3]!.items.map((i) => i.text)).toEqual(["Down", "46", "1", "47"]);
+  });
+
+  it("leads each row with a health glyph, so red rows are found before being read", () => {
+    const cols = findColumnSet(
+      buildCard(
+        overview({
+          properties: [
+            property({ shortCode: "KW", total: 12 }), // all healthy
+            property({ id: "p2", shortCode: "OR", total: 92, offline: 46 }), // down
+            property({ id: "p3", shortCode: "JN", total: 0 }), // blind
+            property({ id: "p4", shortCode: "SA", total: 40, unknown: 3 }), // unverifiable
+          ],
+        }),
+      ),
+    )!;
+    const glyphs = cols.columns[0]!.items.map((i) => i.text);
+    // Header cell is blank, then blind first, then down, then unverifiable, then healthy.
+    expect(glyphs).toEqual(["", "⚫", "🔴", "🟡", "🟢", ""]);
+  });
+
+  it("tints only the cells that represent a problem", () => {
+    const cols = findColumnSet(buildCard(twoProps()))!;
+    const down = cols.columns[3]!.items as unknown as Card[];
+    expect(down[1]!.color).toBe("Attention"); // 46 down
+    const fixed = cols.columns[5]!.items as unknown as Card[];
+    // "Fixed: 9" is good news and must NOT be red just because it is non-zero.
+    expect(fixed[1]!.color).toBeUndefined();
   });
 
   it("keeps every column the same length, so rows can't shear apart", () => {
@@ -295,13 +395,30 @@ describe("buildDailyDigestCard", () => {
     }
   });
 
-  it("carries the unmonitored warning as an Attention-coloured block", () => {
+  it("carries the unmonitored warning as an Attention-coloured block, before any figures", () => {
     const els = buildCard(overview({ cards: { devicesTotal: 0 } })) as Card[];
     const warn = els.find((e) => typeof e.text === "string" && String(e.text).includes("not an all-clear"));
     expect(warn).toBeDefined();
     expect(warn!.color).toBe("Attention");
-    // Still first, for the same reason as the text version.
-    expect(els.indexOf(warn!)).toBe(0);
+    // The invariant that matters is that it precedes every comforting zero, not
+    // that it is literally element 0 — the as-of stamp sits above it as a
+    // subtitle.
+    const firstFactSet = els.findIndex((e) => e.type === "FactSet");
+    expect(els.indexOf(warn!)).toBeLessThan(firstFactSet);
+  });
+
+  it("separates live figures from windowed ones with their own headings", () => {
+    const els = buildCard(overview()) as Card[];
+    const labels = els.filter((e) => e.type === "TextBlock").map((e) => String(e.text));
+    expect(labels).toContain("Right now");
+    expect(labels).toContain("Last 30 days");
+    // Live first: the ordering tells the reader which is which before they read
+    // a single label.
+    expect(labels.indexOf("Right now")).toBeLessThan(labels.indexOf("Last 30 days"));
+  });
+
+  it("stamps the reading time on the card too", () => {
+    expect(JSON.stringify(buildCard(overview()))).toContain("Live as of 1 Aug 9:00 AM ET");
   });
 
   it("survives a portfolio with no active properties", () => {
