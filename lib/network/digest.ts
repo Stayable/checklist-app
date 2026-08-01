@@ -107,6 +107,28 @@ function healthGlyph(p: NetworkOverview["properties"][number]): string {
   return "🟢";
 }
 
+/** Every glyph healthGlyph can emit. All render two columns wide. */
+const HEALTH_GLYPHS = ["⚫", "🔴", "🟡", "🟢"];
+
+/**
+ * Printable width, for padding the plain-text table.
+ *
+ * `[...s].length` counts an emoji as one code point, but a terminal or monospace
+ * log renders it two columns wide — so padding by code-point count leaves every
+ * row with a glyph one column short and the text table drifts. Only the four
+ * health glyphs need this treatment, so they are listed rather than guessed at
+ * with a Unicode range.
+ */
+function displayWidth(s: string): number {
+  let extra = 0;
+  for (const g of HEALTH_GLYPHS) if (s.includes(g)) extra += 1;
+  return [...s].length + extra;
+}
+
+function padTo(s: string, width: number): string {
+  return s + " ".repeat(Math.max(0, width - displayWidth(s)));
+}
+
 /**
  * Worst-first ordering. The dashboard sorts alphabetically, which is right for a
  * page you scan deliberately; a 9 AM digest is read in a hurry, so the rows that
@@ -138,7 +160,6 @@ function showUnknownColumn(overview: NetworkOverview): boolean {
 
 function tableHeader(params: DigestParams): string[] {
   return [
-    "",
     "Site",
     "Up",
     "Down",
@@ -161,8 +182,12 @@ function tableRows(params: DigestParams): string[][] {
   const { overview, guests } = params;
   const withUnknown = showUnknownColumn(overview);
   return rankedProperties(overview).map((p) => [
-    healthGlyph(p),
-    p.shortCode,
+    // Glyph and short code are ONE cell, never two columns. As separate columns
+    // they drifted apart vertically: an emoji TextBlock renders taller than a
+    // text one, so a column of emoji and a column of codes accumulate different
+    // heights and the dot stops lining up with its property (Kyle, 2026-08-01).
+    // Fusing them makes that impossible by construction.
+    `${healthGlyph(p)} ${p.shortCode}`,
     // A property with zero devices is a COVERAGE GAP, not a healthy one. Say so
     // rather than printing a bare 0 that reads like "nothing wrong here".
     p.total === 0 ? "none" : `${p.online}/${p.total}`,
@@ -185,7 +210,6 @@ function totalsRow(params: DigestParams): string[] {
   const sum = (pick: (r: (typeof p)[number]) => number) => p.reduce((n, r) => n + pick(r), 0);
   const guestTotal = guestTotals(params);
   return [
-    "",
     "All",
     `${sum((r) => r.online)}/${sum((r) => r.total)}`,
     String(sum((r) => r.offline)),
@@ -219,13 +243,11 @@ function propertyTableText(params: DigestParams): string[] {
   if (rows.length === 0) return [tableCaption(rangeLabel), "No active properties."];
 
   const all = [header, ...rows, totalsRow(params)];
-  const widths = header.map((_, i) => Math.max(...all.map((r) => [...(r[i] ?? "")].length)));
+  const widths = header.map((_, i) => Math.max(...all.map((r) => displayWidth(r[i] ?? ""))));
   const line = (cells: string[]) =>
-    cells.map((c, i) => c.padEnd(widths[i]!)).join("  ").trimEnd();
+    cells.map((c, i) => padTo(c, widths[i]!)).join("  ").trimEnd();
 
-  // The glyph column has no heading, so its rule is blank too — a lone "-"
-  // floating left of "Site" reads as a column that lost its name.
-  const rule = line(header.map((h, i) => (h === "" ? "" : "-".repeat(widths[i]!))));
+  const rule = line(header.map((_, i) => "-".repeat(widths[i]!)));
 
   return [
     tableCaption(rangeLabel),
@@ -238,13 +260,66 @@ function propertyTableText(params: DigestParams): string[] {
 }
 
 /**
- * The same table as an Adaptive Card ColumnSet, which renders genuinely aligned
- * regardless of font.
+ * Relative column widths, as Adaptive Card weights.
  *
- * Laid out COLUMN-major — one Column per field, each holding a stack of
- * TextBlocks — rather than one ColumnSet per row. Alignment then comes from the
- * container itself, so it cannot drift, and it is one element instead of one per
- * property.
+ * Fixed weights, NOT "auto". With row-major rendering each row is its own
+ * ColumnSet, and `auto` sizes every row independently from its own content — so
+ * "105/118" and "0" would produce different column boundaries and the table
+ * would look ragged. Identical weights on every row are what make the columns
+ * line up down the card.
+ *
+ * The Site column is widest because it carries the glyph plus the code.
+ */
+function columnWeight(heading: string): string {
+  if (heading === "Site") return "34";
+  if (heading === "Up") return "26";
+  return "20";
+}
+
+/** One table row as a ColumnSet. `tone` decides whether cells get emphasis. */
+function tableRowCard(
+  header: string[],
+  cells: string[],
+  opts: { head?: boolean; total?: boolean } = {},
+): CardElement {
+  return {
+    type: "ColumnSet",
+    separator: opts.total === true,
+    spacing: "Small",
+    columns: header.map((heading, col) => ({
+      type: "Column",
+      width: columnWeight(heading),
+      items: [
+        {
+          type: "TextBlock",
+          text: cells[col] ?? "",
+          wrap: false,
+          ...(opts.head === true ? { isSubtle: true, weight: "Bolder" } : {}),
+          ...(opts.total === true ? { weight: "Bolder" } : {}),
+          // Colour the cell, not the row: tinting only the number that is bad is
+          // what draws the eye to it, so "Down 13" is red while that same
+          // property's "Fixed 4" stays neutral.
+          ...(opts.head === true || opts.total === true
+            ? {}
+            : cellTone(heading, cells[col] ?? "")),
+        },
+      ],
+    })),
+  };
+}
+
+/**
+ * The table as Adaptive Card rows.
+ *
+ * Laid out ROW-major — one ColumnSet per property — after a column-major version
+ * shipped and visibly failed. Column-major put each field in its own vertical
+ * stack of TextBlocks, which only aligns if every cell in a row renders at the
+ * same height in every column. Emoji do not: they are taller than text, so the
+ * glyph column accumulated extra height and the dots slid out of line with their
+ * properties (Kyle, 2026-08-01). Making the ROW the container removes the
+ * assumption entirely — a tall cell makes its own row tall and nothing else
+ * moves. The glyph is also fused into the Site cell now, so those two can never
+ * separate regardless of layout.
  */
 function digestTableCard(params: DigestParams): CardElement[] {
   const { rangeLabel } = params;
@@ -262,40 +337,12 @@ function digestTableCard(params: DigestParams): CardElement[] {
   }
 
   const header = tableHeader(params);
-  const totals = totalsRow(params);
 
   return [
     { type: "TextBlock", text: tableCaption(rangeLabel), weight: "Bolder", wrap: true },
-    {
-      type: "ColumnSet",
-      separator: true,
-      columns: header.map((heading, col) => ({
-        type: "Column",
-        // Glyph and site stay intrinsic width so the numeric columns get the
-        // remaining space evenly and can be compared straight down.
-        width: col <= 1 ? "auto" : "stretch",
-        items: [
-          { type: "TextBlock", text: heading, weight: "Bolder", wrap: false, isSubtle: true },
-          ...rows.map((r) => ({
-            type: "TextBlock",
-            text: r[col]!,
-            wrap: false,
-            // Colour the cell, not the row: Adaptive Cards have no row concept,
-            // and tinting only the number that is bad is what draws the eye to
-            // it. Applied per column so "Down: 13" is red while that same
-            // property's "Fixed: 9" stays neutral.
-            ...cellTone(header[col]!, r[col]!),
-          })),
-          {
-            type: "TextBlock",
-            text: totals[col]!,
-            weight: "Bolder",
-            wrap: false,
-            separator: true,
-          },
-        ],
-      })),
-    },
+    tableRowCard(header, header, { head: true }),
+    ...rows.map((r) => tableRowCard(header, r)),
+    tableRowCard(header, totalsRow(params), { total: true }),
   ];
 }
 

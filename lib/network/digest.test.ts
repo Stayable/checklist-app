@@ -298,9 +298,16 @@ const buildCard = (o: NetworkOverview) =>
   });
 
 type Card = Record<string, unknown>;
-const findColumnSet = (els: Card[]) => els.find((e) => e.type === "ColumnSet") as
-  | { columns: { items: { text: string }[] }[] }
-  | undefined;
+type Row = { columns: { width: string; items: Card[] }[] };
+
+/**
+ * The table is ROW-major: one ColumnSet per row (header, each property, totals).
+ * A column-major version shipped first and visibly failed — emoji render taller
+ * than text, so a dedicated glyph column accumulated height and the dots slid out
+ * of line with their properties. These helpers read the row-major shape.
+ */
+const tableRowsOf = (els: Card[]) => els.filter((e) => e.type === "ColumnSet") as unknown as Row[];
+const cellsOf = (row: Row) => row.columns.map((c) => String(c.items[0]!.text ?? ""));
 
 describe("buildDailyDigestCard", () => {
   const twoProps = () =>
@@ -311,33 +318,43 @@ describe("buildDailyDigestCard", () => {
       ],
     });
 
-  it("renders the property table as a ColumnSet, not a text block", () => {
-    expect(findColumnSet(buildCard(twoProps()))).toBeDefined();
+  it("renders the table as ColumnSets, not a text block", () => {
+    // header + 2 properties + totals
+    expect(tableRowsOf(buildCard(twoProps()))).toHaveLength(4);
   });
 
   it("NEVER pads cells with runs of spaces — that is the bug this replaced", () => {
-    const cols = findColumnSet(buildCard(twoProps()))!;
-    for (const col of cols.columns) {
-      for (const item of col.items) {
-        expect(item.text).not.toMatch(/ {2,}/);
+    for (const row of tableRowsOf(buildCard(twoProps()))) {
+      for (const cell of cellsOf(row)) {
+        expect(cell).not.toMatch(/ {2,}/);
         // Nor a dashed rule row, which only exists to fake a border in text.
-        expect(item.text).not.toMatch(/^-{2,}$/);
+        expect(cell).not.toMatch(/^-{2,}$/);
       }
     }
   });
 
-  it("gives every column a header, one cell per property, and a totals cell", () => {
-    const cols = findColumnSet(buildCard(twoProps()))!;
-    // glyph · Site · Up · Down · Open · Fixed — no Unverifiable column, since
-    // neither fixture has unverifiable devices.
-    expect(cols.columns).toHaveLength(6);
-    // Worst-first: OR (46 down) above KW (1 down), then the All row.
-    expect(cols.columns[1]!.items.map((i) => i.text)).toEqual(["Site", "OR", "KW", "All"]);
-    expect(cols.columns[3]!.items.map((i) => i.text)).toEqual(["Down", "46", "1", "47"]);
+  it("gives every row identical column widths, so the columns line up", () => {
+    // The actual alignment guarantee. Fixed weights, never "auto" — auto sizes
+    // each row from its own content, so "105/118" and "0" would land on
+    // different boundaries and the table would read ragged.
+    const rows = tableRowsOf(buildCard(twoProps()));
+    const shapes = new Set(rows.map((r) => r.columns.map((c) => c.width).join(",")));
+    expect(shapes.size).toBe(1);
+    expect([...shapes][0]).not.toContain("auto");
   });
 
-  it("leads each row with a health glyph, so red rows are found before being read", () => {
-    const cols = findColumnSet(
+  it("lays out header, properties worst-first, then totals", () => {
+    const rows = tableRowsOf(buildCard(twoProps()));
+    // Site · Up · Down · Open · Fixed — no Unverifiable column, since neither
+    // fixture has unverifiable devices, and no separate glyph column.
+    expect(cellsOf(rows[0]!)).toEqual(["Site", "Up", "Down", "Open", "Fixed"]);
+    expect(cellsOf(rows[1]!)[0]).toBe("🔴 OR"); // 46 down, so first
+    expect(cellsOf(rows[2]!)[0]).toBe("🔴 KW");
+    expect(cellsOf(rows[3]!)).toEqual(["All", "57/104", "47", "3", "14"]);
+  });
+
+  it("fuses the glyph into the Site cell so it cannot drift away from it", () => {
+    const rows = tableRowsOf(
       buildCard(
         overview({
           properties: [
@@ -348,25 +365,41 @@ describe("buildDailyDigestCard", () => {
           ],
         }),
       ),
-    )!;
-    const glyphs = cols.columns[0]!.items.map((i) => i.text);
-    // Header cell is blank, then blind first, then down, then unverifiable, then healthy.
-    expect(glyphs).toEqual(["", "⚫", "🔴", "🟡", "🟢", ""]);
+    );
+    // Blind first, then down, then unverifiable, then healthy.
+    expect(rows.slice(1, 5).map((r) => cellsOf(r)[0])).toEqual([
+      "⚫ JN",
+      "🔴 OR",
+      "🟡 SA",
+      "🟢 KW",
+    ]);
+  });
+
+  it("puts each glyph in the SAME cell as its code, never a separate column", () => {
+    // The regression this replaced: a lone glyph column drifting vertically.
+    for (const row of tableRowsOf(buildCard(twoProps()))) {
+      const cells = cellsOf(row);
+      for (const [i, cell] of cells.entries()) {
+        const isGlyph = /[⚫🔴🟡🟢]/u.test(cell);
+        if (isGlyph) {
+          expect(i).toBe(0); // only ever the Site cell
+          expect(cell).toMatch(/^[⚫🔴🟡🟢] \w+$/u); // glyph AND code together
+        }
+      }
+    }
   });
 
   it("tints only the cells that represent a problem", () => {
-    const cols = findColumnSet(buildCard(twoProps()))!;
-    const down = cols.columns[3]!.items as unknown as Card[];
-    expect(down[1]!.color).toBe("Attention"); // 46 down
-    const fixed = cols.columns[5]!.items as unknown as Card[];
-    // "Fixed: 9" is good news and must NOT be red just because it is non-zero.
-    expect(fixed[1]!.color).toBeUndefined();
+    const rows = tableRowsOf(buildCard(twoProps()));
+    const or = rows[1]!.columns.map((c) => c.items[0]!);
+    expect(or[2]!.color).toBe("Attention"); // Down = 46
+    // "Fixed 9" is good news and must NOT be red just because it is non-zero.
+    expect(or[4]!.color).toBeUndefined();
   });
 
-  it("keeps every column the same length, so rows can't shear apart", () => {
-    const cols = findColumnSet(buildCard(twoProps()))!;
-    const lengths = new Set(cols.columns.map((c) => c.items.length));
-    expect(lengths.size).toBe(1);
+  it("keeps every row the same width, so nothing can shear", () => {
+    const rows = tableRowsOf(buildCard(twoProps()));
+    expect(new Set(rows.map((r) => r.columns.length)).size).toBe(1);
   });
 
   it("puts the overview numbers in a FactSet", () => {
@@ -388,10 +421,9 @@ describe("buildDailyDigestCard", () => {
     // that says they still do. A card that disagrees with the logged body would
     // make the audit trail useless.
     const o = twoProps();
-    const cols = findColumnSet(buildCard(o))!;
     const text = build(o);
-    for (const col of cols.columns) {
-      for (const cell of col.items.slice(1)) expect(text).toContain(cell.text);
+    for (const row of tableRowsOf(buildCard(o))) {
+      for (const cell of cellsOf(row)) expect(text).toContain(cell);
     }
   });
 
@@ -423,7 +455,7 @@ describe("buildDailyDigestCard", () => {
 
   it("survives a portfolio with no active properties", () => {
     const els = buildCard(overview({ properties: [] }));
-    expect(findColumnSet(els)).toBeUndefined();
+    expect(tableRowsOf(els)).toHaveLength(0);
     expect(JSON.stringify(els)).toContain("No active properties");
   });
 
@@ -506,7 +538,7 @@ describe("buildDailyDigest — guests online", () => {
   });
 
   it("adds the Guests column to the card too, in the right position", () => {
-    const cols = findColumnSet(
+    const rows = tableRowsOf(
       buildDailyDigestCard({
         overview: sites(),
         now: new Date("2026-08-01T13:00:00Z"),
@@ -514,10 +546,11 @@ describe("buildDailyDigest — guests online", () => {
         dashboardUrl: DASHBOARD,
         guests: guests({ a: [22], b: [14] }),
       }),
-    )!;
-    // glyph · Site · Up · Down · Guests · Open · Fixed
-    expect(cols.columns).toHaveLength(7);
-    expect(cols.columns[4]!.items.map((i) => i.text)).toEqual(["Guests", "22", "14", "36"]);
+    );
+    // Site · Up · Down · Guests · Open · Fixed
+    expect(cellsOf(rows[0]!)).toEqual(["Site", "Up", "Down", "Guests", "Open", "Fixed"]);
+    // LL is worst (13 down) so it leads; then KW; then the All row.
+    expect(rows.slice(1).map((r) => cellsOf(r)[3])).toEqual(["22", "14", "36"]);
   });
 
   it("puts Guests online in the card's Right-now facts, not the windowed ones", () => {
