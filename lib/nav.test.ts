@@ -21,8 +21,6 @@ describe("navItemsForRole", () => {
       "/dashboard",
       "/review",
       "/issues",
-      "/contractors",
-      "/dispatch",
       "/rules",
       "/templates",
       "/completed",
@@ -39,8 +37,6 @@ describe("navItemsForRole", () => {
       "/dashboard",
       "/review",
       "/issues",
-      "/contractors",
-      "/dispatch",
       "/rules",
       "/templates",
       "/completed",
@@ -60,8 +56,6 @@ describe("navItemsForRole", () => {
       "/dashboard",
       "/review",
       "/issues",
-      "/contractors",
-      "/dispatch",
       "/rules",
       "/templates",
       "/completed",
@@ -147,11 +141,10 @@ describe("shouldHideShell", () => {
     }
   });
 
-  it("hides the shell on the public contractor job link", () => {
-    expect(shouldHideShell("/j/some.signed.token")).toBe(true);
-    // /dispatch is the internal surface and must KEEP the shell.
-    expect(shouldHideShell("/dispatch")).toBe(false);
-    expect(shouldHideShell("/dispatch/abc-123")).toBe(false);
+  // Track D's public /j job link was the only other standalone prefix; it went
+  // out with the contractor rail (ADR-028), so /j is now an ordinary 404.
+  it("no longer treats /j as standalone", () => {
+    expect(shouldHideShell("/j/some.signed.token")).toBe(false);
   });
 
   it("shows on app routes", () => {

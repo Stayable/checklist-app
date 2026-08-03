@@ -11,8 +11,6 @@ const MAIN_MANAGER: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", group: "main" },
   { href: "/review", label: "Review", group: "main" },
   { href: "/issues", label: "Issues", group: "main" },
-  { href: "/contractors", label: "Contractors", group: "main" },
-  { href: "/dispatch", label: "Dispatch", group: "main" },
   { href: "/rules", label: "Rules", group: "main" },
   { href: "/templates", label: "Templates", group: "main" },
   { href: "/completed", label: "Completed", group: "main" },
@@ -58,10 +56,6 @@ export const SHELL_HIDE_PREFIXES = [
   "/ios-spike",
   "/photo-test",
   "/checklists",
-  // Public, no-account contractor job view (T4). Standalone by design: a
-  // contractor has no session, so a shell with nav and a property picker would
-  // be both broken and confusing.
-  "/j",
 ];
 
 // Routes under /checklists that render with the shell (management surfaces).

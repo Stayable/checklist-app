@@ -2,8 +2,9 @@
 // Phase 1 (Wed): users, properties, user_properties (ARCHITECTURE §4.1).
 // Phase 2 (Week 2): rooms, checklist_templates, questions, recurring_rules,
 // checklist_instances, responses, photos, issues, audit_log, notification_log.
-// Contractor + quick-task tables (ADR-012) are intentionally deferred to
-// Phase 9/10 — not modeled here.
+// Quick-task tables (ADR-012) are intentionally deferred — not modeled here.
+// Contractor / dispatch tables were dropped 2026-08-03 (ADR-028): Track D moved
+// out of this codebase, so nothing here models contractors any more.
 
 generator client {
   provider = "prisma-client-js"
@@ -124,32 +125,6 @@ enum NotificationStatus {
   SKIPPED
 }
 
-// Contractor-job lifecycle (T2). Deliberately shorter than the future unified
-// Ticket lifecycle: no TRIAGED/BLOCKED, because a dispatcher creates these
-// already-triaged and the MVP has no blocked state to act on.
-enum JobStatus {
-  OPEN // created, not yet dispatched
-  DISPATCHED // contractor assigned + message sent (T4)
-  IN_PROGRESS // contractor working
-  COMPLETED
-  CANCELLED // requires a completionNote reason
-}
-
-// Contractor trades (Component II — Contractor Dispatch, ADR-025). Plumbing +
-// electrical are the most common emergencies (Kyle 2026-07-08); the rest cover
-// the maintenance/dispatch brief's skill list.
-enum Trade {
-  PLUMBING
-  ELECTRICAL
-  HVAC
-  APPLIANCE
-  GENERAL
-  COSMETIC
-  LANDSCAPING
-  PEST_CONTROL
-  ROOFING
-}
-
 // ---------------------------------------------------------------------------
 // NETWORK section enums (network monitoring + IT ticketing).
 // DevSpec_NetworkMonitoringTicketing_RISE8_072426. Ported onto the platform
@@ -233,11 +208,6 @@ model User {
   notifications     NotificationLog[]
   createdRules      RecurringRule[]     @relation("RuleCreatedBy")
   loginOtps         LoginOtp[]
-  // A staff member can ALSO be a contractor (e.g. Jesús Pérez is both a
-  // scheduler and an electrical contractor). One optional link — not mutually
-  // exclusive with their staff role (Component II, ADR-025).
-  contractor        Contractor?         @relation("UserContractor")
-  createdContractorJobs ContractorJob[]  @relation("ContractorJobCreatedBy")
 
   @@map("users")
 }
@@ -269,8 +239,6 @@ model Property {
   devices            Device[]
   networkEvents      NetworkEvent[]
   tickets            Ticket[]
-  contractors        ContractorProperty[]
-  contractorJobs     ContractorJob[]
 
   @@map("properties")
 }
@@ -520,13 +488,14 @@ model Response {
 model Photo {
   id             String         @id @default(uuid()) @db.Uuid
   // A photo hangs off EXACTLY ONE owner: a checklist Response (capture-at-fill)
-  // OR an Issue (resolution evidence) OR a ContractorJob (T2 problem photos).
-  // All three FKs are nullable; the app enforces exactly-one-set (submit action
-  // / closeIssue / createContractorJob). No DB CHECK — Prisma can't express it;
-  // every write path is server-only and validated.
+  // OR an Issue (resolution evidence). Both FKs are nullable; the app enforces
+  // exactly-one-set (submit action / closeIssue). No DB CHECK — Prisma can't
+  // express it; every write path is server-only and validated.
+  //
+  // A third owner (ContractorJob) existed until 2026-08-03 and was dropped with
+  // Track D (ADR-028). If a future owner is added, keep the exactly-one rule.
   responseId      String?       @map("response_id") @db.Uuid
   issueId         String?       @map("issue_id") @db.Uuid
-  contractorJobId String?       @map("contractor_job_id") @db.Uuid
   r2Key          String         @map("r2_key")
   fileSizeBytes  Int            @map("file_size_bytes")
   exifTimestamp  DateTime?      @map("exif_timestamp") @db.Timestamptz
@@ -538,11 +507,9 @@ model Photo {
 
   response      Response?      @relation(fields: [responseId], references: [id], onDelete: Cascade)
   issue         Issue?         @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  contractorJob ContractorJob? @relation(fields: [contractorJobId], references: [id], onDelete: Cascade)
 
   @@index([responseId])
   @@index([issueId])
-  @@index([contractorJobId])
   // §4.2 wants a PARTIAL index on non-VERIFIED rows; Prisma can't express a
   // WHERE on @@index, so this is a plain index for now. Convert to partial via
   // a dedicated raw-SQL migration if/when the anomaly query needs it (table is
@@ -601,9 +568,6 @@ model SlaDefault {
 }
 
 // ---------------------------------------------------------------------------
-// NETWORK section + Contractor directory. Merged 2026-07-28: the NETWORK
-// models came from main, the Contractor models from the Component II branch;
-// they are independent and both are kept.
 // NETWORK section — device monitoring + IT ticketing (kept fully separate from
 // the Issue/maintenance pipeline). DevSpec §3–6. Property is REUSED (no second
 // properties table); spec `rise8_id` = Property.propertyId.
@@ -760,105 +724,6 @@ model NetworkJob {
 
   @@index([status, runAt])
   @@map("network_jobs")
-}
-
-// ---------------------------------------------------------------------------
-// Contractor directory (Component II — Contractor Dispatch MVP, ADR-025)
-// Layer 0 of the dispatch design: a directory of trades + coverage + channel so
-// Gerardo/Jesus can surface the right contractor per property+trade, contracted-
-// first. No contractor accounts — dispatch is via WhatsApp/phone (T4). A lean
-// contractor-job record + WhatsApp dispatch build on top of this (T2/T4); it all
-// migrates into the unified Ticket model in Phase II.1.
-// ---------------------------------------------------------------------------
-
-model Contractor {
-  id         String  @id @default(uuid()) @db.Uuid
-  name       String
-  company    String?
-  trades     Trade[]
-  // Contractors use WhatsApp ONLY (Kyle 2026-07-08); phone is the emergency
-  // first-touch for contracted contractors. No SMS — they don't use it.
-  whatsapp   String?
-  phone      String?
-  // Contractors report in Spanish; back-office reads English (dispatch brief §4.2).
-  language   Locale  @default(es)
-  // `contracted` = direct hire / under contract → called first in an emergency
-  // (currently only Orlando Torres). `onCall` = currently available for urgent
-  // dispatch. `active` = soft-delete / still in the directory.
-  contracted Boolean @default(false)
-  onCall     Boolean @default(true)
-  active     Boolean @default(true)
-  notes      String?
-  // Optional link to a staff User who is ALSO a contractor (Jesús Pérez). Unique
-  // — one User maps to at most one Contractor row. SetNull so deleting the staff
-  // account leaves the contractor directory entry intact.
-  userId     String? @unique @map("user_id") @db.Uuid
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  user       User?                @relation("UserContractor", fields: [userId], references: [id], onDelete: SetNull)
-  properties ContractorProperty[]
-  jobs       ContractorJob[]
-
-  @@index([active])
-  @@map("contractors")
-}
-
-// Which properties a contractor covers (many-to-many; mirrors user_properties).
-model ContractorProperty {
-  contractorId String @map("contractor_id") @db.Uuid
-  propertyId   String @map("property_id") @db.Uuid
-
-  contractor Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
-  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@id([contractorId, propertyId])
-  @@index([propertyId])
-  @@map("contractor_properties")
-}
-
-// A dispatchable contractor job (T2 — Contractor Dispatch MVP). Deliberately a
-// STRICT SUBSET of the future unified Ticket (Phase II.1): every column here
-// exists there too, so folding this table into Ticket is additive (rename +
-// add kind/source/lifecycle columns) rather than a data reshape.
-//
-// Not modeled on purpose (YAGNI until the unified model is specced): SLA,
-// scheduling/calendar (T6), cost capture, assignment history, and the two-way
-// Accept/Decline/ETA states that belong to the WhatsApp Business API layer.
-model ContractorJob {
-  id     String @id @default(uuid()) @db.Uuid
-  propertyId String @map("property_id") @db.Uuid
-  // Free text, not a Room FK: rooms are only seeded for Lakeland (no PMS in
-  // v1), jobs are portfolio-wide, and a dispatch message just needs "Rm 212" /
-  // "lobby" / "roof". Matches S1's free-text-room direction.
-  roomLabel  String? @map("room_label")
-  trade      Trade
-  problem    String
-  // Boolean, not a priority enum: the emergency-classification rule is still
-  // pending from Gerardo, so this is a manual dispatcher toggle. Sorts the job
-  // to the top of the queue and is what the later emergency-alert task fires on.
-  urgent     Boolean   @default(false)
-  status     JobStatus @default(OPEN)
-  // Set at dispatch (T3 match -> T4 send). Null while the job is unassigned.
-  contractorId    String? @map("contractor_id") @db.Uuid
-  createdByUserId String  @map("created_by_user_id") @db.Uuid
-  // Required when moving to COMPLETED or CANCELLED (enforced in the action).
-  completionNote  String? @map("completion_note")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  property   Property    @relation(fields: [propertyId], references: [id])
-  contractor Contractor? @relation(fields: [contractorId], references: [id])
-  createdBy  User        @relation("ContractorJobCreatedBy", fields: [createdByUserId], references: [id])
-  photos     Photo[]
-
-  @@index([propertyId, status])
-  @@index([contractorId])
-  @@index([urgent, status])
-  @@map("contractor_jobs")
 }
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,7 @@ import { TicketType } from "@prisma/client";
 import { DEVICE_TYPE_OPTIONS } from "@/lib/network/device-type";
 
 // Type/property/date-range filters for /network/tickets. URL-driven (same
-// approach as DispatchFilters / CompletedFilters / ReportFilters) so a
+// approach as CompletedFilters / ReportFilters) so a
 // filtered view is shareable and survives a refresh. The status tabs above
 // this component stay Link-based (pre-existing behavior) — this covers the
 // filters added alongside them. Every setParam call only ever touches its own

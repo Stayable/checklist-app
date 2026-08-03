@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { InstanceStatus, IssueStatus, JobStatus, QuestionType, Role } from "@prisma/client";
+import { InstanceStatus, IssueStatus, QuestionType, Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isManagerOrAbove } from "@/lib/rbac";
-import { JOB_PHOTO_MAX } from "@/lib/contractor-jobs";
 import {
   presignUpload,
   presignDownload,
   photoTestKey,
   responsePhotoKey,
   issuePhotoKey,
-  contractorJobPhotoKey,
 } from "@/lib/r2";
 
 // POST /api/photos/presign — mint presigned PUTs (and matching GETs) for
@@ -25,11 +23,6 @@ import {
 //     be fillable, and the question must be a PHOTO question on its template.
 //   - "issue": resolution-evidence upload at close — caller must be a manager+
 //     of the issue's property and the issue must still be open.
-//   - "contractorJob": problem photos on a dispatch job (T2) — caller must be a
-//     manager+ of the job's property and the job must not be finished. Keyed by
-//     an EXISTING job id, so the job is created first and photos are attached
-//     from its detail page (same shape as "issue"); nothing is ever presigned
-//     against an id the server hasn't already vouched for.
 
 const MAX_BATCH = 10; // hard ceiling; per-question photoMax also applies
 const ISSUE_PHOTO_MAX = 5; // resolution evidence cap
@@ -47,28 +40,7 @@ const bodySchema = z.discriminatedUnion("scope", [
     issueId: z.string().uuid(),
     count: z.number().int().min(1).max(ISSUE_PHOTO_MAX),
   }),
-  z.object({
-    scope: z.literal("contractorJob"),
-    jobId: z.string().uuid(),
-    count: z.number().int().min(1).max(JOB_PHOTO_MAX),
-  }),
 ]);
-
-/** Manager+ AND (portfolio role OR explicitly assigned to this property). */
-async function canManageProperty(
-  role: Role,
-  userId: string,
-  propertyId: string,
-): Promise<boolean> {
-  if (!isManagerOrAbove(role)) return false;
-  if (role === Role.CORPORATE || role === Role.ADMIN) return true;
-  return (
-    (await db.userProperty.findUnique({
-      where: { userId_propertyId: { userId, propertyId } },
-      select: { userId: true },
-    })) !== null
-  );
-}
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -120,31 +92,6 @@ export async function POST(req: Request) {
     const uploads = await Promise.all(
       Array.from({ length: body.count }, async () => {
         const key = issuePhotoKey(body.issueId);
-        return { key, uploadUrl: await presignUpload(key, "image/jpeg") };
-      }),
-    );
-    return NextResponse.json({ uploads });
-  }
-
-  if (body.scope === "contractorJob") {
-    const job = await db.contractorJob.findUnique({
-      where: { id: body.jobId },
-      select: { status: true, propertyId: true },
-    });
-    if (!job) return NextResponse.json({ error: "not found" }, { status: 404 });
-
-    if (!(await canManageProperty(session.user.role, session.user.id, job.propertyId))) {
-      return NextResponse.json({ error: "forbidden" }, { status: 403 });
-    }
-
-    // A finished job is a record, not a work item — no new evidence goes on it.
-    if (job.status === JobStatus.COMPLETED || job.status === JobStatus.CANCELLED) {
-      return NextResponse.json({ error: "job closed" }, { status: 409 });
-    }
-
-    const uploads = await Promise.all(
-      Array.from({ length: body.count }, async () => {
-        const key = contractorJobPhotoKey(body.jobId);
         return { key, uploadUrl: await presignUpload(key, "image/jpeg") };
       }),
     );

@@ -1,4 +1,4 @@
-import { InstanceStatus, IssuePriority, PrismaClient, Role, RoomStatus, Trade } from "@prisma/client";
+import { InstanceStatus, IssuePriority, PrismaClient, Role, RoomStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { TEMPLATES } from "./templates";
 import { etDateOnly, etYYYYMMDD } from "../lib/datetime";
@@ -300,45 +300,6 @@ async function seedDemoData(passwordHash: string) {
           questionId: q.id,
           answer: answerFor(q.type, spec.fail) as object,
         })),
-    });
-  }
-  // Contractor directory (Component II — Contractor Dispatch MVP, ADR-025).
-  // Roster confirmed by Kyle 2026-07-08. Contact numbers are PLACEHOLDERS, so
-  // this sits in the DEMO-gated path (merge decision 2026-07-28): the default
-  // seed must leave the production baseline clean, and real contractor numbers
-  // are PII to be entered through the /contractors UI, not committed here.
-  // Idempotent: keyed by name.
-  console.log("Seeding contractor directory (placeholder contacts)…");
-  const allProps = await db.property.findMany({ select: { id: true } });
-  const allPropIds = allProps.map((p) => p.id);
-  const CONTRACTORS: {
-    name: string;
-    trades: Trade[];
-    contracted: boolean;
-    whatsapp?: string;
-    phone?: string;
-    note?: string;
-  }[] = [
-    { name: "Orlando Torres", trades: [Trade.PLUMBING], contracted: true, phone: "+1 555 000 0001", note: "Direct hire — call first in a plumbing emergency." },
-    { name: "Arlis Velázquez", trades: [Trade.PLUMBING], contracted: false, whatsapp: "+1 555 000 0002" },
-    { name: "Jesús Pérez", trades: [Trade.ELECTRICAL], contracted: false, whatsapp: "+1 555 000 0003", note: "Also the contractor scheduler — link to his staff account once provisioned." },
-    { name: "Cristina de León", trades: [Trade.ELECTRICAL], contracted: false, whatsapp: "+1 555 000 0004" },
-  ];
-  for (const c of CONTRACTORS) {
-    const exists = await db.contractor.findFirst({ where: { name: c.name }, select: { id: true } });
-    if (exists) continue;
-    await db.contractor.create({
-      data: {
-        name: c.name,
-        trades: c.trades,
-        contracted: c.contracted,
-        whatsapp: c.whatsapp ?? null,
-        phone: c.phone ?? null,
-        notes: c.note
-          ? `${c.note} (Placeholder contact — replace with real number.)`
-          : "Placeholder contact — replace with real number.",
-        properties: { create: allPropIds.map((propertyId) => ({ propertyId })) },
-      },
     });
   }
 }
