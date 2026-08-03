@@ -987,6 +987,49 @@ Three gaps against what existed: delivery was hardcoded to one `TEAMS_WEBHOOK_UR
 
 ---
 
+## ADR-028: Narrow the platform to two tracks; delete the contractor/dispatch rail
+
+**Date:** 2026-08-03
+**Status:** Accepted
+**Supersedes:** ADR-025 (three-component restructure) for scope. ADR-012's contractor-checklist inclusion is now in question — see §Q31.
+
+### Context
+
+ADR-025 split the platform into three components built in parallel: Checklist (I/A), Maintenance-Ticketing (II/C) and Construction (III/E), with contractor dispatch (D) carved out of C as the fastest independent slice. Since then:
+
+- **Tracks A and B shipped and are in production.** A is the live Connecteam replacement; B monitors 16 consoles across all 8 properties with Teams notifications launched 2026-08-02.
+- **Track C never started.** Its gate (C0 — the Top-8 blockers) was never answered, and the prototype library its spec marks `[BUILT]` has always lived outside this repo.
+- **Track E never got a go/no-go.**
+- **Track D shipped D1–D4** (directory, job record, match/rank, one-tap WhatsApp + signed job link) and then parked on 2026-07-30 when Twilio/A2P consent work stopped. Its consent rail (D8) was built but never merged and never applied to any database.
+- On 2026-08-03 Kyle confirmed **he is building the maintenance/dispatch capability as a separate system outside this repo.** That removes the reason for C, D and E to exist here.
+
+The live question was therefore not *whether* to narrow, but what to do with Track D's shipped code. Freezing it was the low-risk option; Kyle's call was to remove it.
+
+### Alternatives Considered
+
+1. **Freeze in place, visible.** Zero code change. Rejected: the sidebar advertises `Contractors` and `Dispatch` to every manager, both backed by an empty directory, with no owner and no roadmap.
+2. **Freeze in place, hidden from nav.** One-commit reversible, DB untouched. Rejected by Kyle: a dormant feature still carries schema, tests, presign surface and a public signed-link route that all have to keep passing review, for a capability that is being built elsewhere.
+3. **Remove code and schema.** Chosen. The three tables were verified **empty in production** first (`contractors=0`, `contractor_properties=0`, `contractor_jobs=0`, `photos` with a `contractor_job_id`=0 against `ep-summer-cloud`), so removal costs no data.
+
+### Decision
+
+**Active scope is Track A (Checklist / StayCheck) and Track B (Network Monitoring & IT Ticketing). Nothing else.**
+
+- Deleted: `app/contractors`, `app/dispatch`, `app/j`, `lib/{contractors,contractor-jobs,dispatch-message,job-link}` + tests, the `contractorJob` presign scope, `contractorJobPhotoKey`, the DEMO-gated seed roster, and the two nav entries.
+- Dropped: `Contractor`, `ContractorProperty`, `ContractorJob`, the `Trade` and `JobStatus` enums, and `Photo.contractorJobId` (migration `20260803120000_drop_contractor_dispatch`). `Photo` returns to exactly-one-of(response, issue) per ADR-016.
+- Archived as reference at `docs/archive/tracks-cde/`: every Track C/D/E document, the C/D/E tracker sections verbatim, their open §Q and §SPEC rows, and the decisions worth not re-deriving.
+- The Twilio consent rail stays **unmerged** on `claude/rise8-operations-platform-rv9B6`. Leaving it there *is* the archive.
+
+### Consequences
+
+- **The tracker now says what is actually being worked on.** Track A's real blockers — question content, geofence polygons, the recurring-rules matrix — are no longer competing for attention with three tracks that were not moving.
+- **Deploy order is load-bearing.** Code must ship before the drop migration is applied; the reverse breaks every live `SELECT` naming `contractor_job_id`.
+- **A10 contractor checklists lost their foundation.** ADR-012 assumed a contractor record to issue a magic link against, and `lib/job-link.ts` was the reusable HMAC helper. Both are gone. Recommendation is to drop A10 from v1 (§Q31); Kate's CONTRACTOR template list (§Q13) is moot if it does.
+- **One thing must survive if that branch is ever reconciled:** `InviteKind.ACCOUNT` is staff account activation wired into `app/admin/users/actions.ts` — Track A functionality that happens to live inside the consent rail.
+- Reversal is a `git revert` of `94ce338` plus re-running the additive migrations; nothing is unrecoverable, but it stops being free once the drop is applied to prod.
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```

@@ -14,7 +14,6 @@ Internal web application replacing Connecteam's operational checklist functional
 - Real-time dashboards per property, user, role, and checklist type.
 - Photo capture with geofence verification.
 - Recurring and bulk checklist creation.
-- **Contractor Checklists** — magic-link sign-off for vendors/contractors (no accounts needed).
 - **Quick Tasks** — lightweight ad-hoc task assignment.
 - PDF export on demand.
 - Daily Teams digest — auto-posted to master corporate channel + per-property channels.

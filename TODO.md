@@ -1,9 +1,11 @@
 # RISE8 Operations Platform — Master Plan & Tracker
 
-**Reorganized 2026-07-28.** Prior tracker preserved verbatim at `docs/archive/TODO_preReorg_RISE8_072826.md` (706 lines, organized by original build-week phases — kept for history and per-task commit detail).
+**Narrowed to two tracks 2026-08-03** (ADR-028). Tracks C (Maintenance/Ticketing), D (Contractor Dispatch/WhatsApp) and E (Construction) are **out of scope for this codebase** — Kyle is replacing them with a separate system. Their tracker sections, docs and open questions are archived at **`docs/archive/tracks-cde/`**; the contractor/dispatch code was deleted, not hidden.
+
+**Reorganized 2026-07-28.** Pre-reorg tracker preserved verbatim at `docs/archive/TODO_preReorg_RISE8_072826.md` (706 lines, organized by original build-week phases — kept for history and per-task commit detail).
 
 **How to read this file**
-- Work is grouped into **5 tracks (A–E)**. Each track has a priority, a state, and numbered phases.
+- Work is grouped into **2 tracks (A, B)**. Each track has a priority, a state, and numbered phases.
 - Phases are ordered. **A phase marked ▶ is the recommended entry point for that track.**
 - `§Q` items are **open questions** — they live in one place (§Q) so nothing is answered twice or lost.
 - `§SPEC` lists work that is **too vague to build** and needs a design pass first. Don't start these from the tracker line alone.
@@ -13,20 +15,18 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-01, Teams notification model)
+## 🎯 START HERE (updated 2026-08-03, scope narrowed to two tracks)
 
-**🛑 SCOPE NARROWED — Kyle, 2026-07-30.** **Twilio / A2P 10DLC / consent is PARKED.** Contractor dispatch (Track D) is parked with it. Kyle is building a separate production system and cannot work on this repo. **Active scope is Checklist (A) + Network (B) only.** A full replan of what to maintain vs. remove is owed when he returns — do not restart parked work unasked.
+**✅ SCOPE SETTLED — Kyle, 2026-08-03.** **This codebase is the Checklist app (A) and Network monitoring (B). Nothing else.** Tracks C, D and E are archived to `docs/archive/tracks-cde/` as reference; the contractor/dispatch rail was **deleted, not frozen** — Kyle is replacing it with a system he is building outside this repo, and a hidden-but-present feature is a maintenance cost with no owner. Recorded as **ADR-028**. **Do not restart C/D/E from the archive** — if any of it returns, it returns through a fresh decision.
 
-**Branch state — verified by `git rev-list`, 2026-07-30.** `claude/rise8-operations-platform-rv9B6` is **20 ahead / 1 behind `origin/main`** (the earlier "19 ahead" line was stale and missed that main had moved). Its branch-only content is **the entire consent/invite rail** — 12 commits `7ab342d`…`509be11` plus migration `20260730120000_add_invites_and_consent`, never merged, never applied to prod. **Leaving it unmerged IS the park** — no revert needed. The 1 commit behind is `9c222a7` (network ticket filters), the same work as this branch's `7b10de0` under a different SHA — expect a redundant diff or conflict whenever this branch is finally reconciled.
+**🧑 One prod step is owed for the removal:** migration `20260803120000_drop_contractor_dispatch` is authored but **NOT applied**. Deploy the code first, then apply it — the reverse order breaks every live `SELECT` that names `contractor_job_id`. All three tables were verified **empty** in prod first, so nothing is lost.
 
-**Subsystem inventory:** `docs/SubsystemIsolationMap_RISE8_073026.md` — file-level map of Checklist / Network / Contractor, their shared core, and the 9 cut points. **Read this before the replan.**
+**Branch state, 2026-08-03.** The old working branch `claude/rise8-operations-platform-rv9B6` is **23 ahead / 31 behind `origin/main`** and is now **abandoned by design**. Its only unique content is the parked Twilio consent/invite rail (`7ab342d`…`509be11` + migration `20260730120000`, never merged, never applied to any DB) — leaving it unmerged **is** the archive. Its network commits (`8b7f628`, `0419eb4`, `ceb3468`) are duplicates of work `main` already carries under different SHAs. ⚠ **If that branch is ever reconciled, `InviteKind.ACCOUNT` must survive** — it is staff account activation wired into `app/admin/users/actions.ts`, i.e. Track A functionality that happens to live in the consent rail. It also holds the only copy of `docs/SubsystemIsolationMap_RISE8_073026.md`.
 
 | # | Action | Why it matters |
 |---|---|---|
 | 1 | ✅ **DONE 2026-07-31 — full-estate monitoring is LIVE in prod.** 3 fabric keys set in Vercel, migration applied, deployed | 16 consoles · 8/8 properties · **596 devices** · 0 blind · console attribution 596/596. §Q1 closed |
 | 1b | ⚠ **Close the ~16 flap-artefact tickets** — most were opened for cameras that were never down (see §Q28) | They stop regenerating but will not close themselves. A genuine-vs-artefact split is owed before anyone bulk-closes |
-| 2 | ⏸ ~~Deploy the branch, then screenshot `/legal/opt-in`~~ | **PARKED 2026-07-30.** Twilio A2P work is on hold. Page remains built-but-never-opened-in-a-browser on the branch |
-| 3 | ⏸ ~~Publish the privacy-policy amendment~~ | **PARKED 2026-07-30.** Text stays ready at `docs/component-ii/PrivacyPolicyMessagingAmendment_RISE8_073026.md`; it cites `ops.` URLs that are not live, so publishing it now would put dead links in a legal document |
 | 4 | 🧑 **Add the 7 remaining `STRIPE_SECRET_KEY_<CODE>`** | Revenue currently covers Jacksonville West only |
 | 5 | ✅ **Kate's dashboard asks — DONE 2026-08-01** (`038ff46`) | Ticket CSV export · dashboard date range · per-property status table · resolved-per-property. Remaining slice of her ask: the **console filter** on tickets (display shipped, filter did not) |
 | 8 | ✅ **LAUNCHED TO PROD 2026-08-02** (`38c046d..9900fe0`, deploy `checklist-h9g0olu6e`, Ready 59s). Migration `20260801120000` applied to `ep-summer-cloud` **before** the code push · 9 `TEAMS_WEBHOOK_URL_*` set in Vercel **Production only** · verified `/login` 200, `/network` `/network/tickets` `/dashboard` 307, both new cron routes **401 without the secret** (fail-closed), 0 stranded PENDING rows | **Rollback:** `vercel promote https://checklist-dodll3bop-stayable-admins-projects.vercel.app` (the pre-launch prod HEAD `38c046d`) |
@@ -51,11 +51,11 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 |---|---|---|---|---|
 | **A** | **Checklist App (StayCheck)** — the Connecteam replacement | **P0** | 🟢 Live in prod, ~60% of v1 | A6 (real content + geofences) |
 | **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live · **8 of 8 properties, 16 consoles, 596 devices** · lifecycle proven in prod · **Teams notifications LAUNCHED 2026-08-02** (9 channels, escalation, 9 AM digest) | Watch the first 9 AM digest (Mon 3 Aug) · Gerardo @-mention (flow-side) · console filter · B3 hardening · §Q29 SA flap |
-| **C** | **Maintenance / Ticketing** (tenant + email desk) | P1 | 🔴 Nothing built, needs a spec | C0 (decide + spec) |
-| **D** | **Contractor Dispatch + WhatsApp + Scheduling** | P1 | ⏸ **PARKED 2026-07-30.** Shipped code stays live in prod (directory + jobs + match/rank + one-tap WhatsApp/call + signed job link) but no further work. The consent/invite rail (D8) stays unmerged on the branch | — parked; revisit at replan |
-| **E** | **Construction Progress / Scheduling** | P3 | ⛔ Concept, not decided | E0 (go / no-go) |
+| ~~C~~ | ~~Maintenance / Ticketing~~ | — | 🗄 **Archived 2026-08-03** (ADR-028) — nothing was ever built | `docs/archive/tracks-cde/` |
+| ~~D~~ | ~~Contractor Dispatch + WhatsApp~~ | — | 🗄 **Archived 2026-08-03** (ADR-028) — code **deleted** in `94ce338`, tables dropped, consent rail left unmerged | `docs/archive/tracks-cde/` |
+| ~~E~~ | ~~Construction Progress / Scheduling~~ | — | 🗄 **Archived 2026-08-03** (ADR-028) — never got a go/no-go | `docs/archive/tracks-cde/` |
 
-Tracks share one codebase and one deploy (ADR-025) and reuse each other's infrastructure: auth, RBAC, audit log, notifications, R2 photo pipeline, SLA, geofence.
+A and B share one codebase and one deploy (ADR-025) and reuse the same core: auth, RBAC, audit log, notifications, R2 photo pipeline, SLA, geofence. Only two things ever coupled B to the rest — `canAccessNetwork` in `lib/rbac.ts` and `NETWORK_GROUP` in `lib/nav.ts` — and that is worth keeping true.
 
 ---
 
@@ -130,9 +130,9 @@ Everything here is *content and configuration*, not code. **The app cannot be us
 
 | Pri | Status | Item |
 |---|---|---|
-| P2 | [ ] | **Contractor checklists** — magic-link (signed, single-use, 72h), CONTRACTOR-audience templates, contractor review lane. **Note: D4 pulls the magic-link forward — build it once, here or there, not twice** |
+| P2 | [!] | **Contractor checklists** — magic-link (signed, single-use, 72h), CONTRACTOR-audience templates, contractor review lane. ⚠ **Needs a decision before it can be built (§Q31).** ADR-012 assumed a `contractors` record to issue the link against, and Track D's `lib/job-link.ts` was the reusable HMAC helper — both went out with ADR-028. Either this module carries its own lightweight contractor identity, or it drops out of v1 too |
 | P2 | [ ] | **Quick Tasks** — lightweight ad-hoc tasks, no recurrence/review/PDF |
-| P2 | [!] | Final CONTRACTOR template list | Kate (§Q13) |
+| P2 | [!] | Final CONTRACTOR template list | Kate (§Q13) — moot if §Q31 lands as "drop it" |
 
 ## A11 — Launch · P0 (last)
 
@@ -225,67 +225,6 @@ All pure DB work — no vendor dependency, no credentials needed.
 
 ---
 
-# TRACK C — Maintenance / Ticketing · P1 · 🔴 NOT STARTED
-
-Replaces the Smartsheet maintenance tracker **and** Zoho Desk. Intake → AI triage → human review → ticket vs. concern → work order → dispatch → close. Docs in `docs/component-ii/`. **No AI decides alone** — human review precedes every ticket.
-
-**Intake reality (corrected 2026-07-08):** tenant requests arrive via **TurboTenant + Jotform**, consolidated in Smartsheet today. **Property managers** own triage/assignment/daily scheduling. The `admin@`/`blake@` email desk is an *additional* lane (maintenance emails get missed today), not the whole intake.
-
-## C0 — Decide + spec ▶ **build is blocked until this closes** · P0
-
-| Pri | Status | Item |
-|---|---|---|
-| P0 | [~] | **Design decided by Kyle + Kate** (Kate reconciled Part 1 already). Crystal remains the source of ops ground truth, not an approval gate | §Q6 |
-| P0 | [ ] | **Draft the PM-facing intake brief** — recipient still undecided (§Q15) |
-| P0 | [!] | Answer the **Top-8 blockers** in `docs/component-ii/MaintenanceTicketingScopingQuestions_RISE8_070726.md` | §Q6 |
-| P0 | [ ] | Turn signed-off answers into a design spec → plan → build (**§SPEC-4**) |
-
-## C1–C5 — Sequence once the gate clears (all `[ ]`, all need C0)
-
-| Phase | Pri | What |
-|---|---|---|
-| C1 | P1 | **Unified `Ticket` model** + lifecycle (OPEN→TRIAGED→ASSIGNED→IN_PROGRESS→(BLOCKED)→RESOLVED→CLOSED) · ticket vs. **concern** (payments/refunds/extensions) · **migrate + retire the existing `/issues`** (recommended, pending §A2/A3 sign-off) · recurrence auto-flag (≥2× same room in 60 days) · SLA reuse |
-| C2 | P1 | Tenant intake: TurboTenant + Jotform → queue; manual create |
-| C3 | P1 | Email desk: MS Graph on `admin@` + `blake@` → sender filter → **Claude (Sonnet 5)** extraction/classification → human review queue → reply-as-`blake@` |
-| C4 | P2 | Outlook sync (which emails became tickets/concerns/answered) + concerns view w/ promote-to-ticket |
-| C5 | P2 | Cost-per-repair capture + maintenance reporting |
-
-⚠️ **Port risk:** `MAINTENANCE_DESK_SPEC.md` marks `lib/maintenance/{filter,triage,graph,db}.js` + the sender-filter catalog as `[BUILT]`, but **they live outside this repo** and must be ported or rebuilt. The spec also names a model ID that doesn't exist (`claude-sonnet-4-6`) → use Sonnet 5.
-
----
-
-# TRACK D — Contractor Dispatch + WhatsApp + Scheduling · P1 · 🟡 IN PROGRESS
-
-Fastest, most independent slice: get emergencies to the right contractor fast. A module inside the platform, not a separate app. **Contractors use WhatsApp only** (phone is the emergency first touch to the one contracted plumber). Dispatchers reuse the `MANAGER` role — no new role.
-
-**Ground truth:** Crystal/Shayla flag an emergency on Teams → Gerardo/Jesús reach contractors by WhatsApp. Contracted first: **Orlando Torres** (direct hire, plumbing). Common emergencies are plumbing + electrical. **Jesús Pérez is both the scheduler and an electrical contractor** — the data model already allows one person to be both.
-
-| Phase | Pri | Status | What |
-|---|---|---|---|
-| D1 | P1 | [x] | **T1 — Contractor directory.** `Contractor` + `ContractorProperty` + `Trade`, `Contractor.userId` unique link to `User`, `/contractors` CRUD (property-scoped, audited), `lib/contractors.ts` + tests. **Merged to main 2026-07-28; migration NOT yet on prod** |
-| D2 | P1 | [x] | **T2 — Contractor job record — DONE 2026-07-28** (`dafbaf1`). `ContractorJob` + `JobStatus` + third photo owner on `Photo`; `/dispatch` queue (urgent-first, URL filters) + `/dispatch/new` + `/dispatch/[id]`; photos reuse the R2 pipeline unchanged; nav gains Dispatch. Terminal jobs immutable; COMPLETED/CANCELLED need a note; DISPATCHED needs a contractor. **Migration `20260728120000` NOT yet on prod** |
-| D3 | P1 | [x] | **T3 — Match & rank — DONE 2026-07-28** (`dafbaf1`, shipped with D2 since both need the same eligibility predicate). `canAssignContractor` + `rankContractorsForJob` in `lib/contractor-jobs.ts`, 37 tests. Eligible = active ∧ has trade ∧ covers property; **`onCall` ranks but never excludes** (a hard availability filter could leave a property with nobody eligible mid-emergency). Order: contracted → on-call → reachable → name (stable). Re-validated server-side in `assignContractor` — the action doesn't trust the UI |
-| D4 | P1 | [x] | **T4 — One-tap dispatch — DONE 2026-07-28.** Pre-filled bilingual `wa.me` deep link (language from `Contractor.language`) + `tel:` first touch + copy-link, on `/dispatch/[id]`. **Signed no-account job link** `/j/[token]` (72h, HMAC, key **derived** from `AUTH_SECRET` for domain separation rather than reusing it raw) renders property/address/Maps link/problem/photos read-only. **Deviation from Phase 9: the link is reusable, not single-use** — it is read-only, and a contractor re-opening it while standing in the room is normal; single-use would break it exactly when needed. A write path (A10 contractor checklists) still gets single-use consumption. Human presses send; nothing auto-sends |
-| D5 | P1 | [ ] | **Emergency flag + fast alert** to the coordination group. MVP = manual URGENT toggle | §Q4 |
-| D6 | P2 | [ ] | **Scheduling: contractor calendar** + auto-reschedule of jobs bumped by an emergency. **§SPEC-5** — and §Q16 must be answered first |
-| D8 | P1 | [~] | **Account creation + messaging consent (Spec B)** — `docs/superpowers/specs/2026-07-29-account-creation-and-consent-design.md`. **Builds BEFORE D7 Phase 3: without a consent artifact there is nothing legitimising a send.** BUILT (branch-local, migration NOT on prod): `InviteToken` + append-only `ConsentRecord` (verbatim text, policy version, phone, locale, IP, UA; revocation = new row) · `lib/consent-copy.ts` (EN/ES, `POLICY_VERSION 2026-07-29.1`, test-pinned) · `lib/consent.ts hasLiveConsent` (the send-time hard stop) · `/invite/[token]` bilingual opt-in, box unchecked and **non-blocking** · public `/legal/messaging` · admin "Send invite" + "Send consent invite" · consent state on `/contractors` · **`/legal/opt-in` public screenshotable proof replica (2026-07-30, `509be11`)** sharing `ConsentBlock` with the real form so the evidence cannot drift. 532/532 tests, clean types+lint, build 48 routes | §Q27 |
-| D7 | P2 | [~] | **L2 — Automated WhatsApp via Twilio.** Spec: `docs/component-ii/WhatsAppAutomationSpec_RISE8_072826.md` (§SPEC-7), **re-planned 2026-07-29 as vendor-first per Kyle**. **Phase 1 (🧑 Kyle, the critical path):** Twilio account → buy a number (must not already be on consumer WhatsApp) → Meta Business Portfolio → register WhatsApp sender → **display-name approval** → **Meta Business Verification**. ⚠ **Two independent Meta approvals**, either can bounce; have the business registration, address, domain and exact display name ready. **Phase 2:** 8 UTILITY templates (T-1…T-4 × EN/ES) → approval → record ContentSids. **Phase 3 (me):** `NotificationChannel += WHATSAPP`, Twilio client, delivery sweep cloned from the working Teams pattern, signature-validated inbound + status webhook, opt-in capture, then wire T-1. T-2 *schedule assigned* — Kyle's original ask — additionally needs **D6 scheduling to exist**. Sandbox fallback available if a Meta review stalls | §Q17 |
-
----
-
-# TRACK E — Construction Progress / Scheduling · P3 · ⛔ NOT DECIDED
-
-Brief: `docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`. Shares the ingestion engine with Track C. **No build until Kyle+Kate say go.**
-
-| Phase | Pri | Status | What |
-|---|---|---|---|
-| E0 | P0 | [ ] | **Go / no-go** — a Kyle+Kate call informed by Crystal's ops input (design-review §2.3). ⚠ Record as an ADR when it closes | §Q18 |
-| E1 | P1 | [ ] | Progress % / milestones per project; punch-list tracking |
-| E2 | P1 | [ ] | Project/task scheduling; blocker & delay alerts |
-| E3 | P2 | [ ] | Draw / billing documentation (photo-verified progress) |
-
----
-
 # CROSS-CUTTING — Ops, security, quality
 
 | Pri | Status | Item |
@@ -323,10 +262,9 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 | **Q1 (history)** | **UniFi account access — mostly SOLVED 2026-07-29.** A third key reached a **second account** and added 9 consoles → 5 of 8 properties now monitored. Three keys tested in total; two saw the same 5, the third saw 9. **Still unreachable: Jacksonville West, Jacksonville North, and a live St. Augustine console** — so a THIRD account exists. Who owns it? | B2, and 7 of 8 properties | Either (a) the owner of those consoles invites this account (per console: Settings → Admins), or (b) a key is created **from** the owning account. ⚠ (a) may not suffice: the Site Manager shows an org/"Fabrics" structure (Stayable Central / North / Independent Sites) and API v1 may only return directly-associated hosts, not org-managed ones. Decisive test either way: re-run the host probe with a key from the owning account — success is **~19 hosts, not 5**. Multi-key support is already built, so a second *account's* key just slots into `UNIFI_API_KEY_2` |
 | **Q2** | **Is there any Aruba hardware?** — **now likely YES, and it matters.** Kate flagged the AP counts as too low; investigation confirmed she is right about the physical count but the cause is not our monitoring. The consoles' OWN statistics match what we ingest, so nothing is truncated: KW reports **2 UniFi APs against 236 guest clients and 9 PoE switches**; DP reports **0 APs against 280 wired clients**. LL (39) and SA (40) show the real per-room pattern. A non-UniFi AP plugged into a UniFi PoE switch appears as an ordinary *wired client* — exactly the signature seen. **Decisive check: physically look at one AP at KW or DP and read the brand** (2 minutes). If Aruba, that lane is the missing half of AP monitoring, not dead code to delete | B4, and AP coverage at 4 properties | Check the hardware before writing any more code either way |
 | **Q3** | ~~Is Spotipo in use?~~ **ANSWERED: yes.** 8/8 sites live, 669 registered guests. API surface is **only** `/api/v1/guest/` — no revenue, no online-now, no date filtering (21 other paths 404, and date params are silently ignored). Revenue comes from Stripe instead; online-now from UniFi | — | Closed |
-| **Q7** | **Component I to cutover, or Component II?** Doing both is what put us behind | Everything, and the re-baselined date | Finish A6 + A7 to get Track A usable, and run D2–D4 alongside (small, independent). Pause Track C until C0 closes |
-| **Q16** | **Is contractor scheduling separable** from the internal daily maintenance schedule (in Connecteam, which Track A replaces)? | D6 | Assume separable and build D6 as the permanent home for contractor scheduling. If entangled, D6 must either coexist with Connecteam during parallel run or absorb internal scheduling too |
+| **Q31** | **Do contractor checklists (A10) stay in v1?** ADR-012 put them in v1, but they assumed a contractor record and a signed-link helper that both left with Track D (ADR-028). Rebuilding a minimal contractor identity *inside* the checklist app is maybe a day's work — or A10 drops and contractors keep signing paper | A10, and §Q13 (Kate's CONTRACTOR template list) | **Drop it from v1.** Nothing at cutover depends on it, no CONTRACTOR template has ever been written, and re-introducing contractor identity here is exactly the thing that just got removed. Revisit only if the replacement system can't cover it |
+| **Q7** | **Re-baselined cutover date.** Week 14 ≈ 21 Aug 2026 is not reachable; A6 (content + geofences), A7, A8 and A11 are outstanding and the 4-week parallel run hasn't begun. With C/D/E gone, Track A is no longer competing for attention — which is the whole point of the narrowing | Everything downstream of cutover | Finish A6 then A7. A6 is **not code** — it is Karla/Christopher's question content, Kate's geofences, and the managers' recurring-rules matrix, and nothing else in Track A matters until those exist. Pick a date once the question content is in hand, not before |
 | **Q19** | On-device PWA + iOS GPS check | A11 confidence, Capacitor fallback | 20 minutes with one iPhone closes a Week-1 risk that is still open in Week 11 |
-| **Q27** | **Does the live Twilio A2P submission say consent is REQUIRED to submit the form?** Spec §5's requirement table says *"submit blocked until ticked"*; §5.1 reversed that on non-coercion grounds and **the shipped form does not block**. If an earlier submission described the old behaviour, the form and its description no longer match | The A2P campaign — a described-vs-actual mismatch is a rejection reason | Correct the submission to match the built form. Ready-to-paste opt-in description is in §8 of `PrivacyPolicyMessagingAmendment_RISE8_073026.md`. Also amend spec §5's table so the next reader isn't misled by it |
 
 ## Kate
 
@@ -343,24 +281,12 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 | **Q20** | Confirm the CORPORATE→"Manager" display-label interpretation (role stays in DB) | Cosmetic, low | Working interpretation already applied |
 | **Q25** | **Threaded ticket notifications** — reply-on-close needs a parent message id, which the current flow doesn't return. Two ways: **(a)** edit the Power Automate flow to respond with the created message id and to accept a `replyToId` (then we store it and send it on close — small change on our side, needs the flow edited and possibly a premium action); **(b)** switch to Microsoft Graph, which returns the message and supports replies natively, and also unlocks reply-ingestion (T8) | B5 threading, and A8's Teams digest formatting | Try (a) first — it's cheap and keeps today's working path. If the flow can't return the id, (b) is the honest answer and Graph was Kate's original spec anyway |
 
-## Crystal (Head of Ops) — **ops ground truth, not an approval gate**
-
-Her answers are inputs Kyle+Kate decide with; they do not gate a merge.
-
-| # | Question | Blocks | Note |
-|---|---|---|---|
-| **Q6** | Track C ops reality + the Top-8 technical blockers (issues→Ticketing, Graph consent, DB split) | Quality of the C1 spec | Kate reconciled Part 1; the technical blockers are Kyle's to settle |
-| **Q15** | **Who receives the PM-facing intake brief?** | C0 | Brief can be drafted recipient-agnostic and held |
-| **Q18** | Construction ops input (scope: renovation contractors vs. in-house vs. both, #1 pain) | Quality of the E0 decision | The go/no-go itself is Kyle+Kate |
-| **Q17** | WhatsApp Business API cost + Meta verification timeline | D7 | Not "which channel" — WhatsApp is settled. Cost call is Kyle+Kate |
-
 ## Others
 
 | # | Question | Owner | Blocks |
 |---|---|---|---|
 | **Q21** | **Real question content for 9 templates** | Karla / Christopher | A6 — hard cutover blocker |
 | **Q22** | **Recurring-rules matrix** per template per property | Property Managers | A6 |
-| **Q23** | **Who classifies an issue as an emergency, and how?** | Gerardo | D5 auto-notify rule (MVP uses a manual toggle) |
 | **Q24** | SLA hours per priority — confirm or correct the placeholders | Christopher | A6, non-blocking |
 
 ---
@@ -374,16 +300,15 @@ These are in the tracker as one-liners but are **not buildable from that line**.
 | **SPEC-1** | **S2 room lifecycle + checkout queue** | 9 derived states, and it interacts with Cloudbeds (S3), OOO flags from checklists, and the checkout flags S1 already ships. Get the state machine on paper first |
 | **SPEC-2** | **S4 preventive maintenance** | Introduces an `Asset` registry and interval-from-last-completion scheduling — a second scheduling engine alongside recurrence. Decide whether they share code before writing either |
 | **SPEC-3** | **S5 performance + S6 insights** | Both are metric-definition problems, not code problems. "Quality Score = pass ÷ verified" needs agreement on what counts before anything is computed, or the numbers get argued with instead of used |
-| **SPEC-4** | **C1 unified ticket model** | The big one. It absorbs `/issues`, spans 4 intake channels, and has to model ticket-vs-concern. Getting this wrong means migrating live maintenance data twice. **Blocked on C0 answers** |
-| **SPEC-5** | **D6 contractor scheduling** | Depends entirely on §Q16. A shared calendar and a contractor-only calendar are different data models |
 | **SPEC-6** | **A7 invalidation flow (ADR-014)** | Request → pending → approve/reject with an audit chain, touching instance state that S1's lock now also governs. Two features both claiming instance immutability need reconciling |
-| **SPEC-7** | **D7 automated WhatsApp** | ✅ **Written 2026-07-28** — `docs/component-ii/WhatsAppAutomationSpec_RISE8_072826.md`. Covers the wa.me-vs-Cloud-API distinction, Meta prerequisites, the 4 UTILITY templates, the 24-hour window rule, schema delta, and why staff stay off WhatsApp |
 
 ---
 
 # Done — reference
 
-Closed decisions worth not re-litigating (full ADRs in `docs/DECISIONS.md`): PWA not native · no Smartsheet write-through · email+password + OTP for all users · 8 properties w/ 2-letter short codes · photos kept forever · all datetimes displayed in ET · bilingual field surfaces only · contractor magic-links instead of accounts · bonus logic scrapped · UniFi integration is **pull, not push** · dispatchers reuse `MANAGER` · WhatsApp is the only contractor channel.
+Closed decisions worth not re-litigating (full ADRs in `docs/DECISIONS.md`): PWA not native · no Smartsheet write-through · email+password + OTP for all users · 8 properties w/ 2-letter short codes · photos kept forever · all datetimes displayed in ET · bilingual field surfaces only · bonus logic scrapped · UniFi integration is **pull, not push**.
+
+Decisions that belonged to the archived tracks (contractor magic-links instead of accounts, dispatchers reuse `MANAGER`, WhatsApp as the only contractor channel, no AI decides a ticket alone) are preserved in `docs/archive/tracks-cde/README.md` so archiving didn't lose the reasoning.
 
 ---
 

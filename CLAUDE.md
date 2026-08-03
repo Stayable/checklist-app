@@ -10,14 +10,13 @@ This file gives Claude Code the persistent context it needs for the RISE8 Operat
 
 It serves field staff (Housekeeping, Property Attendants, Maintenance Technicians) and management (Property Managers, Corporate, Asset Management) across 7 Stayable extended-stay properties in Florida.
 
-**As of 2026-07-07 (ADR-025), the project is three components, one codebase, built in parallel:**
-- **I. Checklist App (StayCheck)** — the live Connecteam replacement (this doc's original scope + StayCheck v1.1).
-- **II. Maintenance / Ticketing System** — intake (web form + `blake@rentstayable.com` email AI-ingestion; urgent/contractor WhatsApp front door) → human review → ticket vs. "concern" → work-order lifecycle → dispatch → close; Outlook sync. Absorbs the old "S7."
-- **III. Construction Progress / Scheduling** — buildout/renovation PM (`docs/component-iii/ConstructionAgentBrief_RISE8_062026.md`); **concept — go/no-go is a Kyle+Kate call** (was gated on Rob until 2026-07-28).
+**As of 2026-08-03 (ADR-028), the project is TWO tracks, one codebase, both live in production:**
+- **A. Checklist App (StayCheck)** — the Connecteam replacement (this doc's original scope + StayCheck v1.1). `P0`.
+- **B. Network Monitoring & IT Ticketing** — UniFi pull-poller across 16 consoles / 8 properties, ticket lifecycle, per-channel Teams notifications + escalation + 9 AM ET digest, Spotipo guest WiFi, Stripe revenue. `P1`. Docs in `docs/network/`.
 
-**`TODO.md` was reorganized 2026-07-28** into **5 tracks (A–E)** with priorities, ordered phases, a START-HERE block, a single consolidated `§Q` open-questions register (Q1–Q24, grouped by owner), and a `§SPEC` list of work that needs a design pass before any code. It supersedes the old `# COMPONENT I/II/III` layout; the previous 706-line week-phase tracker is preserved at `docs/archive/TODO_preReorg_RISE8_072826.md` for per-task commit history. Track map: **A** Checklist App (live) · **B** Network monitoring (live pilot) · **C** Maintenance/Ticketing (gated) · **D** Contractor dispatch + WhatsApp + scheduling · **E** Construction (gated).
+**Everything else is archived and out of scope.** Tracks C (Maintenance/Ticketing), D (Contractor Dispatch + WhatsApp) and E (Construction) were archived 2026-08-03 — Kyle is building that capability as a separate system outside this repo. Track D's shipped code was **deleted, not frozen** (`94ce338`), and its tables dropped. Reference material, the verbatim C/D/E tracker sections, their open questions and the decisions worth not re-deriving live at **`docs/archive/tracks-cde/`**. **Do not restart that work from the archive** — if any of it returns, it returns through a fresh decision. ADR-025's three-component structure is superseded for scope.
 
-Building C, D and E is a scope expansion beyond the original checklist-replacement v1 — a budget/scope matter for Rob, still unsigned (`§Q8`).
+**`TODO.md`** carries the two tracks with priorities and ordered phases, a START-HERE block, a consolidated `§Q` open-questions register grouped by owner, and a `§SPEC` list of work needing a design pass before code. The pre-2026-07-28 week-phase tracker is preserved at `docs/archive/TODO_preReorg_RISE8_072826.md`.
 
 **Why it exists:** Field staff currently fill out checklists in Connecteam (a mobile app), then Karla and Christopher manually download the completed PDFs and re-upload them as Smartsheet row attachments while typing metadata. This consumes 1–2 hours/day of corporate staff time and loses photo/structured-response fidelity. The new platform is the single source of truth.
 
@@ -28,10 +27,11 @@ Building C, D and E is a scope expansion beyond the original checklist-replaceme
 These were settled during scoping. If a request seems to conflict with these, ask for clarification before proceeding — do not silently change direction.
 
 ### Scope
-- **In:** Operational checklists, recurring schedules, bulk creation, photo capture with geofence verification, manager review/approval, issues pipeline, dashboards, PDF export on demand, email notifications, **Contractor Checklists** (ADR-012), **Quick Tasks** (ADR-012)
-- **Out:** Time clock / time tracking (handled by Paycom), payroll/HR (handled by Paycom), shift scheduling (handled by Paycom), chat/messaging, hiring/onboarding, training, knowledge base, surveys, guest-facing features, native iOS/Android apps
+- **In:** Operational checklists, recurring schedules, bulk creation, photo capture with geofence verification, manager review/approval, issues pipeline, dashboards, PDF export on demand, email notifications, **Quick Tasks** (ADR-012); plus **Track B** network monitoring / IT ticketing (ADR-026, ADR-027)
+- **Out:** Time clock / time tracking (handled by Paycom), payroll/HR (handled by Paycom), shift scheduling (handled by Paycom), chat/messaging, hiring/onboarding, training, knowledge base, surveys, guest-facing features, native iOS/Android apps — **and, since ADR-028, maintenance/tenant ticketing, contractor dispatch and construction PM** (a separate system Kyle is building)
+- **In question:** **Contractor Checklists** (ADR-012) — see §Q31
 
-**v1 build is 10 weeks** (extended from 8 per ADR-012) + 4-week parallel run. **Cutover target: Week 14.**
+**v1 build was scoped at 10 weeks** (extended from 8 per ADR-012) + 4-week parallel run, **cutover Week 14 ≈ 21 Aug 2026 — not reachable.** A re-baselined date is owed and is gated on A6's content, not on code (§Q7).
 
 ### Architecture
 - **PWA, not native.** Single Next.js app, responsive, installable to home screen. Offline support via service worker + IndexedDB for short outages (not multi-day offline use). Properties have 2Gbps fiber + AP buildout, so offline is an edge case.
@@ -158,7 +158,8 @@ These were settled during scoping. If a request seems to conflict with these, as
 - All time labels include `ET` suffix in UI (e.g., "Submitted 5:23 AM ET").
 - Library: `date-fns-tz`. All formatting through `lib/datetime.ts` — never call `toLocaleString` directly. ESLint rule to enforce.
 
-### Contractor Checklists (ADR-012, Phase 9 = Week 9)
+### Contractor Checklists (ADR-012) — ⚠ **in question, see `TODO.md` §Q31**
+**Never built, and its foundation is gone.** ADR-028 deleted the `contractors` table and `lib/job-link.ts` (the signed-link helper) with Track D, so this module would now have to carry its own contractor identity. Recommendation on record: **drop it from v1.** The original design is kept below only so the decision is made with the design in view.
 - **No contractor accounts.** Manager creates a `contractors` record; system issues a **signed, single-use, 72h-TTL magic-link URL** per checklist instance.
 - Contractor opens link → fills checklist → captures photos (same flow as employee) → signs → submits. Token consumed on submit.
 - `checklist_templates.audience` enum: `EMPLOYEE` | `CONTRACTOR`. `checklist_instances.contractor_id` (nullable FK).
@@ -251,11 +252,11 @@ She is an engineer by background (Texas Instruments, process engineer + PM) and 
 - **Kyle** (`bke@rise8companies.com`) — **develops** (executes the build with Claude Code) and **co-owns every decision with Kate**. Cannot cleanly copy multiline text out of a terminal — push anything copyable to the clipboard for him.
 - **Kate** — Director of Asset Management. **Reviews** the app and co-owns every decision with Kyle. Based in Sablan, Benguet, Philippines (UTC+8). Engineer by background (Texas Instruments, process engineer + PM) — reads code, schemas and architecture without hand-holding.
 - **Rob Beyer** — CEO of RISE8. **Monitors the launched app only. NOT in the decision path** (changed 2026-07-28). No budget/scope sign-off is required from him, the old "alpha demo for Rob" gate is dropped, and nothing in `TODO.md` is blocked on him.
-- **Crystal Johnson** — Head of Operations. **Source of ops ground truth** for maintenance/dispatch and construction (`docs/component-ii/ProjectBrief_MaintenanceDispatch_062226.docx`). No longer a design approver.
-- **Gerardo & Jesús Pérez** — schedule contractors; Jesús is *also* an electrical contractor (the data model allows both). Gerardo owes the emergency-classification rule (§Q23).
 - **Christopher Acoy Jr.** (`christopher@rentstayable.com`) — Operations support; owes SLA confirmation + real Maintenance Report question content.
 - **Karla Ysabelle Dugayo** (`karla@rentstayable.com`) — Operations support; owes real checklist question content. Her manual Connecteam→Smartsheet uploads go away post-cutover.
-- **Blake** — owner of the `blake@rentstayable.com` maintenance inbox (Track C email intake).
+- **Gerardo** — named contact on Network escalations (Teams-only, no email — ADR-027). Owes nothing else here; his emergency-classification question went out with Track D.
+
+**No longer in scope for this repo** (their work moved to Kyle's separate system, ADR-028): **Crystal Johnson** (Head of Operations — was the source of ops ground truth for maintenance/dispatch and construction), **Jesús Pérez** (contractor scheduler and electrical contractor), and **Blake** (owner of the `blake@rentstayable.com` maintenance inbox). Their briefs are archived at `docs/archive/tracks-cde/`.
 
 ---
 
@@ -326,8 +327,7 @@ Production/staging/preview: Vercel environment variables.
 **Repo layout (reorganized 2026-07-20):** root holds only `README.md`, `CLAUDE.md`, `TODO.md` + config/code dirs. All docs live under `docs/`:
 - `docs/` (top level) — cross-component sources of truth: PRD, ARCHITECTURE, SPRINT_PLAN, DECISIONS, RUNBOOK, CHANGELOG.
 - `docs/component-i/` — StayCheck / checklist-app docs (`StayCheckPRD_RISE8_070126.md`, `ChecklistTeamInterviewGuide_RISE8_060526.md`).
-- `docs/component-ii/` — Maintenance/Ticketing docs (`MAINTENANCE_DESK_SPEC.md`, `MaintenanceTicketing{DesignReview,ScopingQuestions}_RISE8_070726.md`, `TicketingBriefDispatch_RISE8_070826.md`, `ProjectBrief_MaintenanceDispatch_062226.docx`, `IngestionEngineSketch_RISE8_070726.png`).
-- `docs/component-iii/` — Construction docs (`ConstructionAgentBrief_RISE8_062026.md`).
+- `docs/archive/tracks-cde/` — **archived Tracks C/D/E** (ADR-028): the former `component-ii/` + `component-iii/` directories, the verbatim C/D/E tracker sections, their open §Q rows, and a `README.md` explaining what was deleted and how to recover it. Reference only.
 - `docs/network/` — NETWORK epic (device monitoring + IT ticketing): Kate's `DevSpec_NetworkMonitoringTicketing_RISE8_072426.md` + `ITTicketingPlan_RISE8_072426.md`. **Kept separate from `component-ii/`** — network/IT tickets are deliberately not the maintenance pipeline (different assets, responders, and urgency model). Added 2026-07-28 when the merge revealed both docs sitting outside the convention (one at repo root).
 - `docs/archive/` — superseded status docs (`CurrentUpdate`/`ProjectPhases`/`StatusSummary_RISE8_051826.md`).
 - `docs/assets/` — screenshots + `connecteam-snapshots/` reference images.
@@ -338,6 +338,18 @@ When changing scope or architecture: update the relevant doc and add an entry to
 ---
 
 ## Current Status (update this section as work progresses)
+
+**As of:** August 3, 2026
+**🗂 SCOPE NARROWED TO TWO TRACKS — Checklist (A) + Network (B). Tracks C/D/E archived, contractor rail DELETED (ADR-028).**
+- **Kyle's call, 2026-08-03:** *"Checklist and Network only will be the current ones here. Nothing more."* Track D is being replaced by a separate system he is building outside this repo, so the shipped code was **removed rather than frozen** — a dormant feature with no owner still costs schema, tests, a public route and review attention.
+- **Deleted** (`94ce338`, branch `chore/narrow-scope-to-checklist-network`): `app/contractors`, `app/dispatch`, `app/j`, `lib/{contractors,contractor-jobs,dispatch-message,job-link}` + tests, the `contractorJob` presign scope, `contractorJobPhotoKey`, the DEMO-gated seed roster, both nav entries. **Schema:** `Contractor`, `ContractorProperty`, `ContractorJob`, the `Trade` + `JobStatus` enums, and `Photo.contractorJobId` — `Photo` is back to exactly-one-of(response, issue) per ADR-016. **517/517 tests, clean types + lint, clean build.**
+- **Verified empty in prod BEFORE writing the drop** (`ep-summer-cloud`): `contractors=0`, `contractor_properties=0`, `contractor_jobs=0`, `photos` with a `contractor_job_id`=0. No data lost. The roster Kyle confirmed 2026-07-08 was never entered — it only ever existed as seed code with placeholder numbers.
+- ⚠ **Migration `20260803120000_drop_contractor_dispatch` is authored but NOT applied.** Body generated by `prisma migrate diff` so `migrate deploy` leaves no drift. **Deploy code FIRST, then apply** — the reverse breaks every live `SELECT` naming `contractor_job_id`. This inverts the usual DB-before-code order because it is a drop, not an add.
+- **Archived to `docs/archive/tracks-cde/`:** the former `component-ii/` + `component-iii/` doc trees, the C/D/E tracker sections verbatim, their §Q and §SPEC rows, and a `README.md` recording what was deleted, the git coordinates to recover it (`git diff 6d7b2ae 94ce338`), and the decisions worth not re-deriving. **`TODO.md` is now two tracks**; ADR-028 recorded.
+- **🚩 A10 contractor checklists lost their foundation** — ADR-012 assumed a `contractors` record and the signed-link helper, both now gone. **New §Q31**, recommendation: drop A10 from v1. Kate's §Q13 CONTRACTOR template list is moot if it does.
+- **⚠️ CORRECTED A STALE BRANCH ASSUMPTION.** The old working branch `claude/rise8-operations-platform-rv9B6` is **23 ahead / 31 behind `origin/main`**, not "20 ahead / 1 behind" as its own tracker claimed — `main` moved 31 commits (Teams launch, Kate's dashboard asks, the fabric-key registry) while that branch sat. Its network commits `8b7f628`/`0419eb4`/`ceb3468` are **duplicates** of work `main` already carries under different SHAs. All work this session was done off `main`. The branch is now abandoned by design; its only unique content is the parked consent rail. ⚠ **If it is ever reconciled, `InviteKind.ACCOUNT` must survive** — that is staff account activation wired into `app/admin/users/actions.ts`, Track A functionality living inside the consent rail. It also holds the only copy of `docs/SubsystemIsolationMap_RISE8_073026.md`.
+- **⚠️ Dev DB `ep-falling-moon` is unreachable** (P1001 — the Neon branch appears suspended). Worked around it: the drop migration was generated by diffing two schema *datamodels*, which needs no database. Prod `ep-summer-cloud` is reachable and healthy.
+- 🧑 **NEXT:** deploy this branch, then apply the drop migration. Then Track A's A6 — which is **not code**: Karla/Christopher's question content, Kate's geofence polygons, the managers' recurring-rules matrix.
 
 **As of:** August 2, 2026
 **🚀 LAUNCHED TO PRODUCTION 2026-08-02 — the whole Teams notification rebuild is live.** `38c046d..9900fe0`, deploy **`checklist-h9g0olu6e`** Ready in 59s on ops.rentstayable.com. **Rollback candidate: `vercel promote https://checklist-dodll3bop-stayable-admins-projects.vercel.app`** (pre-launch HEAD `38c046d`).
@@ -501,7 +513,7 @@ When changing scope or architecture: update the relevant doc and add an entry to
 3. **Spanish translation reviewer (person)** — Karla / Christopher / external? — Owner: Kate — review pass itself moved to **Phase 8** (ADR-014); ES strings keep shipping machine-drafted
 4. **Teams workspace inventory** — 1 corporate + 8 property channels w/ Incoming Webhook URLs — Owner: Kate — Needed by Week 7
 5. **Stayable branding kit** — logo, palette, wordmark "Stayable Operations" — Owner: Kate — Needed by Week 7
-6. **Final CONTRACTOR-audience template list** — Owner: Kate — Needed by Week 9
+6. ~~**Final CONTRACTOR-audience template list**~~ — Owner: Kate — **on hold**: contractor checklists themselves are in question (§Q31, ADR-028)
 7. **Final geofence polygons per property** — Owner: Kate — Needed by Week 6
 
 ### Recently resolved decisions
