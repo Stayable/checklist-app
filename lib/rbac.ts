@@ -2,34 +2,28 @@ import { redirect } from "next/navigation";
 import { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  canAccessNetwork,
+  isAdmin,
+  isFieldStaff,
+  isManagerOrAbove,
+  isPortfolioRole,
+} from "./roles";
 
 // Authorization helpers (ADR-013). One global role per user; portfolio-wide
 // access for CORPORATE/ADMIN, otherwise gated by user_properties membership.
+//
+// The pure role predicates live in lib/roles.ts (extracted 2026-08-03 so
+// client-imported modules like lib/nav.ts can use them without dragging `auth`
+// into the browser bundle) and are re-exported here, so `@/lib/rbac` remains the
+// single place callers look for authorization.
+export { canAccessNetwork, isAdmin, isFieldStaff, isManagerOrAbove, isPortfolioRole };
 
 export type SessionUser = {
   id: string;
   role: Role;
   name: string;
 };
-
-/** CORPORATE and ADMIN see every property; everyone else is scoped. */
-export function isPortfolioRole(role: Role): boolean {
-  return role === Role.CORPORATE || role === Role.ADMIN;
-}
-
-export function isAdmin(role: Role): boolean {
-  return role === Role.ADMIN;
-}
-
-/** Manager and above (manager, corporate, admin) — review/management surfaces. */
-export function isManagerOrAbove(role: Role): boolean {
-  return role === Role.MANAGER || isPortfolioRole(role);
-}
-
-/** Field staff (HK, PA, MT) — phone-first fill surfaces; the PWA-install audience. */
-export function isFieldStaff(role: Role): boolean {
-  return !isManagerOrAbove(role);
-}
 
 /**
  * Current session user, or redirect to /login. Use at the top of any protected
@@ -57,17 +51,6 @@ export async function requireManager(): Promise<SessionUser> {
   const user = await requireUser();
   if (!isManagerOrAbove(user.role)) redirect("/");
   return user;
-}
-
-/**
- * NETWORK section access (device monitoring + IT ticketing). Simpler than the
- * checklist RBAC model: NETWORK_TECH (dedicated IT/MSP role), ADMIN, and
- * CORPORATE all see the FULL portfolio — there is no per-property
- * user_properties scoping for network. MANAGER is not granted network access
- * in v1.
- */
-export function canAccessNetwork(role: Role): boolean {
-  return role === Role.NETWORK_TECH || role === Role.ADMIN || role === Role.CORPORATE;
 }
 
 /** Require network access; everyone else is bounced to the home page. */

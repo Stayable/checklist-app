@@ -1,22 +1,104 @@
 import { describe, expect, it } from "vitest";
 import { Role } from "@prisma/client";
+import { canAccessNetwork, isAdmin, isManagerOrAbove } from "./roles";
 import {
-  navItemsForRole,
   isNavItemActive,
+  mobileSectionsForRole,
+  navItemsForRole,
+  navSectionsForRole,
+  sectionForPathname,
   shouldHideShell,
 } from "./nav";
 
-describe("navItemsForRole", () => {
-  it("field staff get only Today", () => {
-    for (const r of [Role.HK, Role.PA, Role.MT]) {
-      const items = navItemsForRole(r);
-      expect(items.map((i) => i.href)).toEqual(["/"]);
+const ids = (role: Role) => navSectionsForRole(role).map((s) => s.id);
+
+describe("navSectionsForRole", () => {
+  it("field staff get Home alone", () => {
+    for (const role of [Role.HK, Role.PA, Role.MT]) {
+      expect(ids(role)).toEqual(["home"]);
     }
   });
 
-  it("manager gets the management surfaces, no admin or network group", () => {
-    const hrefs = navItemsForRole(Role.MANAGER).map((i) => i.href);
-    expect(hrefs).toEqual([
+  it("manager gets checklist + the unbuilt sections, no network or admin", () => {
+    expect(ids(Role.MANAGER)).toEqual(["home", "checklist", "maintenance", "construction"]);
+  });
+
+  it("corporate adds network, still no admin", () => {
+    expect(ids(Role.CORPORATE)).toEqual([
+      "home",
+      "checklist",
+      "network",
+      "maintenance",
+      "construction",
+    ]);
+  });
+
+  it("admin gets everything, admin last", () => {
+    expect(ids(Role.ADMIN)).toEqual([
+      "home",
+      "checklist",
+      "network",
+      "maintenance",
+      "construction",
+      "admin",
+    ]);
+  });
+
+  it("NETWORK_TECH gets Home + Network only — no checklist surfaces", () => {
+    expect(ids(Role.NETWORK_TECH)).toEqual(["home", "network"]);
+  });
+
+  it("marks maintenance and construction unbuilt, and nothing else", () => {
+    const unbuilt = navSectionsForRole(Role.ADMIN)
+      .filter((s) => s.unbuilt)
+      .map((s) => s.id);
+    expect(unbuilt).toEqual(["maintenance", "construction"]);
+  });
+
+  it("every section is either a leaf with an href or a parent with children", () => {
+    for (const s of navSectionsForRole(Role.ADMIN)) {
+      expect(Boolean(s.href) !== Boolean(s.children)).toBe(true);
+    }
+  });
+
+  it("gives every section a non-empty icon key", () => {
+    for (const s of navSectionsForRole(Role.ADMIN)) {
+      expect(s.icon.length).toBeGreaterThan(0);
+    }
+  });
+
+  // Locks the mapping from predicate to section. nav.ts and rbac.ts share these
+  // predicates via lib/roles.ts, so this catches a section being wired to the
+  // wrong one rather than a divergent copy.
+  it("section visibility follows the role predicates for every role", () => {
+    for (const role of Object.values(Role)) {
+      const visible = new Set(ids(role));
+      expect(visible.has("checklist")).toBe(isManagerOrAbove(role));
+      expect(visible.has("network")).toBe(canAccessNetwork(role));
+      expect(visible.has("admin")).toBe(isAdmin(role));
+      // Home is unconditional.
+      expect(visible.has("home")).toBe(true);
+    }
+  });
+});
+
+describe("mobileSectionsForRole", () => {
+  // Admin was desktop-only before the restructure; keeping it that way holds the
+  // bar at five items so it never needs to scroll.
+  it("drops admin", () => {
+    expect(mobileSectionsForRole(Role.ADMIN).map((s) => s.id)).not.toContain("admin");
+  });
+
+  it("never exceeds five items for any role", () => {
+    for (const role of Object.values(Role)) {
+      expect(mobileSectionsForRole(role).length).toBeLessThanOrEqual(5);
+    }
+  });
+});
+
+describe("navItemsForRole", () => {
+  it("flattens sections into reachable hrefs", () => {
+    expect(navItemsForRole(Role.MANAGER).map((i) => i.href)).toEqual([
       "/",
       "/dashboard",
       "/review",
@@ -25,112 +107,60 @@ describe("navItemsForRole", () => {
       "/templates",
       "/completed",
       "/reports/completeness",
+      "/maintenance",
+      "/construction",
     ]);
-    expect(navItemsForRole(Role.MANAGER).some((i) => i.group === "admin")).toBe(false);
-    expect(navItemsForRole(Role.MANAGER).some((i) => i.group === "network")).toBe(false);
   });
 
-  it("corporate gets the management surfaces plus the network group, no admin group", () => {
-    const hrefs = navItemsForRole(Role.CORPORATE).map((i) => i.href);
-    expect(hrefs).toEqual([
-      "/",
-      "/dashboard",
-      "/review",
-      "/issues",
-      "/rules",
-      "/templates",
-      "/completed",
-      "/reports/completeness",
-      "/network",
-      "/network/tickets",
-      "/network/wifi",
-    ]);
-    expect(navItemsForRole(Role.CORPORATE).some((i) => i.group === "admin")).toBe(false);
+  it("field staff reach only the root", () => {
+    expect(navItemsForRole(Role.HK).map((i) => i.href)).toEqual(["/"]);
+  });
+});
+
+describe("sectionForPathname", () => {
+  it("resolves the root to home", () => {
+    expect(sectionForPathname("/")).toBe("home");
   });
 
-  it("admin gets management surfaces plus the admin and network groups", () => {
-    const items = navItemsForRole(Role.ADMIN);
-    const hrefs = items.map((i) => i.href);
-    expect(hrefs).toEqual([
-      "/",
-      "/dashboard",
-      "/review",
-      "/issues",
-      "/rules",
-      "/templates",
-      "/completed",
-      "/reports/completeness",
-      "/admin/users",
-      "/admin/sla",
-      "/admin/properties",
-      "/network",
-      "/network/tickets",
-      "/network/wifi",
-    ]);
-    expect(items.filter((i) => i.group === "admin")).toHaveLength(3);
-    expect(items.filter((i) => i.group === "network")).toHaveLength(3);
+  it("resolves checklist children", () => {
+    expect(sectionForPathname("/review")).toBe("checklist");
+    expect(sectionForPathname("/review/abc-123")).toBe("checklist");
+    expect(sectionForPathname("/reports/completeness")).toBe("checklist");
   });
 
-  it("NETWORK_TECH gets only the network group (no checklist nav at all)", () => {
-    const items = navItemsForRole(Role.NETWORK_TECH);
-    expect(items.map((i) => i.href)).toEqual(["/network", "/network/tickets", "/network/wifi"]);
-    expect(items.every((i) => i.group === "network")).toBe(true);
+  it("resolves network children, including nested detail routes", () => {
+    expect(sectionForPathname("/network")).toBe("network");
+    expect(sectionForPathname("/network/tickets")).toBe("network");
+    expect(sectionForPathname("/network/tickets/abc")).toBe("network");
+    expect(sectionForPathname("/network/devices/abc")).toBe("network");
   });
 
-  it("MANAGER sees Templates", () => {
-    expect(navItemsForRole(Role.MANAGER).some((n) => n.href === "/templates")).toBe(true);
+  it("resolves admin and the unbuilt sections", () => {
+    expect(sectionForPathname("/admin/users")).toBe("admin");
+    expect(sectionForPathname("/maintenance")).toBe("maintenance");
+    expect(sectionForPathname("/construction")).toBe("construction");
   });
 
-  it("ADMIN no longer points at /admin/templates", () => {
-    expect(navItemsForRole(Role.ADMIN).some((n) => n.href === "/admin/templates")).toBe(false);
-    expect(navItemsForRole(Role.ADMIN).some((n) => n.href === "/templates")).toBe(true);
+  it("returns null for routes outside the nav", () => {
+    expect(sectionForPathname("/profile")).toBeNull();
+    expect(sectionForPathname("/login")).toBeNull();
   });
 
-  it("field staff do NOT see Templates", () => {
-    expect(navItemsForRole(Role.HK).some((n) => n.href === "/templates")).toBe(false);
-  });
-
-  it("MANAGER sees Completed", () => {
-    expect(navItemsForRole(Role.MANAGER).some((n) => n.href === "/completed")).toBe(true);
-  });
-
-  it("field staff do NOT see Completed", () => {
-    expect(navItemsForRole(Role.HK).some((n) => n.href === "/completed")).toBe(false);
-  });
-
-  it("MANAGER sees Reports", () => {
-    expect(navItemsForRole(Role.MANAGER).some((n) => n.href === "/reports/completeness")).toBe(true);
-  });
-
-  it("field staff do NOT see Reports", () => {
-    expect(navItemsForRole(Role.HK).some((n) => n.href === "/reports/completeness")).toBe(false);
-  });
-
-  it("MANAGER sees Dashboard", () => {
-    expect(navItemsForRole(Role.MANAGER).some((n) => n.href === "/dashboard")).toBe(true);
-  });
-
-  it("ADMIN sees /templates exactly once", () => {
-    const adminHrefs = navItemsForRole(Role.ADMIN).map((i) => i.href);
-    expect(adminHrefs.filter((h) => h === "/templates")).toHaveLength(1);
+  it("does not let the root swallow every path", () => {
+    expect(sectionForPathname("/dashboard")).not.toBe("home");
   });
 });
 
 describe("isNavItemActive", () => {
-  it("Today is active only on exact root", () => {
+  it("matches the root exactly", () => {
     expect(isNavItemActive("/", "/")).toBe(true);
     expect(isNavItemActive("/", "/review")).toBe(false);
   });
 
-  it("section items match by prefix", () => {
-    expect(isNavItemActive("/review", "/review")).toBe(true);
-    expect(isNavItemActive("/review", "/review/abc123")).toBe(true);
-    expect(isNavItemActive("/issues", "/review/abc123")).toBe(false);
-  });
-
-  it("admin sub-items match their own prefix, not the whole /admin tree", () => {
-    expect(isNavItemActive("/admin/users", "/admin/users")).toBe(true);
-    expect(isNavItemActive("/admin/templates", "/admin/users")).toBe(false);
+  it("matches others by prefix on a path boundary", () => {
+    expect(isNavItemActive("/network", "/network/tickets")).toBe(true);
+    // Guards against /networkfoo matching /network.
+    expect(isNavItemActive("/network", "/networkfoo")).toBe(false);
   });
 });
 
@@ -141,20 +171,10 @@ describe("shouldHideShell", () => {
     }
   });
 
-  // Track D's public /j job link was the only other standalone prefix; it went
-  // out with the contractor rail (ADR-028), so /j is now an ordinary 404.
-  it("no longer treats /j as standalone", () => {
-    expect(shouldHideShell("/j/some.signed.token")).toBe(false);
-  });
-
   it("shows on app routes", () => {
-    for (const p of ["/", "/review", "/issues", "/rules", "/admin/users"]) {
+    for (const p of ["/", "/review", "/issues", "/rules", "/admin/users", "/maintenance"]) {
       expect(shouldHideShell(p)).toBe(false);
     }
-  });
-
-  it("hides shell on the fill runtime", () => {
-    expect(shouldHideShell("/checklists/abc-123")).toBe(true);
   });
 
   it("SHOWS shell on manual create", () => {

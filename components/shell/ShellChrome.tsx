@@ -1,110 +1,136 @@
 // components/shell/ShellChrome.tsx
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User } from "lucide-react";
-import { Role } from "@prisma/client";
-import { isNavItemActive, shouldHideShell, type NavItem } from "@/lib/nav";
+import {
+  NAV_COLLAPSED_COOKIE,
+  mobileSectionsForRole,
+  shouldHideShell,
+  type NavSection,
+} from "@/lib/nav";
 import type { PickerProperty } from "@/lib/rbac";
 import { PropertyPicker } from "@/components/PropertyPicker";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { SignOutButton } from "@/components/SignOutButton";
+import { SidebarRail } from "./SidebarRail";
+import { MobileTabBar } from "./MobileTabBar";
 
-// Responsive app chrome. Desktop (lg+): fixed navy sidebar + content area.
-// Mobile (<lg): bottom tab bar + content. Hidden entirely on auth/standalone
-// routes so /login etc. render bare. Active state is pathname-driven.
+// Responsive app chrome. Desktop (lg+): collapsible navy rail + content.
+// Mobile (<lg): bottom section bar + sheet. Hidden entirely on auth/standalone
+// routes so /login etc. render bare.
+//
+// Restructured 2026-08-03: this file used to render every piece of nav inline.
+// It now composes SidebarRail / SectionFlyout / MobileTabBar / MobileSheet and
+// owns only the layout and the collapse state.
 export function ShellChrome({
   name,
-  navItems,
+  role,
+  sections,
   properties,
   currentPropertyId,
   showPicker,
+  initialCollapsed,
   children,
 }: {
   name: string;
-  role: Role;
-  navItems: NavItem[];
+  role: Parameters<typeof mobileSectionsForRole>[0];
+  sections: NavSection[];
   properties: PickerProperty[];
   currentPropertyId: string | null;
   showPicker: boolean;
+  initialCollapsed: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+
   if (shouldHideShell(pathname)) return <>{children}</>;
 
-  const mainItems = navItems.filter((i) => i.group === "main");
-  const adminItems = navItems.filter((i) => i.group === "admin");
-  const networkItems = navItems.filter((i) => i.group === "network");
-  // NETWORK_TECH has ONLY network-group items (no "main" nav at all), so the
-  // mobile bottom bar must include them or that role gets no mobile nav.
-  const mobileItems = [...mainItems, ...networkItems];
+  function toggleCollapsed() {
+    const next = !collapsed;
+    setCollapsed(next);
+    // Persist so the server can render the correct width on the next request.
+    document.cookie = `${NAV_COLLAPSED_COOKIE}=${next ? "1" : "0"}; path=/; max-age=${
+      60 * 60 * 24 * 365
+    }; samesite=lax`;
+  }
+
+  const activeProperty = properties.find((p) => p.id === currentPropertyId);
+
+  const footer = (
+    <div className="flex flex-col gap-3 px-2">
+      {/* The account link used to be the user's NAME alone, which reads as a
+          label rather than a destination — Kyle couldn't find where to change a
+          password (2026-07-31). Name still shown, with an explicit sub-label. */}
+      <Link href="/profile" className="flex items-center gap-2 truncate text-sm hover:text-slate-200">
+        <User className="h-4 w-4 shrink-0" />
+        <span className="min-w-0 truncate">
+          <span className="block truncate font-semibold">{name}</span>
+          <span className="block truncate text-xs font-normal text-slate-400">
+            Profile &amp; password
+          </span>
+        </span>
+      </Link>
+      {showPicker && <PropertyPicker properties={properties} current={currentPropertyId} />}
+      <div className="flex items-center justify-between">
+        <OnlineStatus />
+        <SignOutButton />
+      </div>
+    </div>
+  );
+
+  // 56px has no room for a <select>, so the picker becomes the active property's
+  // 2-letter short code — canonical across the platform (ADR-011), so it reads
+  // as an abbreviation rather than a mystery glyph. Clicking expands the rail,
+  // where the real picker lives; that beats a popover that would need its own
+  // focus management for a control used a few times a day.
+  const collapsedFooter = (
+    <div className="flex flex-col items-center gap-3">
+      <Link href="/profile" aria-label="Profile and password" title={name} className="text-slate-300 hover:text-white">
+        <User className="h-5 w-5" />
+      </Link>
+      {showPicker && (
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          title={
+            activeProperty ? `${activeProperty.shortCode} — ${activeProperty.name}` : "Choose property"
+          }
+          aria-label={
+            activeProperty
+              ? `Property ${activeProperty.name}. Expand navigation to change.`
+              : "Choose property"
+          }
+          className="rounded-lg bg-white/10 px-1.5 py-1 text-xs font-bold text-white hover:bg-white/20"
+        >
+          {activeProperty?.shortCode ?? "··"}
+        </button>
+      )}
+      <OnlineStatus />
+      <SignOutButton />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 lg:flex">
-      {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col bg-navy px-4 py-6 text-white lg:flex lg:fixed lg:inset-y-0">
-        <div className="px-2 text-lg font-extrabold tracking-tight">StayCheck</div>
-        <p className="mt-1 px-2 text-xs text-slate-300">Stayable</p>
+      <SidebarRail
+        sections={sections}
+        pathname={pathname}
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
+        footer={footer}
+        collapsedFooter={collapsedFooter}
+      />
 
-        <nav className="mt-8 flex flex-1 flex-col gap-1">
-          {mainItems.map((item) => (
-            <SidebarLink key={item.href} item={item} pathname={pathname} />
-          ))}
-          {adminItems.length > 0 && (
-            <>
-              <p className="mt-6 px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
-                Admin
-              </p>
-              {adminItems.map((item) => (
-                <SidebarLink key={item.href} item={item} pathname={pathname} />
-              ))}
-            </>
-          )}
-          {networkItems.length > 0 && (
-            <>
-              <p className="mt-6 px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
-                Network
-              </p>
-              {networkItems.map((item) => (
-                <SidebarLink key={item.href} item={item} pathname={pathname} />
-              ))}
-            </>
-          )}
-        </nav>
-
-        <div className="mt-4 flex flex-col gap-3 border-t border-white/10 px-2 pt-4">
-          {/* The account link used to be the user's NAME alone, which reads as a
-              label rather than a destination — Kyle couldn't find where to change
-              a password (2026-07-31). Name still shown (it answers "who am I
-              signed in as"), with an explicit sub-label for what the link does. */}
-          <Link
-            href="/profile"
-            className="flex items-center gap-2 truncate text-sm hover:text-slate-200"
-          >
-            <User className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 truncate">
-              <span className="block truncate font-semibold">{name}</span>
-              <span className="block truncate text-xs font-normal text-slate-400">
-                Profile &amp; password
-              </span>
-            </span>
-          </Link>
-          {showPicker && (
-            <PropertyPicker properties={properties} current={currentPropertyId} />
-          )}
-          <div className="flex items-center justify-between">
-            <OnlineStatus />
-            <SignOutButton />
-          </div>
-        </div>
-      </aside>
-
-      {/* Content */}
-      <div className="flex min-h-screen w-full flex-col lg:pl-60">
+      <div className={`flex min-h-screen w-full flex-col ${collapsed ? "lg:pl-14" : "lg:pl-60"}`}>
         {/* Mobile top bar (picker + sign out live here on small screens) */}
         <div className="flex items-center justify-between gap-2 px-4 py-3 lg:hidden">
-          <span className="text-base font-extrabold text-navy">StayCheck</span>
+          <Link href="/" className="text-base font-extrabold text-navy">
+            StayCheck
+          </Link>
           <div className="flex items-center gap-2">
             <OnlineStatus />
             {showPicker && (
@@ -121,40 +147,8 @@ export function ShellChrome({
           {children}
         </main>
 
-        {/* Mobile bottom tab bar — main + network items (admin stays desktop-only) */}
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-          <div className="mx-auto flex max-w-md items-stretch justify-around">
-            {mobileItems.map((item) => {
-              const active = isNavItemActive(item.href, pathname);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-semibold ${
-                    active ? "text-navy" : "text-slate-400"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
+        <MobileTabBar sections={mobileSectionsForRole(role)} pathname={pathname} />
       </div>
     </div>
-  );
-}
-
-function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const active = isNavItemActive(item.href, pathname);
-  return (
-    <Link
-      href={item.href}
-      className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-        active ? "bg-white/15 text-white" : "text-slate-300 hover:bg-white/10 hover:text-white"
-      }`}
-    >
-      {item.label}
-    </Link>
   );
 }

@@ -1028,6 +1028,56 @@ The live question was therefore not *whether* to narrow, but what to do with Tra
 - **One thing must survive if that branch is ever reconciled:** `InviteKind.ACCOUNT` is staff account activation wired into `app/admin/users/actions.ts` — Track A functionality that happens to live inside the consent rail.
 - Reversal is a `git revert` of `94ce338` plus re-running the additive migrations; nothing is unrecoverable, but it stops being free once the drop is applied to prod.
 
+### Amendment 2026-08-03 — C and E return as future sections
+
+Kyle, hours after this ADR landed: Maintenance and Construction **are coming back to this codebase later**, so they now appear as top-level nav sections with stub pages (ADR-029). This narrows the ADR rather than reversing it:
+
+- **Still true:** no C/D/E build work is scheduled, the contractor/dispatch code stays deleted and its tables dropped, and `docs/archive/tracks-cde/` is reference — not a backlog to restart from.
+- **Changed:** the archive is no longer presumed permanent for **C and E**. Their specs may be reopened when they are picked up, through a fresh decision.
+- **Undecided:** whether contractor dispatch (**D**) returns with Maintenance. It is the part with deleted code and dropped tables, so it is the expensive one to bring back. Not assumed either way.
+
+---
+
+## ADR-029: Section-based navigation with a collapsible rail
+
+**Date:** 2026-08-03
+**Status:** Accepted
+**Supersedes:** ADR-018's flat nav list (the AppShell itself stands).
+
+### Context
+
+ADR-018 gave the app one flat nav list. It reached 14 items and put `Users`, `Tickets` and `Templates` at the same level as `Review`. Two concrete failures:
+
+- The mobile bottom bar rendered **11 items in one `max-w-md` row** for ADMIN — unusable.
+- Nothing expressed that the platform has *areas*. Adding Maintenance and Construction to a flat list would have made it 16.
+
+Kyle asked for a collapsing sidebar and raised top tabs with hover submenus as the alternative.
+
+### Alternatives Considered
+
+1. **Top tab bar with hover flyouts.** Rejected: hover doesn't exist on touch, so a PWA with field staff on phones would need a *third* nav pattern; the sections are lopsided (Checklist 7 children, Network 3, Home/Maintenance/Construction 0) where tabs want comparable weight; a top bar has nowhere to put counts; and vertical space is the scarce axis on the review and ticket tables.
+2. **Keep flat, add a "More" overflow.** Rejected: hides the structural problem rather than fixing it, and mobile would teach a different shape from desktop.
+3. **Sections in a collapsible left rail.** Chosen.
+
+### Decision
+
+Six sections — **Home · Checklist · Network · Maintenance · Construction · Admin** — defined in `lib/nav.ts` as data, consumed identically by both breakpoints.
+
+- **Desktop:** 240px expanded / 56px icon rail. Collapsed sections open as a flyout on hover, focus **or** click. Collapse state lives in a cookie read **server-side** in `AppShell` — deciding width on the client paints the wrong one and jumps the page on every navigation.
+- **Mobile:** the bottom bar carries the same sections; tapping one opens a sheet of its children. Admin stays desktop-only, which holds the bar at five items. Field staff have one section, so the bar renders nothing rather than a one-item bar.
+- **Home is `/` for every role** — the existing page, renamed in the nav. The cross-app summary lands there later with no route change. "Today" is retired as a label.
+- **Maintenance and Construction ship as stub pages**, not dead links, and carry a `Soon` chip.
+- `lib/nav.ts` must stay free of server-only imports because client components import it. That forced the pure role predicates out of `lib/rbac.ts` into **`lib/roles.ts`** (rbac re-exports them, so every existing call site is unchanged). Icons are stored as lucide **key strings** and resolved in `NavIcon`.
+- `ShellChrome` was split into `SidebarRail` / `SectionFlyout` / `MobileTabBar` / `MobileSheet` / `UnbuiltSection`, leaving it as the layout that composes them.
+
+### Consequences
+
+- Adding a section is a data change in one file, not surgery on two renderers.
+- **Two more clicks to reach a leaf on mobile** (tab → sheet → destination) than the old flat bar, for the four or five destinations that were previously visible at once. Accepted: 11 unreadable tabs was worse. Per-section badge counts would mitigate it and are deliberately **not** built yet — they need a count query on every page load, which is its own cost decision.
+- **Admins still cannot reach `/admin/*` from a phone.** Unchanged from before, now a deliberate choice rather than an accident.
+- Section visibility duplicates nothing, but it *is* display logic derived from the same predicates as authorization — showing a section is not permission, and every page still guards itself. A test pins each section to its predicate.
+- The rail's expand/collapse of individual sections is seeded from the active route and not persisted; only the rail-wide collapse is.
+
 ---
 
 ## ADR Template (copy for new entries)

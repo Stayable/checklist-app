@@ -1,11 +1,9 @@
 // components/shell/AppShell.tsx
+import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
-import {
-  accessibleProperties,
-  isPortfolioRole,
-} from "@/lib/rbac";
+import { accessibleProperties, isPortfolioRole } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
-import { navItemsForRole } from "@/lib/nav";
+import { NAV_COLLAPSED_COOKIE, navSectionsForRole } from "@/lib/nav";
 import { ShellChrome } from "./ShellChrome";
 
 // Server wrapper mounted once in the root layout. Unauthenticated requests
@@ -23,14 +21,21 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     ? await getCurrentPropertyId(properties.map((p) => p.id))
     : null;
 
+  // Rail width is decided HERE, not in an effect: the sidebar is fixed, so
+  // choosing the width on the client paints the wrong one first and the content
+  // jumps on every navigation.
+  const jar = await cookies();
+  const initialCollapsed = jar.get(NAV_COLLAPSED_COOKIE)?.value === "1";
+
   return (
     <ShellChrome
       name={session.user.name ?? ""}
       role={role}
-      navItems={navItemsForRole(role)}
+      sections={navSectionsForRole(role)}
       properties={properties}
       currentPropertyId={currentPropertyId}
       showPicker={showPicker}
+      initialCollapsed={initialCollapsed}
     >
       {children}
     </ShellChrome>
