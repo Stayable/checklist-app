@@ -177,6 +177,49 @@ enum TicketNoteSource {
 }
 
 // ---------------------------------------------------------------------------
+// Contractor scheduling enums (2026-08-11 design, ADR-030).
+//
+// `Contractor`, `Trade` and `JobStatus` were dropped from schema AND from the
+// production database on 2026-08-03 by 20260803120000_drop_contractor_dispatch
+// (Track D dispatch rail, commit 94ce338). What follows is NOT a revival of
+// that rail: it is a new, narrower scheduling feature that happens to reuse
+// two of the old names because they are the correct domain nouns and are now
+// free. There is no dispatch, no messaging, and no contractor-facing link —
+// see the models below and docs/superpowers/specs/2026-08-11-contractor-
+// scheduling-design.md.
+// ---------------------------------------------------------------------------
+
+enum Trade {
+  PLUMBING
+  ELECTRICAL
+  HVAC
+  ROOFING
+  PEST
+  LANDSCAPING
+  PRESSURE_WASHING
+  GENERAL
+}
+
+// Named in full (not the dropped `JobStatus`) because its values describe a
+// planning lifecycle, not a dispatch one. Deliberately NO `DISPATCHED` value:
+// nothing in this feature dispatches or messages a contractor.
+enum ContractorJobStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+// Who wrote a note: a staff/admin user, or automation posting on their
+// behalf (`SYSTEM`, e.g. an auto-appended status-change note, or later a post
+// from Kyle's separate contractor-update project — that ingest endpoint is
+// not built; this enum value is the seam for it).
+enum ContractorNoteSource {
+  STAFF
+  SYSTEM
+}
+
+// ---------------------------------------------------------------------------
 // Core identity (Phase 1)
 // ---------------------------------------------------------------------------
 
@@ -208,6 +251,9 @@ model User {
   notifications     NotificationLog[]
   createdRules      RecurringRule[]     @relation("RuleCreatedBy")
   loginOtps         LoginOtp[]
+  contractorJobsCreated ContractorJob[]      @relation("ContractorJobCreatedBy")
+  contractorJobNotes   ContractorJobNote[]   @relation("ContractorJobNoteAuthor")
+  contractorDailyNotes ContractorDailyNote[] @relation("ContractorDailyNoteAuthor")
 
   @@map("users")
 }
@@ -239,6 +285,9 @@ model Property {
   devices            Device[]
   networkEvents      NetworkEvent[]
   tickets            Ticket[]
+  contractors          ContractorProperty[]
+  contractorJobs       ContractorJob[]
+  contractorDailyNotes ContractorDailyNote[]
 
   @@map("properties")
 }
@@ -771,4 +820,134 @@ model NotificationLog {
   @@index([channel, status])
   @@index([entityType, entityId])
   @@map("notification_log")
+}
+
+// ---------------------------------------------------------------------------
+// Contractor scheduling (2026-08-11 design, ADR-030).
+//
+// New, narrower models for a scheduling-only feature — NOT a revert of the
+// Track D dispatch rail dropped 2026-08-03 (94ce338,
+// 20260803120000_drop_contractor_dispatch). That rail's dispatch-only fields
+// (`contracted`, `onCall`, a `Contractor.userId` link to `User`, and a
+// contractor-owned `Photo`) are deliberately absent here because nothing in
+// this feature dispatches, messages, or issues a contractor-facing link. See
+// docs/superpowers/specs/2026-08-11-contractor-scheduling-design.md.
+// ---------------------------------------------------------------------------
+
+model Contractor {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  company   String?
+  trades    Trade[]
+  phone     String?
+  // Contact information only — no code path sends a message to this number.
+  // Messaging/dispatch was removed with Track D and is out of scope here.
+  whatsapp  String?
+  active    Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  properties ContractorProperty[]
+  jobs       ContractorJob[]
+
+  @@map("contractors")
+}
+
+model ContractorProperty {
+  contractorId String @map("contractor_id") @db.Uuid
+  propertyId   String @map("property_id") @db.Uuid
+
+  contractor Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([contractorId, propertyId])
+  @@index([propertyId])
+  @@map("contractor_properties")
+}
+
+model ContractorJob {
+  id         String @id @default(uuid()) @db.Uuid
+  propertyId String @map("property_id") @db.Uuid
+  // Free text, not a Room FK — rooms are only seeded for Lakeland (no PMS in
+  // v1) and a schedule entry needs to say "Rm 212" / "lobby" / "roof".
+  // Consistent with S1's free-text-room direction (lib/room-label.ts).
+  roomLabel   String?             @map("room_label")
+  trade       Trade
+  description String
+  urgent      Boolean             @default(false)
+  status      ContractorJobStatus @default(PLANNED)
+  contractorId String?            @map("contractor_id") @db.Uuid
+  // Nullable, and that is load-bearing: null means "unscheduled backlog," a
+  // real state the schedule UI surfaces (a persistent backlog rail), not
+  // missing data. Date-only (ET calendar date) per the 2026-08-11 decision —
+  // no times, no durations.
+  scheduledFor DateTime?          @map("scheduled_for") @db.Date
+  createdByUserId String          @map("created_by_user_id") @db.Uuid
+  // A real column so "completed today" is never inferred from `updatedAt` —
+  // that would only hold while terminal rows stay immutable, a property no
+  // schema enforces on its own.
+  completedAt DateTime?           @map("completed_at") @db.Timestamptz
+  closeNote   String?             @map("close_note")
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  property    Property            @relation(fields: [propertyId], references: [id])
+  contractor  Contractor?         @relation(fields: [contractorId], references: [id])
+  createdBy   User                @relation("ContractorJobCreatedBy", fields: [createdByUserId], references: [id])
+  notes       ContractorJobNote[]
+
+  @@index([propertyId, scheduledFor])
+  @@index([scheduledFor])
+  @@index([contractorId])
+  @@index([status])
+  @@index([urgent, status])
+  @@map("contractor_jobs")
+}
+
+// Append-only note on a ContractorJob. No `updatedAt`, no soft-delete column
+// — "never overwritten" is a property of the schema shape, not app logic:
+// there is simply no column an edit could be written into. Follows the
+// existing TicketNote pattern.
+model ContractorJobNote {
+  id     String               @id @default(uuid()) @db.Uuid
+  jobId  String               @map("job_id") @db.Uuid
+  source ContractorNoteSource
+  // Nullable AND SetNull: a note must survive its author's account being
+  // deleted. authorLabel is the durable attribution fallback once the author
+  // is nulled, and carries the display name for SYSTEM rows.
+  authorUserId String?        @map("author_user_id") @db.Uuid
+  authorLabel  String?        @map("author_label")
+  body         String
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  job        ContractorJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  authorUser User?         @relation("ContractorJobNoteAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@map("contractor_job_notes")
+}
+
+// Append-only written entry on the daily contractor dashboard (per-property
+// or portfolio-wide when propertyId is null). Same append-only-by-shape rule
+// as ContractorJobNote: no `updatedAt`, no soft-delete column. Deliberately
+// NO unique constraint on (propertyId, forDate) — several entries for one
+// day is correct behaviour for an append-only log, not a conflict.
+model ContractorDailyNote {
+  id         String               @id @default(uuid()) @db.Uuid
+  propertyId String?              @map("property_id") @db.Uuid
+  forDate    DateTime             @map("for_date") @db.Date
+  source     ContractorNoteSource
+  authorUserId String?            @map("author_user_id") @db.Uuid
+  authorLabel  String?            @map("author_label")
+  body         String
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz
+
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  authorUser User?     @relation("ContractorDailyNoteAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([forDate, propertyId])
+  @@map("contractor_daily_notes")
 }
