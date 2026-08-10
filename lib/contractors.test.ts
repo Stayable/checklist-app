@@ -66,9 +66,17 @@ describe("job status labels", () => {
     );
   });
 
-  it("isTerminalJobStatus / requiresCloseNote agree with TERMINAL_JOB_STATUSES", () => {
-    for (const s of Object.values(ContractorJobStatus)) {
-      const expected = TERMINAL_JOB_STATUSES.includes(s);
+  it("isTerminalJobStatus / requiresCloseNote match pinned expectations per status", () => {
+    // Pinned literally (not derived from TERMINAL_JOB_STATUSES) so this test
+    // constrains behaviour independently — a consistently-wrong pairing of
+    // the constant and the functions would otherwise still pass.
+    const expectations: [ContractorJobStatus, boolean][] = [
+      [ContractorJobStatus.PLANNED, false],
+      [ContractorJobStatus.IN_PROGRESS, false],
+      [ContractorJobStatus.DONE, true],
+      [ContractorJobStatus.CANCELLED, true],
+    ];
+    for (const [s, expected] of expectations) {
       expect(isTerminalJobStatus(s)).toBe(expected);
       expect(requiresCloseNote(s)).toBe(expected);
     }
@@ -221,6 +229,36 @@ describe("resolveNoteAuthor", () => {
     for (const c of cases) {
       expect(resolveNoteAuthor(c)).not.toBe("");
     }
+  });
+
+  it("a whitespace-only live author name falls through to a valid authorLabel", () => {
+    expect(
+      resolveNoteAuthor({
+        source: ContractorNoteSource.STAFF,
+        authorLabel: "Karla Dugayo",
+        author: { name: "   " },
+      }),
+    ).toBe("Karla Dugayo");
+  });
+
+  it("whitespace-only author name AND whitespace-only authorLabel on STAFF -> 'Removed user'", () => {
+    const result = resolveNoteAuthor({
+      source: ContractorNoteSource.STAFF,
+      authorLabel: "   ",
+      author: { name: "  " },
+    });
+    expect(result).toBe("Removed user");
+    expect(result.trim()).not.toBe("");
+  });
+
+  it("whitespace-only author name AND whitespace-only authorLabel on SYSTEM -> 'System'", () => {
+    const result = resolveNoteAuthor({
+      source: ContractorNoteSource.SYSTEM,
+      authorLabel: "   ",
+      author: { name: "  " },
+    });
+    expect(result).toBe("System");
+    expect(result.trim()).not.toBe("");
   });
 });
 

@@ -143,11 +143,15 @@ export type NoteAuthorInput = {
  * written by, and a SYSTEM note never had a user account at all. Below that,
  * `"System"` covers an unlabelled SYSTEM row and `"Removed user"` covers a
  * STAFF row whose author is gone and was never labelled. Never returns an
- * empty string.
+ * empty string — every candidate is trimmed before the truthiness check, so
+ * a whitespace-only name or label (visually blank) falls through to the next
+ * candidate instead of being returned verbatim.
  */
 export function resolveNoteAuthor(input: NoteAuthorInput): string {
-  if (input.author?.name) return input.author.name;
-  if (input.authorLabel) return input.authorLabel;
+  const liveName = input.author?.name.trim();
+  if (liveName) return liveName;
+  const label = input.authorLabel?.trim();
+  if (label) return label;
   if (input.source === ContractorNoteSource.SYSTEM) return "System";
   return "Removed user";
 }
