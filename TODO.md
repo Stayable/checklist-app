@@ -54,7 +54,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 | **A** | **Checklist App (StayCheck)** — the Connecteam replacement | **P0** | 🟢 Live in prod, ~60% of v1 | A6 (real content + geofences) |
 | **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live · **8 of 8 properties, 16 consoles, 596 devices** · lifecycle proven in prod · **Teams notifications LAUNCHED 2026-08-02** (9 channels, escalation, 9 AM digest) | Watch the first 9 AM digest (Mon 3 Aug) · Gerardo @-mention (flow-side) · console filter · B3 hardening · §Q29 SA flap |
 | **C** | **Maintenance / Ticketing** | — | 🗄 **Archived, returning later** (ADR-028 amendment). Nothing built, no work scheduled. Ships today as a **nav section + stub page** so the shape is visible | `docs/archive/tracks-cde/` |
-| ~~D~~ | ~~Contractor Dispatch + WhatsApp~~ | — | 🗄 **Archived 2026-08-03** (ADR-028) — code **deleted** in `94ce338`, tables **dropped from prod**, consent rail left unmerged. ⚠ Whether D returns with C is **undecided** — it is the expensive one to bring back | `docs/archive/tracks-cde/` |
+| **D** | **Contractor Scheduling** (calendar + daily dashboard) | P1 | 🟡 **IN BUILD 2026-08-11 — 4 of 9 tasks done, branch-local.** Kyle reopened contractor work as a companion to the contractor-update system he is building outside this repo. **Scheduling only — dispatch/WhatsApp/consent stay archived and do NOT return.** New narrower schema; nothing revived from the deleted rail | D-build below · spec `docs/superpowers/specs/2026-08-11-contractor-scheduling-design.md` |
 | **E** | **Construction Progress / Scheduling** | — | 🗄 **Archived, returning later** (ADR-028 amendment). Never had a go/no-go. Ships today as a **nav section + stub page** | `docs/archive/tracks-cde/` |
 
 A and B share one codebase and one deploy (ADR-025) and reuse the same core: auth, RBAC, audit log, notifications, R2 photo pipeline, SLA, geofence. Only two things ever coupled B to the rest — `canAccessNetwork` in `lib/rbac.ts` and `NETWORK_GROUP` in `lib/nav.ts` — and that is worth keeping true.
@@ -226,6 +226,44 @@ All pure DB work — no vendor dependency, no credentials needed.
 | P2 | [x] | ~~At-rest encryption for `Property.spotipoApiKey`~~ — **moot**: keys now live in env, never in the DB, so they are absent from backups, query logs and every `Property` read. Closes open decision D6 |
 | P2 | [ ] | 7 of 8 properties still need `STRIPE_SECRET_KEY_<CODE>` — revenue shows JW only |
 | P3 | [ ] | T8 — Teams reply → `TicketNote` (**requires Graph**, impossible on the webhook) |
+
+---
+
+# TRACK D — Contractor Scheduling · P1 · 🟡 IN BUILD (branch-local, nothing deployed)
+
+Reopened **2026-08-11** by Kyle as a companion to the contractor-update system he is building outside
+this repo. **Scheduling only.** Dispatch, WhatsApp, Twilio/A2P consent, signed contractor links and
+contractor logins stay archived and are explicitly **not** returning — building a send path would
+contradict ADR-028. `Photo` is untouched (ADR-016); jobs have no photos.
+
+- **Spec:** `docs/superpowers/specs/2026-08-11-contractor-scheduling-design.md`
+- **Plan:** `docs/superpowers/plans/2026-08-11-contractor-scheduling.md` (9 tasks)
+- **Live ledger:** `.superpowers/sdd/2026-08-11-contractor-scheduling/progress.md` — **read this to resume**
+- **Branch:** `feat/contractor-scheduling-v2` (from `main` @ `610119b`), HEAD `06a33bb`
+- **Written from scratch.** The 2026-08-10 design at `docs/archive/tracks-cde/superpowers/` is
+  superseded and **off-limits as a source** (Kyle's instruction) — it was built on `ContractorJob`,
+  which ADR-028 had already dropped from `main` and from prod a week before it was written.
+- **This repo OWNS contractor + job records** (Kyle, 2026-08-11). Accepted cost: two contractor lists
+  that can drift from the external system. If they must agree later, import direction is *into* here.
+
+| Task | Pri | Status | What |
+|---|---|---|---|
+| D-1 | P1 | [x] | **Schema + additive migration** (`f62cb8e`, review clean). 3 enums + `Contractor`, `ContractorProperty`, `ContractorJob`, `ContractorJobNote`, `ContractorDailyNote`. Verified additive-only; `photos` untouched. Deliberately omits the deleted rail's `contracted`/`onCall`/`userId`/photo relation. `scheduledFor` nullable (null = unscheduled backlog, a real state); `completedAt` a real column so "completed today" is never inferred from `updatedAt` |
+| D-2 | P1 | [x] | **Pure ET calendar math** `lib/contractor-schedule.ts` (`b1776a8`, review clean). Day/week/work-week/month, 42-cell month grid, inclusive `@db.Date` range bounds, month-clamping anchor step. Dashed-ymd internally to contain the `etYYYYMMDD`-compact vs `etDayStartUtc`-dashed mismatch. Both 2026 DST transitions tested |
+| D-3 | P1 | [x] | **Labels, Zod schemas, sort, note authors** `lib/contractors.ts` (`b3c5233` + fix `222c1f6`, clean after 1 fix round). Fix was a real bug: `resolveNoteAuthor` used plain truthiness so a whitespace-only name rendered a blank author |
+| D-4 | P1 | [x] | **Contractor directory** `/maintenance/contractors` (`06a33bb`, review clean, no findings). Archive-never-delete; archived rows stay visible; per-property authorization validates **every** submitted id and additionally prevents a scoped manager's narrower form from stripping out-of-scope ties |
+| D-5 | P1 | [!] | **Job lifecycle** — `app/maintenance/jobs/**`. **STOPPED mid-work 2026-08-11 (battery).** Left untracked, uncommitted, ungated, unreviewed. **Delete `app/maintenance/jobs/` and re-dispatch from `task-5-brief.md` — do not salvage it** |
+| D-6 | P1 | [ ] | Nav: `Maintenance` from `unbuilt` stub → real section with Schedule/Daily/Contractors children. ⚠ `lib/nav.test.ts` asserts the current shape and **will fail** — read every failure |
+| D-7 | P1 | [ ] | Calendar `/maintenance/schedule` — grid + persistent unscheduled-backlog rail |
+| D-8 | P1 | [ ] | Daily dashboard `/maintenance/daily` — 5 tiles + activity table + append-only written log |
+| D-9 | P1 | [ ] | **ADR-030** + tracker + status. Next free ADR number is **030** (027/028/029 taken) |
+| D-fix | P1 | [ ] | 🚩 **`Contractor.company` can never be set** — column exists (`prisma/schema.prisma:840`) and is displayed, but is absent from `contractorSchema`, so nothing writes it. **My plan's inconsistency**, adjudicated: add the optional field + form input, do NOT remove the display. Dispatch before D-6 |
+| D-min | P2 | [ ] | Two deferred minors for the final review: DST tests assert 7 distinct days but not concrete boundary dates (impl verified correct by hand — fix is 2 assertions); `ContractorJob.contractorId` uses `SetNull` while `propertyId`/`createdByUserId` use `RESTRICT` — confirm intended |
+
+**⚠ Migration `20260811120000_add_contractor_scheduling` is authored but applied to NO database, and no
+code is deployed.** Additive, so prod order is **DB first, then code** (the 2026-08-03 drop inverted
+that only because it was a drop). Directory ships empty — real contractors must be entered by hand; no
+seed roster, deliberately (the last one shipped placeholder phone numbers into the baseline).
 
 ---
 
