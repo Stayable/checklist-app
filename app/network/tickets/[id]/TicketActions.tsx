@@ -80,8 +80,14 @@ export function TicketActions({
             ))}
           </select>
         </label>
+        {/* Free text, and deliberately labelled as such. `Ticket.assignedTo` is
+            a String with no relation to `User`, and no code path reads it to
+            notify anyone — so an email typed here would look like a delivery
+            address while sending nothing. Saying so is the fix; a picker that
+            actually notifies is a separate decision (there is a standing "no
+            email" call on network escalation). */}
         <label className="mb-3 block text-sm text-slate-700">
-          Assigned to
+          Assigned to (name)
           <input
             type="text"
             disabled={pending}
@@ -90,6 +96,10 @@ export function TicketActions({
             placeholder="IT staff or MSP name"
             className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
+          <span className="mt-1 block text-xs text-slate-500">
+            A label for the board only. Nothing is emailed or messaged from this field, so an
+            address typed here would notify nobody.
+          </span>
         </label>
         <label className="mb-3 block text-sm text-slate-700">
           Resolution notes

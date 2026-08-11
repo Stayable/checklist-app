@@ -8,7 +8,12 @@ import { ticketAgeBucket } from "@/lib/network/ticket-age";
 import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 import { EscalationBadges } from "@/components/network/EscalationBadges";
 import type { AffectedDevice } from "@/lib/network/mass-outage";
-import { isPropertyTeamsConfigured } from "@/lib/network/teams-config";
+import {
+  teamsDeliveryNote,
+  teamsDeliveryTone,
+  teamsEventLabel,
+  teamsTargetLabel,
+} from "@/lib/network/teams-delivery-labels";
 import { TicketActions } from "./TicketActions";
 
 // NETWORK ticket detail (spec §6.3). Mirrors app/review/[id]/page.tsx's
@@ -69,9 +74,21 @@ export default async function TicketDetailPage({
   const escalated =
     escalationLevel({ openedAt: ticket.openedAt, now, status: ticket.status }) === "ESCALATED";
   const overnight = isOvernight(ticket.openedAt);
-  // Task 7 (SCAFFOLD + DEGRADE): no Graph creds yet, so nothing is ever
-  // actually posted — surface that honestly instead of a silent blank link.
-  const teamsConfigured = isPropertyTeamsConfigured(ticket.property);
+  // What actually happened in Teams for this ticket, read from the delivery
+  // log rather than inferred from config.
+  //
+  // This replaced a "Teams: not configured" badge derived from
+  // isPropertyTeamsConfigured(), which tests Graph creds + Property.
+  // teamsChannelId — both from the original Graph design (ADR-026) that
+  // ADR-027 replaced with per-channel webhooks. No property has ever had
+  // teamsChannelId set, so that badge read "not configured" on every ticket in
+  // production while these rows show the posts genuinely SENT. It was false,
+  // not just noisy.
+  const teamsDeliveries = await db.notificationLog.findMany({
+    where: { channel: "TEAMS", entityType: "ticket", entityId: ticket.id },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, event: true, status: true, target: true, error: true, createdAt: true },
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -119,7 +136,12 @@ export default async function TicketDetailPage({
                 )}
               </dd>
               <dt className="text-slate-500">Assigned to</dt>
-              <dd className="text-slate-900">{ticket.assignedTo ?? "Unassigned"}</dd>
+              <dd className="text-slate-900">
+                {ticket.assignedTo ?? "Unassigned"}
+                {ticket.assignedTo && (
+                  <span className="ml-1.5 text-xs text-slate-400">(label only, not notified)</span>
+                )}
+              </dd>
               <dt className="text-slate-500">Opened</dt>
               <dd className="text-slate-900">{formatInET(ticket.openedAt)}</dd>
               <dt className="text-slate-500">Resolved</dt>
@@ -161,28 +183,61 @@ export default async function TicketDetailPage({
                   </dd>
                 </>
               )}
-              <dt className="text-slate-500">Teams message</dt>
-              <dd className="text-slate-900">
-                {ticket.teamsMessageUrl ? (
-                  <a
-                    href={ticket.teamsMessageUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-blue-700 hover:underline"
-                  >
-                    View in Teams
-                  </a>
-                ) : !teamsConfigured ? (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                    Teams: not configured
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    Teams: pending
-                  </span>
-                )}
-              </dd>
             </dl>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <h2 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+              Teams
+            </h2>
+            {teamsDeliveries.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No Teams post recorded for this ticket.
+              </p>
+            ) : (
+              <ol className="flex flex-col gap-2">
+                {teamsDeliveries.map((row) => {
+                  const tone = teamsDeliveryTone(row.status);
+                  const note = teamsDeliveryNote(row.error);
+                  return (
+                    <li key={row.id} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                      <span className="font-semibold text-slate-900">
+                        {teamsEventLabel(row.event)}
+                      </span>
+                      <span className="text-slate-500">→ {teamsTargetLabel(row.target)}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          tone === "sent"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : tone === "pending"
+                              ? "bg-amber-50 text-amber-700"
+                              : tone === "failed"
+                                ? "bg-red-50 text-red-700"
+                                : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {row.status === "SENT"
+                          ? "Posted"
+                          : row.status === "PENDING"
+                            ? "Queued"
+                            : row.status === "FAILED"
+                              ? "Failed"
+                              : "Not posted"}
+                      </span>
+                      <span className="text-xs text-slate-500">{formatInET(row.createdAt)}</span>
+                      {note && <span className="w-full text-xs text-slate-500">{note}</span>}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            {/* The webhook returns no message id, so there is no deep link to
+                offer — saying so beats a "View in Teams" affordance that can
+                never appear. Tracked as the open threading question. */}
+            <p className="mt-2 text-xs text-slate-400">
+              Posts are delivered by webhook, which returns no message link — open the channel in
+              Teams to read the thread.
+            </p>
           </div>
 
           {ticket.resolutionNotes && (
