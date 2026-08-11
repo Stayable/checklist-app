@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ContractorJobStatus, Trade } from "@prisma/client";
-import type { CalendarView, DayCell } from "@/lib/contractor-schedule";
+import { isWeekendYMD, type CalendarView, type DayCell } from "@/lib/contractor-schedule";
 import { isOverdue, isTerminalJobStatus, jobStatusLabel, tradeLabel } from "@/lib/contractors";
 
 // The calendar body. A DATE-ONLY feature (Kyle, 2026-08-11), so day and week
@@ -65,6 +65,40 @@ function dayNumber(ymd: string): string {
 
 function weekdayOf(ymd: string): string {
   return WEEKDAY_LABELS[new Date(`${ymd}T00:00:00.000Z`).getUTCDay()];
+}
+
+// ---------------------------------------------------------------------------
+// Surfaces
+//
+// The calendar sits on a tinted "paper" frame and the day cells are cards laid
+// on top of it, which is what makes the whole thing read as one calendar rather
+// than a row of floating boxes.
+//
+// ONE PRECEDENCE ORDER, so the tints can never argue with each other — each
+// cell gets exactly one surface, most specific first:
+//   1. today       — sky tint + navy border. The only cell with a coloured edge.
+//   2. weekend     — a step darker than a workday, so Sat/Sun read as different
+//                    without introducing a new colour. Deliberately neutral:
+//                    urgent (red) and overdue (amber) are already meaningful on
+//                    the chips inside a cell, and a hued weekend would compete
+//                    with them for the same "pay attention" signal.
+//   3. workday     — white, the brightest surface, because that is where work
+//                    normally happens.
+// Out-of-month padding days (month view only) then dim whatever they landed on
+// rather than replacing it, so a weekend in the previous month still reads as a
+// weekend.
+// ---------------------------------------------------------------------------
+
+const FRAME = "rounded-xl border border-slate-200 bg-slate-100/70 p-2";
+
+function cellSurface(cell: DayCell): string {
+  const base = cell.isToday
+    ? "border-navy bg-sky-50"
+    : isWeekendYMD(cell.ymd)
+      ? "border-slate-200 bg-slate-50"
+      : "border-slate-200 bg-white";
+  // `inCurrentMonth` is only ever false in the month grid.
+  return cell.inCurrentMonth ? base : `${base} opacity-60`;
 }
 
 function jobTone(job: ScheduleJob, todayYmd: string): string {
@@ -193,12 +227,18 @@ export function CalendarGrid({
 
   if (view === "month") {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-2">
+      <div className={FRAME}>
         <div className="grid grid-cols-7 gap-1">
-          {WEEKDAY_LABELS.map((label) => (
+          {WEEKDAY_LABELS.map((label, index) => (
             <div
               key={label}
-              className="px-1 pb-1 text-center text-[11px] font-bold uppercase tracking-wide text-slate-400"
+              className={`rounded px-1 py-1 text-center text-[11px] font-bold uppercase tracking-wide ${
+                // 0 = Sun, 6 = Sat: the header carries the same weekend cue as
+                // the column beneath it.
+                index === 0 || index === 6
+                  ? "bg-slate-200/60 text-slate-500"
+                  : "text-slate-400"
+              }`}
             >
               {label}
             </div>
@@ -206,16 +246,7 @@ export function CalendarGrid({
           {cells.map((cell) => {
             const dayJobs = buckets.get(cell.ymd) ?? [];
             return (
-              <div
-                key={cell.ymd}
-                className={`min-h-24 rounded-md border p-1 ${
-                  cell.isToday
-                    ? "border-navy bg-blue-50/40"
-                    : cell.inCurrentMonth
-                      ? "border-slate-200"
-                      : "border-slate-100 bg-slate-50"
-                }`}
-              >
+              <div key={cell.ymd} className={`min-h-24 rounded-md border p-1 ${cellSurface(cell)}`}>
                 <div className="flex items-baseline justify-between">
                   <button
                     type="button"
@@ -256,77 +287,78 @@ export function CalendarGrid({
     const cell = cells[0];
     const dayJobs = buckets.get(cell.ymd) ?? [];
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-          {weekdayOf(cell.ymd)}
-          {cell.isToday ? " · Today" : ""} · {dayJobs.length} job{dayJobs.length === 1 ? "" : "s"}
-        </h2>
-        {dayJobs.length === 0 ? (
-          <p className="text-xs text-slate-400">Nothing scheduled</p>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            {dayJobs.map((job) => (
-              <JobChip key={job.id} job={job} todayYmd={todayYmd} onOpen={onOpenJob} />
-            ))}
-          </div>
-        )}
-        <Link
-          href={`/maintenance/jobs/new?scheduledFor=${cell.ymd}`}
-          className="mt-2 inline-block text-xs font-medium text-slate-400 hover:text-navy"
-        >
-          + Add
-        </Link>
+      <div className={FRAME}>
+        <div className={`rounded-lg border p-4 ${cellSurface(cell)}`}>
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+            {weekdayOf(cell.ymd)}
+            {isWeekendYMD(cell.ymd) ? " · Weekend" : ""}
+            {cell.isToday ? " · Today" : ""} · {dayJobs.length} job
+            {dayJobs.length === 1 ? "" : "s"}
+          </h2>
+          {dayJobs.length === 0 ? (
+            <p className="text-xs text-slate-400">Nothing scheduled</p>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {dayJobs.map((job) => (
+                <JobChip key={job.id} job={job} todayYmd={todayYmd} onOpen={onOpenJob} />
+              ))}
+            </div>
+          )}
+          <Link
+            href={`/maintenance/jobs/new?scheduledFor=${cell.ymd}`}
+            className="mt-2 inline-block text-xs font-medium text-slate-400 hover:text-navy"
+          >
+            + Add
+          </Link>
+        </div>
       </div>
     );
   }
 
-  // week (7) and workweek (5): columns of lists.
+  // week (7) and workweek (5): columns of lists on the calendar frame.
   return (
-    <div className={`grid gap-2 ${view === "week" ? "sm:grid-cols-7" : "sm:grid-cols-5"}`}>
-      {cells.map((cell) => {
-        const dayJobs = buckets.get(cell.ymd) ?? [];
-        return (
-          <div
-            key={cell.ymd}
-            className={`rounded-xl border p-2 ${
-              cell.isToday ? "border-navy bg-blue-50/40" : "border-slate-200 bg-white"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => onOpenDay(cell.ymd)}
-              className="mb-2 block w-full rounded px-1 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500 hover:bg-slate-100"
-            >
-              {weekdayOf(cell.ymd)} {dayNumber(cell.ymd)}
-              {cell.isToday ? " · Today" : ""}
-              {dayJobs.length > 0 && (
-                <span className="ml-1 font-medium normal-case text-slate-400">
-                  ({dayJobs.length})
-                </span>
+    <div className={FRAME}>
+      <div className={`grid gap-2 ${view === "week" ? "sm:grid-cols-7" : "sm:grid-cols-5"}`}>
+        {cells.map((cell) => {
+          const dayJobs = buckets.get(cell.ymd) ?? [];
+          return (
+            <div key={cell.ymd} className={`rounded-lg border p-2 ${cellSurface(cell)}`}>
+              <button
+                type="button"
+                onClick={() => onOpenDay(cell.ymd)}
+                className="mb-2 block w-full rounded px-1 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500 hover:bg-slate-100"
+              >
+                {weekdayOf(cell.ymd)} {dayNumber(cell.ymd)}
+                {cell.isToday ? " · Today" : ""}
+                {dayJobs.length > 0 && (
+                  <span className="ml-1 font-medium normal-case text-slate-400">
+                    ({dayJobs.length})
+                  </span>
+                )}
+              </button>
+              {dayJobs.length === 0 ? (
+                <p className="text-xs text-slate-400">Nothing scheduled</p>
+              ) : (
+                <CellJobs
+                  cell={cell}
+                  jobs={dayJobs}
+                  limit={limit}
+                  todayYmd={todayYmd}
+                  onOpenJob={onOpenJob}
+                  onOpenDay={onOpenDay}
+                  compact={false}
+                />
               )}
-            </button>
-            {dayJobs.length === 0 ? (
-              <p className="text-xs text-slate-400">Nothing scheduled</p>
-            ) : (
-              <CellJobs
-                cell={cell}
-                jobs={dayJobs}
-                limit={limit}
-                todayYmd={todayYmd}
-                onOpenJob={onOpenJob}
-                onOpenDay={onOpenDay}
-                compact={false}
-              />
-            )}
-            <Link
-              href={`/maintenance/jobs/new?scheduledFor=${cell.ymd}`}
-              className="mt-1.5 inline-block text-xs font-medium text-slate-400 hover:text-navy"
-            >
-              + Add
-            </Link>
-          </div>
-        );
-      })}
+              <Link
+                href={`/maintenance/jobs/new?scheduledFor=${cell.ymd}`}
+                className="mt-1.5 inline-block text-xs font-medium text-slate-400 hover:text-navy"
+              >
+                + Add
+              </Link>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -73,6 +73,20 @@ export function toCompact(ymd: string): string {
   return ymd.replace(/-/g, "");
 }
 
+/**
+ * True when the calendar date falls on Saturday or Sunday, so the UI can shade
+ * weekends differently from workdays.
+ *
+ * Safe to read the weekday off a UTC-midnight parse: a ymd here is already an
+ * ET calendar date, and the day-of-week of a date is a property of the date
+ * itself, not of any timezone it is viewed in. (The workweek view never shows
+ * these days at all — it is Mon–Fri by construction.)
+ */
+export function isWeekendYMD(ymd: string): boolean {
+  const day = new Date(`${ymd}T00:00:00.000Z`).getUTCDay(); // 0=Sun..6=Sat
+  return day === 0 || day === 6;
+}
+
 // A dashed ymd interpreted as UTC midnight — the one Date shape this module
 // ever constructs from a string.
 function parseYMD(ymd: string): Date {

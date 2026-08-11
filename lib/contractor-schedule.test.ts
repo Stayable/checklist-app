@@ -5,6 +5,7 @@ import {
   CALENDAR_VIEWS,
   DEFAULT_VIEW,
   formatViewTitle,
+  isWeekendYMD,
   monthStartYMD,
   parseDateParam,
   parseView,
@@ -71,6 +72,39 @@ describe("parseDateParam", () => {
     const result = parseDateParam("2026-13-01");
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(result).not.toBe("2026-13-01");
+  });
+});
+
+describe("isWeekendYMD", () => {
+  it("flags Saturday and Sunday, and nothing else, across one full week", () => {
+    // 2026-08-09 is a Sunday, 2026-08-15 a Saturday.
+    const expected: Record<string, boolean> = {
+      "2026-08-09": true, // Sun
+      "2026-08-10": false, // Mon
+      "2026-08-11": false,
+      "2026-08-12": false,
+      "2026-08-13": false,
+      "2026-08-14": false, // Fri
+      "2026-08-15": true, // Sat
+    };
+    for (const [ymd, isWeekend] of Object.entries(expected)) {
+      expect(isWeekendYMD(ymd)).toBe(isWeekend);
+    }
+  });
+
+  it("holds across both 2026 ET DST transitions", () => {
+    // Both transitions land on a Sunday; a local-time weekday read could slip
+    // by an hour and land on the Saturday or Monday either side of them.
+    expect(isWeekendYMD("2026-03-08")).toBe(true); // spring forward, a Sunday
+    expect(isWeekendYMD("2026-03-09")).toBe(false); // the Monday after
+    expect(isWeekendYMD("2026-11-01")).toBe(true); // fall back, a Sunday
+    expect(isWeekendYMD("2026-10-31")).toBe(true); // the Saturday before
+  });
+
+  it("never flags a workweek cell, since that view is Mon-Fri by construction", () => {
+    for (const cell of buildCells("workweek", ANCHOR, ANCHOR)) {
+      expect(isWeekendYMD(cell.ymd)).toBe(false);
+    }
   });
 });
 
