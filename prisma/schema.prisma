@@ -242,49 +242,49 @@ model User {
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  properties        UserProperty[]
-  assignedInstances ChecklistInstance[] @relation("InstanceAssignee")
-  reviewedInstances ChecklistInstance[] @relation("InstanceReviewer")
-  verifiedInstances ChecklistInstance[] @relation("InstanceVerifier")
-  assignedIssues    Issue[]             @relation("IssueAssignee")
-  auditLogs         AuditLog[]
-  notifications     NotificationLog[]
-  createdRules      RecurringRule[]     @relation("RuleCreatedBy")
-  loginOtps         LoginOtp[]
-  contractorJobsCreated ContractorJob[]      @relation("ContractorJobCreatedBy")
-  contractorJobNotes   ContractorJobNote[]   @relation("ContractorJobNoteAuthor")
-  contractorDailyNotes ContractorDailyNote[] @relation("ContractorDailyNoteAuthor")
+  properties            UserProperty[]
+  assignedInstances     ChecklistInstance[]   @relation("InstanceAssignee")
+  reviewedInstances     ChecklistInstance[]   @relation("InstanceReviewer")
+  verifiedInstances     ChecklistInstance[]   @relation("InstanceVerifier")
+  assignedIssues        Issue[]               @relation("IssueAssignee")
+  auditLogs             AuditLog[]
+  notifications         NotificationLog[]
+  createdRules          RecurringRule[]       @relation("RuleCreatedBy")
+  loginOtps             LoginOtp[]
+  contractorJobsCreated ContractorJob[]       @relation("ContractorJobCreatedBy")
+  contractorJobNotes    ContractorJobNote[]   @relation("ContractorJobNoteAuthor")
+  contractorDailyNotes  ContractorDailyNote[] @relation("ContractorDailyNoteAuthor")
 
   @@map("users")
 }
 
 model Property {
-  id         String   @id @default(uuid()) @db.Uuid
-  propertyId String   @unique @map("property_id")
-  name       String
-  shortCode  String   @unique @map("short_code") @db.VarChar(2)
-  address    String
-  geofence   Json?
-  active     Boolean  @default(true)
+  id               String   @id @default(uuid()) @db.Uuid
+  propertyId       String   @unique @map("property_id")
+  name             String
+  shortCode        String   @unique @map("short_code") @db.VarChar(2)
+  address          String
+  geofence         Json?
+  active           Boolean  @default(true)
   // NETWORK section: Microsoft Teams channel for this property's ticket posts
   // (Graph API, ADR pending) + Spotipo guest-WiFi site. apiKey handling (env vs
   // encrypted column) settled at the Spotipo task; nullable until configured.
-  teamsChannelId   String? @map("teams_channel_id")
-  teamsChannelName String? @map("teams_channel_name")
-  spotipoSiteId    String? @map("spotipo_site_id")
-  spotipoApiKey    String? @map("spotipo_api_key")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  teamsChannelId   String?  @map("teams_channel_id")
+  teamsChannelName String?  @map("teams_channel_name")
+  spotipoSiteId    String?  @map("spotipo_site_id")
+  spotipoApiKey    String?  @map("spotipo_api_key")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  users              UserProperty[]
-  rooms              Room[]
-  recurringRules     RecurringRule[]
-  instances          ChecklistInstance[]
-  issues             Issue[]
-  templateProperties TemplateProperty[]
-  devices            Device[]
-  networkEvents      NetworkEvent[]
-  tickets            Ticket[]
+  users                UserProperty[]
+  rooms                Room[]
+  recurringRules       RecurringRule[]
+  instances            ChecklistInstance[]
+  issues               Issue[]
+  templateProperties   TemplateProperty[]
+  devices              Device[]
+  networkEvents        NetworkEvent[]
+  tickets              Ticket[]
   contractors          ContractorProperty[]
   contractorJobs       ContractorJob[]
   contractorDailyNotes ContractorDailyNote[]
@@ -347,7 +347,7 @@ model Room {
 // ---------------------------------------------------------------------------
 
 model ChecklistTemplate {
-  id            String        @id @default(uuid()) @db.Uuid
+  id                    String        @id @default(uuid()) @db.Uuid
   // ADR-009 templateCode used in the CL-{prop}-{code}-{date}-{seq} system ID.
   code                  String        @unique @db.VarChar(8)
   name                  String
@@ -472,23 +472,23 @@ model ChecklistInstance {
 
   // S1 (StayCheck v1.1) — review workflow upgrade
   // Manager's manual Pass/Fail completion check at review (Q1).
-  completionCheck  CompletionCheck? @map("completion_check")
+  completionCheck    CompletionCheck? @map("completion_check")
   // Verify-by-PM lock (Q4): once verified, the instance is immutable except an
   // admin-only unlock. lockedAt is the enforcement anchor (lib/review-lock.ts).
-  verifiedByPm     Boolean   @default(false) @map("verified_by_pm")
-  verifiedAt       DateTime? @map("verified_at") @db.Timestamptz
-  verifiedByUserId String?   @map("verified_by_user_id") @db.Uuid
-  lockedAt         DateTime? @map("locked_at") @db.Timestamptz
+  verifiedByPm       Boolean          @default(false) @map("verified_by_pm")
+  verifiedAt         DateTime?        @map("verified_at") @db.Timestamptz
+  verifiedByUserId   String?          @map("verified_by_user_id") @db.Uuid
+  lockedAt           DateTime?        @map("locked_at") @db.Timestamptz
   // Structured checkout flags (Q2/Q3): captured by staff at fill when the
   // template collectsCheckoutFlags, confirmed/editable by manager at review.
-  notifyCorporate  Boolean   @default(false) @map("notify_corporate")
-  returnDeposit    Boolean   @default(false) @map("return_deposit")
-  itemsToReplace   Boolean   @default(false) @map("items_to_replace")
-  itemsToReplaceList String? @map("items_to_replace_list")
+  notifyCorporate    Boolean          @default(false) @map("notify_corporate")
+  returnDeposit      Boolean          @default(false) @map("return_deposit")
+  itemsToReplace     Boolean          @default(false) @map("items_to_replace")
+  itemsToReplaceList String?          @map("items_to_replace_list")
   // placeOOO stored now; room-lifecycle wiring is S2 (typed hook only here).
-  placeOOO         Boolean   @default(false) @map("place_ooo")
+  placeOOO           Boolean          @default(false) @map("place_ooo")
   // Free-text room fallback (PRD §17/§24: "-", "Suite") when no Room row.
-  roomLabel        String?   @map("room_label")
+  roomLabel          String?          @map("room_label")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
@@ -543,8 +543,8 @@ model Photo {
   //
   // A third owner (ContractorJob) existed until 2026-08-03 and was dropped with
   // Track D (ADR-028). If a future owner is added, keep the exactly-one rule.
-  responseId      String?       @map("response_id") @db.Uuid
-  issueId         String?       @map("issue_id") @db.Uuid
+  responseId     String?        @map("response_id") @db.Uuid
+  issueId        String?        @map("issue_id") @db.Uuid
   r2Key          String         @map("r2_key")
   fileSizeBytes  Int            @map("file_size_bytes")
   exifTimestamp  DateTime?      @map("exif_timestamp") @db.Timestamptz
@@ -554,8 +554,8 @@ model Photo {
   geofenceStatus GeofenceStatus @map("geofence_status")
   createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
 
-  response      Response?      @relation(fields: [responseId], references: [id], onDelete: Cascade)
-  issue         Issue?         @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  response Response? @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  issue    Issue?    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 
   @@index([responseId])
   @@index([issueId])
@@ -654,17 +654,17 @@ model Device {
 // A problem/recovery event mapped from a webhook (DevSpec §4.3). Renamed from
 // the spec's `events` to avoid colliding with the audit/notification concept.
 model NetworkEvent {
-  id          String           @id @default(uuid()) @db.Uuid
-  deviceId    String           @map("device_id") @db.Uuid
-  propertyId  String           @map("property_id") @db.Uuid
-  eventType   NetworkEventType @map("event_type")
-  source      DeviceSource
-  alertMessage String?         @map("alert_message")
-  occurredAt  DateTime         @map("occurred_at") @db.Timestamptz
-  receivedAt  DateTime         @default(now()) @map("received_at") @db.Timestamptz
-  ticketId    String?          @map("ticket_id") @db.Uuid
+  id                String           @id @default(uuid()) @db.Uuid
+  deviceId          String           @map("device_id") @db.Uuid
+  propertyId        String           @map("property_id") @db.Uuid
+  eventType         NetworkEventType @map("event_type")
+  source            DeviceSource
+  alertMessage      String?          @map("alert_message")
+  occurredAt        DateTime         @map("occurred_at") @db.Timestamptz
+  receivedAt        DateTime         @default(now()) @map("received_at") @db.Timestamptz
+  ticketId          String?          @map("ticket_id") @db.Uuid
   // Self-relation: the RECOVERY event that resolved this PROBLEM event.
-  resolvedByEventId String?    @unique @map("resolved_by_event_id") @db.Uuid
+  resolvedByEventId String?          @unique @map("resolved_by_event_id") @db.Uuid
 
   device          Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   property        Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -693,35 +693,35 @@ model RawWebhookPayload {
 
 // An IT ticket (DevSpec §4.4 + §5.5 mass-outage additions).
 model Ticket {
-  id            String       @id @default(uuid()) @db.Uuid
-  ticketNumber  String       @unique @map("ticket_number") // TKT-YYYYMMDD-NNN (ET daily seq)
-  deviceId      String?      @map("device_id") @db.Uuid
-  propertyId    String       @map("property_id") @db.Uuid
-  triggerEventId String?     @map("trigger_event_id") @db.Uuid
-  alertMessage  String?      @map("alert_message")
-  status        TicketStatus @default(OPEN)
-  ticketType    TicketType   @default(STANDARD) @map("ticket_type")
-  openedAt      DateTime     @default(now()) @map("opened_at") @db.Timestamptz
+  id              String       @id @default(uuid()) @db.Uuid
+  ticketNumber    String       @unique @map("ticket_number") // TKT-YYYYMMDD-NNN (ET daily seq)
+  deviceId        String?      @map("device_id") @db.Uuid
+  propertyId      String       @map("property_id") @db.Uuid
+  triggerEventId  String?      @map("trigger_event_id") @db.Uuid
+  alertMessage    String?      @map("alert_message")
+  status          TicketStatus @default(OPEN)
+  ticketType      TicketType   @default(STANDARD) @map("ticket_type")
+  openedAt        DateTime     @default(now()) @map("opened_at") @db.Timestamptz
   // Free-text for now (may be in-house IT or an external MSP name); can become
   // a User FK later if assignment moves fully in-house (DevSpec §4.4).
-  assignedTo    String?      @map("assigned_to")
-  resolutionNotes String?    @map("resolution_notes")
-  resolvedAt    DateTime?    @map("resolved_at") @db.Timestamptz
-  downDurationMin Int?       @map("down_duration_min")
+  assignedTo      String?      @map("assigned_to")
+  resolutionNotes String?      @map("resolution_notes")
+  resolvedAt      DateTime?    @map("resolved_at") @db.Timestamptz
+  downDurationMin Int?         @map("down_duration_min")
   // When this ticket crossed the escalation threshold and the escalation
   // notification was queued (Kyle 2026-08-01). Escalation used to be computed
   // on read for a badge only; notifying needs persistence, because "has this
   // already been announced?" cannot be derived from openedAt alone. Acts as the
   // idempotency key for the escalation sweep — set once, never cleared.
-  escalatedAt   DateTime?    @map("escalated_at") @db.Timestamptz
-  teamsNotified Boolean      @default(false) @map("teams_notified")
-  teamsMessageId String?     @map("teams_message_id")
-  teamsMessageUrl String?    @map("teams_message_url")
+  escalatedAt     DateTime?    @map("escalated_at") @db.Timestamptz
+  teamsNotified   Boolean      @default(false) @map("teams_notified")
+  teamsMessageId  String?      @map("teams_message_id")
+  teamsMessageUrl String?      @map("teams_message_url")
   // Mass-outage device-status snapshot (DevSpec §5.5).
-  affectedDevices Json?      @map("affected_devices")
-  parentTicketId String?     @map("parent_ticket_id") @db.Uuid
-  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+  affectedDevices Json?        @map("affected_devices")
+  parentTicketId  String?      @map("parent_ticket_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
   device       Device?        @relation(fields: [deviceId], references: [id])
   property     Property       @relation(fields: [propertyId], references: [id])
@@ -742,13 +742,13 @@ model Ticket {
 // A note on a ticket — a Teams reply ingested via Graph, or a manual note
 // (DevSpec §4.5). teamsReplyId dedupes on re-poll/re-delivery.
 model TicketNote {
-  id          String           @id @default(uuid()) @db.Uuid
-  ticketId    String           @map("ticket_id") @db.Uuid
-  source      TicketNoteSource
-  author      String?
-  teamsReplyId String?         @unique @map("teams_reply_id")
-  content     String
-  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  id           String           @id @default(uuid()) @db.Uuid
+  ticketId     String           @map("ticket_id") @db.Uuid
+  source       TicketNoteSource
+  author       String?
+  teamsReplyId String?          @unique @map("teams_reply_id")
+  content      String
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
@@ -869,35 +869,45 @@ model ContractorProperty {
 }
 
 model ContractorJob {
-  id         String @id @default(uuid()) @db.Uuid
-  propertyId String @map("property_id") @db.Uuid
+  id              String              @id @default(uuid()) @db.Uuid
+  propertyId      String              @map("property_id") @db.Uuid
   // Free text, not a Room FK — rooms are only seeded for Lakeland (no PMS in
   // v1) and a schedule entry needs to say "Rm 212" / "lobby" / "roof".
   // Consistent with S1's free-text-room direction (lib/room-label.ts).
-  roomLabel   String?             @map("room_label")
-  trade       Trade
-  description String
-  urgent      Boolean             @default(false)
-  status      ContractorJobStatus @default(PLANNED)
-  contractorId String?            @map("contractor_id") @db.Uuid
+  roomLabel       String?             @map("room_label")
+  trade           Trade
+  description     String
+  urgent          Boolean             @default(false)
+  status          ContractorJobStatus @default(PLANNED)
+  contractorId    String?             @map("contractor_id") @db.Uuid
   // Nullable, and that is load-bearing: null means "unscheduled backlog," a
   // real state the schedule UI surfaces (a persistent backlog rail), not
   // missing data. Date-only (ET calendar date) per the 2026-08-11 decision —
   // no times, no durations.
-  scheduledFor DateTime?          @map("scheduled_for") @db.Date
-  createdByUserId String          @map("created_by_user_id") @db.Uuid
+  scheduledFor    DateTime?           @map("scheduled_for") @db.Date
+  createdByUserId String              @map("created_by_user_id") @db.Uuid
   // A real column so "completed today" is never inferred from `updatedAt` —
   // that would only hold while terminal rows stay immutable, a property no
   // schema enforces on its own.
-  completedAt DateTime?           @map("completed_at") @db.Timestamptz
-  closeNote   String?             @map("close_note")
-  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+  completedAt     DateTime?           @map("completed_at") @db.Timestamptz
+  closeNote       String?             @map("close_note")
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz
 
-  property    Property            @relation(fields: [propertyId], references: [id])
-  contractor  Contractor?         @relation(fields: [contractorId], references: [id])
-  createdBy   User                @relation("ContractorJobCreatedBy", fields: [createdByUserId], references: [id])
-  notes       ContractorJobNote[]
+  property   Property            @relation(fields: [propertyId], references: [id])
+  // SetNull is stated explicitly, and the asymmetry with property/createdBy
+  // (both RESTRICT) is intended. Prisma already defaults an optional relation
+  // to SetNull, so the behaviour is unchanged — writing it down stops a reader
+  // concluding the FK actions were chosen inconsistently.
+  //
+  // The app never deletes a contractor (the directory archives instead, since
+  // a delete would orphan job history), so this only governs an out-of-band
+  // SQL delete. There, losing the assignment is the better failure than losing
+  // the job: the same reasoning as ContractorJobNote.authorUserId, where a
+  // note outlives its author's account.
+  contractor Contractor?         @relation(fields: [contractorId], references: [id], onDelete: SetNull)
+  createdBy  User                @relation("ContractorJobCreatedBy", fields: [createdByUserId], references: [id])
+  notes      ContractorJobNote[]
 
   @@index([propertyId, scheduledFor])
   @@index([scheduledFor])
@@ -912,16 +922,16 @@ model ContractorJob {
 // there is simply no column an edit could be written into. Follows the
 // existing TicketNote pattern.
 model ContractorJobNote {
-  id     String               @id @default(uuid()) @db.Uuid
-  jobId  String               @map("job_id") @db.Uuid
-  source ContractorNoteSource
+  id           String               @id @default(uuid()) @db.Uuid
+  jobId        String               @map("job_id") @db.Uuid
+  source       ContractorNoteSource
   // Nullable AND SetNull: a note must survive its author's account being
   // deleted. authorLabel is the durable attribution fallback once the author
   // is nulled, and carries the display name for SYSTEM rows.
-  authorUserId String?        @map("author_user_id") @db.Uuid
-  authorLabel  String?        @map("author_label")
+  authorUserId String?              @map("author_user_id") @db.Uuid
+  authorLabel  String?              @map("author_label")
   body         String
-  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz
 
   job        ContractorJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
   authorUser User?         @relation("ContractorJobNoteAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
@@ -936,14 +946,14 @@ model ContractorJobNote {
 // NO unique constraint on (propertyId, forDate) — several entries for one
 // day is correct behaviour for an append-only log, not a conflict.
 model ContractorDailyNote {
-  id         String               @id @default(uuid()) @db.Uuid
-  propertyId String?              @map("property_id") @db.Uuid
-  forDate    DateTime             @map("for_date") @db.Date
-  source     ContractorNoteSource
-  authorUserId String?            @map("author_user_id") @db.Uuid
-  authorLabel  String?            @map("author_label")
+  id           String               @id @default(uuid()) @db.Uuid
+  propertyId   String?              @map("property_id") @db.Uuid
+  forDate      DateTime             @map("for_date") @db.Date
+  source       ContractorNoteSource
+  authorUserId String?              @map("author_user_id") @db.Uuid
+  authorLabel  String?              @map("author_label")
   body         String
-  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz
 
   property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   authorUser User?     @relation("ContractorDailyNoteAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)

@@ -198,6 +198,10 @@ describe("buildCells", () => {
     expect(inMonth).toHaveLength(28);
   });
 
+  // The boundary ymds are pinned as literals, not just checked for being 7
+  // distinct consecutive days: the consecutive-days check would still pass if
+  // the whole week were shifted by one on these two dates specifically, which
+  // is exactly the failure a DST bug produces.
   it("spring-forward week (2026-03-08, ET DST start) has 7 distinct consecutive days", () => {
     const cells = buildCells("week", "2026-03-08", today);
     expect(cells).toHaveLength(7);
@@ -206,6 +210,8 @@ describe("buildCells", () => {
     for (let i = 1; i < cells.length; i++) {
       expect(addDaysYMD(cells[i - 1].ymd, 1)).toBe(cells[i].ymd);
     }
+    expect(cells[0].ymd).toBe("2026-03-08");
+    expect(cells[6].ymd).toBe("2026-03-14");
   });
 
   it("fall-back week (2026-11-01, ET DST end) has 7 distinct consecutive days", () => {
@@ -216,6 +222,8 @@ describe("buildCells", () => {
     for (let i = 1; i < cells.length; i++) {
       expect(addDaysYMD(cells[i - 1].ymd, 1)).toBe(cells[i].ymd);
     }
+    expect(cells[0].ymd).toBe("2026-11-01");
+    expect(cells[6].ymd).toBe("2026-11-07");
   });
 
   it("marks exactly one cell isToday when today is in range", () => {
