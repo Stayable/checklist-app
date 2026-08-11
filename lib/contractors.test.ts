@@ -315,6 +315,28 @@ describe("contractorSchema", () => {
     expect(m2).not.toBe(m3);
   });
 
+  // Contractor.company is displayed by the directory, so the schema has to be
+  // able to carry it — it was absent at first, which left the column
+  // permanently null with a read-only field on screen.
+  it("accepts a company, and treats it as optional", () => {
+    const withCompany = contractorSchema.safeParse({ ...base, company: "Torres Plumbing LLC" });
+    expect(withCompany.success).toBe(true);
+    if (withCompany.success) expect(withCompany.data.company).toBe("Torres Plumbing LLC");
+
+    expect(contractorSchema.safeParse({ ...base, company: null }).success).toBe(true);
+    // Absent entirely (the pre-existing call shape) must still parse.
+    expect(contractorSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("trims a company and rejects a whitespace-only one", () => {
+    const padded = contractorSchema.safeParse({ ...base, company: "  Torres Plumbing  " });
+    expect(padded.success).toBe(true);
+    if (padded.success) expect(padded.data.company).toBe("Torres Plumbing");
+
+    // Blank-after-trim is not a company; the form sends null for "no company".
+    expect(contractorSchema.safeParse({ ...base, company: "   " }).success).toBe(false);
+  });
+
   it("accepts whatsapp-only contact (no phone)", () => {
     expect(
       contractorSchema.safeParse({ ...base, phone: null, whatsapp: "+15555555555" }).success,

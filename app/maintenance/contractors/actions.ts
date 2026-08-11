@@ -56,7 +56,7 @@ export async function createContractor(input: unknown): Promise<ContractorResult
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { name, trades, propertyIds, phone, whatsapp } = parsed.data;
+  const { name, company, trades, propertyIds, phone, whatsapp } = parsed.data;
 
   const denied = await assertPropertiesAccessible(user, propertyIds);
   if (denied) return { ok: false, error: denied };
@@ -65,6 +65,7 @@ export async function createContractor(input: unknown): Promise<ContractorResult
     const contractor = await tx.contractor.create({
       data: {
         name,
+        company: company ?? null,
         trades,
         phone: phone ?? null,
         whatsapp: whatsapp ?? null,
@@ -78,7 +79,14 @@ export async function createContractor(input: unknown): Promise<ContractorResult
         entityType: "Contractor",
         entityId: contractor.id,
         action: "create",
-        after: { name, trades, propertyIds, phone: phone ?? null, whatsapp: whatsapp ?? null },
+        after: {
+          name,
+          company: company ?? null,
+          trades,
+          propertyIds,
+          phone: phone ?? null,
+          whatsapp: whatsapp ?? null,
+        },
       },
     });
     return contractor;
@@ -94,12 +102,13 @@ export async function updateContractor(id: string, input: unknown): Promise<Cont
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { name, trades, propertyIds, phone, whatsapp } = parsed.data;
+  const { name, company, trades, propertyIds, phone, whatsapp } = parsed.data;
 
   const current = await db.contractor.findUnique({
     where: { id },
     select: {
       name: true,
+      company: true,
       trades: true,
       phone: true,
       whatsapp: true,
@@ -125,7 +134,7 @@ export async function updateContractor(id: string, input: unknown): Promise<Cont
   await db.$transaction(async (tx) => {
     await tx.contractor.update({
       where: { id },
-      data: { name, trades, phone: phone ?? null, whatsapp: whatsapp ?? null },
+      data: { name, company: company ?? null, trades, phone: phone ?? null, whatsapp: whatsapp ?? null },
     });
     await tx.contractorProperty.deleteMany({
       where: { contractorId: id, propertyId: { in: accessible } },
@@ -144,12 +153,20 @@ export async function updateContractor(id: string, input: unknown): Promise<Cont
         action: "update",
         before: {
           name: current.name,
+          company: current.company,
           trades: current.trades,
           propertyIds: currentPropertyIds,
           phone: current.phone,
           whatsapp: current.whatsapp,
         },
-        after: { name, trades, propertyIds, phone: phone ?? null, whatsapp: whatsapp ?? null },
+        after: {
+          name,
+          company: company ?? null,
+          trades,
+          propertyIds,
+          phone: phone ?? null,
+          whatsapp: whatsapp ?? null,
+        },
       },
     });
   });

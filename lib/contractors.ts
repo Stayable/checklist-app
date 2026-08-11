@@ -178,6 +178,10 @@ const dashedDate = z.string().regex(DASHED_DATE_RE, "Date must be in yyyy-MM-dd 
 export const contractorSchema = z
   .object({
     name: z.string().trim().min(1, "Name is required"),
+    // Optional, unlike name: plenty of contractors are individuals with no
+    // company. Present here because Contractor.company is a real column the
+    // directory displays — without it nothing could ever write the field.
+    company: z.string().trim().min(1).nullable().optional(),
     trades: z.array(z.nativeEnum(Trade)),
     propertyIds: z.array(z.string().uuid()),
     phone: z.string().trim().min(1).nullable().optional(),

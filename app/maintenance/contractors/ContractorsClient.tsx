@@ -22,13 +22,21 @@ type Row = {
 
 type FormState = {
   name: string;
+  company: string;
   trades: Trade[];
   propertyIds: string[];
   phone: string;
   whatsapp: string;
 };
 
-const EMPTY_FORM: FormState = { name: "", trades: [], propertyIds: [], phone: "", whatsapp: "" };
+const EMPTY_FORM: FormState = {
+  name: "",
+  company: "",
+  trades: [],
+  propertyIds: [],
+  phone: "",
+  whatsapp: "",
+};
 
 export function ContractorsClient({
   rows,
@@ -56,6 +64,7 @@ export function ContractorsClient({
     setEditingId(row.id);
     setForm({
       name: row.name,
+      company: row.company ?? "",
       trades: row.trades,
       propertyIds: row.propertyIds,
       phone: row.phone ?? "",
@@ -91,6 +100,7 @@ export function ContractorsClient({
     setFormError(null);
     const input = {
       name: form.name,
+      company: form.company.trim() ? form.company.trim() : null,
       trades: form.trades,
       propertyIds: form.propertyIds,
       phone: form.phone.trim() ? form.phone.trim() : null,
@@ -168,6 +178,14 @@ export function ContractorsClient({
               <input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className="rounded-md border border-slate-300 px-2 py-1.5"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium text-slate-700">Company (optional)</span>
+              <input
+                value={form.company}
+                onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
                 className="rounded-md border border-slate-300 px-2 py-1.5"
               />
             </label>
