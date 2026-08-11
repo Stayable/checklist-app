@@ -54,6 +54,10 @@ export type NavSection = {
 
 const CHECKLIST_CHILDREN: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", section: "checklist" },
+  // Manual create was reachable only by typing the URL until 2026-08-12. With no
+  // recurring rules configured yet, nothing generates on its own — so with no
+  // link there was no way to get a checklist into the app at all.
+  { href: "/checklists/new", label: "New checklist", section: "checklist" },
   { href: "/review", label: "Review", section: "checklist" },
   { href: "/issues", label: "Issues", section: "checklist" },
   { href: "/rules", label: "Rules", section: "checklist" },

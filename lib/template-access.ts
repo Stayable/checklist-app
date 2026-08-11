@@ -20,7 +20,10 @@ export function canManageTemplate(
   t: TemplateScopeRef,
 ): boolean {
   if (role === Role.ADMIN) return true;
-  if (role !== Role.MANAGER && role !== Role.CORPORATE) return false;
+  // AGENT is manager-level inside Checklist (added 2026-08-12), so it authors
+  // under the same scoped rules as MANAGER. Without it the Templates surface —
+  // which its nav already shows — would render controls that always fail.
+  if (role !== Role.MANAGER && role !== Role.CORPORATE && role !== Role.AGENT) return false;
   if (t.allProperties) return false;
   if (t.propertyIds.length === 0) return false;
   const allowed = new Set(accessiblePropertyIds);

@@ -120,6 +120,7 @@ describe("navItemsForRole", () => {
     expect(navItemsForRole(Role.MANAGER).map((i) => i.href)).toEqual([
       "/",
       "/dashboard",
+      "/checklists/new",
       "/review",
       "/issues",
       "/rules",

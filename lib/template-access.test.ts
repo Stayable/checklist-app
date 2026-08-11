@@ -42,3 +42,26 @@ describe("canManageTemplate", () => {
     expect(canManageTemplate(Role.CORPORATE, ["LL"], allProps)).toBe(false);
   });
 });
+
+describe("canManageTemplate — AGENT", () => {
+  const ownProps = ["p1", "p2"];
+
+  it("manages a template fully inside its properties, like a MANAGER", () => {
+    expect(
+      canManageTemplate(Role.AGENT, ownProps, { allProperties: false, propertyIds: ["p1"] }),
+    ).toBe(true);
+  });
+
+  it("cannot touch an all-properties template — those stay ADMIN-governed", () => {
+    // This is what protects the 9 standardized templates from a test account.
+    expect(
+      canManageTemplate(Role.AGENT, ownProps, { allProperties: true, propertyIds: [] }),
+    ).toBe(false);
+  });
+
+  it("cannot reach outside its own properties", () => {
+    expect(
+      canManageTemplate(Role.AGENT, ownProps, { allProperties: false, propertyIds: ["p1", "p9"] }),
+    ).toBe(false);
+  });
+});
