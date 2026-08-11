@@ -1127,6 +1127,18 @@ So there was nothing to extend. This is a new feature that reuses two old names,
 - **There are now two schedulers in one codebase.** Track A's recurrence engine is untouched and unconnected; recurring contractor jobs are deliberately out of scope because coupling the two needs its own design pass.
 - **`NavSection.basePath` was added to `lib/nav.ts`** so `/maintenance/jobs/*` — real routes that are not nav destinations — still resolve to their section. Any future section with non-nav sub-routes gets the same treatment.
 
+### Amendment, 2026-08-11 (same day): placeholder User accounts for contractors
+
+Decision 2 above says contractors are records, not users, and that there are no contractor logins. **Kyle asked the same day for a temporary `User` row per contractor**, with "no email, no number — will add later", alongside importing the 08-10..08-14 Smartsheet schedule. Created by `scripts/create-contractor-placeholder-users.ts`. What that required, and what it does not change:
+
+- **"No email" is not representable.** `User.email` is `NOT NULL` and unique, so a placeholder was unavoidable. They are `first.last@contractors.invalid` — `.invalid` is reserved by RFC 2606 and can never resolve, so no message can reach a real person by mistake. A guessed `@rentstayable.com` address could have collided with a real mailbox or actually sent.
+- **They cannot be logged into.** `active: false`, and `lib/auth.ts:42` refuses an inactive user. The password is 32 random bytes, hashed and discarded — never printed, not recoverable. The way in is the admin Set-PW action after a real address exists, the same path a new hire takes.
+- **No property membership**, so a placeholder can be assigned nothing and see nothing. Least privilege for an account nobody has vouched for.
+- **They are NOT linked to their `Contractor` records.** This ADR deliberately omitted `Contractor.userId`, so no FK exists; the only correspondence is the name. A real link is a schema change, not something the import could fake.
+- **Contractor scheduling still does not depend on user accounts.** Jobs reference `Contractor`, not `User`, and nothing in the feature reads these rows. Deleting all 13 would leave the schedule intact — they carry no history, so the admin Delete action removes them cleanly.
+
+**What this does change:** there are now 13 rows in the production user table whose email addresses are fabricated, and they appear in `/admin/users` beside real staff. That is a real cost, accepted knowingly. Anyone auditing users should treat `@contractors.invalid` as "placeholder, not a person's address".
+
 ---
 
 ## ADR Template (copy for new entries)
