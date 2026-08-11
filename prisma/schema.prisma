@@ -343,6 +343,18 @@ model Room {
   id         String     @id @default(uuid()) @db.Uuid
   propertyId String     @map("property_id") @db.Uuid
   roomNumber String     @map("room_number")
+  // Zone (building) and room type, from the Cloudbeds inventory export loaded
+  // 2026-08-12. Nullable because a hand-added room may not know either. Zone is
+  // operationally load-bearing, not decoration: it is how work is split at a
+  // 150-room property ("Building A today"), and how a room picker stays usable.
+  // JW, DP and KW zoning was marked PROVISIONAL at the source.
+  zone       String?    @map("zone")
+  roomType   String?    @map("room_type")
+  // ⚠ NOT real occupancy. The inventory export deliberately excludes occupancy
+  // and out-of-order state ("they change daily and would be stale the moment
+  // this file is written"), so every imported room takes this default. Until a
+  // PMS sync or manual upkeep exists, a recurring rule that filters on
+  // occupied/vacant is filtering on a default, not on fact.
   status     RoomStatus @default(VACANT)
   createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz

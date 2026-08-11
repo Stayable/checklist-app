@@ -50,7 +50,7 @@ export default async function NewChecklistPage() {
         db.room.findMany({
           where: { propertyId: activePropertyId },
           orderBy: { roomNumber: "asc" },
-          select: { id: true, roomNumber: true },
+          select: { id: true, roomNumber: true, zone: true },
         }),
         db.user.findMany({
           where: {

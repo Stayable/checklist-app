@@ -21,8 +21,8 @@ Maintenance, Construction, Network and Admin are hidden on purpose.
 ## Test this
 
 1. **Checklist → New checklist**, assign to yourself, open from Home, fill it, photo, sign, submit.
-   **Only these 6 work:** HK Review · PA Review · Manager Review · Pressure Washing · Roof PM ·
-   Maintenance Report.
+   All 9 templates work. Per-room ones (Arrival, DueOut, Room Inspection) ask for a room — rooms are
+   grouped by building.
 2. **Review** — approve, flag, request re-do. Approve doesn't email the person; flag and re-do do.
 3. **Issues** — answer a Pass/Fail as **Fail**, it opens an Issue. Assign, prioritise, close.
 4. **Dashboard · Reports** — filter, export a PDF.
@@ -33,7 +33,7 @@ Maintenance, Construction, Network and Admin are hidden on purpose.
 | | |
 |---|---|
 | Questions are placeholder nonsense | Real content isn't written. **Karla + Christopher own it.** |
-| Arrival, Departure, Room Inspection missing | Per-room, and **no room numbers exist yet.** Send Kyle the real ones. |
+| Every room shows as **Vacant** | Real inventory is loaded (1,172 rooms, from Cloudbeds) but occupancy is not — that field is a placeholder. |
 | Nothing appears each morning | No recurring rules set up yet. Create by hand for now. |
 | Photo says **Off property** off site | Correct. It's a label, blocks nothing. **On site and it still says that → report it.** |
 | No notification bell · unbranded · rough Spanish | Later. |

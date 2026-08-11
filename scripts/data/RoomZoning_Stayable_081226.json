@@ -1,0 +1,5997 @@
+{
+  "generatedFrom": "Cloudbeds getRooms (live inventory)",
+  "capturedAt": "2026-08-11",
+  "zoneSource": "cloudbeds_dashboard/config/zones.ts, transcribed from ROOM-ZONING.md",
+  "note": "Room numbers and zones only. Occupancy and out-of-order status are deliberately excluded - they change daily and would be stale the moment this file is written.",
+  "provisionalZoning": [
+    "JW",
+    "DP",
+    "KW"
+  ],
+  "totalRooms": 1172,
+  "properties": [
+    {
+      "code": "DP",
+      "propertyId": "44199",
+      "name": "Davenport",
+      "county": "Polk",
+      "roomCount": 153,
+      "zoneCounts": {
+        "Building A": 73,
+        "Building B": 80
+      },
+      "rooms": [
+        {
+          "room": "103",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "105",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "106",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "107",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "108",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "109",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "110",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "111",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "112",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "113",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "114",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "115",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "116",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "117",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "118",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "119",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "120",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "121",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "122",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "123",
+          "roomType": "Single Room - Wheelchair Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "124",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "125",
+          "roomType": "Single Room - Wheelchair Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "126",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "127",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "128",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "130",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "131",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "133",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "135",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "137",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "138",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "139",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "140",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "141",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "142",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "143",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "144",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "145",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "146",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "147",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "148",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "149",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "150",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "151",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "152",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "153",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "154",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "155",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "156",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "157",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "158",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "159",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "160",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "161",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "162",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "163",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "164",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "165",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "166",
+          "roomType": "Upgraded Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "167",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "168",
+          "roomType": "Upgraded Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "169",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "170",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "171",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "172",
+          "roomType": "Upgraded Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "173",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "174",
+          "roomType": "Upgraded Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "175",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "176",
+          "roomType": "Upgraded Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "177",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "178",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "179",
+          "roomType": "2-Bedroom Suite",
+          "zone": "Building B"
+        },
+        {
+          "room": "180",
+          "roomType": "2-Bedroom Suite",
+          "zone": "Building B"
+        },
+        {
+          "room": "201",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "202",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "203",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "204",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "205",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "206",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "207",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "208",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "209",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "210",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "211",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "212",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "213",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "214",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "215",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "216",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "217",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "218",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "219",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "220",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "221",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "222",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "223",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "224",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "225",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "226",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "227",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "228",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "229",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "230",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "231",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "232",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "233",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "234",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "235",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "236",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "237",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "238",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "239",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "240",
+          "roomType": "Single Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "241",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "242",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "243",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "244",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "245",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "246",
+          "roomType": "Deluxe Queen Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "247",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "248",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "249",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "250",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "251",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "252",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "253",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "254",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "255",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "256",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "257",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "258",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "259",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "260",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "261",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "262",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "263",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "264",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "265",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "266",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "267",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "268",
+          "roomType": "Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "269",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "270",
+          "roomType": "Upgraded Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "271",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "272",
+          "roomType": "Upgraded Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "273",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "274",
+          "roomType": "Upgraded Single Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "275",
+          "roomType": "Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "276",
+          "roomType": "Upgraded Single Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "277",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "278",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "279",
+          "roomType": "2-Bedroom Suite",
+          "zone": "Building B"
+        },
+        {
+          "room": "280",
+          "roomType": "2-Bedroom Suite",
+          "zone": "Building B"
+        }
+      ]
+    },
+    {
+      "code": "LL",
+      "propertyId": "4645",
+      "name": "Lakeland",
+      "county": "Polk",
+      "roomCount": 157,
+      "zoneCounts": {
+        "Building A": 47,
+        "Building B": 56,
+        "Building C": 24,
+        "Building D": 29,
+        "Other": 1
+      },
+      "rooms": [
+        {
+          "room": "100",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "101",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "102",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "103",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "104",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "105",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "106",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "107",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "108",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "109",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "110",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "111",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "112",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "113",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "114",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "115",
+          "roomType": "Single Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "116",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "117",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "118",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "119",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "120",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "121",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "123",
+          "roomType": "King Jacuzzi Suite",
+          "zone": "Building A"
+        },
+        {
+          "room": "130",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "131",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "132",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "133",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "134",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "135",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "136",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "137",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "138",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "139",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "140",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "141",
+          "roomType": "Upgraded King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "142",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "143",
+          "roomType": "Upgraded King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "144",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "145",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "146",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "147",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "148",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "149",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "150",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "151",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "152",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "153",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "154",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "155",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "156",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "157",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "160",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "161",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "162",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "163",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "164",
+          "roomType": "Premium Double Studio - Renovated",
+          "zone": "Building C"
+        },
+        {
+          "room": "165",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "166",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "167",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "168",
+          "roomType": "King Studio - Renovated",
+          "zone": "Building C"
+        },
+        {
+          "room": "169",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "170",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "171",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "180",
+          "roomType": "Premium Double Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "181",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "182",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "183",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "184",
+          "roomType": "King Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "185",
+          "roomType": "King Jacuzzi Suite",
+          "zone": "Building D"
+        },
+        {
+          "room": "188",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "189",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "190",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "191",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "192",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "193",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "194",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "195",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "200",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "201",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "202",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "203",
+          "roomType": "King Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "204",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "205",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "206",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "207",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "208",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "209",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "210",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "211",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "212",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "213",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "214",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "215",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "216",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "217",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "218",
+          "roomType": "King Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "219",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "220",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "221",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "222",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "223",
+          "roomType": "Single Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "230",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "231",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "232",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "233",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "234",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "235",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "236",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "237",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "238",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "239",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "240",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "241",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "242",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "243",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "244",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "245",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "246",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "247",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "248",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "249",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "250",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "251",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "252",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "253",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "254",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "255",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "256",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "257",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "260",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "261",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "262",
+          "roomType": "Premium Double Studio - Renovated",
+          "zone": "Building C"
+        },
+        {
+          "room": "263",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "264",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "265",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "266",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "267",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "268",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "269",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "270",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "271",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "280",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "281",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "282",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "283",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "284",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "286",
+          "roomType": "King Suite",
+          "zone": "Building D"
+        },
+        {
+          "room": "287",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "288",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "289",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "290",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "291",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "292",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "293",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "294",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "295",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "APT1",
+          "roomType": "2-Bedroom Apartment",
+          "zone": "Other"
+        }
+      ]
+    },
+    {
+      "code": "KE",
+      "propertyId": "2295",
+      "name": "Kissimmee East",
+      "county": "Osceola",
+      "roomCount": 167,
+      "zoneCounts": {
+        "Building A": 31,
+        "Building B": 36,
+        "Building C": 31,
+        "Building D": 36,
+        "Building E": 33
+      },
+      "rooms": [
+        {
+          "room": "100",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "101",
+          "roomType": "King Studio Handicap Accessible - Roll-in",
+          "zone": "Building A"
+        },
+        {
+          "room": "102",
+          "roomType": "Double & Bunk Suite",
+          "zone": "Building A"
+        },
+        {
+          "room": "105",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "106",
+          "roomType": "Premium Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "107",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "108",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "109",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "110",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "112",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "113",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "114",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "115",
+          "roomType": "King Studio Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "117",
+          "roomType": "King Studio Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "118",
+          "roomType": "King Studio Handicap Accessible - Roll-in",
+          "zone": "Building A"
+        },
+        {
+          "room": "119",
+          "roomType": "King Studio Handicap Accessible - Roll-in",
+          "zone": "Building A"
+        },
+        {
+          "room": "120",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "121",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "122",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "123",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "124",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "125",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "126",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "128",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "129",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "130",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "131",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "132",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "133",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "134",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "135",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "136",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "137",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "138",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "139",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "145",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building C"
+        },
+        {
+          "room": "150",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "151",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "152",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "153",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "154",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "155",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "156",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "157",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "158",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "159",
+          "roomType": "Double Studio",
+          "zone": "Building C"
+        },
+        {
+          "room": "160",
+          "roomType": "Double Studio",
+          "zone": "Building D"
+        },
+        {
+          "room": "162",
+          "roomType": "Upgraded King Studio",
+          "zone": "Building D"
+        },
+        {
+          "room": "164",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "165",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "166",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "167",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "168",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "169",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "170",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "172",
+          "roomType": "Double Studio",
+          "zone": "Building D"
+        },
+        {
+          "room": "173",
+          "roomType": "Studio Single Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "174",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "175",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "176",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "177",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "178",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "179",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "180",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "181",
+          "roomType": "King Studio Handicap Accessible",
+          "zone": "Building E"
+        },
+        {
+          "room": "182",
+          "roomType": "Double & Bunk Suite",
+          "zone": "Building E"
+        },
+        {
+          "room": "183",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "185",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "186",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "187",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "188",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "189",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "191",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "192",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "193",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "195",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "196",
+          "roomType": "King Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "198",
+          "roomType": "Studio Single Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "199",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "200",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "201",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "203",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "205",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "206",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "207",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "210",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "211",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "212",
+          "roomType": "Double Studio",
+          "zone": "Building A"
+        },
+        {
+          "room": "213",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "214",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "215",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "216",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "218",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "219",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building A"
+        },
+        {
+          "room": "220",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "222",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "223",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "224",
+          "roomType": "Upgraded King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "225",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "226",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "227",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "229",
+          "roomType": "King Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "230",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "232",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "233",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building B"
+        },
+        {
+          "room": "234",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "235",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building B"
+        },
+        {
+          "room": "236",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "237",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building B"
+        },
+        {
+          "room": "238",
+          "roomType": "Double Studio",
+          "zone": "Building B"
+        },
+        {
+          "room": "239",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building B"
+        },
+        {
+          "room": "240",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "241",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "242",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "243",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "244",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "245",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "246",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "247",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "248",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "249",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "250",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "251",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "252",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "253",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "254",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "255",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "256",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "257",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "258",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "259",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building C"
+        },
+        {
+          "room": "260",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "261",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "262",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "263",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "264",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "265",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "266",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "267",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "268",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "269",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "270",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "271",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "272",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "274",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building D"
+        },
+        {
+          "room": "275",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "276",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "277",
+          "roomType": "Upgraded Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "278",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "279",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "280",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "281",
+          "roomType": "Premium Double Studio - Renovated",
+          "zone": "Building E"
+        },
+        {
+          "room": "282",
+          "roomType": "Double & Bunk Suite",
+          "zone": "Building E"
+        },
+        {
+          "room": "283",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building E"
+        },
+        {
+          "room": "285",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building E"
+        },
+        {
+          "room": "286",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "288",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "289",
+          "roomType": "Premium Double Studio - Renovated",
+          "zone": "Building E"
+        },
+        {
+          "room": "290",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building E"
+        },
+        {
+          "room": "291",
+          "roomType": "King Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "292",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building E"
+        },
+        {
+          "room": "294",
+          "roomType": "Double Studio - Renovated",
+          "zone": "Building E"
+        },
+        {
+          "room": "295",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "296",
+          "roomType": "Upgraded Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "297",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        },
+        {
+          "room": "298",
+          "roomType": "Studio Single Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "299",
+          "roomType": "Double Studio",
+          "zone": "Building E"
+        }
+      ]
+    },
+    {
+      "code": "KW",
+      "propertyId": "5399",
+      "name": "Kissimmee West",
+      "county": "Osceola",
+      "roomCount": 160,
+      "zoneCounts": {
+        "Building A": 44,
+        "Building B": 10,
+        "Building C": 60,
+        "Building E": 32,
+        "Building D": 10,
+        "Other": 4
+      },
+      "rooms": [
+        {
+          "room": "101",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "102",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "103",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "104",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "105",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "106",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "107",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "108",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "109",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "110",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "111",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "112",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "113",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "114",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "115",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "116",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "117",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "118",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "119",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "120",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "121",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "122",
+          "roomType": "King Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "123",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "124",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "125",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "126",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "127",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "128",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "129",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "130",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "131",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "132",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "133",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "134",
+          "roomType": "King Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "135",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "136",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "137",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "138",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "139",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "140",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "141",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "142",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "143",
+          "roomType": "Double Queen Handicap Accessible",
+          "zone": "Building C"
+        },
+        {
+          "room": "144",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "145",
+          "roomType": "Double Queen with Roll-in Shower",
+          "zone": "Building C"
+        },
+        {
+          "room": "146",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "147",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "148",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "149",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "150",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "151",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "152",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "153",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "154",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "155",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "156",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "157",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "158",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "159",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "160",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "161",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "162",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "163",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "165",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "167",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "169",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "171",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "173",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "175",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "177",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "179",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "181",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "183",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "185",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "187",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "189",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "201",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "202",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "203",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "204",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "205",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "206",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "207",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "208",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "209",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "210",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "211",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "212",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "213",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "214",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "215",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "216",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "217",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "218",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "219",
+          "roomType": "Double Queen Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "220",
+          "roomType": "Upgraded Double Room- Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "221",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "222",
+          "roomType": "Upgraded King Room - Courtyard View",
+          "zone": "Building A"
+        },
+        {
+          "room": "223",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "224",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "225",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "226",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "227",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "228",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "229",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "230",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "231",
+          "roomType": "Double Queen Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "232",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "233",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "234",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "235",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "236",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "237",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "238",
+          "roomType": "King Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "239",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "240",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "241",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "242",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "243",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "244",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "245",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "246",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "247",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "248",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "249",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "250",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "251",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "252",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "253",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "254",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building C"
+        },
+        {
+          "room": "255",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "256",
+          "roomType": "King Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "257",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "258",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "259",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "260",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "261",
+          "roomType": "Double Queen Room with Kitchen",
+          "zone": "Building C"
+        },
+        {
+          "room": "262",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "263",
+          "roomType": "Double Queen Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "264",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "265",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "266",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "267",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "268",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "269",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "270",
+          "roomType": "Double Queen Room - Courtyard View",
+          "zone": "Building E"
+        },
+        {
+          "room": "271",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "273",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "275",
+          "roomType": "King Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "277",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "279",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "281",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "283",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "285",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "287",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "289",
+          "roomType": "Double Queen Room",
+          "zone": "Building E"
+        },
+        {
+          "room": "310",
+          "roomType": "One-Bedroom Apartment",
+          "zone": "Other"
+        },
+        {
+          "room": "311",
+          "roomType": "One-Bedroom Apartment",
+          "zone": "Other"
+        },
+        {
+          "room": "312",
+          "roomType": "One-Bedroom Renovated Apartment - Unfurnished",
+          "zone": "Other"
+        },
+        {
+          "room": "313",
+          "roomType": "Two-Bedroom Renovated Apartment - Unfurnished",
+          "zone": "Other"
+        }
+      ]
+    },
+    {
+      "code": "JW",
+      "propertyId": "6802",
+      "name": "Jacksonville West",
+      "county": "Duval",
+      "roomCount": 133,
+      "zoneCounts": {
+        "Building A": 30,
+        "Building B": 24,
+        "Building C": 9,
+        "Building D": 18,
+        "Building E": 52
+      },
+      "rooms": [
+        {
+          "room": "100",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "101",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "102",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "103",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "104",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "105",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "106",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "107",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "108",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "109",
+          "roomType": "Single Room Handicap Accessible with Roll-in",
+          "zone": "Building A"
+        },
+        {
+          "room": "111",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "112",
+          "roomType": "Single Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "113",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "114",
+          "roomType": "Single Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "118",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "119",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "121",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "122",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "123",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "125",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "126",
+          "roomType": "Single Room Handicap Accessible - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "127",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "129",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "130",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "131",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "133",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "140",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building C"
+        },
+        {
+          "room": "144",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building C"
+        },
+        {
+          "room": "146",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building C"
+        },
+        {
+          "room": "150",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "152",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "154",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "156",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "158",
+          "roomType": "Single Room Handicap Accessible - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "160",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "162",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "164",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "165",
+          "roomType": "King Studio Renovated - Non smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "166",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "200",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "201",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "202",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "203",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "204",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "205",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "206",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "207",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "208",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "209",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "210",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "211",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "212",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "213",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "214",
+          "roomType": "Single Room with Atrium View",
+          "zone": "Building A"
+        },
+        {
+          "room": "215",
+          "roomType": "King Room - Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "218",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "219",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "221",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "222",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "223",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "225",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "226",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "227",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "229",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "230",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "231",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "233",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "234",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "236",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "238",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "242",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building C"
+        },
+        {
+          "room": "244",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building C"
+        },
+        {
+          "room": "248",
+          "roomType": "Single Room with Atrium View",
+          "zone": "Building C"
+        },
+        {
+          "room": "250",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "252",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "254",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "256",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "258",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "260",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "262",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "264",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "300",
+          "roomType": "Single Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "301",
+          "roomType": "Single Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "302",
+          "roomType": "Upgraded King Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "303",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "304",
+          "roomType": "Upgraded King Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "305",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "306",
+          "roomType": "Upgraded Double Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "307",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "308",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "309",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "310",
+          "roomType": "Upgraded Double Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "311",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "312",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "313",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "314",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "315",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "316",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "317",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "318",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "319",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "320",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "321",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "322",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "323",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "324",
+          "roomType": "Single Room with Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "325",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "400",
+          "roomType": "Single Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "401",
+          "roomType": "Single Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "402",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "403",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "404",
+          "roomType": "Upgraded King Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "405",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "406",
+          "roomType": "Upgraded Double Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "407",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "408",
+          "roomType": "Upgraded Double Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "409",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "410",
+          "roomType": "Upgraded Double Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "411",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "412",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "413",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "414",
+          "roomType": "Upgraded Double Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "415",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "416",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "417",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "418",
+          "roomType": "Double Room with Atrium View - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "419",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "420",
+          "roomType": "Upgraded Double Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "421",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "422",
+          "roomType": "King Room with Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "423",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        },
+        {
+          "room": "424",
+          "roomType": "Upgraded King Room - Atrium View",
+          "zone": "Building E"
+        },
+        {
+          "room": "425",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building E"
+        }
+      ]
+    },
+    {
+      "code": "JN",
+      "propertyId": "812",
+      "name": "Jacksonville North",
+      "county": "Duval",
+      "roomCount": 127,
+      "zoneCounts": {
+        "Building A": 40,
+        "Building B": 23,
+        "Building C": 28,
+        "Building D": 36
+      },
+      "rooms": [
+        {
+          "room": "103",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "104",
+          "roomType": "King Room with Sofa - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "105",
+          "roomType": "Double Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "107",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "108",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "109",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "110",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "111",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "112",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "114",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "115",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "116",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "117",
+          "roomType": "King Suite - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "118",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "119",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "120",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "121",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "122",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "125",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "126",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "127",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "129",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "131",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "133",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "135",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "136",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "137",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "138",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building D"
+        },
+        {
+          "room": "139",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "140",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building D"
+        },
+        {
+          "room": "141",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "142",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building D"
+        },
+        {
+          "room": "143",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "144",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "145",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "146",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "147",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "200",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "201",
+          "roomType": "King Suite - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "202",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "203",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "204",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "205",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "206",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "207",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "208",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "209",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "210",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "211",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "212",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "214",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "215",
+          "roomType": "King Room with Sofa - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "216",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "217",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "218",
+          "roomType": "King Room - Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "219",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "220",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "221",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "222",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "223",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "224",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "225",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "226",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "227",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "228",
+          "roomType": "Manager's Apartment",
+          "zone": "Building C"
+        },
+        {
+          "room": "229",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "231",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "233",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "235",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "236",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "237",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "238",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "239",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "240",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "241",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "242",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "243",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "244",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "245",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "246",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "247",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "301",
+          "roomType": "King Suite - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "302",
+          "roomType": "King Suite - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "303",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "304",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "305",
+          "roomType": "King Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "306",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "307",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "308",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "309",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "310",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "311",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "312",
+          "roomType": "King Room with Sofa - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "314",
+          "roomType": "King Room - Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "315",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building A"
+        },
+        {
+          "room": "316",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "317",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "318",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "319",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "320",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "321",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "322",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "323",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building B"
+        },
+        {
+          "room": "324",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "325",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "326",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "327",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "328",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "329",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "330",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "331",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "332",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "333",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "334",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "335",
+          "roomType": "King Room with Sofa - Non-Smoking",
+          "zone": "Building C"
+        },
+        {
+          "room": "336",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "337",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "338",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "339",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "340",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "341",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "342",
+          "roomType": "Double Room - Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "343",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "344",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "345",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "346",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        },
+        {
+          "room": "347",
+          "roomType": "Double Room - Non-Smoking",
+          "zone": "Building D"
+        }
+      ]
+    },
+    {
+      "code": "SA",
+      "propertyId": "2535",
+      "name": "St. Augustine",
+      "county": "St. Johns",
+      "roomCount": 140,
+      "zoneCounts": {
+        "Building B": 36,
+        "Building D": 36,
+        "Building A": 33,
+        "Building C": 35
+      },
+      "rooms": [
+        {
+          "room": "101",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "102",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "103",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "104",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "105",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "106",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "107",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "108",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "109",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "110",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "111",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "112",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "114",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "115",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "116",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "117",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "118",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "119",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "120",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "121",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "122",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "123",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "124",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "125",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "126",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "127",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "128",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "129",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "130",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "131",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "132",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "133",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "134",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "135",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "136",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "137",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "138",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "140",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "142",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "144",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "145",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "146",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "147",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "148",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "149",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "150",
+          "roomType": "Double Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "151",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "152",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "153",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "154",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "155",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "156",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "157",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "158",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "159",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "160",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "161",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "162",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "163",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "164",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "165",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "166",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "167",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "168",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "169",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "170",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "172",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "173",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "201",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "202",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "203",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "204",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "205",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "206",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "207",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "208",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "209",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "210",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "211",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "212",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "214",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "215",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "216",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "217",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "218",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "219",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "220",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "221",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "222",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "223",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "224",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "225",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "226",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "227",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "228",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "229",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "230",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "231",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "232",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "233",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "234",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "235",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "236",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "237",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "238",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "239",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "240",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "241",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "242",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "243",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "244",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "245",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "246",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "247",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "248",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "249",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "250",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "251",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "252",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "253",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "254",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "255",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "256",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "257",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "258",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "259",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "260",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "261",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "262",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "263",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "264",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "265",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "266",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "267",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "268",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "269",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "270",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "271",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "272",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "273",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        }
+      ]
+    },
+    {
+      "code": "OR",
+      "propertyId": "8700",
+      "name": "Orlando OBT",
+      "county": "Orange",
+      "roomCount": 135,
+      "zoneCounts": {
+        "Building A": 37,
+        "Building B": 33,
+        "Building C": 33,
+        "Building D": 32
+      },
+      "rooms": [
+        {
+          "room": "1103",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1105",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "1106",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1107",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1108",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1109",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1110",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1111",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1112",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1113",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "1114",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building A"
+        },
+        {
+          "room": "1115",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1116",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1117",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1118",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1119",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1120",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1121",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1122",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1123",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1124",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1125",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1126",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1127",
+          "roomType": "Double Suite",
+          "zone": "Building B"
+        },
+        {
+          "room": "1128",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1130",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1131",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1133",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1134",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1135",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1136",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1137",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1139",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1141",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1143",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1202",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1203",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1204",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1205",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1206",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1210",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1211",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1212",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1213",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1215",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1216",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1217",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1218",
+          "roomType": "King Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1220",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1221",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1222",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1223",
+          "roomType": "Double Room",
+          "zone": "Building A"
+        },
+        {
+          "room": "1224",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1225",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1226",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1228",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1229",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1230",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1231",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1232",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1233",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1234",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1235",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1236",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1237",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1238",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1239",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1240",
+          "roomType": "King Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1241",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "1243",
+          "roomType": "Double Room",
+          "zone": "Building B"
+        },
+        {
+          "room": "2103",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2107",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building C"
+        },
+        {
+          "room": "2111",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2113",
+          "roomType": "King Room Handicap Accessible",
+          "zone": "Building C"
+        },
+        {
+          "room": "2125",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2127",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2201",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2202",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2204",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2205",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2206",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2207",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2208",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2210",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2211",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2212",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2213",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2214",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2217",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2218",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2219",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2220",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2221",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2222",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2223",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2225",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2226",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2227",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2228",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2230",
+          "roomType": "Double Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2231",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2232",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "2233",
+          "roomType": "King Room",
+          "zone": "Building C"
+        },
+        {
+          "room": "3104",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3107",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3111",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3112",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3115",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3116",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3117",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3119",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3120",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3121",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3122",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3124",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3202",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3204",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3206",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3207",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3208",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3209",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3210",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3212",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3213",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3214",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3215",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3216",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3217",
+          "roomType": "King Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3218",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3219",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3220",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3221",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3222",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3223",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        },
+        {
+          "room": "3224",
+          "roomType": "Double Room",
+          "zone": "Building D"
+        }
+      ]
+    }
+  ]
+}

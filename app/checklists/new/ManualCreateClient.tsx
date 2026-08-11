@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createInstanceManually } from "./actions";
 
 type TemplateOpt = { id: string; name: string; scope: string };
-type RoomOpt = { id: string; roomNumber: string };
+type RoomOpt = { id: string; roomNumber: string; zone: string | null };
 type UserOpt = { id: string; name: string };
 
 export function ManualCreateClient({
@@ -126,10 +126,18 @@ export function ManualCreateClient({
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">Select a room…</option>
-            {rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.roomNumber}
-              </option>
+            {/* Grouped by zone (building). A property here has 127-167 rooms,
+                so a flat list of numbers is a scroll with no landmarks; the
+                building is how staff actually locate a room. Rooms with no zone
+                fall into a trailing group rather than disappearing. */}
+            {groupRoomsByZone(rooms).map(([zone, group]) => (
+              <optgroup key={zone} label={zone}>
+                {group.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.roomNumber}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>
@@ -177,4 +185,20 @@ export function ManualCreateClient({
       </div>
     </div>
   );
+}
+
+/** Rooms by zone, zones alphabetical, unzoned last. */
+function groupRoomsByZone(rooms: RoomOpt[]): [string, RoomOpt[]][] {
+  const groups = new Map<string, RoomOpt[]>();
+  for (const room of rooms) {
+    const key = room.zone ?? "Unassigned";
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(room);
+    else groups.set(key, [room]);
+  }
+  return [...groups.entries()].sort(([a], [b]) => {
+    if (a === "Unassigned") return 1;
+    if (b === "Unassigned") return -1;
+    return a.localeCompare(b);
+  });
 }
