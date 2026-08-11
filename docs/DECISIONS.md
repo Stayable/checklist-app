@@ -1035,6 +1035,7 @@ Kyle, hours after this ADR landed: Maintenance and Construction **are coming bac
 - **Still true:** no C/D/E build work is scheduled, the contractor/dispatch code stays deleted and its tables dropped, and `docs/archive/tracks-cde/` is reference — not a backlog to restart from.
 - **Changed:** the archive is no longer presumed permanent for **C and E**. Their specs may be reopened when they are picked up, through a fresh decision.
 - **Undecided:** whether contractor dispatch (**D**) returns with Maintenance. It is the part with deleted code and dropped tables, so it is the expensive one to bring back. Not assumed either way.
+- **⚠ Resolved 2026-08-11 by ADR-030, partially:** contractor **scheduling** returns to this repo. **Dispatch and messaging do not.** This ADR's deletion of the rail therefore stands for everything that sends; the `Contractor` and `Trade` names are reused by new, narrower models. Read ADR-030 before concluding from this entry that nothing contractor-shaped exists here.
 
 ---
 
@@ -1077,6 +1078,54 @@ Six sections — **Home · Checklist · Network · Maintenance · Construction �
 - **Admins still cannot reach `/admin/*` from a phone.** Unchanged from before, now a deliberate choice rather than an accident.
 - Section visibility duplicates nothing, but it *is* display logic derived from the same predicates as authorization — showing a section is not permission, and every page still guards itself. A test pins each section to its predicate.
 - The rail's expand/collapse of individual sections is seeded from the active route and not persisted; only the rail-wide collapse is.
+
+---
+
+## ADR-030: Contractor scheduling returns; dispatch does not
+
+**Date:** 2026-08-11
+**Status:** Accepted
+**Partially reverses:** ADR-028 (which narrowed the platform to Checklist + Network and deleted the contractor/dispatch rail). ADR-028's amendment left contractor work explicitly undecided; this decides it, for scheduling only.
+**Decided by:** Kyle.
+
+### Context
+
+Kyle is building a contractor-update system **outside this repo**. It needs a companion inside Stayable Operations: somewhere to put contractor work on a calendar, see the day's contractor activity, and keep a written log. Nothing in the platform did that — ADR-028 had deleted `Contractor`, `ContractorProperty`, `ContractorJob`, the `Trade` and `JobStatus` enums and `Photo.contractorJobId` from the schema on 2026-08-03 (`94ce338`) and dropped those tables from production (`20260803120000_drop_contractor_dispatch`).
+
+So there was nothing to extend. This is a new feature that reuses two old names, not a revival.
+
+**A trap worth recording, because it already cost a full spec and plan.** An earlier design dated 2026-08-10 was written entirely on top of `ContractorJob` and `Contractor` — a week after both were deleted from `main` and dropped from prod — because it was written against a stale branch while carrying a "verified against the repo" banner. A branch was checked and called the repo. That document is archived at `docs/archive/tracks-cde/superpowers/2026-08-10-contractor-schedule-and-daily-design.md`, is **off-limits as a source** by Kyle's instruction, and was **not** consulted while designing or building this. The design at `docs/superpowers/specs/2026-08-11-contractor-scheduling-design.md` was written from scratch after diffing `origin/main`.
+
+### Alternatives Considered
+
+1. **Build it inside Kyle's separate contractor project instead.** Rejected: the schedule has to sit beside the properties, roles and audit log that already live here, and that project has no surface inside the operations platform.
+2. **Mirror contractor and job records from the external system.** Rejected for now: unbuildable today (no API to read), and it would make this feature's availability depend on another system's uptime.
+3. **Restore the whole deleted rail from git.** Rejected: most of it was dispatch — WhatsApp deep links, signed no-account contractor links, availability ranking, A2P consent. Restoring that to get a calendar would re-adopt every constraint ADR-028 removed.
+4. **A new top-level nav section.** Rejected — see decision 4.
+
+### Decision
+
+1. **Contractor scheduling is in scope, in this repo.** Contractor directory, jobs carrying an ET calendar date, a day / week / work-week / month calendar with a persistent unscheduled-backlog rail, a five-tile daily rollup, and append-only note threads on jobs and on days.
+2. **Dispatch and messaging stay out.** No WhatsApp, SMS, `wa.me`, Twilio, consent surface, signed contractor links, contractor logins, or ranking. `whatsapp` is stored as contact text no code path sends to. The new models deliberately omit the deleted rail's `contracted`, `onCall`, `Contractor.userId` and its photo relation.
+3. **This repo owns the records** (Kyle). Accepted cost: two contractor lists that can drift. If they must agree later, the import direction is *into* here, because this side holds the schedule.
+4. **It lives under the existing `Maintenance` section**, not a new top-level one. `lib/nav.ts` holds the mobile bar at five items so it never scrolls — ADMIN sees six sections, minus Admin on mobile, which is exactly five; a seventh would make six. Contractors doing maintenance work belongs there on the merits, and Track C ticketing becomes a sibling if it returns.
+5. **Notes are append-only by schema shape, not by convention.** `ContractorJobNote` and `ContractorDailyNote` have no `updatedAt` and no soft-delete column, so there is no column an edit could be written into. No update or delete action exists for either.
+6. **Date only — no times, durations, or drag-and-drop.** Consequence, accepted: day and week views are lists, not hour grids. No calendar library is added.
+7. **Zero Microsoft dependency.** No Graph, no ICS, no Outlook.
+8. **Status and assignment changes auto-append a `SYSTEM` note**, so a job thread reads as a history. This deliberately overlaps `audit_log`, which is not user-facing.
+9. **`Photo` is untouched.** ADR-016's exactly-one-of(response, issue) stays as ADR-028 left it — jobs have no photos.
+
+### Consequences
+
+- **ADR-028 is no longer wholly true, and now says so.** Its deletion of the rail stands for everything that sends, but contractor records exist again in narrower form. A reader who stops at ADR-028 draws the wrong conclusion, so a pointer to here was added there.
+- **The migration is additive** — three enums, five tables, no `DROP`, no existing column changed. Production order is therefore **DB first, then code**, this repo's normal order for adds. (The 2026-08-03 drop inverted that precisely because it was a drop.)
+- **The directory ships empty and no seed roster is included.** The last one shipped placeholder phone numbers into the baseline. Real contractors are PII entered through the UI, and the calendar has nobody to assign until someone enters them.
+- **Terminal jobs (`DONE`/`CANCELLED`) are immutable** and closing one requires a note. Notes stay writable on a closed job, since recording what happened after the fact is the point of an append-only history.
+- **`completedAt` is a real column** rather than inferred from `updatedAt` — that inference holds only while terminal rows stay immutable, which no schema enforces.
+- **A10 contractor checklists stay dropped** (§Q31). This feature issues no contractor-facing links, so it does not revive the magic-link helper ADR-028 deleted, and Kate's §Q13 CONTRACTOR template list stays moot.
+- **No automation ingest endpoint exists.** `ContractorNoteSource.SYSTEM` and `authorLabel` are the seam for Kyle's project to post notes later; nothing receives them today. Adding it is auth and rate-limit work, not schema work.
+- **There are now two schedulers in one codebase.** Track A's recurrence engine is untouched and unconnected; recurring contractor jobs are deliberately out of scope because coupling the two needs its own design pass.
+- **`NavSection.basePath` was added to `lib/nav.ts`** so `/maintenance/jobs/*` — real routes that are not nav destinations — still resolve to their section. Any future section with non-nav sub-routes gets the same treatment.
 
 ---
 
