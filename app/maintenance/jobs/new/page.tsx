@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { accessibleProperties, requireManager } from "@/lib/rbac";
+import { accessibleProperties, requireMaintenanceAccess } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { parseDateParam } from "@/lib/contractor-schedule";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -14,7 +14,7 @@ export default async function NewJobPage({
 }: {
   searchParams: Promise<{ scheduledFor?: string }>;
 }) {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
   const properties = await accessibleProperties(user);
   const activeId = await getCurrentPropertyId(properties.map((p) => p.id));
 

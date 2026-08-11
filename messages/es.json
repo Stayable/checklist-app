@@ -137,6 +137,8 @@
     "errWeak": "La contraseña debe tener al menos 8 caracteres.",
     "errWrongCurrent": "La contraseña actual es incorrecta.",
     "errSame": "La nueva contraseña debe ser diferente de la actual.",
-    "errGeneric": "No se pudo actualizar la contraseña. Inténtalo de nuevo."
+    "errGeneric": "No se pudo actualizar la contraseña. Inténtalo de nuevo.",
+    "mustChangeTitle": "Establece tu propia contraseña para continuar",
+    "mustChangeBody": "Esta cuenta se creó con una contraseña temporal. Cámbiala aquí antes de poder usar el resto de la aplicación."
   }
 }

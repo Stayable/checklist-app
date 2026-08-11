@@ -21,6 +21,10 @@ const MAP: Record<Role, DisplayRole> = {
   // IT staff (NETWORK section). Folded into the "Admin" display bucket for
   // labels only — never used for authorization (see lib/rbac.ts).
   [Role.NETWORK_TECH]: "Admin",
+  // Checklist-only management role. Labelled "Manager" because that is what its
+  // powers look like inside the Checklist section; the narrower access is
+  // enforced by lib/roles.ts, not by this label.
+  [Role.AGENT]: "Manager",
 };
 
 export function displayRole(role: Role): DisplayRole {

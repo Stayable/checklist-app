@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ContractorJobStatus } from "@prisma/client";
-import { accessibleProperties, isPortfolioRole, requireManager } from "@/lib/rbac";
+import { accessibleProperties, isPortfolioRole, requireMaintenanceAccess } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
@@ -60,7 +60,7 @@ export default async function DailyPage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
   const properties = await accessibleProperties(user);
   const accessible = properties.map((p) => p.id);
   const activeId = await getCurrentPropertyId(accessible);

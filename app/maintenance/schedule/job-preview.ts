@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { canAccessProperty, requireManager } from "@/lib/rbac";
+import { canAccessProperty, requireMaintenanceAccess } from "@/lib/rbac";
 import { etDayStartUtc, formatDateInET, formatInET } from "@/lib/datetime";
 import { ymdOf } from "@/lib/contractor-schedule";
 import { isTerminalJobStatus, jobStatusLabel, resolveNoteAuthor, tradeLabel } from "@/lib/contractors";
@@ -11,7 +11,7 @@ import { isTerminalJobStatus, jobStatusLabel, resolveNoteAuthor, tradeLabel } fr
 // each one's note thread to that payload would grow the page for detail almost
 // nobody scrolls to.
 //
-// Authorization is the same as the detail page's — requireManager plus a
+// Authorization is the same as the detail page's — requireMaintenanceAccess plus a
 // per-property check — because a popup is not a lesser surface. It returns
 // `null` for both "missing" and "not yours", so the popup can never confirm
 // that an id exists outside your scope.
@@ -38,7 +38,7 @@ export type JobPreview = {
 };
 
 export async function loadJobPreview(jobId: string): Promise<JobPreview | null> {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
 
   const job = await db.contractorJob.findUnique({
     where: { id: jobId },

@@ -3,6 +3,7 @@ import { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
+  canAccessMaintenance,
   canAccessNetwork,
   isAdmin,
   isFieldStaff,
@@ -17,7 +18,14 @@ import {
 // client-imported modules like lib/nav.ts can use them without dragging `auth`
 // into the browser bundle) and are re-exported here, so `@/lib/rbac` remains the
 // single place callers look for authorization.
-export { canAccessNetwork, isAdmin, isFieldStaff, isManagerOrAbove, isPortfolioRole };
+export {
+  canAccessMaintenance,
+  canAccessNetwork,
+  isAdmin,
+  isFieldStaff,
+  isManagerOrAbove,
+  isPortfolioRole,
+};
 
 export type SessionUser = {
   id: string;
@@ -25,13 +33,42 @@ export type SessionUser = {
   name: string;
 };
 
+/** Where a user with a forced password change is sent until they do it. */
+export const PASSWORD_CHANGE_PATH = "/profile";
+
 /**
  * Current session user, or redirect to /login. Use at the top of any protected
  * server component or server action.
+ *
+ * FORCED PASSWORD CHANGE. When `users.must_change_password` is set, everything
+ * except the change-password surface itself redirects to PASSWORD_CHANGE_PATH.
+ * Two deliberate choices:
+ *
+ *  • The flag is read from the DATABASE, not the JWT. A 30-day rolling session
+ *    means a token minted before the flag was set would carry the old value for
+ *    weeks, and a token minted before the change was made would keep forcing it
+ *    afterwards — an inescapable loop. One primary-key lookup per guarded
+ *    request buys correctness the token cannot give.
+ *  • It lives in requireUser, which every protected page and action already
+ *    calls, so there is one choke point rather than a check each new route has
+ *    to remember. `allowPasswordChange` is the single exemption, used by the
+ *    profile page and its action — without it that page would redirect to
+ *    itself forever.
  */
-export async function requireUser(): Promise<SessionUser> {
+export async function requireUser(
+  options: { allowPasswordChange?: boolean } = {},
+): Promise<SessionUser> {
   const session = await auth();
   if (!session?.user) redirect("/login");
+
+  if (!options.allowPasswordChange) {
+    const state = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { mustChangePassword: true },
+    });
+    if (state?.mustChangePassword) redirect(PASSWORD_CHANGE_PATH);
+  }
+
   return {
     id: session.user.id,
     role: session.user.role,
@@ -50,6 +87,16 @@ export async function requireAdmin(): Promise<SessionUser> {
 export async function requireManager(): Promise<SessionUser> {
   const user = await requireUser();
   if (!isManagerOrAbove(user.role)) redirect("/");
+  return user;
+}
+
+/**
+ * Require Maintenance access. Distinct from requireManager() because AGENT is
+ * manager-level inside Checklist but has no business in contractor scheduling.
+ */
+export async function requireMaintenanceAccess(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!canAccessMaintenance(user.role)) redirect("/");
   return user;
 }
 

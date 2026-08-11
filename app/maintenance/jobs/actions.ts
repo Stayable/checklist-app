@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { ContractorJobStatus, ContractorNoteSource, Prisma, Trade } from "@prisma/client";
 import { db } from "@/lib/db";
-import { canAccessProperty, requireManager } from "@/lib/rbac";
+import { canAccessProperty, requireMaintenanceAccess } from "@/lib/rbac";
 import type { SessionUser } from "@/lib/rbac";
 import {
   appendJobNoteSchema,
@@ -92,7 +92,7 @@ type Guarded =
 // discriminated result rather than throwing, so each action surfaces the
 // failure through its own JobResult.
 async function loadGuarded(jobId: string): Promise<Guarded> {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
   const job = await db.contractorJob.findUnique({
     where: { id: jobId },
     select: {
@@ -132,7 +132,7 @@ async function appendSystemNote(
 }
 
 export async function createJob(input: unknown): Promise<JobResult> {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
   const parsed = createJobSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

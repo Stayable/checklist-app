@@ -137,6 +137,8 @@
     "errWeak": "Password must be at least 8 characters.",
     "errWrongCurrent": "Current password is incorrect.",
     "errSame": "New password must be different from the current one.",
-    "errGeneric": "Couldn't update password. Please try again."
+    "errGeneric": "Couldn't update password. Please try again.",
+    "mustChangeTitle": "Set your own password to continue",
+    "mustChangeBody": "This account was set up with a temporary password. Change it here before you can use the rest of the app."
   }
 }

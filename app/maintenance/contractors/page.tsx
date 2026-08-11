@@ -1,4 +1,4 @@
-import { accessibleProperties, requireManager } from "@/lib/rbac";
+import { accessibleProperties, requireMaintenanceAccess } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
@@ -7,7 +7,7 @@ import { MaintenanceNav } from "../MaintenanceNav";
 import { ContractorsClient } from "./ContractorsClient";
 
 export default async function ContractorsPage() {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
   const properties = await accessibleProperties(user);
   const accessible = properties.map((p) => p.id);
   const activeId = await getCurrentPropertyId(accessible);

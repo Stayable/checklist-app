@@ -21,8 +21,30 @@ export function isAdmin(role: Role): boolean {
   return role === Role.ADMIN;
 }
 
-/** Manager and above (manager, corporate, admin) — review/management surfaces. */
+/**
+ * Manager and above — the CHECKLIST review/management surfaces.
+ *
+ * AGENT is included: it exists so RPM/GSA testers get the full checklist
+ * experience (review, approve, issues, dashboard, reports) without any of the
+ * other sections. Including it here is what makes ~20 existing requireManager()
+ * call sites work for AGENT with no edits — and is exactly why Maintenance
+ * needed its own predicate below, since it also sat behind requireManager().
+ */
 export function isManagerOrAbove(role: Role): boolean {
+  return role === Role.MANAGER || role === Role.AGENT || isPortfolioRole(role);
+}
+
+/**
+ * MAINTENANCE section access (contractor scheduling; Construction stub).
+ *
+ * Split out from isManagerOrAbove on 2026-08-12 when AGENT arrived. Maintenance
+ * was gated by requireManager(), so widening that predicate for checklist
+ * testers would silently have handed them the contractor calendar, real
+ * contractor names and the job mutations. Hiding the nav entry would not have
+ * helped: a nav entry is not a guard, and every /maintenance route and action
+ * checks this instead.
+ */
+export function canAccessMaintenance(role: Role): boolean {
   return role === Role.MANAGER || isPortfolioRole(role);
 }
 

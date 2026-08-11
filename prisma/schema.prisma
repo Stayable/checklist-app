@@ -31,6 +31,14 @@ enum Role {
   // full ADMIN. RBAC in lib/rbac.ts (canAccessNetwork). Display grouping in
   // lib/role-display.ts folds it into "Admin" for labels only.
   NETWORK_TECH
+  // Checklist-only management role (added 2026-08-12 for RPM/GSA testing).
+  // Sees and does everything a MANAGER can inside the Checklist section, and
+  // is deliberately EXCLUDED from Maintenance, Construction, Network and
+  // Admin — see canAccessMaintenance in lib/roles.ts. The exclusion is a real
+  // authorization check, not just a hidden nav entry: /maintenance/* is
+  // guarded by requireMaintenanceAccess(), so a URL or a server action refuses
+  // an AGENT too.
+  AGENT
 }
 
 enum Locale {
@@ -231,6 +239,12 @@ model User {
   role                Role
   locale              Locale    @default(en)
   active              Boolean   @default(true)
+  // Forces a password change before the account can use anything else. Set for
+  // admin-provisioned accounts whose first password was handed over
+  // out-of-band, so a shared or spoken temp password cannot stay in use.
+  // Enforced in requireUser() (lib/rbac.ts), i.e. server-side on every guarded
+  // page and action — not merely prompted in the UI.
+  mustChangePassword  Boolean   @default(false) @map("must_change_password")
   mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
   mfaSecret           String?   @map("mfa_secret")
   lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz

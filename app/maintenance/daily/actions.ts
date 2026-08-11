@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { ContractorNoteSource } from "@prisma/client";
 import { db } from "@/lib/db";
-import { canAccessProperty, isPortfolioRole, requireManager } from "@/lib/rbac";
+import { canAccessProperty, isPortfolioRole, requireMaintenanceAccess } from "@/lib/rbac";
 import { appendDailyNoteSchema } from "@/lib/contractors";
 
 // The written half of the daily dashboard (Kyle's decision 4: the day is BOTH
@@ -14,7 +14,7 @@ import { appendDailyNoteSchema } from "@/lib/contractors";
 export type DailyNoteResult = { ok: true } | { ok: false; error: string };
 
 export async function appendDailyNote(input: unknown): Promise<DailyNoteResult> {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
 
   const parsed = appendDailyNoteSchema.safeParse(input);
   if (!parsed.success) {

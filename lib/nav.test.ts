@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Role } from "@prisma/client";
-import { canAccessNetwork, isAdmin, isManagerOrAbove } from "./roles";
+import { canAccessMaintenance, canAccessNetwork, isAdmin, isManagerOrAbove } from "./roles";
 import {
   isNavItemActive,
   mobileSectionsForRole,
@@ -48,6 +48,11 @@ describe("navSectionsForRole", () => {
     expect(ids(Role.NETWORK_TECH)).toEqual(["home", "network"]);
   });
 
+  // The point of the AGENT role: the checklist app and nothing else.
+  it("AGENT gets Home + Checklist only — no maintenance, construction, network or admin", () => {
+    expect(ids(Role.AGENT)).toEqual(["home", "checklist"]);
+  });
+
   // Maintenance stopped being a stub on 2026-08-11 (contractor scheduling,
   // ADR-030). Construction is the only unbuilt section left.
   it("marks construction unbuilt, and nothing else", () => {
@@ -87,6 +92,8 @@ describe("navSectionsForRole", () => {
       const visible = new Set(ids(role));
       expect(visible.has("checklist")).toBe(isManagerOrAbove(role));
       expect(visible.has("network")).toBe(canAccessNetwork(role));
+      expect(visible.has("maintenance")).toBe(canAccessMaintenance(role));
+      expect(visible.has("construction")).toBe(canAccessMaintenance(role));
       expect(visible.has("admin")).toBe(isAdmin(role));
       // Home is unconditional.
       expect(visible.has("home")).toBe(true);

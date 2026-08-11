@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireManager } from "@/lib/rbac";
+import { requireMaintenanceAccess } from "@/lib/rbac";
 
 // /maintenance is not a surface of its own — the section's primary surface is
 // the schedule. Still guarded before redirecting: an unguarded route is a
@@ -9,6 +9,6 @@ import { requireManager } from "@/lib/rbac";
 // still archived (ADR-028). What shipped here on 2026-08-11 is contractor
 // SCHEDULING (ADR-030); ticketing joins it as a sibling if and when it returns.
 export default async function MaintenancePage() {
-  await requireManager();
+  await requireMaintenanceAccess();
   redirect("/maintenance/schedule");
 }

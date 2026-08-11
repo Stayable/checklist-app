@@ -20,7 +20,9 @@ const schema = z.object({
 const BCRYPT_COST = 12;
 
 export async function changeOwnPassword(input: unknown): Promise<ChangeResult> {
-  const sessionUser = await requireUser();
+  // allowPasswordChange: this action IS the way out of a forced change, so it
+  // must not itself be redirected by the guard that forces one.
+  const sessionUser = await requireUser({ allowPasswordChange: true });
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid_input" };
   const { currentPassword, newPassword } = parsed.data;
@@ -38,7 +40,12 @@ export async function changeOwnPassword(input: unknown): Promise<ChangeResult> {
   if (currentPassword === newPassword) return { ok: false, error: "same" };
 
   const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
-  await db.user.update({ where: { id: user.id }, data: { passwordHash } });
+  // Clearing the flag here is what releases the account: the next guarded
+  // request reads false and stops redirecting.
+  await db.user.update({
+    where: { id: user.id },
+    data: { passwordHash, mustChangePassword: false },
+  });
   await db.auditLog.create({
     data: {
       actorUserId: user.id,

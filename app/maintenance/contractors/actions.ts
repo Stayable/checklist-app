@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { accessiblePropertyIds, canAccessProperty, isPortfolioRole, requireManager } from "@/lib/rbac";
+import { accessiblePropertyIds, canAccessProperty, isPortfolioRole, requireMaintenanceAccess } from "@/lib/rbac";
 import type { SessionUser } from "@/lib/rbac";
 import { contractorSchema } from "@/lib/contractors";
 
@@ -51,7 +51,7 @@ async function assertCanActOnContractor(
 }
 
 export async function createContractor(input: unknown): Promise<ContractorResult> {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
   const parsed = contractorSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -97,7 +97,7 @@ export async function createContractor(input: unknown): Promise<ContractorResult
 }
 
 export async function updateContractor(id: string, input: unknown): Promise<ContractorResult> {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
   const parsed = contractorSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -176,7 +176,7 @@ export async function updateContractor(id: string, input: unknown): Promise<Cont
 }
 
 export async function archiveContractor(id: string, active: boolean): Promise<ContractorResult> {
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
 
   const current = await db.contractor.findUnique({
     where: { id },

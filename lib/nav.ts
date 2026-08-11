@@ -1,5 +1,5 @@
 import { Role } from "@prisma/client";
-import { canAccessNetwork, isAdmin, isManagerOrAbove } from "./roles";
+import { canAccessMaintenance, canAccessNetwork, isAdmin, isManagerOrAbove } from "./roles";
 
 // Single source of truth for app navigation.
 //
@@ -139,7 +139,9 @@ export function navSectionsForRole(role: Role): NavSection[] {
   const sections: NavSection[] = [HOME];
   if (isManagerOrAbove(role)) sections.push(CHECKLIST);
   if (canAccessNetwork(role)) sections.push(NETWORK);
-  if (isManagerOrAbove(role)) sections.push(MAINTENANCE, CONSTRUCTION);
+  // NOT isManagerOrAbove: AGENT is manager-level in Checklist but is kept out
+  // of Maintenance, and every /maintenance route enforces the same predicate.
+  if (canAccessMaintenance(role)) sections.push(MAINTENANCE, CONSTRUCTION);
   if (isAdmin(role)) sections.push(ADMIN);
   return sections;
 }

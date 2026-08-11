@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { canAccessProperty, requireManager } from "@/lib/rbac";
+import { canAccessProperty, requireMaintenanceAccess } from "@/lib/rbac";
 import { etDayStartUtc, formatDateInET, formatInET } from "@/lib/datetime";
 import { ymdOf } from "@/lib/contractor-schedule";
 import {
@@ -27,7 +27,7 @@ function formatScheduled(value: Date): string {
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireManager();
+  const user = await requireMaintenanceAccess();
 
   const job = await db.contractorJob.findUnique({
     where: { id },

@@ -21,8 +21,10 @@ vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 import {
   accessiblePropertyIds,
+  canAccessMaintenance,
   canAccessProperty,
   isAdmin,
+  canAccessNetwork,
   isFieldStaff,
   isManagerOrAbove,
   isPortfolioRole,
@@ -52,13 +54,45 @@ describe("role predicates", () => {
     }
   });
 
-  it("isManagerOrAbove is true for MANAGER, CORPORATE, ADMIN only", () => {
-    for (const r of [Role.MANAGER, Role.CORPORATE, Role.ADMIN]) {
+  it("isManagerOrAbove is true for MANAGER, AGENT, CORPORATE, ADMIN only", () => {
+    for (const r of [Role.MANAGER, Role.AGENT, Role.CORPORATE, Role.ADMIN]) {
       expect(isManagerOrAbove(r)).toBe(true);
     }
     for (const r of [Role.HK, Role.PA, Role.MT]) {
       expect(isManagerOrAbove(r)).toBe(false);
     }
+  });
+
+  // AGENT is checklist-only (added 2026-08-12 for RPM/GSA testing). These are
+  // the tests that stop a later refactor from quietly handing it the contractor
+  // calendar: /maintenance/* is guarded by canAccessMaintenance, so if this
+  // drifts, real contractor data becomes visible to test accounts.
+  it("canAccessMaintenance excludes AGENT and every field-staff role", () => {
+    for (const r of [Role.MANAGER, Role.CORPORATE, Role.ADMIN]) {
+      expect(canAccessMaintenance(r)).toBe(true);
+    }
+    for (const r of [Role.AGENT, Role.HK, Role.PA, Role.MT, Role.NETWORK_TECH]) {
+      expect(canAccessMaintenance(r)).toBe(false);
+    }
+  });
+
+  it("maintenance access is a strict subset of manager-or-above", () => {
+    // Anything that reaches Maintenance must also clear the checklist bar; the
+    // reverse does not hold, and AGENT is the whole reason why.
+    for (const r of ALL_ROLES) {
+      if (canAccessMaintenance(r)) expect(isManagerOrAbove(r)).toBe(true);
+    }
+    const divergent = ALL_ROLES.filter((r) => isManagerOrAbove(r) !== canAccessMaintenance(r));
+    expect(divergent).toEqual([Role.AGENT]);
+  });
+
+  it("AGENT gets no network, no admin, and is not field staff", () => {
+    expect(canAccessNetwork(Role.AGENT)).toBe(false);
+    expect(isAdmin(Role.AGENT)).toBe(false);
+    expect(isPortfolioRole(Role.AGENT)).toBe(false);
+    // Not field staff: it holds review/approve powers, so the phone-first
+    // fill-only surfaces are not its home.
+    expect(isFieldStaff(Role.AGENT)).toBe(false);
   });
 
   it("isFieldStaff is the exact complement of isManagerOrAbove", () => {
