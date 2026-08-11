@@ -15,7 +15,25 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-03, scope narrowed to two tracks)
+## 🎯 START HERE (updated 2026-08-12)
+
+**🟢 THE TEST ROUND IS RUNNING.** Nine RPM/GSA testers (`AGENT` role) are live in prod as of
+2026-08-12. **First thing to check: has anyone actually signed in?** Nobody has ever authenticated as
+AGENT, so the OTP email and the forced-password-change redirect are both unexercised end to end, and a
+stuck account is indistinguishable from a lost email. Guide `docs/ChecklistTesterGuide_RISE8_081226.md`.
+
+**What cleared on 2026-08-12** — geofences on all 8 properties (Kyle traced them; photo verification
+was inert across the whole portfolio before), and **1,172 rooms** with zoning from a Cloudbeds export
+(the 3 per-room templates could not be created at all before). Contractor scheduling went **live with
+real data**: 13 contractors, 65 jobs.
+
+**What is left in A6 is content, and only content:** real question text for 9 templates
+(Karla/Christopher — both are now testers, staring at the placeholders) and the **recurring-rules
+matrix** (property managers), which is now the biggest single gap — nothing generates on its own, so
+testers create everything by hand.
+
+**⚠ Owed:** an independent review pass over everything built in-session on 11–12 Aug (see Track D
+`D-rev`). Self-review caught three real defects, which is the argument both for and against it.
 
 **✅ SCOPE SETTLED — Kyle, 2026-08-03.** **This codebase is the Checklist app (A) and Network monitoring (B). Nothing else.** Tracks C, D and E are archived to `docs/archive/tracks-cde/` as reference; the contractor/dispatch rail was **deleted, not frozen** — Kyle is replacing it with a system he is building outside this repo, and a hidden-but-present feature is a maintenance cost with no owner. Recorded as **ADR-028**. **Do not restart C/D/E from the archive** — if any of it returns, it returns through a fresh decision.
 
@@ -54,7 +72,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 | **A** | **Checklist App (StayCheck)** — the Connecteam replacement | **P0** | 🟢 Live in prod, ~60% of v1 | A6 (real content + geofences) |
 | **B** | **Network Monitoring & IT Ticketing** | P1 | 🟢 Live · **8 of 8 properties, 16 consoles, 596 devices** · lifecycle proven in prod · **Teams notifications LAUNCHED 2026-08-02** (9 channels, escalation, 9 AM digest) | Watch the first 9 AM digest (Mon 3 Aug) · Gerardo @-mention (flow-side) · console filter · B3 hardening · §Q29 SA flap |
 | **C** | **Maintenance / Ticketing** | — | 🗄 **Archived, returning later** (ADR-028 amendment). Nothing built, no work scheduled. Ships today as a **nav section + stub page** so the shape is visible | `docs/archive/tracks-cde/` |
-| **D** | **Contractor Scheduling** (calendar + daily dashboard) | P1 | 🟢 **BUILT 2026-08-11, all 9 tasks — branch-local, NOTHING DEPLOYED and migration applied to NO database.** Kyle reopened contractor work as a companion to the contractor-update system he is building outside this repo (**ADR-030**). **Scheduling only — dispatch/WhatsApp/consent stay archived and do NOT return.** New narrower schema; nothing revived from the deleted rail | **Apply the migration to prod, then deploy** (additive ⇒ DB first) · enter real contractors · open the three pages in a browser |
+| **D** | **Contractor Scheduling** (calendar + daily dashboard) | P1 | 🟢 **LIVE IN PROD 2026-08-11/12** (**ADR-030**). Migration applied, code deployed, **real data loaded**: 13 contractors + 65 jobs from Kyle's Smartsheet week, all assigned. Calendar has job/day popups, collapsed cells, weekend shading. **Scheduling only — dispatch/WhatsApp/consent stay archived and do NOT return** | Watch it in use · §Q35 Delayed status · §Q36 automate the sync |
 | **E** | **Construction Progress / Scheduling** | — | 🗄 **Archived, returning later** (ADR-028 amendment). Never had a go/no-go. Ships today as a **nav section + stub page** | `docs/archive/tracks-cde/` |
 
 A and B share one codebase and one deploy (ADR-025) and reuse the same core: auth, RBAC, audit log, notifications, R2 photo pipeline, SLA, geofence. Only two things ever coupled B to the rest — `canAccessNetwork` in `lib/rbac.ts` and `NETWORK_GROUP` in `lib/nav.ts` — and that is worth keeping true.
@@ -81,14 +99,32 @@ Condensed; per-task detail and commit hashes are in the archived tracker.
 
 Everything here is *content and configuration*, not code. **The app cannot be used for real work until these are done**, and none of them are things I can do alone.
 
+**Two of five cleared on 2026-08-12** — geofences and rooms. What remains is content only, and the
+nine-person test round is now running against placeholder questions, which is the loudest possible
+reminder of it.
+
 | Pri | Status | Item | Owner | Note |
 |---|---|---|---|---|
-| P0 | [!] | **Real checklist question content** for all 9 templates | Karla / Christopher | All 40 seeded questions are **PLACEHOLDER**. Hard blocker for training and cutover. Guide exists: `docs/component-i/ChecklistTeamInterviewGuide_RISE8_060526.md` |
-| P0 | [!] | **Geofence polygons for 8 properties** | Kate | Until these exist every photo is stored `UNVERIFIED` — the verification feature is inert. See §Q9 |
-| P0 | [ ] | Geofence polygon editor (Leaflet draw + save) | — | Code; needed to enter the polygons |
-| P0 | [ ] | Backfill `UNVERIFIED` photos once polygons land (reuse `lib/geofence.ts`) | — | One-off job |
-| P0 | [!] | **Recurring-rules matrix** — which template recurs how often at which property | Property Managers | `/rules` is built and empty. The 5 AM cron runs and generates nothing until rules exist |
+| P0 | [!] | **Real checklist question content** for all 9 templates | Karla / Christopher | All 40 seeded questions are **PLACEHOLDER**. Hard blocker for training and cutover. Both owners are now testers, so they are looking at the placeholders directly. Guide: `docs/component-i/ChecklistTeamInterviewGuide_RISE8_060526.md` |
+| P0 | [x] | **Geofence polygons for 8 properties** | Kyle | ✅ **2026-08-12.** Kyle traced all 8 on satellite imagery with deliberate allowance; loaded via `scripts/set-geofences.ts`. Verified VERIFIED at centre, OFF_PROPERTY ~1 km out, spans 109–243 m, no overlaps. Gerardo to re-check on site; his version wins if he redraws |
+| P0 | [x] | Geofence editor | — | ✅ `/admin/properties/[id]/geofence` — paste GeoJSON or centre+radius, SVG outline preview, live point tester running the real evaluator. Parser rejects [lat,lng] swaps rather than "fixing" them |
+| P0 | [x] | ~~Backfill `UNVERIFIED` photos~~ | — | ✅ **Moot — prod has 0 photos.** Boundaries landed before real capture, so there is nothing to re-evaluate. Do not re-add this |
+| P0 | [x] | **Room inventory** | Kyle | ✅ **2026-08-12.** 1,172 rooms from a Cloudbeds export, with zone + room type: DP 153 · JN 127 · JW 133 · KE 167 · KW 160 · LL 157 · OR 135 · SA 140. Unblocked the 3 per-room templates, which could not be created at all before |
+| P0 | [!] | **Recurring-rules matrix** — which template recurs how often at which property | Property Managers | `/rules` is built and empty. The 5 AM cron runs and generates nothing until rules exist. **Now the single biggest gap** — testers must create everything by hand |
+| P1 | [!] | **Room occupancy is a placeholder** | — | All 1,172 rooms are `VACANT` because the export deliberately excludes occupancy. A recurring rule filtered on occupied/vacant filters a default, not a fact. Needs either PMS sync (S3, blocked §Q12) or manual upkeep — **and there is no room-management UI**, so today it is script-only |
 | P1 | [ ] | Confirm SLA hours per priority (placeholders 4/24/72/168h live) | Christopher | Admin-editable, so non-blocking |
+
+## A6b — Test round · ▶ **RUNNING since 2026-08-12**
+
+Nine RPM/GSA testers live in prod. Guide `docs/ChecklistTesterGuide_RISE8_081226.md`, launch message
+`docs/TestLaunchMessage_RISE8_081226.md`.
+
+| Pri | Status | Item |
+|---|---|---|
+| P0 | [~] | **9 AGENT accounts created** (abby · bea · carl · christopher · erika · jeffrey · karla · randy · ruby), all 8 properties each, shared start password, forced change on first login |
+| P0 | [ ] | ⚠ **Watch the first sign-in.** Nobody has ever logged in as AGENT: the OTP email path and the forced-password-change redirect are both unexercised end to end. A stuck account looks identical to a lost email |
+| P0 | [ ] | Collect feedback; triage into A7/A8 |
+| P1 | [ ] | Decide whether AGENT survives the test round or is retired — it exists for this, and it is a permanent role in the enum either way |
 
 ## A7 — Feature-complete gaps · P1
 
@@ -259,7 +295,11 @@ contradict ADR-028. `Photo` is untouched (ADR-016); jobs have no photos.
 | D-9 | P1 | [x] | **ADR-030 recorded** + a pointer added inside ADR-028 (a reader who stops there concludes nothing contractor-shaped exists) + tracker + status |
 | D-fix | P1 | [x] | **`Contractor.company` now has a write path** (`565ee49`) — optional, trimmed, whitespace-only rejected. Added the field rather than removing the display, since the design lists it as real data |
 | D-min | P2 | [x] | **Both minors closed** (`23854d6`). DST week tests now pin the concrete boundary ymds — the consecutive-days check alone would still pass with the whole week shifted by one, which is the failure a DST bug produces. `ContractorJob.contractorId`'s `SetNull` was Prisma's implicit default for an optional relation; now explicit and documented as intended (the app archives contractors, never deletes, so it only governs an out-of-band SQL delete). Generated SQL byte-identical ⇒ no migration drift |
-| D-rev | P1 | [ ] | ⚠ **Review gate owed on D-5 through D-9.** D-1 to D-4 each passed a spec + quality review by a separate agent; D-5 onward were built in-session because this session's operator instructions bar dispatching agents. Verification so far is tests + typecheck + lint + build, plus self-review (which did catch a real hole in D-5) |
+| D-rev | P1 | [ ] | ⚠ **Review gate owed on D-5 through D-9** *and* on everything added 2026-08-12 (popups, weekend styling, the sync, geofence editor, AGENT role, room loader). All built in-session, so verification is tests + typecheck + lint + build + self-review — which did catch real holes (D-5's impossible-date crash, `canManageTemplate` missing AGENT, `/checklists/new` being unreachable) but is not an independent pass |
+| D-10 | P1 | [x] | **Job popup + collapsed day cells** (`355203b`). Two-level dialog (day list → job), chips capped per view with `+N more`, backlog rail opens the same dialog. **Read-only by design**: status/assign/reschedule stay on the full page so terminal-immutability and contractor eligibility have one surface each |
+| D-11 | P2 | [x] | **Weekend shading + calendar frame** (`106d1b5`). Tinted frame with cells as cards; one documented precedence — today → weekend → workday — and out-of-month days dim rather than replace. `isWeekendYMD` tested incl. both DST Sundays |
+| D-12 | P1 | [x] | **Temporary Smartsheet → calendar sync** (`20ed155`, `scripts/sync-contractor-schedule-from-smartsheet.ts`). Sheet wins for status/date/task; **terminal jobs are never reopened**; property changes reported not applied; notes append-only. ⚠ **Manual — the app holds no Smartsheet credential**, so a capture is written to `scripts/data/` and the script runs against it |
+| D-13 | P1 | [x] | **Job history is the WhatsApp update** (`04f4838`), not import provenance. 65 provenance notes deleted, 12 real updates attached, resolved via the `audit_log` row-id link. Provenance survives in `audit_log` |
 
 **⚠ Migration `20260811120000_add_contractor_scheduling` is authored but applied to NO database, and no
 code is deployed.** Additive, so prod order is **DB first, then code** (the 2026-08-03 drop inverted
@@ -302,6 +342,11 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 
 | # | Question | Blocks | My recommendation |
 |---|---|---|---|
+| **Q35** | **"Delayed" cannot be expressed.** `ContractorJobStatus` is PLANNED/IN_PROGRESS/DONE/CANCELLED, so Smartsheet's Pending *and* Delayed both map to PLANNED — a Pending→Delayed change moves nothing in the status field. The sync records it as a note by tracking the last-seen source status in `audit_log`, or it would be invisible. Three jobs sat in Delayed on 2026-08-12 | Whether the calendar can show what the sheet shows | **Add `DELAYED` to the enum** if it is operationally real, which it looks to be — one additive migration, a label, a colour. Roughly 30 min. Otherwise it stays a note and the two systems disagree on screen |
+| **Q36** | **Automate the Smartsheet sync, or wait for the middleware?** The sync is one-way and **manual: the app holds no Smartsheet credential** — the sheet is read through an MCP connection belonging to a Claude session, so only I can trigger it. Hands-off needs a `SMARTSHEET_ACCESS_TOKEN` in Vercel plus a cron route | Whether the calendar drifts from the sheet between asks | **Wait**, if the middleware that writes the sheet will post to both soon — that removes the sync entirely. Automate only if that is more than a few weeks out |
+| **Q37** | **Who maintains room occupancy?** All 1,172 rooms read `VACANT` because the Cloudbeds export deliberately omits occupancy. A recurring rule filtered on occupied/vacant therefore filters a default. **There is also no room-management UI** — rooms are script-only today | Occupancy-filtered recurring rules; the room status board (S2) | Either wire the Cloudbeds sync (S3, blocked on per-property keys §Q12) or accept that occupancy is unused in v1 and **do not offer occupied/vacant filters in `/rules`** until it is real. Do not leave a filter that silently lies |
+| **Q38** | **Does `AGENT` survive the test round?** It was added for the nine RPM/GSA testers: checklist-only, excluded from Maintenance/Network/Admin by its own predicate. It is a permanent enum value now either way | Nothing today | Keep it. "Checklist access without contractor scheduling or admin" is a real shape, and retiring an enum value costs more than leaving it |
+| **Q39** | **Should session action items go to the Smartsheet Action Items Staging Sheet (1981210199805828)?** The org convention says yes automatically; I have not written any, since adding rows to a shared sheet unprompted seemed worth asking first. Six are outstanding from 2026-08-12 | Nothing technical — process only | Say the word and I will push them. Otherwise this tracker stays the single source and the staging sheet stays for human-entered work |
 | **Q30** | ✅ **BUILT 2026-08-01 — "Guests active now", Spotipo-only.** Derived from per-guest `last_seen_at`: the portal heartbeats every connected guest about once a minute, the list is ordered newest-first, so the count is a page-walk with early exit (JW 3 pages of 10, LL 2). Live run: 8/8 sites, 136 active of 699 registered, 12.1s cold. Window **5 min**, labelled on screen; `per_page` caps at 20; a "+" suffix marks a count that hit the 6-page safety cap. **Caveat that stands: it counts GUEST RECORDS, not devices** — Spotipo has no per-device identifier at all (`/device/` `/client/` `/session/` `/online/` `/connection/` all 404, proven with a 200 control either side). Two open follow-ons below | — | Mostly closed |
 | **Q30a** | **12s cold render on `/network/wifi`.** The paced sweep is ~30 requests; cached views are instant but the first hit after the 2-min active-TTL expires pays it | WiFi page responsiveness | Options: narrow the window (fewer pages), refresh in the background off a cron into a table, or accept it. Only worth doing if someone actually sits on this page |
 | **Q30 (original)** | **Do you want a real Spotipo-sourced "online now", given what it costs?** UniFi was removed from the WiFi page 2026-08-01 (Kyle: guest page, guest sources only), and Spotipo has **no online aggregate** — no flag, and `?online=true` / `?status=online` / `?is_online=1` all return the unfiltered total. The one honest route is counting guests whose per-record `last_seen_at` is recent; that stamp IS live (a JW record read 8 seconds old). **The cost:** it means paginating every guest record on every read — ~700 records portfolio-wide — and those records are PII (name, email, phone). Also unresolved: the max `per_page`, because Spotipo started 403-throttling mid-probe | An "online now" figure on the WiFi page | Only build it if the number is actually used for something. If yes: page with the largest `per_page` the API allows, count in memory, **persist nothing**, define "online" as a stated window (15 min) and label it as such on screen. Same mechanism would answer §Q26's "active in the window" |
