@@ -3,6 +3,7 @@ import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { MaintenanceNav } from "../MaintenanceNav";
 import { ContractorsClient } from "./ContractorsClient";
 
 export default async function ContractorsPage() {
@@ -47,6 +48,7 @@ export default async function ContractorsPage() {
         title="Contractors"
         subtitle={`${rows.length} contractor${rows.length === 1 ? "" : "s"} for the current scope`}
       />
+      <MaintenanceNav />
       <ContractorsClient rows={rows} properties={properties} />
     </div>
   );

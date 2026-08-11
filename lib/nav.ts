@@ -37,6 +37,15 @@ export type NavSection = {
   href?: string;
   children?: NavItem[];
   /**
+   * Prefix owning routes that belong to the section but are not nav
+   * destinations — e.g. /maintenance/jobs/[id], reached from the calendar
+   * rather than the rail. Used ONLY by sectionForPathname, so those pages
+   * still highlight their section. Deliberately not `href`: the section is a
+   * parent, and the href/children XOR is what keeps the rail's leaf-vs-parent
+   * rendering unambiguous.
+   */
+  basePath?: string;
+  /**
    * Section exists in the nav but has nothing behind it yet. Renders a "Soon"
    * chip and a stub page. A nav entry that 404s is worse than no nav entry.
    */
@@ -84,15 +93,21 @@ const NETWORK: NavSection = {
   children: NETWORK_CHILDREN,
 };
 
-// Tracks C and E: archived as build work (ADR-028) but kept as nav sections
-// because they are coming back here later (Kyle 2026-08-03). No children until
-// they do.
+// Maintenance became a real section on 2026-08-11 when contractor scheduling
+// shipped (ADR-030). It stays a SECTION rather than becoming a seventh
+// top-level one: the mobile bar is held at five items so it never scrolls
+// (ADMIN sees six sections, less Admin on mobile = exactly five), and a
+// seventh would make six. Ticketing adds siblings here when Track C lands.
 const MAINTENANCE: NavSection = {
   id: "maintenance",
   label: "Maintenance",
   icon: "Wrench",
-  href: "/maintenance",
-  unbuilt: true,
+  basePath: "/maintenance",
+  children: [
+    { href: "/maintenance/schedule", label: "Schedule", section: "maintenance" },
+    { href: "/maintenance/daily", label: "Daily", section: "maintenance" },
+    { href: "/maintenance/contractors", label: "Contractors", section: "maintenance" },
+  ],
 };
 
 const CONSTRUCTION: NavSection = {
@@ -162,6 +177,7 @@ export function sectionForPathname(pathname: string): SectionId | null {
   for (const section of ALL_SECTIONS) {
     const hrefs = [
       ...(section.href && section.href !== "/" ? [section.href] : []),
+      ...(section.basePath ? [section.basePath] : []),
       ...(section.children?.map((c) => c.href) ?? []),
     ];
     for (const href of hrefs) {

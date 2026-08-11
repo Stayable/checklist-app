@@ -48,11 +48,23 @@ describe("navSectionsForRole", () => {
     expect(ids(Role.NETWORK_TECH)).toEqual(["home", "network"]);
   });
 
-  it("marks maintenance and construction unbuilt, and nothing else", () => {
+  // Maintenance stopped being a stub on 2026-08-11 (contractor scheduling,
+  // ADR-030). Construction is the only unbuilt section left.
+  it("marks construction unbuilt, and nothing else", () => {
     const unbuilt = navSectionsForRole(Role.ADMIN)
       .filter((s) => s.unbuilt)
       .map((s) => s.id);
-    expect(unbuilt).toEqual(["maintenance", "construction"]);
+    expect(unbuilt).toEqual(["construction"]);
+  });
+
+  it("gives maintenance its three children in order", () => {
+    const maintenance = navSectionsForRole(Role.MANAGER).find((s) => s.id === "maintenance");
+    expect(maintenance?.unbuilt).toBeUndefined();
+    expect(maintenance?.children?.map((c) => c.href)).toEqual([
+      "/maintenance/schedule",
+      "/maintenance/daily",
+      "/maintenance/contractors",
+    ]);
   });
 
   it("every section is either a leaf with an href or a parent with children", () => {
@@ -107,7 +119,9 @@ describe("navItemsForRole", () => {
       "/templates",
       "/completed",
       "/reports/completeness",
-      "/maintenance",
+      "/maintenance/schedule",
+      "/maintenance/daily",
+      "/maintenance/contractors",
       "/construction",
     ]);
   });
@@ -137,8 +151,19 @@ describe("sectionForPathname", () => {
 
   it("resolves admin and the unbuilt sections", () => {
     expect(sectionForPathname("/admin/users")).toBe("admin");
-    expect(sectionForPathname("/maintenance")).toBe("maintenance");
     expect(sectionForPathname("/construction")).toBe("construction");
+  });
+
+  it("resolves maintenance children and its non-nav job routes", () => {
+    expect(sectionForPathname("/maintenance/schedule")).toBe("maintenance");
+    expect(sectionForPathname("/maintenance/daily")).toBe("maintenance");
+    expect(sectionForPathname("/maintenance/contractors")).toBe("maintenance");
+    // /maintenance itself only redirects, and the job routes are reached from
+    // the calendar rather than the rail — both are owned via basePath so the
+    // section still reads active while you are on them.
+    expect(sectionForPathname("/maintenance")).toBe("maintenance");
+    expect(sectionForPathname("/maintenance/jobs/new")).toBe("maintenance");
+    expect(sectionForPathname("/maintenance/jobs/abc-123")).toBe("maintenance");
   });
 
   it("returns null for routes outside the nav", () => {
