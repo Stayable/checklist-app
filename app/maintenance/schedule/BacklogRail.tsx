@@ -1,13 +1,25 @@
+"use client";
+
 import Link from "next/link";
-import { jobStatusLabel, tradeLabel } from "@/lib/contractors";
-import type { ScheduleJob } from "./CalendarGrid";
+import { JobChip, type ScheduleJob } from "./CalendarGrid";
 
 // Persistent side rail (Kyle's decision): the unscheduled backlog is visible
 // in EVERY view, because an unscheduled job is invisible on a calendar by
 // definition — that is exactly why it needs its own permanent surface. It
 // shows the whole backlog regardless of which date range is on screen.
+//
+// Rows open the same job dialog as a calendar chip, so one click behaves the
+// same way everywhere on this page.
 
-export function BacklogRail({ jobs }: { jobs: ScheduleJob[] }) {
+export function BacklogRail({
+  jobs,
+  todayYmd,
+  onOpenJob,
+}: {
+  jobs: ScheduleJob[];
+  todayYmd: string;
+  onOpenJob: (jobId: string) => void;
+}) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-baseline justify-between">
@@ -20,27 +32,7 @@ export function BacklogRail({ jobs }: { jobs: ScheduleJob[] }) {
       ) : (
         <div className="flex flex-col gap-1.5">
           {jobs.map((job) => (
-            <Link
-              key={job.id}
-              href={`/maintenance/jobs/${job.id}`}
-              className={`block rounded-md border px-2 py-1.5 text-xs ${
-                job.urgent
-                  ? "border-red-200 bg-red-50 hover:bg-red-100"
-                  : "border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              <span className="flex flex-wrap items-center gap-x-1.5 font-semibold text-slate-900">
-                {job.urgent && <span className="text-red-700">URGENT</span>}
-                <span>{job.propertyShortCode}</span>
-                {job.roomLabel && (
-                  <span className="font-normal text-slate-600">{job.roomLabel}</span>
-                )}
-              </span>
-              <span className="mt-0.5 block text-slate-600">
-                {tradeLabel(job.trade)} · {job.contractorName ?? "Unassigned"}
-              </span>
-              <span className="mt-0.5 block text-slate-500">{jobStatusLabel(job.status)}</span>
-            </Link>
+            <JobChip key={job.id} job={job} todayYmd={todayYmd} onOpen={onOpenJob} />
           ))}
         </div>
       )}

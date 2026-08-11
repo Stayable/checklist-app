@@ -14,8 +14,8 @@ import {
 import { OPEN_JOB_STATUSES } from "@/lib/contractors";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { MaintenanceNav } from "../MaintenanceNav";
-import { CalendarGrid, type ScheduleJob } from "./CalendarGrid";
-import { BacklogRail } from "./BacklogRail";
+import type { ScheduleJob } from "./CalendarGrid";
+import { ScheduleClient } from "./ScheduleClient";
 import { ScheduleToolbar } from "./ScheduleToolbar";
 
 // Contractor schedule. Date-only by design (Kyle, 2026-08-11): day and week
@@ -118,19 +118,13 @@ export default async function SchedulePage({
         title={formatViewTitle(view, cells)}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_280px]">
-        <div className="min-w-0">
-          <CalendarGrid
-            view={view}
-            cells={cells}
-            jobs={dated.map(toScheduleJob)}
-            todayYmd={today}
-          />
-        </div>
-        <aside>
-          <BacklogRail jobs={backlog.map(toScheduleJob)} />
-        </aside>
-      </div>
+      <ScheduleClient
+        view={view}
+        cells={cells}
+        dated={dated.map(toScheduleJob)}
+        backlog={backlog.map(toScheduleJob)}
+        todayYmd={today}
+      />
     </div>
   );
 }
