@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/rbac";
+import { outerRing } from "@/lib/geofence";
 
-// Admin → Properties. Read-only in v1 (geofence editor + room management land in
-// Phase 6 / later). Shows the portfolio and whether a geofence polygon is set.
+// Admin → Properties. Room management is still later; the geofence is now
+// editable per property (A6). "Set" is computed with the SAME parser the photo
+// evaluator uses, so a malformed polygon reads as not set here rather than
+// looking configured while verifying nothing.
 export default async function AdminPropertiesPage() {
   await requireAdmin();
 
@@ -24,7 +28,7 @@ export default async function AdminPropertiesPage() {
     <div>
       <h1 className="text-2xl font-bold text-slate-900">Properties</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Read-only in v1. Geofence polygon editor ships in Phase 6.
+        Until a property has a geofence, every photo taken there is stored UNVERIFIED.
       </p>
 
       <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -37,6 +41,7 @@ export default async function AdminPropertiesPage() {
               <th className="px-4 py-3">Address</th>
               <th className="px-4 py-3">Rooms</th>
               <th className="px-4 py-3">Geofence</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -48,11 +53,19 @@ export default async function AdminPropertiesPage() {
                 <td className="px-4 py-3 text-xs text-slate-500">{p.address}</td>
                 <td className="px-4 py-3 text-slate-600">{p._count.rooms}</td>
                 <td className="px-4 py-3">
-                  {p.geofence ? (
+                  {outerRing(p.geofence) ? (
                     <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Set</span>
                   ) : (
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Not set</span>
                   )}
+                </td>
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/admin/properties/${p.id}/geofence`}
+                    className="font-medium text-navy hover:underline"
+                  >
+                    {outerRing(p.geofence) ? "Edit" : "Set up"}
+                  </Link>
                 </td>
               </tr>
             ))}
@@ -60,10 +73,6 @@ export default async function AdminPropertiesPage() {
         </table>
       </div>
 
-      <div className="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
-        Geofence map placeholder — Leaflet polygon editor lands in Phase 6 once
-        Kate provides final coordinates per property.
-      </div>
     </div>
   );
 }
