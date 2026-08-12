@@ -15,7 +15,36 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-12)
+## 🎯 START HERE (updated 2026-08-13)
+
+**🟢 THE REAL ROSTER IS IN.** 8 property managers (one property each), 2 area managers, 3 remote PMs
+promoted from AGENT and narrowed to their own properties, plus Rob and Crystal as CORPORATE. Everyone
+holds a per-person starting password (`Ops` + mailbox name) and must change it on first sign-in.
+**Nobody has signed in yet** — the first real check is one of them hitting the forced-change screen and
+the OTP landing, because a mailbox typo produces an account nobody can ever enter. Re-run
+`scripts/print-roster-credentials.ts` to see who still holds a starting password.
+
+**🔐 Two access boundaries moved, and they are the thing to re-read before touching RBAC:**
+- **MANAGER LOST Maintenance.** The contractor calendar is portfolio-wide — every contractor's name
+  and phone number, and job mutations on any property — so `canAccessMaintenance` is now portfolio
+  roles only. If a PM ever needs it, scope `/maintenance` the way Network was scoped; do not widen the
+  predicate back.
+- **MANAGER GAINED Network, property-scoped.** `canAccessNetwork` only ever answered "may they open
+  the section"; nothing answered "which rows", so every network page showed the whole estate.
+  `lib/network/scope.server.ts` is the row-level answer and it is applied at **every** query site.
+
+**🟢 CONTRACTOR UPDATE FAN-OUT IS LIVE** (D-14). Receiver deployed, migration applied, secret set on
+both sides, 13/13 contractor phone numbers loaded. **Nothing has ever arrived** — the pipeline half
+does not exist yet and ships behind an unset `CHECKLIST_APP_URL`. The handoff for that repo is
+`docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md`, already mirrored into
+`construction_updates`.
+
+**⚠ Owed:** ADR-031 · route-level integration tests for the receiver · the independent review of
+11–13 Aug work (D-rev). And nothing built on 12–13 Aug has been opened in a browser by me.
+
+---
+
+## (previous) START HERE — 2026-08-12
 
 **🟢 THE TEST ROUND IS RUNNING.** Nine RPM/GSA testers (`AGENT` role) are live in prod as of
 2026-08-12. **First thing to check: has anyone actually signed in?** Nobody has ever authenticated as
@@ -113,6 +142,16 @@ reminder of it.
 | P0 | [!] | **Recurring-rules matrix** — which template recurs how often at which property | Property Managers | `/rules` is built and empty. The 5 AM cron runs and generates nothing until rules exist. **Now the single biggest gap** — testers must create everything by hand |
 | P1 | [!] | **Room occupancy is a placeholder** | — | All 1,172 rooms are `VACANT` because the export deliberately excludes occupancy. A recurring rule filtered on occupied/vacant filters a default, not a fact. Needs either PMS sync (S3, blocked §Q12) or manual upkeep — **and there is no room-management UI**, so today it is script-only |
 | P1 | [ ] | Confirm SLA hours per priority (placeholders 4/24/72/168h live) | Christopher | Admin-editable, so non-blocking |
+
+## A6c — Real roster provisioned · ▶ **2026-08-13**
+
+| Pri | Status | Item |
+|---|---|---|
+| P0 | [x] | **15 account changes.** 8 PMs (MANAGER, one property each) · 2 area managers (Shayla JW/SA/JN, Shay KW/KE/OR/DP/LL) · **Ruby, Jeffrey, Erika promoted AGENT → MANAGER and narrowed** from all 8 to DP/KE/OR, JW/SA, LL/KW/JN · **Rob + Crystal as CORPORATE**. Gerardo was already CORPORATE and left alone. The other 6 agents untouched — agents keep Checklist |
+| P0 | [x] | **Per-person starting passwords** — `Ops` + mailbox name (`OpsBea`, `OpsShay`). 21 accounts. Only touches accounts nobody has personalized: `mustChangePassword` going false means a real person chose it, which is why **gerardo@ was skipped, not reset**. Kyle/Kate/admin excluded by policy. ⚠ Seven fall under the app's own 8-char minimum (`OpsRb` is 5) — outside the check, not bypassing it, but they could not re-set the same password on `/profile`. Guessable by design; the forced change + the OTP are what make that safe |
+| P0 | [ ] | ⚠ **Nobody has signed in yet.** The forced-change redirect and the OTP path are unexercised for every one of these accounts, and a mailbox typo produces an account that can never be entered. `scripts/print-roster-credentials.ts` lists who still holds a starting password |
+| P1 | [ ] | Rob's is `OpsRb`, from the mailbox — "Ops + your first name" does not describe it. Tell him directly or rename to `OpsRob` |
+| P1 | [ ] | ⚠ **Nothing from 12–13 Aug has been opened in a browser by me** — including whether a scoped manager's `/network` actually renders their properties only |
 
 ## A6b — Test round · ▶ **RUNNING since 2026-08-12**
 
@@ -221,6 +260,7 @@ All pure DB work — no vendor dependency, no credentials needed.
 | P1 | [x] | Date range for revenue (`5d5c866`). ⚠ Guest counts **cannot** be date-filtered — Spotipo ignores date params entirely |
 | P1 | [x] | **Device type: column + filter on `/network/tickets`** (2026-07-31, `4862c1e`). Labels centralised in `lib/network/device-type.ts` and reused on the device + property pages, which had been rendering the raw enum. ⚠ The filter uses a relation filter, so it **excludes device-less mass-outage parents** — deliberate, but it means filtered and unfiltered counts can disagree |
 | P1 | [x] | **Console attribution** (2026-07-31, `103d715`). `Device.consoleHostId` + `consoleLabel()`; shown under the device name on the ticket list ("on Orlando-NVR2"), on the device page, and as a Console column per property |
+| P1 | [x] | **Per-property scoping for the whole section** (2026-08-13, `9701707`). `networkScopeFor` returns `null` for portfolio roles and NETWORK_TECH (its job is the fleet, and it holds no property memberships, so scoping it would show it nothing) and the user's own properties otherwise. `null` and `[]` are deliberately different — `[]` matches nothing, and collapsing them is how an empty membership list becomes full access. Applied at **every** query site: the dashboard's ten aggregates, the ticket list, the CSV export, four detail pages, both ticket mutations, the WiFi summary API. Detail pages **404, not 403** — confirming a ticket exists at a property you cannot see is itself a disclosure. ⚠ **The bug worth remembering:** the scope clause and the user's `?property=` filter both write `propertyId`, so composing them as two object spreads let a URL parameter overwrite the scope. `ticketPropertyWhere` resolves them together and an out-of-scope request yields "match nothing", never "no filter" |
 | P1 | [ ] | **Console FILTER on tickets** — display shipped, the filter did not. `consoleOptions()` already exists for the `<select>` |
 | P1 | [ ] | Property filter exists; a combined property+console+type filter bar is still Kate's full ask |
 | P1 | [x] | **"All" status tab on `/network/tickets`** (2026-08-01, `7487542`, Kyle). The tabs were Open / In progress / Resolved / Closed with no way to select every status — and since the CSV export inherits the screen's filter, **there was no way to export the full history**. Adds an `ALL` sentinel distinct from both a status and `null` (`null` already means "defaulted to open"), and folds the status clause into `ticketWhereFilters` so the page and the export can't drift apart. **Both row caps now announce themselves** — the table's 200-row limit was invisible and the CSV's 10k cap truncated silently, which is worse because a truncated spreadsheet gets totalled |
@@ -330,6 +370,8 @@ straight to this calendar, replacing the manual snapshot sync's update path and 
 | D-14h | P1 | [x] | **No `auditLog` row on this path, deliberately** — `AuditLog.actorUserId` is required and there is no human actor. Attributing to a placeholder (as the sync does, writing everything as `bke@`) puts automated changes under a real person's name in the one table whose job is saying who did what; making the column nullable edits a cross-cutting table for one feature. The `ContractorUpdate` row carries strictly more (messageSid, version, channel, resolution, status applied, matched-by, Smartsheet row id, both stamps) and is indexed for it |
 | D-14f | P1 | [x] | ✅ **LIVE IN PROD 2026-08-13.** Migration applied to `ep-summer-cloud` **first**, then deploy `checklist-g1hx1vlk4` (Ready, 1m). Verified in the DB: enum reads `PLANNED → DELAYED → IN_PROGRESS → DONE → CANCELLED`, both tables present, `contractor_updates_message_sid_key` unique index present. Verified over HTTPS: unsigned POST **401**, wrong signature **401**, non-JSON **400**, and `/login` 200 · `/dashboard` `/maintenance/schedule` `/network/tickets` all 307 (no regression). The three probes wrote **3 capture rows and 0 applied rows** — capture-before-trust working, nothing unsigned reaching a job |
 | D-14i | P1 | [x] | ✅ **Secret set on both sides 2026-08-13, fingerprint `ec1200b3859d`** — Vercel `CONTRACTOR_UPDATE_SECRET` (Production, Encrypted) and Key Vault `kv-stayable-wa6929/checklist-app-webhook-secret`. ⚠ **Rotated once during setup**: an earlier value was echoed into a session transcript by a PowerShell alias collision (`H` → `Get-History`), so it was replaced on both sides and its three superseded vault versions **disabled**. Nothing had consumed it — the app was not deployed and the pipeline code does not exist. ⚠ Vercel returns sensitive vars empty on read-back, so "both sides match" rests on both writes coming from one source, **not on a comparison** — the real proof is the first signed request |
+| D-14m | P1 | [x] | ✅ **Handoff written and mirrored** — `docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md`, the mirror image of that repo's brief: exact endpoint, signing rules (**sign the bytes you send** — a re-serialize between signing and posting changes key order and 401s), a table of every response and what to do about it, and the three conditions that decide whether an update reaches a job. Owned here and mirrored there — the reverse of the contract's ownership, because only this side can verify what the receiver does |
+| D-14n | **P0** | [x] | ✅ **13/13 contractor phone numbers live** (§Q40 closed). 12 loaded from the pipeline's `proto/roster.csv`, read at run time and **not committed here** (PII). The 13th needed a human: Gerardo writes the same man as `Alexander Torres` and `Alexander Rafael Oropeza Torres`, roster confidence `medium — NOT confirmed`; the script refused the fuzzy match until Kyle confirmed, then recorded it as a **named alias** rather than by loosening the confidence filter |
 | D-14k | P1 | [ ] | 🧑 **ADR-031 owed** — the pipeline posts contractor updates directly to this app; the Smartsheet snapshot sync's *update* path is superseded (its `create` path is not). Closes §Q36 the way §Q36 recommended. The other repo's handoff brief asked for this **first** and it is still outstanding |
 | D-14l | P2 | [ ] | **No route-level integration tests.** The 41 new tests cover the pure decision layer; the route wiring is covered only by a build and three live probes |
 | D-14j | P1 | [ ] | ⚠ **The pipeline half does not exist.** Handoff written: `docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md` — the exact wire, signing rules, response semantics, and the two proof options. **Copy it into `construction_updates` before working from it** (each side edits only its own repo). ⚠ **Contract §10's "prove on preview first" is not currently available**: the app's Preview scope has no `CONTRACTOR_UPDATE_SECRET` and points at the dev DB that has been unreachable since early August. Either fix Preview or do one controlled production replay aimed at a named job | Nothing can arrive until `construction_updates` builds the §3 call, and it ships behind `CHECKLIST_APP_URL` (unset = off), so its deploy cannot start writing on its own. **Set that variable only after a preview replay passes** (§10 steps 1–3) |
