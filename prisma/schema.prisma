@@ -4,7 +4,9 @@
 // checklist_instances, responses, photos, issues, audit_log, notification_log.
 // Quick-task tables (ADR-012) are intentionally deferred — not modeled here.
 // Contractor / dispatch tables were dropped 2026-08-03 (ADR-028): Track D moved
-// out of this codebase, so nothing here models contractors any more.
+// out of this codebase. Contractor SCHEDULING returned 2026-08-11 (ADR-030) as
+// a new, narrower feature — see the contractor models near the end of this
+// file. Everything that SENDS to a contractor is still gone and stays gone.
 
 generator client {
   provider = "prisma-client-js"
@@ -213,15 +215,38 @@ enum Trade {
 // nothing in this feature dispatches or messages a contractor.
 enum ContractorJobStatus {
   PLANNED
+  // Added 2026-08-13 for the contractor update fan-out
+  // (docs/ContractorUpdateFanout_Contract_081226.md §8). The WhatsApp pipeline
+  // emits "Delayed" for ALL off-plan work — a crew that spent the day on
+  // something other than the scheduled task — which is the single most useful
+  // thing it produces. Without this value it collapsed onto PLANNED and
+  // rendered identically to a task nobody had touched.
+  //
+  // NOT TERMINAL: a delayed job can still be worked, rescheduled and
+  // completed, so it belongs in OPEN_JOB_STATUSES and stays overdue-able.
+  DELAYED
   IN_PROGRESS
   DONE
   CANCELLED
 }
 
+// How a fan-out update was resolved (docs/…Contract_081226.md §7). Stored so
+// the outcome is queryable rather than inferred from which rows exist — in
+// particular DAILY_NOTE (nothing matched) must be visible, because its
+// user-facing symptom is an unchanged calendar, which looks exactly like
+// success.
+enum ContractorUpdateResolution {
+  JOB_STATUS // matched a job; status changed + note appended
+  JOB_NOTE // matched a job; note only (no status change, or job terminal)
+  DAILY_NOTE // no job matched, or outcome=flagged -> ContractorDailyNote
+  AMBIGUOUS // >1 candidate job; nothing written to a job (see §Q41)
+}
+
 // Who wrote a note: a staff/admin user, or automation posting on their
-// behalf (`SYSTEM`, e.g. an auto-appended status-change note, or later a post
-// from Kyle's separate contractor-update project — that ingest endpoint is
-// not built; this enum value is the seam for it).
+// behalf (`SYSTEM`, e.g. an auto-appended status-change note, or a crew update
+// arriving from Kyle's separate contractor-update project). This value was
+// written as the seam for that ingest; the receiver now uses it
+// (app/api/webhooks/contractor-update).
 enum ContractorNoteSource {
   STAFF
   SYSTEM
@@ -934,6 +959,7 @@ model ContractorJob {
   contractor Contractor?         @relation(fields: [contractorId], references: [id], onDelete: SetNull)
   createdBy  User                @relation("ContractorJobCreatedBy", fields: [createdByUserId], references: [id])
   notes      ContractorJobNote[]
+  updates    ContractorUpdate[]
 
   @@index([propertyId, scheduledFor])
   @@index([scheduledFor])
@@ -986,4 +1012,87 @@ model ContractorDailyNote {
 
   @@index([forDate, propertyId])
   @@map("contractor_daily_notes")
+}
+
+// ---------------------------------------------------------------------------
+// Contractor update fan-out (docs/ContractorUpdateFanout_Contract_081226.md).
+//
+// Inbound only: the WhatsApp voice pipeline posts a crew's update here after
+// it writes Smartsheet. Nothing in this repo calls that pipeline, and adding
+// these tables does not create a send path — see ADR-028/030.
+//
+// TWO tables on purpose, and the split is the whole point:
+//
+//   ContractorUpdateCapture — written unconditionally BEFORE parsing or
+//     signature checking, including unparseable bodies. No unique constraint,
+//     so a retried delivery is captured too. This is the forensic record; a
+//     lost row here is a contractor's report of a day's work.
+//
+//   ContractorUpdate — the APPLIED record, `messageSid` unique, written in the
+//     SAME transaction as the note and any status change it describes.
+//
+// Putting the unique key on the capture row instead would make the second
+// delivery of a retried message throw on insert before any code could decide
+// it was a duplicate — a 500 at exactly the moment Twilio is retrying, which
+// produces more retries. With the split, the loser of a race hits the unique
+// violation on the applied row, catches it, and returns the contract's
+// 200 {ok:true, duplicate:true} (§5).
+//
+// Deliberately NOT reusing RawWebhookPayload: its `source` column is
+// DeviceSource (UNIFI_PROTECT | UNIFI_NETWORK | ARUBA), a device enum also
+// carried by Device. A contractor update is not a device source, and widening
+// that enum would put a non-device value in front of every network device
+// filter. The capture DISCIPLINE is copied; the table is not.
+// ---------------------------------------------------------------------------
+
+model ContractorUpdateCapture {
+  id             String   @id @default(uuid()) @db.Uuid
+  signatureValid Boolean  @map("signature_valid")
+  payload        Json
+  receivedAt     DateTime @default(now()) @map("received_at") @db.Timestamptz
+
+  @@index([receivedAt])
+  @@map("contractor_update_captures")
+}
+
+model ContractorUpdate {
+  id              String                     @id @default(uuid()) @db.Uuid
+  // Twilio's message id. UNIQUE is the idempotency guarantee — the contract
+  // (§5) requires a constraint rather than a findFirst check, because two
+  // queue workers can overlap (visibilityTimeout 6 min vs functionTimeout 5).
+  messageSid      String                     @unique @map("message_sid")
+  contractVersion Int                        @map("contract_version")
+  channel         String
+  outcome         String
+  // ET calendar date the work belongs to; half of the resolution key.
+  workDate        DateTime                   @map("work_date") @db.Date
+  contractorPhone String?                    @map("contractor_phone")
+  contractorName  String                     @map("contractor_name")
+  // Which key actually resolved the job: "phone" | "name" | null. Recorded
+  // because production currently holds NO contractor phone numbers, so every
+  // update falls to the name path the contract itself calls unsafe. Without
+  // this column that fact is invisible — an unresolved update simply leaves
+  // the calendar unchanged, which looks identical to success.
+  matchedBy       String?                    @map("matched_by")
+  resolution      ContractorUpdateResolution
+  jobId           String?                    @map("job_id") @db.Uuid
+  // The status this update caused, if any. Null for a note-only update.
+  statusApplied   ContractorJobStatus?       @map("status_applied")
+  // Audit reference ONLY. Never look a job up by it: the weekly rollover
+  // clears every row and reissues ids, so this goes stale every Monday by
+  // design (§7).
+  smartsheetRowId String?                    @map("smartsheet_row_id")
+  // The pipeline's own receive stamp, distinct from our createdAt — the gap
+  // between them is queue latency.
+  receivedAtUtc   DateTime                   @map("received_at_utc") @db.Timestamptz
+  createdAt       DateTime                   @default(now()) @map("created_at") @db.Timestamptz
+
+  // SetNull, matching ContractorJob.contractorId: the record that an update
+  // arrived must outlive the job it landed on.
+  job ContractorJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([workDate, contractorPhone])
+  @@index([jobId])
+  @@index([resolution, createdAt])
+  @@map("contractor_updates")
 }

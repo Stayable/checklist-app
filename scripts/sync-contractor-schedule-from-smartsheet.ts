@@ -31,24 +31,28 @@
  *  4. NOTES ARE ONLY EVER APPENDED. The tables are append-only by shape, so a
  *     changed WhatsApp update adds a new note and the old one stays as history.
  *
- * ⚠ THE ENUM CANNOT EXPRESS "Delayed". Pending and Delayed both map to PLANNED,
- * so a Pending -> Delayed change moves nothing in the status field. The sync
- * still records it as a note by tracking the last-seen SOURCE status in
- * audit_log, or that transition would be invisible here. If Delayed matters
- * operationally it should become a real status — that is a schema decision.
+ * ✅ "Delayed" IS now expressible (2026-08-13). ContractorJobStatus gained
+ * DELAYED for the update fan-out, so the source vocabulary and the app enum are
+ * one-to-one and a Pending -> Delayed change moves the status field like any
+ * other. The map lives in lib/contractor-update.ts and is IMPORTED here, not
+ * copied — see STATUS_MAP below for why that matters.
+ *
+ * The source-status-note branch below survives that change. It is no longer
+ * about Delayed; it now fires only when the app already holds the status the
+ * sheet just moved to (a manager set it here first), where a status write
+ * would be a no-op but the transition is still worth recording.
  */
 
 import { readFileSync } from "fs";
 import { ContractorJobStatus, ContractorNoteSource, Prisma, Trade } from "@prisma/client";
 import { db } from "../lib/db";
+import { SOURCE_STATUS_MAP, type SourceStatus } from "../lib/contractor-update";
 import { etDayStartUtc } from "../lib/datetime";
 
 const DEFAULT_SNAPSHOT = "scripts/data/smartsheet-contractor-schedule-snapshot.json";
 const ACTOR_EMAIL = "bke@rentstayable.com";
 const WHATSAPP_AUTHOR = "WhatsApp update (via Smartsheet)";
 const SYNC_AUTHOR = "Smartsheet sync";
-
-type SourceStatus = "Pending" | "In Progress" | "Completed" | "Delayed" | "Off";
 
 type Row = {
   rowId: string;
@@ -62,15 +66,15 @@ type Row = {
 
 type Snapshot = { sheetId: string; sheetName: string; capturedAt: string; rows: Row[] };
 
-// Same mapping the import used — kept identical on purpose so a re-import and a
-// sync can never disagree about what a source status means.
-const STATUS_MAP: Record<SourceStatus, ContractorJobStatus> = {
-  Pending: ContractorJobStatus.PLANNED,
-  "In Progress": ContractorJobStatus.IN_PROGRESS,
-  Completed: ContractorJobStatus.DONE,
-  Delayed: ContractorJobStatus.PLANNED,
-  Off: ContractorJobStatus.CANCELLED,
-};
+// ⚠ NO LOCAL COPY. This used to be its own map here, which is precisely the
+// hazard: during the overlap window (fan-out contract §10.6) BOTH this script
+// and the webhook receiver write the same status field, and a map that said
+// Delayed -> PLANNED here while the receiver wrote DELAYED would not merely
+// revert a delayed job on the next run — it would append a SYSTEM note
+// claiming Smartsheet said so, to an append-only thread nobody can correct.
+// Importing the one definition makes that divergence unrepresentable rather
+// than something a comment asks the next reader to remember.
+const STATUS_MAP = SOURCE_STATUS_MAP;
 
 const TRADE_BY_TASK: Record<string, Trade> = {
   "Haul out flooring debris (with help from truck driver)": Trade.GENERAL,
@@ -367,7 +371,7 @@ async function main() {
             jobId,
             source: ContractorNoteSource.SYSTEM,
             authorLabel: SYNC_AUTHOR,
-            body: `Smartsheet status changed to "${row.status}". This system has no separate ${row.status} state, so the job stays ${STATUS_MAP[row.status!]}.`,
+            body: `Smartsheet status changed to "${row.status}". This job is already ${STATUS_MAP[row.status!]} here, so nothing moved.`,
           },
         });
         await tx.auditLog.create({

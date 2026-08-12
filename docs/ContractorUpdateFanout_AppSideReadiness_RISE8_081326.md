@@ -235,6 +235,27 @@ closed.
 
 Steps 2 and 3 are the ones worth doing carefully. Step 4 is mechanical if step 2 is right.
 
+### Status, 08/13/26 — steps 1–4 built
+
+Steps **1–4 are done**; 0, 5 and 6 are not, and 0 is not mine to do. 705 tests (41 new), clean
+typecheck and lint, build registers `/api/webhooks/contractor-update`.
+
+**⚠ The migration is applied to no database, nothing is deployed, and no request has ever reached
+this route.** The pipeline half does not exist yet either, so there is nothing to receive from. Every
+claim above rests on tests and a build — not on a single live delivery.
+
+One constraint the build hit that the plan did not predict: **`AuditLog.actorUserId` is required.**
+There is no human actor for a webhook, and both ways to satisfy it are worse than omitting the row —
+attributing to a placeholder user (what the Smartsheet sync does, writing everything as `bke@`) puts
+automated changes under a real person's name in the one table whose purpose is saying who did what,
+and making the column nullable edits a cross-cutting table for one feature. So this path writes no
+audit row; the `ContractorUpdate` row is the provenance and carries more than an audit row would.
+
+One decision was strengthened past the contract's instruction. §8.3 asks that `STATUS_MAP` be *kept*
+in step with the enum. Instead the sync script now **imports** the one definition, so the two paths
+cannot disagree at all — the failure the contract warns about is no longer something a future reader
+has to remember.
+
 ---
 
 ## Points where this repo owes the canonical copy a correction

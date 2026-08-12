@@ -54,9 +54,13 @@ describe("job status labels", () => {
     expect(JOB_STATUS_ORDER.length).toBe(Object.values(ContractorJobStatus).length);
   });
 
-  it("OPEN_JOB_STATUSES is exactly PLANNED and IN_PROGRESS", () => {
+  it("OPEN_JOB_STATUSES is exactly PLANNED, DELAYED and IN_PROGRESS", () => {
     expect(new Set(OPEN_JOB_STATUSES)).toEqual(
-      new Set([ContractorJobStatus.PLANNED, ContractorJobStatus.IN_PROGRESS]),
+      new Set([
+        ContractorJobStatus.PLANNED,
+        ContractorJobStatus.DELAYED,
+        ContractorJobStatus.IN_PROGRESS,
+      ]),
     );
   });
 
@@ -66,12 +70,37 @@ describe("job status labels", () => {
     );
   });
 
+  /**
+   * The invariant, not the instance. JOB_STATUS_LABELS is a
+   * Record<ContractorJobStatus, …> so the compiler catches a missing entry
+   * there; these are plain arrays and it does not, and the two failure modes
+   * are opposite and both silent:
+   *
+   *   `status: { in: OPEN_JOB_STATUSES }`      — omitting a value EXCLUDES it
+   *   `status: { notIn: TERMINAL_JOB_STATUSES }` — omitting a value INCLUDES it
+   *
+   * Adding DELAYED without touching OPEN_JOB_STATUSES would have dropped
+   * delayed jobs out of the schedule page's backlog rail and out of the daily
+   * dashboard's urgent-open tile, with a clean typecheck and a green build.
+   * This test closes the class rather than that one instance.
+   */
+  it("every status is open XOR terminal — no status falls through both", () => {
+    for (const s of Object.values(ContractorJobStatus)) {
+      const open = OPEN_JOB_STATUSES.includes(s);
+      const terminal = TERMINAL_JOB_STATUSES.includes(s);
+      expect(open !== terminal, `${s} must be in exactly one of OPEN/TERMINAL`).toBe(true);
+    }
+  });
+
   it("isTerminalJobStatus / requiresCloseNote match pinned expectations per status", () => {
     // Pinned literally (not derived from TERMINAL_JOB_STATUSES) so this test
     // constrains behaviour independently — a consistently-wrong pairing of
     // the constant and the functions would otherwise still pass.
     const expectations: [ContractorJobStatus, boolean][] = [
       [ContractorJobStatus.PLANNED, false],
+      // A delayed job is still live work: it can be worked, rescheduled and
+      // completed, so it is neither terminal nor close-note-requiring.
+      [ContractorJobStatus.DELAYED, false],
       [ContractorJobStatus.IN_PROGRESS, false],
       [ContractorJobStatus.DONE, true],
       [ContractorJobStatus.CANCELLED, true],

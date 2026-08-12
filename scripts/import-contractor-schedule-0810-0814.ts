@@ -69,12 +69,17 @@ const TRADE_BY_TASK: Record<string, Trade> = {
   Jetting: Trade.PLUMBING,
 };
 
+// ⚠ HISTORICAL — deliberately NOT updated to the shared SOURCE_STATUS_MAP in
+// lib/contractor-update.ts. This is a completed one-shot for the week of
+// 2026-08-10, already applied to production, and this map records what was
+// actually written that day: DELAYED did not exist in the enum until
+// 2026-08-13, so three delayed rows landed as PLANNED with their source status
+// preserved in the provenance note. Rewriting it here would misdescribe rows
+// that already exist. Anything NEW uses the shared map.
 const STATUS_MAP: Record<SourceStatus, ContractorJobStatus> = {
   Pending: ContractorJobStatus.PLANNED,
   "In Progress": ContractorJobStatus.IN_PROGRESS,
   Completed: ContractorJobStatus.DONE,
-  // No DELAYED in the enum. Still planned, just late — and the source status
-  // is written into the provenance note so nothing is lost.
   Delayed: ContractorJobStatus.PLANNED,
 };
 

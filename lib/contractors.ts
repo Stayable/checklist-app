@@ -47,6 +47,7 @@ export function tradeLabel(trade: Trade): string {
 
 export const JOB_STATUS_LABELS: Record<ContractorJobStatus, string> = {
   [ContractorJobStatus.PLANNED]: "Planned",
+  [ContractorJobStatus.DELAYED]: "Delayed",
   [ContractorJobStatus.IN_PROGRESS]: "In Progress",
   [ContractorJobStatus.DONE]: "Done",
   [ContractorJobStatus.CANCELLED]: "Cancelled",
@@ -54,6 +55,7 @@ export const JOB_STATUS_LABELS: Record<ContractorJobStatus, string> = {
 
 export const JOB_STATUS_ORDER: ContractorJobStatus[] = [
   ContractorJobStatus.PLANNED,
+  ContractorJobStatus.DELAYED,
   ContractorJobStatus.IN_PROGRESS,
   ContractorJobStatus.DONE,
   ContractorJobStatus.CANCELLED,
@@ -63,8 +65,25 @@ export function jobStatusLabel(status: ContractorJobStatus): string {
   return JOB_STATUS_LABELS[status];
 }
 
+/**
+ * ⚠ WHEN A STATUS IS ADDED, THIS ARRAY AND THE ONE BELOW MUST BE REVISITED.
+ *
+ * `JOB_STATUS_LABELS` is a `Record<ContractorJobStatus, …>`, so the compiler
+ * catches a missing entry there. These are plain arrays and it does not.
+ * The failure modes are opposite and both silent:
+ *
+ *   `status: { in: OPEN_JOB_STATUSES }`      — omitting a value EXCLUDES it
+ *   `status: { notIn: TERMINAL_JOB_STATUSES }` — omitting a value INCLUDES it
+ *
+ * DELAYED was omitted from neither: it is open (a delayed job is still live
+ * work) and not terminal. Leaving it out of OPEN_JOB_STATUSES would have made
+ * delayed jobs vanish from the schedule page's backlog rail and stop counting
+ * as urgent-open on the daily dashboard, with a clean typecheck and a green
+ * build. `contractors.test.ts` pins the invariant.
+ */
 export const OPEN_JOB_STATUSES: ContractorJobStatus[] = [
   ContractorJobStatus.PLANNED,
+  ContractorJobStatus.DELAYED,
   ContractorJobStatus.IN_PROGRESS,
 ];
 
