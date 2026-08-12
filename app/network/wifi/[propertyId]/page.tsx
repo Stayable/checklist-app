@@ -2,6 +2,9 @@ import { ACTIVE_WINDOW_MIN } from "@/lib/network/spotipo-active";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { requireNetworkAccess } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
+import { isInScope } from "@/lib/network/scope";
 import { WifiStatCard } from "@/components/network/WifiStatCard";
 import { fetchSiteSummary, isSpotipoConfigured } from "@/lib/network/spotipo.server";
 
@@ -17,13 +20,14 @@ export default async function WifiPropertyPage({
 }: {
   params: Promise<{ propertyId: string }>;
 }) {
+  const scope = await networkScopeFor(await requireNetworkAccess());
   const { propertyId } = await params;
 
   const property = await db.property.findUnique({
     where: { id: propertyId },
     select: { id: true, shortCode: true, name: true, spotipoSiteId: true, spotipoApiKey: true },
   });
-  if (!property) notFound();
+  if (!property || !isInScope(scope, property.id)) notFound();
 
   const summary = await fetchSiteSummary(property);
   const configured = isSpotipoConfigured(property);

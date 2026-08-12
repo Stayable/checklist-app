@@ -7,6 +7,7 @@ import { formatDateInET, formatInET } from "@/lib/datetime";
 import { deviceTypeLabel } from "@/lib/network/device-type";
 import { consoleLabel } from "@/lib/network/unifi-hosts";
 import { parseTicketFilters, ticketOrderBy, ticketWhereFilters } from "@/lib/network/ticket-filters";
+import { networkScopeFor } from "@/lib/network/scope.server";
 
 // CSV export of the ticket list (Kate's B2b ask; Kyle 2026-08-01).
 //
@@ -38,8 +39,10 @@ export async function GET(request: Request) {
   });
   const { orderBy } = ticketOrderBy(sp.get("sort") ?? undefined, sp.get("dir") ?? undefined);
 
+  const scope = await networkScopeFor({ id: session.user.id, role: session.user.role });
+
   const tickets = await db.ticket.findMany({
-    where: ticketWhereFilters(filters),
+    where: ticketWhereFilters(filters, scope),
     orderBy,
     // One row over the cap, purely to detect that the cap bit. Sliced off
     // before writing — a truncated spreadsheet that doesn't say it's truncated

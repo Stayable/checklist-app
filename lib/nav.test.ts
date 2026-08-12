@@ -19,11 +19,12 @@ describe("navSectionsForRole", () => {
     }
   });
 
-  // NARROWED 2026-08-13: MANAGER lost Maintenance (and therefore Construction,
-  // which shares the predicate) when the first real property managers were
-  // provisioned. The contractor calendar is portfolio-wide.
-  it("manager gets checklist only — no maintenance, construction, network or admin", () => {
-    expect(ids(Role.MANAGER)).toEqual(["home", "checklist"]);
+  // 2026-08-13: MANAGER gained Network and lost Maintenance (and therefore
+  // Construction, which shares the predicate). Both moved for the same reason —
+  // a property manager gets their own properties, and Network now has
+  // per-property scoping while the contractor calendar does not.
+  it("manager gets checklist + network, no maintenance, construction or admin", () => {
+    expect(ids(Role.MANAGER)).toEqual(["home", "checklist", "network"]);
   });
 
   it("corporate adds network, still no admin", () => {
@@ -131,6 +132,9 @@ describe("navItemsForRole", () => {
       "/templates",
       "/completed",
       "/reports/completeness",
+      "/network",
+      "/network/tickets",
+      "/network/wifi",
     ]);
   });
 

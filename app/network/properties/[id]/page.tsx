@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import { requireNetworkAccess } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
+import { isInScope } from "@/lib/network/scope";
 import { formatInET } from "@/lib/datetime";
 import { deviceTypeLabel } from "@/lib/network/device-type";
 import { consoleLabel } from "@/lib/network/unifi-hosts";
@@ -17,13 +20,14 @@ export default async function NetworkPropertyPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const scope = await networkScopeFor(await requireNetworkAccess());
   const { id } = await params;
 
   const property = await db.property.findUnique({
     where: { id },
     select: { id: true, shortCode: true, name: true },
   });
-  if (!property) notFound();
+  if (!property || !isInScope(scope, property.id)) notFound();
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 

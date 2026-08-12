@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import { requireNetworkAccess } from "@/lib/rbac";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { AgeBadge } from "@/components/network/AgeBadge";
@@ -9,6 +10,8 @@ import { ticketAgeBucket } from "@/lib/network/ticket-age";
 import { escalationLevel, isOvernight } from "@/lib/network/escalation";
 import { isAnyTeamsWebhookConfigured } from "@/lib/network/teams-routing";
 import { loadNetworkOverview } from "@/lib/network/overview.server";
+import { networkScopeFor } from "@/lib/network/scope.server";
+import { scopeWhere } from "@/lib/network/scope";
 import { resolveRange } from "@/lib/network/wifi-range";
 import { DashboardRangeFilter } from "./DashboardRangeFilter";
 
@@ -42,21 +45,28 @@ export default async function NetworkDashboardPage({
 }: {
   searchParams: Promise<{ range?: string }>;
 }) {
+  // Guarded by the section layout too; repeated here because this page now
+  // resolves a per-user property scope and must not depend on a parent for the
+  // identity it scopes by.
+  const user = await requireNetworkAccess();
+
   const now = new Date();
   // Date range (Kyle 2026-08-01). Applies to RESOLVED work only — open tickets
   // and device status are present-tense facts, and filtering "what is broken
   // right now" by a historical window would be meaningless.
   const range = resolveRange((await searchParams).range, now);
 
+  const scope = await networkScopeFor(user);
+
   const [overview, recentlyClosed] = await Promise.all([
-    loadNetworkOverview({ now, rangeFrom: range.from }),
+    loadNetworkOverview({ now, rangeFrom: range.from, scope }),
     // Recently closed work (Kate's request 2026-07-28). RESOLVED and CLOSED
     // together: the distinction is internal bookkeeping, and a dashboard reader
     // asking "what got fixed" means both. Ordered by when it actually finished,
     // falling back to updatedAt for rows closed without a resolvedAt stamp.
     // Stays here rather than in the shared loader — the digest doesn't post it.
     db.ticket.findMany({
-      where: { status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } },
+      where: { ...scopeWhere(scope), status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } },
       orderBy: [{ resolvedAt: "desc" }, { updatedAt: "desc" }],
       take: 25,
       select: {

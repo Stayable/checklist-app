@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import { requireNetworkAccess } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
 import { formatInET } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { AgeBadge } from "@/components/network/AgeBadge";
@@ -57,6 +59,7 @@ export default async function NetworkTicketsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const user = await requireNetworkAccess();
   const sp = await searchParams;
 
   const filters = parseTicketFilters({
@@ -69,10 +72,12 @@ export default async function NetworkTicketsPage({
   });
   const { sortKey, sortDir, orderBy } = ticketOrderBy(sp.sort, sp.dir);
 
+  const scope = await networkScopeFor(user);
+
   const now = new Date();
   const [tickets, properties] = await Promise.all([
     db.ticket.findMany({
-      where: ticketWhereFilters(filters),
+      where: ticketWhereFilters(filters, scope),
       orderBy,
       take: LIST_LIMIT,
       include: {
@@ -81,7 +86,9 @@ export default async function NetworkTicketsPage({
       },
     }),
     db.property.findMany({
-      where: { active: true },
+      // The property <select> must offer only what this reader may look at,
+      // or it advertises properties whose rows would come back empty.
+      where: { active: true, ...(scope === null ? {} : { id: { in: scope } }) },
       select: { id: true, shortCode: true },
       orderBy: { shortCode: "asc" },
     }),

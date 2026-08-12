@@ -1,6 +1,7 @@
 import { DeviceType, Prisma, TicketStatus, TicketType } from "@prisma/client";
 import { etDayStartUtc, nextYMD } from "../datetime";
 import { parseDeviceType } from "./device-type";
+import type { NetworkScope } from "./scope";
 
 // Pure filter/sort parsing for /network/tickets (Task: date/property/status/
 // type filters + sortable columns). Kept dependency-free (no Prisma client, no
@@ -94,6 +95,28 @@ export function ticketStatusWhere(
 }
 
 /**
+ * Combine the user's requested property filter with the scope they are allowed.
+ *
+ * ⚠ THESE CANNOT BE TWO SPREADS. Both write the same `propertyId` key, and in
+ * an object literal the later one wins — so spreading the scope and then the
+ * user's `?propertyId=` would let a URL parameter silently REPLACE the scope
+ * and expose another property's tickets. They have to be resolved together,
+ * here, once.
+ *
+ * An out-of-scope request resolves to `{ in: [] }` — match nothing — never to
+ * "no filter". Returning the unscoped clause on a rejected request is the same
+ * bug wearing a different hat.
+ */
+export function ticketPropertyWhere(
+  requested: string | null | undefined,
+  scope: NetworkScope,
+): { propertyId?: string | { in: string[] } } {
+  if (scope === null) return requested ? { propertyId: requested } : {};
+  if (!requested) return { propertyId: { in: scope } };
+  return scope.includes(requested) ? { propertyId: requested } : { propertyId: { in: [] } };
+}
+
+/**
  * Builds the whole Prisma `where` for a parsed filter set — status included.
  *
  * Status used to be excluded here so the page could own the "no param means
@@ -101,18 +124,21 @@ export function ticketStatusWhere(
  * copy of `filters.status ?? { in: OPEN_STATUSES }`. Adding a third status
  * state ("All") to two independent copies is how an export silently stops
  * matching the screen it was launched from, so the default now lives here, in
- * one tested place, and both call sites spread this verbatim.
+ * one tested place, and both call sites spread this verbatim. The `scope`
+ * argument now rides along for exactly the same reason.
  */
 export function ticketWhereFilters(
   filters: Pick<
     TicketFilters,
     "status" | "ticketType" | "propertyId" | "deviceType" | "from" | "toExclusive"
   >,
+  /** Property ids this reader may see; `null` = the whole estate (2026-08-13). */
+  scope: NetworkScope = null,
 ): Prisma.TicketWhereInput {
   return {
     status: ticketStatusWhere(filters.status),
     ...(filters.ticketType ? { ticketType: filters.ticketType } : {}),
-    ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+    ...ticketPropertyWhere(filters.propertyId, scope),
     // `is:` on an optional to-one relation matches only rows that HAVE a device,
     // so device-less mass-outage parents drop out — see the field comment above.
     ...(filters.deviceType ? { device: { is: { type: filters.deviceType } } } : {}),

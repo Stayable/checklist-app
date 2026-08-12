@@ -1,6 +1,7 @@
 import { DeviceStatus, TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { escalationLevel } from "./escalation";
+import { type NetworkScope, scopeWhere } from "./scope";
 
 // The numbers behind the /network dashboard (extracted 2026-08-01).
 //
@@ -65,16 +66,27 @@ export type NetworkOverview = {
  * `rangeFrom` bounds the resolved/avg-resolution figures only. Open tickets and
  * device status are present-tense facts — filtering "what is broken right now"
  * by a historical window would be meaningless.
+ *
+ * `scope` narrows EVERY figure to a set of properties (2026-08-13, when
+ * property managers gained network access). It defaults to `null` — unscoped —
+ * so existing portfolio callers are unchanged, and every one of the ten
+ * queries below carries it. A partially-scoped overview would be worse than an
+ * unscoped one: cards that disagree with the table underneath them are read as
+ * a bug in the data, not in the query.
  */
 export async function loadNetworkOverview(params: {
   now: Date;
   rangeFrom: Date;
+  /** Property ids this reader may see; null = the whole estate. */
+  scope?: NetworkScope;
 }): Promise<NetworkOverview> {
-  const { now, rangeFrom } = params;
+  const { now, rangeFrom, scope = null } = params;
+  const inScope = scopeWhere(scope);
 
   // Resolved-in-range needs the updatedAt fallback: a ticket closed by hand
   // without a resolvedAt stamp would otherwise be invisible in every count here.
   const resolvedInRangeWhere = {
+    ...inScope,
     status: { in: DONE_STATUSES },
     OR: [
       { resolvedAt: { gte: rangeFrom } },
@@ -95,7 +107,7 @@ export async function loadNetworkOverview(params: {
     resolvedCounts,
   ] = await Promise.all([
     db.ticket.findMany({
-      where: { status: { in: OPEN_STATUSES } },
+      where: { ...inScope, status: { in: OPEN_STATUSES } },
       orderBy: { openedAt: "asc" },
       select: {
         id: true,
@@ -108,14 +120,15 @@ export async function loadNetworkOverview(params: {
         device: { select: { name: true } },
       },
     }),
-    db.device.count({ where: { currentStatus: DeviceStatus.OFFLINE } }),
+    db.device.count({ where: { ...inScope, currentStatus: DeviceStatus.OFFLINE } }),
     // N4: devices whose console can't be reached are UNKNOWN, not OFFLINE, so
     // they must be counted separately — an unmonitored fleet must never render
     // as a healthy one.
-    db.device.count({ where: { currentStatus: DeviceStatus.UNKNOWN } }),
-    db.device.count(),
+    db.device.count({ where: { ...inScope, currentStatus: DeviceStatus.UNKNOWN } }),
+    db.device.count({ where: inScope }),
     db.ticket.findMany({
       where: {
+        ...inScope,
         status: TicketStatus.RESOLVED,
         resolvedAt: { gte: rangeFrom },
         downDurationMin: { not: null },
@@ -128,14 +141,14 @@ export async function loadNetworkOverview(params: {
     // but this is the page every new property lands on and N+1 here would
     // degrade quietly as the portfolio grows.
     db.property.findMany({
-      where: { active: true },
+      where: { active: true, ...(scope === null ? {} : { id: { in: scope } }) },
       select: { id: true, shortCode: true, name: true },
       orderBy: { shortCode: "asc" },
     }),
-    db.device.groupBy({ by: ["propertyId", "currentStatus"], _count: true }),
+    db.device.groupBy({ by: ["propertyId", "currentStatus"], where: inScope, _count: true }),
     db.ticket.groupBy({
       by: ["propertyId"],
-      where: { status: { in: OPEN_STATUSES } },
+      where: { ...inScope, status: { in: OPEN_STATUSES } },
       _count: true,
     }),
     db.ticket.groupBy({ by: ["propertyId"], where: resolvedInRangeWhere, _count: true }),

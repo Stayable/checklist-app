@@ -66,12 +66,27 @@ export function isFieldStaff(role: Role): boolean {
 }
 
 /**
- * NETWORK section access (device monitoring + IT ticketing). Simpler than the
- * checklist RBAC model: NETWORK_TECH (dedicated IT/MSP role), ADMIN, and
- * CORPORATE all see the FULL portfolio — there is no per-property
- * user_properties scoping for network. MANAGER is not granted network access
- * in v1.
+ * NETWORK section access (device monitoring + IT ticketing).
+ *
+ * NETWORK_TECH, ADMIN and CORPORATE see the FULL portfolio. MANAGER was added
+ * 2026-08-13 (Kyle) and is **property-scoped** — a property manager sees their
+ * own properties' devices, tickets and guest WiFi and nothing else.
+ *
+ * ⚠ THIS PREDICATE ONLY ANSWERS "may they open the section". It says nothing
+ * about which rows they see, and the two must not be confused: before the
+ * scoping landed, every network page showed the whole estate to anyone who
+ * could open it. The row-level answer is lib/network/scope.server.ts
+ * (networkScopeFor) and it is applied at every query site — the dashboard's ten
+ * aggregates, the ticket list, the CSV export, all four detail pages, both
+ * ticket mutations, and the WiFi summary API.
+ *
+ * AGENT is deliberately absent: checklist-only, per its own note above.
  */
 export function canAccessNetwork(role: Role): boolean {
-  return role === Role.NETWORK_TECH || role === Role.ADMIN || role === Role.CORPORATE;
+  return (
+    role === Role.NETWORK_TECH ||
+    role === Role.ADMIN ||
+    role === Role.CORPORATE ||
+    role === Role.MANAGER
+  );
 }

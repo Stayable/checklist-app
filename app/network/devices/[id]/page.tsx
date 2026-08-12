@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { requireNetworkAccess } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
+import { isInScope } from "@/lib/network/scope";
 import { formatInET } from "@/lib/datetime";
 import { isRecurringDevice } from "@/lib/network/ticket-age";
 import { deviceTypeLabel } from "@/lib/network/device-type";
@@ -15,13 +18,16 @@ export default async function DeviceDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const scope = await networkScopeFor(await requireNetworkAccess());
   const { id } = await params;
 
   const device = await db.device.findUnique({
     where: { id },
     include: { property: { select: { id: true, shortCode: true } } },
   });
-  if (!device) notFound();
+  // 404, not 403: confirming the device exists at a property this reader
+  // cannot see is itself a disclosure.
+  if (!device || !isInScope(scope, device.propertyId)) notFound();
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { TicketStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireNetworkAccess } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
+import { isInScope } from "@/lib/network/scope";
 import { downDurationMin } from "@/lib/network/ticketing";
 import { cascadeParentCloseIfDone } from "@/lib/network/ticketing.server";
 
@@ -49,7 +51,12 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
   const { ticketId, status, assignedTo, resolutionNotes } = parsed.data;
 
   const ticket = await db.ticket.findUnique({ where: { id: ticketId } });
-  if (!ticket) return { ok: false, error: "Ticket not found." };
+  // Same message for missing and out-of-scope: a distinct "not yours" would
+  // confirm the ticket exists. Re-checked server-side rather than trusting the
+  // page that rendered the form.
+  if (!ticket || !isInScope(await networkScopeFor(user), ticket.propertyId)) {
+    return { ok: false, error: "Ticket not found." };
+  }
 
   const now = new Date();
   const enteringTerminal =
@@ -129,8 +136,13 @@ export async function addTicketNote(input: unknown): Promise<TicketActionResult>
   }
   const { ticketId, content } = parsed.data;
 
-  const ticket = await db.ticket.findUnique({ where: { id: ticketId }, select: { id: true } });
-  if (!ticket) return { ok: false, error: "Ticket not found." };
+  const ticket = await db.ticket.findUnique({
+    where: { id: ticketId },
+    select: { id: true, propertyId: true },
+  });
+  if (!ticket || !isInScope(await networkScopeFor(user), ticket.propertyId)) {
+    return { ok: false, error: "Ticket not found." };
+  }
 
   await db.$transaction(async (tx) => {
     await tx.ticketNote.create({

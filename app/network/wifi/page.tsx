@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { requireNetworkAccess } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { WifiStatCard } from "@/components/network/WifiStatCard";
 import { formatInET } from "@/lib/datetime";
@@ -48,11 +50,12 @@ export default async function WifiPortfolioPage({
 }: {
   searchParams: SearchParams;
 }) {
+  const scope = await networkScopeFor(await requireNetworkAccess());
   const params = await searchParams;
   const range = resolveRange(params.range);
 
   const properties = await db.property.findMany({
-    where: { active: true },
+    where: { active: true, ...(scope === null ? {} : { id: { in: scope } }) },
     select: { id: true, propertyId: true, shortCode: true, spotipoSiteId: true, spotipoApiKey: true },
     orderBy: { shortCode: "asc" },
   });

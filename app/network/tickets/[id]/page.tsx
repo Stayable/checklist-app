@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TicketStatus, TicketType } from "@prisma/client";
 import { db } from "@/lib/db";
+import { requireNetworkAccess } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
+import { isInScope } from "@/lib/network/scope";
 import { formatInET } from "@/lib/datetime";
 import { AgeBadge } from "@/components/network/AgeBadge";
 import { ticketAgeBucket } from "@/lib/network/ticket-age";
@@ -17,14 +20,21 @@ import {
 import { TicketActions } from "./TicketActions";
 
 // NETWORK ticket detail (spec §6.3). Mirrors app/review/[id]/page.tsx's
-// detail + client-actions-island + audit-timeline pattern. Access is guarded
-// once by app/network/layout.tsx.
+// detail + client-actions-island + audit-timeline pattern.
+//
+// Section access is guarded by app/network/layout.tsx; the PROPERTY check below
+// is separate and belongs here. A scoped manager who is allowed into /network
+// must still not be able to open another property's ticket by pasting its id,
+// and a 404 (not a redirect) is the right answer -- it does not confirm the
+// ticket exists.
 
 export default async function TicketDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const user = await requireNetworkAccess();
+  const scope = await networkScopeFor(user);
   const { id } = await params;
 
   const ticket = await db.ticket.findUnique({
@@ -40,7 +50,9 @@ export default async function TicketDetailPage({
       notes: { orderBy: { createdAt: "asc" } },
     },
   });
-  if (!ticket) notFound();
+  // Out of scope reads as "no such ticket" on purpose — a 403 would confirm
+  // that a ticket with this id exists at a property this user cannot see.
+  if (!ticket || !isInScope(scope, ticket.propertyId)) notFound();
 
   // Event timeline (spec §6.3): the ticket's own device's events for a
   // STANDARD ticket; the whole affected-devices cluster's events for a

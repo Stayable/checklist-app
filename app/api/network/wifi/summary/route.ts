@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canAccessNetwork } from "@/lib/rbac";
+import { networkScopeFor } from "@/lib/network/scope.server";
 import { aggregateWifiPortfolio } from "@/lib/network/spotipo";
 import { fetchPortfolioSummaries } from "@/lib/network/spotipo.server";
 
@@ -28,8 +29,10 @@ export async function GET() {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  const scope = await networkScopeFor({ id: session.user.id, role: session.user.role });
+
   const properties = await db.property.findMany({
-    where: { active: true },
+    where: { active: true, ...(scope === null ? {} : { id: { in: scope } }) },
     select: { id: true, shortCode: true, spotipoSiteId: true, spotipoApiKey: true },
     orderBy: { shortCode: "asc" },
   });
