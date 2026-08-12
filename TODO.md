@@ -312,6 +312,12 @@ straight to this calendar, replacing the manual snapshot sync's update path and 
   build order, and two corrections owed back upstream.
 - **Scope fixed by Kyle 2026-08-12:** updates into the calendar, nothing more. No reminders, no
   auto-replies, and **no send path in this repo** — the ADR-028/030 removals stand.
+- **Blast radius fixed by Kyle 2026-08-13: "contractor scheduling and the calendar, no more no
+  less."** It touches `Contractor*` models, `/maintenance/*` and the Smartsheet plan loader — nothing
+  else. It **may affect checklists later; until Kyle says so it does not**, and nothing here should be
+  shaped to make that easier. Concretely: `lib/network/hmac.ts` is reused **in place** (promoting it
+  to `lib/hmac.ts` is tidier but edits two live network receivers — out of bounds, do not re-propose),
+  and `RawWebhookPayload` is not modified.
 - Needs **ADR-031** when built.
 
 | Task | Pri | Status | What |

@@ -8,6 +8,25 @@ the contract. Two findings are corrections that belong back in the canonical cop
 **→ upstream**.
 **Date:** 08/13/26. Nothing is built on either side.
 
+> ## Blast radius — fixed by Kyle 08/13/26: "contractor scheduling and the calendar, no more no less"
+>
+> This feature touches **`ContractorJob` / `Contractor` / their notes, `/maintenance/*`, and the
+> Smartsheet plan loader.** Nothing else. It may touch checklists later; **until Kyle says so it does
+> not**, and nothing in this build should be shaped to make that easier — same rule the contract
+> applies to reminders and auto-replies in its own §11.
+>
+> Two consequences, both already reflected below:
+>
+> - **`lib/network/hmac.ts` is reused where it is.** It is generic (raw body, header, secret → bool)
+>   and lives under `lib/network/` only because UniFi and Aruba were this repo's first receivers.
+>   Promoting it to `lib/hmac.ts` would be tidier naming, but it edits two live network receivers for
+>   a feature with no traffic yet — outside the boundary. **Do not propose the move again** without a
+>   fresh decision.
+> - **`RawWebhookPayload` stays untouched** for the same reason, on top of the modelling reason in
+>   **F2**. The fan-out gets its own capture row and the network ingest path is not modified.
+>
+> Track B's isolation holds either way: the only coupling this adds is one import of a pure function.
+
 ---
 
 ## Verdict
