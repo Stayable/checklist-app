@@ -67,23 +67,28 @@ describe("role predicates", () => {
   // the tests that stop a later refactor from quietly handing it the contractor
   // calendar: /maintenance/* is guarded by canAccessMaintenance, so if this
   // drifts, real contractor data becomes visible to test accounts.
-  it("canAccessMaintenance excludes AGENT and every field-staff role", () => {
-    for (const r of [Role.MANAGER, Role.CORPORATE, Role.ADMIN]) {
+  // NARROWED 2026-08-13: MANAGER lost Maintenance when the first real property
+  // managers were provisioned. The contractor calendar shows the WHOLE
+  // portfolio — every contractor's name and phone number, and job mutations on
+  // any property — so it is not something a property manager should reach by
+  // virtue of managing one property.
+  it("canAccessMaintenance is portfolio roles only", () => {
+    for (const r of [Role.CORPORATE, Role.ADMIN]) {
       expect(canAccessMaintenance(r)).toBe(true);
     }
-    for (const r of [Role.AGENT, Role.HK, Role.PA, Role.MT, Role.NETWORK_TECH]) {
+    for (const r of [Role.MANAGER, Role.AGENT, Role.HK, Role.PA, Role.MT, Role.NETWORK_TECH]) {
       expect(canAccessMaintenance(r)).toBe(false);
     }
   });
 
   it("maintenance access is a strict subset of manager-or-above", () => {
     // Anything that reaches Maintenance must also clear the checklist bar; the
-    // reverse does not hold, and AGENT is the whole reason why.
+    // reverse does not hold. MANAGER and AGENT are both on the wide side now.
     for (const r of ALL_ROLES) {
       if (canAccessMaintenance(r)) expect(isManagerOrAbove(r)).toBe(true);
     }
     const divergent = ALL_ROLES.filter((r) => isManagerOrAbove(r) !== canAccessMaintenance(r));
-    expect(divergent).toEqual([Role.AGENT]);
+    expect(new Set(divergent)).toEqual(new Set([Role.MANAGER, Role.AGENT]));
   });
 
   it("AGENT gets no network, no admin, and is not field staff", () => {

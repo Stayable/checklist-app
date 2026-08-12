@@ -19,8 +19,11 @@ describe("navSectionsForRole", () => {
     }
   });
 
-  it("manager gets checklist + the unbuilt sections, no network or admin", () => {
-    expect(ids(Role.MANAGER)).toEqual(["home", "checklist", "maintenance", "construction"]);
+  // NARROWED 2026-08-13: MANAGER lost Maintenance (and therefore Construction,
+  // which shares the predicate) when the first real property managers were
+  // provisioned. The contractor calendar is portfolio-wide.
+  it("manager gets checklist only — no maintenance, construction, network or admin", () => {
+    expect(ids(Role.MANAGER)).toEqual(["home", "checklist"]);
   });
 
   it("corporate adds network, still no admin", () => {
@@ -63,7 +66,8 @@ describe("navSectionsForRole", () => {
   });
 
   it("gives maintenance its three children in order", () => {
-    const maintenance = navSectionsForRole(Role.MANAGER).find((s) => s.id === "maintenance");
+    // CORPORATE, not MANAGER — MANAGER no longer sees the section at all.
+    const maintenance = navSectionsForRole(Role.CORPORATE).find((s) => s.id === "maintenance");
     expect(maintenance?.unbuilt).toBeUndefined();
     expect(maintenance?.children?.map((c) => c.href)).toEqual([
       "/maintenance/schedule",
@@ -127,11 +131,17 @@ describe("navItemsForRole", () => {
       "/templates",
       "/completed",
       "/reports/completeness",
-      "/maintenance/schedule",
-      "/maintenance/daily",
-      "/maintenance/contractors",
-      "/construction",
     ]);
+  });
+
+  it("corporate still reaches the maintenance and construction hrefs", () => {
+    // The section did not disappear — it narrowed. Without this, the test above
+    // would pass just as well if Maintenance had been deleted outright.
+    const hrefs = navItemsForRole(Role.CORPORATE).map((i) => i.href);
+    expect(hrefs).toContain("/maintenance/schedule");
+    expect(hrefs).toContain("/maintenance/daily");
+    expect(hrefs).toContain("/maintenance/contractors");
+    expect(hrefs).toContain("/construction");
   });
 
   it("field staff reach only the root", () => {

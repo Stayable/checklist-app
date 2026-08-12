@@ -5,7 +5,69 @@ import {
   buildMassOutageMessage,
   buildResolutionReply,
   buildTicketCreatedMessage,
+  ticketLink,
 } from "./teams-message";
+
+/**
+ * Kyle reported 2026-08-13 that [View Ticket] in a Teams post was not
+ * clickable. Cause: the line was `[View Ticket] → <bare url>`, and these
+ * strings render inside an Adaptive Card TextBlock as markdown-ish rich text —
+ * where square brackets NOT followed by `(url)` are literal characters.
+ *
+ * These tests pin the syntax rather than just the URL's presence. The old
+ * broken form also "contained the ticket URL", so a contains-check passed
+ * while the link was dead.
+ */
+describe("ticketLink", () => {
+  const url = "https://ops.rentstayable.com/network/tickets/cad34873-f7e4-474b-883c-67067dc8cf63";
+
+  it("is markdown link syntax, not a bare URL", () => {
+    expect(ticketLink(url)).toBe(`[View ticket](${url})`);
+  });
+
+  it("never emits the old arrow form", () => {
+    expect(ticketLink(url)).not.toContain("→");
+  });
+
+  it("every message that links a ticket uses it", () => {
+    const ticketUrl = url;
+    const messages = [
+      buildTicketCreatedMessage({
+        propertyName: "Lakeland",
+        deviceName: "LL-AP-01",
+        deviceType: "Access Point",
+        alertMessage: "Device unreachable",
+        offlineSince: new Date("2026-07-25T14:00:00Z"),
+        ticketNumber: "TKT-1",
+        ticketUrl,
+      }),
+      buildMassOutageMessage({
+        propertyName: "Jacksonville West",
+        deviceCount: 6,
+        time: new Date("2026-07-25T14:00:00Z"),
+        ticketNumber: "TKT-2",
+        deviceNames: ["JW-AP-01"],
+        ticketUrl,
+      }),
+      buildEscalationMessage({
+        propertyName: "Kissimmee West",
+        propertyShortCode: "KW",
+        deviceName: "SW-Lobby",
+        alertMessage: "Switch offline",
+        openedAt: new Date("2026-08-01T08:00:00Z"),
+        ageHours: 4,
+        thresholdHours: 4,
+        ticketNumber: "TKT-3",
+        ticketUrl,
+        notifyName: "Gerardo",
+      }),
+    ];
+    for (const msg of messages) {
+      expect(msg).toContain(`[View ticket](${ticketUrl})`);
+      expect(msg).not.toContain(`[View Ticket] → ${ticketUrl}`);
+    }
+  });
+});
 
 describe("buildEscalationMessage", () => {
   const params = {
@@ -88,7 +150,7 @@ describe("buildTicketCreatedMessage", () => {
         "No recovery detected after 5 minutes. Please investigate.",
         "Reply to this message to add notes to the ticket.",
         "",
-        "[View Ticket] → https://ops.rentstayable.com/network/tickets/abc123",
+        "[View ticket](https://ops.rentstayable.com/network/tickets/abc123)",
       ].join("\n"),
     );
   });
@@ -131,7 +193,7 @@ describe("buildMassOutageMessage", () => {
         "",
         "Devices: JW-AP-01, JW-AP-02, JW-SW-01",
         "",
-        "[View Ticket] → https://ops.rentstayable.com/network/tickets/def456",
+        "[View ticket](https://ops.rentstayable.com/network/tickets/def456)",
       ].join("\n"),
     );
   });

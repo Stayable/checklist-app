@@ -43,9 +43,21 @@ export function isManagerOrAbove(role: Role): boolean {
  * contractor names and the job mutations. Hiding the nav entry would not have
  * helped: a nav entry is not a guard, and every /maintenance route and action
  * checks this instead.
+ *
+ * ⚠ NARROWED 2026-08-13 to PORTFOLIO ROLES ONLY. MANAGER was removed when the
+ * first real property managers were provisioned (8 PMs, 2 area managers, 3
+ * remote PMs). The section holds every contractor's name and phone number and
+ * lets a user reassign or close another property's jobs — contractor
+ * scheduling is coordinated centrally, not per property, so a property manager
+ * has no route to it. At the time of the change no MANAGER account existed, so
+ * nothing lost access.
+ *
+ * If a property manager ever needs it, the honest fix is per-property scoping
+ * of /maintenance (as Network got), not widening this predicate — the calendar
+ * currently shows the whole portfolio to anyone who can open it.
  */
 export function canAccessMaintenance(role: Role): boolean {
-  return role === Role.MANAGER || isPortfolioRole(role);
+  return isPortfolioRole(role);
 }
 
 /** Field staff (HK, PA, MT) — phone-first fill surfaces; the PWA-install audience. */

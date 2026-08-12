@@ -8,6 +8,23 @@ import { formatInET } from "../datetime";
 // channel-message POST once Task 7's scaffold is unblocked by Azure creds.
 // All datetime substitutions render in ET via lib/datetime.ts (ADR-013).
 
+/**
+ * The "open this ticket" line.
+ *
+ * ⚠ MUST be markdown link syntax. These strings are rendered by Teams inside an
+ * Adaptive Card `TextBlock` (verified live 2026-08-01 — the flow renders the
+ * card, not the payload's `text` field), and a TextBlock renders markdown-ish
+ * rich text. The earlier form was `[View Ticket] → <bare url>`: square brackets
+ * with no `(url)` after them are literal characters, so it produced dead text
+ * and an un-clickable URL. Reported by Kyle 2026-08-13.
+ *
+ * Kept as one helper so all four message templates cannot drift apart, and so
+ * this reasoning lives in exactly one place.
+ */
+export function ticketLink(ticketUrl: string): string {
+  return `[View ticket](${ticketUrl})`;
+}
+
 export interface TicketCreatedMessageParams {
   propertyName: string;
   deviceName: string;
@@ -34,7 +51,7 @@ export function buildTicketCreatedMessage(params: TicketCreatedMessageParams): s
     "No recovery detected after 5 minutes. Please investigate.",
     "Reply to this message to add notes to the ticket.",
     "",
-    `[View Ticket] → ${ticketUrl}`,
+    ticketLink(ticketUrl),
   ].join("\n");
 }
 
@@ -107,7 +124,7 @@ export function buildEscalationMessage(params: EscalationMessageParams): string 
     "",
     `${notifyName} — please pick this up.`,
     "",
-    `[View Ticket] → ${ticketUrl}`,
+    ticketLink(ticketUrl),
   ].join("\n");
 }
 
@@ -133,7 +150,7 @@ export function buildMassOutageMessage(params: MassOutageMessageParams): string 
     "",
     `Devices: ${deviceNames.join(", ")}`,
     "",
-    `[View Ticket] → ${ticketUrl}`,
+    ticketLink(ticketUrl),
   ].join("\n");
 }
 
