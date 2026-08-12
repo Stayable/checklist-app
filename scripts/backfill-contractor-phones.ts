@@ -43,6 +43,27 @@ const DEFAULT_ROSTER = "../construction_updates/proto/roster.csv";
 // through. This is the pipeline's own test handset.
 const TEST_SENDER_NUMBERS = new Set(["+639771026991"]);
 
+/**
+ * Identities confirmed by a human, where the roster's own confidence is below
+ * `high` or the two systems spell the name differently.
+ *
+ * This is an explicit allow-list, NOT a relaxation of rule 1. Lowering the
+ * confidence filter would let every future unconfirmed row through silently;
+ * naming them one at a time keeps each exception auditable and forces the same
+ * question to be asked again next time.
+ */
+const CONFIRMED_ALIASES: { rosterName: string; appName: string; confirmedBy: string }[] = [
+  {
+    // Gerardo writes this person differently week to week: "Alexander Rafael
+    // Oropeza Torres" on the 08/03 sheet, "Alexander Torres" on 08/10. The
+    // roster row is confidence "medium — NOT confirmed by Gerardo", so the
+    // script refused it on the first run rather than guessing.
+    rosterName: "Alexander Rafael Oropeza Torres",
+    appName: "Alexander Torres",
+    confirmedBy: "Kyle, 2026-08-13",
+  },
+];
+
 type RosterRow = {
   phoneE164: string;
   whatsappDisplayName: string;
@@ -118,6 +139,16 @@ async function main() {
     }
     if (row.isContractor !== "TRUE") continue; // staff / unknown: not ours to load
     if (!row.scheduleContractor) continue;
+    const alias = CONFIRMED_ALIASES.find(
+      (a) => nameKey(a.rosterName) === nameKey(row.scheduleContractor),
+    );
+    if (alias) {
+      console.log(
+        `note: "${row.scheduleContractor}" -> "${alias.appName}", confirmed by ${alias.confirmedBy} (roster says "${row.confidence}")`,
+      );
+      usable.push({ ...row, scheduleContractor: alias.appName });
+      continue;
+    }
     if (row.confidence !== "high") {
       held.push(
         `${row.scheduleContractor} — roster confidence "${row.confidence}": ${row.notes || "no note"}`,
