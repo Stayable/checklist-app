@@ -10,11 +10,15 @@ is wrong — say so.
 This is the mirror of `ContractorUpdateFanout_HandoffPrompt_081226.md`, which briefed the app side.
 That brief could not describe an app that did not exist yet. This one describes the app that now does.
 
-> ## Copy this file to `construction_updates` before working from it
+> ## This is the CANONICAL copy. A mirror sits in `construction_updates`.
 >
-> It was written in the checklist-app repo because that is the repo it describes, and per the
-> contract's guardrail **each side's session edits only its own repo**. Carry it across; do not have
-> an app-side session write into the pipeline repo.
+> Mirrored to `C:\Users\Kyle Estocapio\Git-Claude\construction_updates\` on 08/13/26 at commit
+> `f54b2e6`, on Kyle's instruction, so a session in that repo detects it without being handed a path.
+> **That copy carries a do-not-edit banner. Change this one, then refresh it.**
+>
+> Note the ownership is the reverse of the contract's: `construction_updates` owns the *contract*
+> and this repo mirrors it; this repo owns *this* document — it describes the receiver — and that
+> repo mirrors it. Each artifact is owned by the side that can actually verify what it says.
 
 ---
 
