@@ -15,7 +15,40 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-13)
+## 🎯 START HERE (updated 2026-08-13, later)
+
+**🔧 THREE TEAMS-NOTIFICATION DEFECTS FIXED AND LIVE** (`083779a`, deploy `checklist-otrrusfk9` Ready;
+736 tests, clean typecheck + lint + build). All three were reported by Kyle and all three were confirmed
+against the live `notification_log` before any code changed — nothing here is inferred from reading code.
+
+- **"View ticket" bounced back into Teams.** Yesterday's markdown fix (`db1b9b0`) was right, but the URL
+  was **relative**: `NEXT_PUBLIC_APP_URL` is **not set in Vercel Production** and all three link builders
+  used `?? ""`, so posts carried `[View ticket](/network/tickets/<id>)`, which Teams resolves against
+  `teams.microsoft.com`. New `lib/app-url.ts` with an **absolute** fallback, plus scheme-adding and
+  trailing-slash stripping (a bare host reproduces the bug invisibly). **The code no longer needs the env
+  var** — see action 15 for setting it anyway.
+- **Down-duration measured the cron, not the outage.** `partitionRecovery` stamped every recovery `now`
+  (the moment the 10-min check ran), so the reported figure was the sweep's own latency and always came
+  out 10–11 min. Now uses the device's **earliest RECOVERY event** after the outage opened. The copy also
+  claimed "came back online within 10 minutes" directly above "Down Duration: 11 min" — it no longer
+  asserts a bound it never measured.
+- **"Down Duration: 0 min" for outages that ran hours.** **No ticket has ever stored 0** — it was
+  `downDurationMin ?? 0` printing a NULL as a confident zero. All **92 terminal MASS_OUTAGE tickets** have
+  a null duration (a parent has no single trigger event); 8 posts went out that way, worst being
+  **TKT-20260812-011 announcing 0 min for a 282-minute outage**. The template now says **"not recorded"**,
+  and all three parent-resolve paths record a real duration.
+
+**⚠ Correction to carry forward:** I repeated the retracted "46 of 92 Orlando cameras offline" figure in
+conversation this session. It was already retracted on 2026-07-31 (action 7 below) — the real figure is
+**2 of 92**, and the genuinely-down set is Lakeland and St. Augustine. Do not act on the 46.
+
+**⚠ Unverified:** no Teams post has been generated since the deploy, so the absolute link is proven by
+tests and the payload builder, not by clicking one. Messages **already queued** before the deploy keep
+their stored body, so one stale relative link can still appear.
+
+---
+
+## (previous) START HERE — 2026-08-13
 
 **🟢 THE REAL ROSTER IS IN.** 8 property managers (one property each), 2 area managers, 3 remote PMs
 promoted from AGENT and narrowed to their own properties, plus Rob and Crystal as CORPORATE. Everyone
@@ -76,6 +109,9 @@ testers create everything by hand.
 |---|---|---|
 | 1 | ✅ **DONE 2026-07-31 — full-estate monitoring is LIVE in prod.** 3 fabric keys set in Vercel, migration applied, deployed | 16 consoles · 8/8 properties · **596 devices** · 0 blind · console attribution 596/596. §Q1 closed |
 | 1b | ⚠ **Close the ~16 flap-artefact tickets** — most were opened for cameras that were never down (see §Q28) | They stop regenerating but will not close themselves. A genuine-vs-artefact split is owed before anyone bulk-closes |
+| 15 | 🧑 **Decide: backfill the 92 null down-durations?** Deliberately NOT done as part of the bug fix | Those mass-outage tickets show "—" in the resolved table and are **excluded from the average-downtime tile**, so that average currently reflects standard tickets only and understates outages. Backfilling moves a number Kate reads — a data decision, not a side effect. One short script either way |
+| 16 | 🧑 **Optional: set `NEXT_PUBLIC_APP_URL=https://ops.rentstayable.com` in Vercel Production** | Not required — `lib/app-url.ts` defaults to it. Worth doing so future code that reads the env var directly cannot re-create the relative-link bug. ⚠ It is a `NEXT_PUBLIC_*` var, so it is inlined **at build time**: setting it only takes effect on the next deploy |
+| 17 | 👀 **Click "View ticket" on the next real Teams post** | 30 seconds. Confirms the link lands on `ops.rentstayable.com` — currently proven by tests and the payload builder, never by a click |
 | 4 | 🧑 **Add the 7 remaining `STRIPE_SECRET_KEY_<CODE>`** | Revenue currently covers Jacksonville West only |
 | 5 | ✅ **Kate's dashboard asks — DONE 2026-08-01** (`038ff46`) | Ticket CSV export · dashboard date range · per-property status table · resolved-per-property. Remaining slice of her ask: the **console filter** on tickets (display shipped, filter did not) |
 | 8 | ✅ **LAUNCHED TO PROD 2026-08-02** (`38c046d..9900fe0`, deploy `checklist-h9g0olu6e`, Ready 59s). Migration `20260801120000` applied to `ep-summer-cloud` **before** the code push · 9 `TEAMS_WEBHOOK_URL_*` set in Vercel **Production only** · verified `/login` 200, `/network` `/network/tickets` `/dashboard` 307, both new cron routes **401 without the secret** (fail-closed), 0 stranded PENDING rows | **Rollback:** `vercel promote https://checklist-dodll3bop-stayable-admins-projects.vercel.app` (the pre-launch prod HEAD `38c046d`) |
@@ -295,6 +331,9 @@ All pure DB work — no vendor dependency, no credentials needed.
 | P1 | [x] | **9 AM ET daily digest → General** (`94020d1`). Overview cards + status-by-property table, per Kyle. Dashboard aggregates extracted to `lib/network/overview.server.ts` and **shared with the page**, so the two can never disagree about how many tickets are open. **Hourly cron gated on the ET hour**, not a daily UTC one: `0 13 * * *` is 9 AM in EDT but 8 AM in EST and `0 14` is the reverse, so no fixed UTC schedule is right year-round. One digest per ET day; `?dry=1` previews the text without sending |
 | P1 | [x] | **Realtime escalation notification** (`a2cff1f`). Amends ADR-026 §8 — escalation was display-only, with no stored state to notify from. Adds `Ticket.escalatedAt` as the fire-once idempotency lock (migration `20260801120000`, **NOT on prod**). Posts to General **and emails** `NETWORK_ESCALATION_EMAIL` (default gerardo@rentstayable.com). ⚠ **The email is the real guarantee** — a genuine Teams @-mention needs the Power Automate flow to build a mention entity, which this codebase cannot see or verify, so the post names Gerardo in plain text rather than shipping a "tag" that may render as literal text |
 | P1 | [ ] | ⚠ **First escalation sweep after deploy will announce the existing backlog.** `escalated_at` starts NULL, so every open ticket past 4 h escalates at once. Per the 2026-08-01 session there are **14 open tickets and all 14 are genuine** (devices offline now) — so this is real signal, not the artefact storm §Q28 originally feared, but it is still ~14 posts and 14 emails to Gerardo across the first ~3 sweeps at 5/tick. **Tell him it's a backlog flush, not 14 new faults** — or resolve the board first and let escalation start clean |
+| P1 | [x] | **"View ticket" made an absolute link — FIXED 2026-08-13** (`083779a`). `db1b9b0` fixed the markdown; this fixed the **URL**. `NEXT_PUBLIC_APP_URL` is unset in Vercel Production and all three builders used `?? ""`, so every post carried a **relative** path, which Teams resolves against `teams.microsoft.com`. `lib/app-url.ts` now owns the base with an absolute fallback and is used by ticket posts, escalations and the digest. Confirmed from the live `notification_log`, not from reading code |
+| P1 | [x] | **Down-duration misreporting — FIXED 2026-08-13** (`083779a`). (a) Mass-outage recoveries were stamped at **check-run time**, so the figure measured the cron's own latency and always read 10–11 min; now the device's earliest RECOVERY event. (b) The all-recovered copy asserted "within 10 minutes" above a measured 11 min. (c) `downDurationMin ?? 0` printed NULL as **"0 min"** — 8 live posts, worst was **TKT-20260812-011: 0 min for a 282-minute outage**; the template now says "not recorded" and the three parent-resolve paths record a real duration |
+| P2 | [ ] | 🧑 **Backfill the 92 historical null durations?** New rows won't add to the class, but the existing mass-outage tickets still read "—" and stay out of the average-downtime tile. **Kyle's call** — it moves a number on Kate's dashboard. See START HERE action 15 |
 | P1 | [ ] | **Ticket close should REPLY to the created-ticket message, not post separately** (Kyle 2026-07-28). Schema is already ready (`Ticket.teamsMessageId` / `teamsMessageUrl`, unused). Two paths — see §Q25. Wanted because an outage generates several posts and a loose "resolved" message makes the channel unreadable exactly when someone is reconstructing what happened |
 | P1 | [x] | **Guest WiFi LIVE 2026-07-29** (`a3b2de6`, `1493983`, `5d5c866`). Credentials resolve **env-first** (`SPOTIPO_API_KEY` + `SPOTIPO_SITE_ID_<CODE>`); real guest counts for **8/8 sites (669 total)**. Date range (7d/30d/MTD/90d/12m) applies to revenue only |
 | P1 | [x] | **WiFi page re-scoped to TWO sources — Spotipo + Stripe** (2026-08-01, `97dbd5c`, `a272315`). Kyle's call: it is a guest page, so it uses the guest systems. **UniFi removed entirely** (`wifi-live.server.ts` + `/api/network/wifi/online` deleted) — it counted network clients, so switches, cameras and staff laptops were being totalled into a figure labelled guests. **"Guests active now" rebuilt from Spotipo alone**: per-guest `last_seen_at` + a ~1-min portal heartbeat + newest-first ordering ⇒ page-walk with early exit. Live: 8/8 sites, **136 active of 699 registered**. ⚠ Counts guest RECORDS, not devices — Spotipo has no per-device id at all |
