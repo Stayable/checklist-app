@@ -4,6 +4,7 @@ import {
   TicketStatus,
 } from "@prisma/client";
 import { db } from "@/lib/db";
+import { appUrl } from "@/lib/app-url";
 import { formatInET } from "@/lib/datetime";
 import { ESCALATION_THRESHOLD_HOURS, escalationCutoff } from "./escalation";
 import { buildEscalationMessage } from "./teams-message";
@@ -57,8 +58,7 @@ export type EscalationSweepOutcome = {
 };
 
 function ticketUrl(ticketId: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  return `${base}/network/tickets/${ticketId}`;
+  return appUrl(`/network/tickets/${ticketId}`);
 }
 
 const OPEN_STATUSES: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS];

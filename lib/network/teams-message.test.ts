@@ -169,6 +169,28 @@ describe("buildResolutionReply", () => {
       ),
     );
   });
+
+  // Regression: the caller passed `downDurationMin ?? 0`, so a ticket with no
+  // recorded duration announced "Down Duration: 0 min" — read as "it was never
+  // really down". Eight live posts did this, one for a 282-minute outage.
+  it("says the duration was not recorded rather than printing 0", () => {
+    const msg = buildResolutionReply({
+      downDurationMin: null,
+      resolvedAt: new Date("2026-07-25T14:12:00Z"),
+    });
+
+    expect(msg).toContain("Down Duration: not recorded");
+    expect(msg).not.toContain("0 min");
+  });
+
+  it("still prints a genuine zero-minute duration as a number", () => {
+    const msg = buildResolutionReply({
+      downDurationMin: 0,
+      resolvedAt: new Date("2026-07-25T14:12:00Z"),
+    });
+
+    expect(msg).toContain("Down Duration: 0 min");
+  });
 });
 
 describe("buildMassOutageMessage", () => {
@@ -211,10 +233,25 @@ describe("buildMassOutageCheckReply", () => {
       [
         "✅ All devices recovered",
         "",
-        "All 2 affected devices came back online within 10 minutes.",
-        "Down Duration: 7 min",
+        "All 2 affected devices are back online.",
+        "Down Duration: 7 min (longest of the 2)",
       ].join("\n"),
     );
+  });
+
+  // Regression: the copy asserted "came back online within 10 minutes" directly
+  // above a measured duration that regularly exceeded 10 — the check fires at
+  // the 10-minute mark but runs off a 1-minute cron tick, so it always lands a
+  // little late. Two live posts said "within 10 minutes / Down Duration: 11 min".
+  it("never claims a 10-minute bound it has not measured", () => {
+    const msg = buildMassOutageCheckReply({
+      recovered: ["JW-AP-01", "JW-AP-02"],
+      stillOffline: [],
+      maxDurationMin: 11,
+    });
+
+    expect(msg).not.toContain("within 10 minutes");
+    expect(msg).toContain("Down Duration: 11 min");
   });
 
   it("all-recovered variant omits Down Duration when not provided", () => {
@@ -224,9 +261,7 @@ describe("buildMassOutageCheckReply", () => {
     });
 
     expect(msg).toBe(
-      ["✅ All devices recovered", "", "All 1 affected devices came back online within 10 minutes."].join(
-        "\n",
-      ),
+      ["✅ All devices recovered", "", "All 1 affected devices are back online."].join("\n"),
     );
   });
 
@@ -267,9 +302,7 @@ describe("buildMassOutageCheckReply", () => {
     const msg = buildMassOutageCheckReply({ recovered: [], stillOffline: [] });
 
     expect(msg).toBe(
-      ["✅ All devices recovered", "", "All 0 affected devices came back online within 10 minutes."].join(
-        "\n",
-      ),
+      ["✅ All devices recovered", "", "All 0 affected devices are back online."].join("\n"),
     );
   });
 });

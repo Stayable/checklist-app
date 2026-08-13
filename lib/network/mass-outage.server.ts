@@ -323,6 +323,10 @@ export async function runMassOutageCheck(
   const stillTrackedIds = affected.filter((d) => d.status === "offline").map((d) => d.deviceId);
 
   const recoveredIds = new Set<string>();
+  // When the device actually came back, per its RECOVERY event — NOT when this
+  // check happened to run. See partitionRecovery's doc comment: stamping `now`
+  // made every reported down-duration a measurement of the cron's own latency.
+  const recoveredAtByDevice = new Map<string, Date>();
   if (stillTrackedIds.length > 0) {
     const devices = await db.device.findMany({
       where: { id: { in: stillTrackedIds } },
@@ -338,12 +342,35 @@ export async function runMassOutageCheck(
         eventType: "RECOVERY",
         receivedAt: { gte: ticket.openedAt },
       },
-      select: { deviceId: true },
+      select: { deviceId: true, receivedAt: true },
+      // Ascending so the FIRST recovery after the outage opened wins — a device
+      // that flapped twice was back at the earlier time.
+      orderBy: { receivedAt: "asc" },
     });
-    for (const r of recoveries) recoveredIds.add(r.deviceId);
+    for (const r of recoveries) {
+      recoveredIds.add(r.deviceId);
+      if (!recoveredAtByDevice.has(r.deviceId)) {
+        recoveredAtByDevice.set(r.deviceId, r.receivedAt);
+      }
+    }
   }
 
-  const { updated, recovered, stillOffline } = partitionRecovery(affected, recoveredIds, now);
+  const { updated, recovered, stillOffline } = partitionRecovery(
+    affected,
+    recoveredIds,
+    now,
+    recoveredAtByDevice,
+  );
+
+  // Longest downtime across the recovered devices, from real recovery times.
+  // Hoisted out of the `if (property)` block below because the ticket's own
+  // resolution now records it too — a MASS_OUTAGE parent has no trigger event,
+  // so this is the only honest duration available for it.
+  const recoveredDurations = recovered
+    .map((d) => (d.recoveredAt ? downDurationMin(ticket.openedAt, new Date(d.recoveredAt)) : null))
+    .filter((n): n is number => n !== null);
+  const maxDurationMin =
+    recoveredDurations.length > 0 ? Math.max(...recoveredDurations) : undefined;
 
   await db.ticket.update({
     where: { id: ticket.id },
@@ -360,12 +387,6 @@ export async function runMassOutageCheck(
     // {max} min" line, which buildMassOutageCheckReply only renders in the
     // all-recovered branch). Data passthrough only — does not touch the
     // mass-outage clustering/recovery decision above.
-    const recoveredDurations = recovered
-      .map((d) => (d.recoveredAt ? downDurationMin(ticket.openedAt, new Date(d.recoveredAt)) : null))
-      .filter((n): n is number => n !== null);
-    const maxDurationMin =
-      recoveredDurations.length > 0 ? Math.max(...recoveredDurations) : undefined;
-
     await logTeamsMassOutageCheck(db, ticket, property, {
       recoveredNames: recovered.map((d) => d.deviceName),
       stillOfflineNames: stillOffline.map((d) => d.deviceName),
@@ -417,7 +438,17 @@ export async function runMassOutageCheck(
     where: { id: ticket.id },
     data:
       stillOffline.length === 0
-        ? { status: "RESOLVED", resolvedAt: now }
+        ? {
+            status: "RESOLVED",
+            resolvedAt: now,
+            // Record the duration instead of leaving it null. All 92 terminal
+            // MASS_OUTAGE tickets in production have a null duration, which the
+            // resolution post was rendering as "0 min" and the dashboard's
+            // average-downtime tile silently excludes. Prefer the longest real
+            // device recovery; fall back to the resolution moment when no
+            // recovery timestamp exists at all.
+            downDurationMin: maxDurationMin ?? downDurationMin(ticket.openedAt, now),
+          }
         : { status: "IN_PROGRESS" },
   });
 

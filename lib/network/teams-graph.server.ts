@@ -6,6 +6,7 @@ import {
   Ticket,
   Property,
 } from "@prisma/client";
+import { appUrl } from "../app-url";
 import { isPropertyTeamsConfigured } from "./teams-config";
 import { isAnyTeamsWebhookConfigured } from "./teams-routing";
 import type { AffectedDevice } from "./mass-outage";
@@ -64,8 +65,7 @@ function target(property: Pick<Property, "shortCode">): string {
 }
 
 function ticketUrl(ticketId: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  return `${base}/network/tickets/${ticketId}`;
+  return appUrl(`/network/tickets/${ticketId}`);
 }
 
 /**
@@ -199,8 +199,13 @@ export async function logTeamsTicketResolved(
   ticket: Pick<Ticket, "id" | "ticketNumber" | "alertMessage" | "downDurationMin" | "resolvedAt">,
   property: TeamsProperty,
 ): Promise<void> {
+  // `?? 0` here used to turn "we never recorded a duration" into the confident
+  // claim "Down Duration: 0 min". Every MASS_OUTAGE parent resolves without a
+  // duration (it has no single trigger event), so 8 live posts said 0 min for
+  // outages that really lasted up to 282 minutes — TKT-20260812-011. Pass the
+  // null through and let the template say so.
   const body = buildResolutionReply({
-    downDurationMin: ticket.downDurationMin ?? 0,
+    downDurationMin: ticket.downDurationMin,
     resolvedAt: ticket.resolvedAt ?? new Date(),
   });
 

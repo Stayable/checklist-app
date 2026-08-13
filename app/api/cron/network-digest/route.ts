@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { NotificationChannel, NotificationStatus } from "@prisma/client";
 import { db } from "@/lib/db";
+import { appUrl } from "@/lib/app-url";
 import { etDayStartUtc, etYYYYMMDD, formatInET } from "@/lib/datetime";
 import { loadNetworkOverview } from "@/lib/network/overview.server";
 import { buildDailyDigest, buildDailyDigestCard, digestTitle } from "@/lib/network/digest";
@@ -124,13 +125,12 @@ async function handle(req: Request) {
   const overview = await loadNetworkOverview({ now, rangeFrom: range.from });
   const guests = await loadGuestsLive();
 
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
   const title = digestTitle(now);
   const digestParams = {
     overview,
     now,
     rangeLabel: range.label,
-    dashboardUrl: `${base}/network`,
+    dashboardUrl: appUrl("/network"),
     guests,
   };
   // Text version is what gets stored and what a human reads in the log; the card

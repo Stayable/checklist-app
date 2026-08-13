@@ -56,7 +56,8 @@ export function buildTicketCreatedMessage(params: TicketCreatedMessageParams): s
 }
 
 export interface ResolutionReplyParams {
-  downDurationMin: number;
+  /** Null when no duration was recorded — say so, never print a number. */
+  downDurationMin: number | null;
   resolvedAt: Date;
 }
 
@@ -66,7 +67,11 @@ export function buildResolutionReply(params: ResolutionReplyParams): string {
   return [
     "✅ Resolved",
     "",
-    `Down Duration: ${downDurationMin} min`,
+    // "not recorded" rather than a coerced 0: the caller used to send
+    // `downDurationMin ?? 0`, so tickets with no recorded duration announced
+    // "Down Duration: 0 min" — read as "it was never really down". An absent
+    // measurement has to look absent.
+    `Down Duration: ${downDurationMin == null ? "not recorded" : `${downDurationMin} min`}`,
     `Resolved At: ${formatInET(resolvedAt)}`,
   ].join("\n");
 }
@@ -176,10 +181,20 @@ export function buildMassOutageCheckReply(params: MassOutageCheckReplyParams): s
     const lines = [
       "✅ All devices recovered",
       "",
-      `All ${recovered.length} affected devices came back online within 10 minutes.`,
+      // Was "came back online within 10 minutes", printed directly above a
+      // "Down Duration: 11 min" line — the reader is told two different things
+      // in consecutive sentences (Kyle 2026-08-13, seen on TKT-20260812-084 and
+      // -085). The check FIRES at the 10-minute mark but runs off a 1-minute
+      // cron tick, so it always lands a little after; the sentence asserted a
+      // bound this reply has never actually measured. State the count, and let
+      // the measured duration be the only claim about time.
+      `All ${recovered.length} affected devices are back online.`,
     ];
     if (maxDurationMin != null) {
-      lines.push(`Down Duration: ${maxDurationMin} min`);
+      // "longest" because this is the max across the recovered devices, not a
+      // single device's downtime — otherwise it reads as the outage duration
+      // for each of them.
+      lines.push(`Down Duration: ${maxDurationMin} min (longest of the ${recovered.length})`);
     }
     return lines.join("\n");
   }

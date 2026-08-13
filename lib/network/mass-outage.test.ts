@@ -118,6 +118,23 @@ describe("partitionRecovery", () => {
     expect(updated.find((d) => d.deviceId === "d2")?.status).toBe("offline");
   });
 
+  // Regression: every recovery used to be stamped `now` — the moment the
+  // 10-minute check ran — so the derived down-duration measured the cron's own
+  // latency, not the outage, and always came out ~10-11 min.
+  it("stamps the device's real recovery time when one is known", () => {
+    const realRecovery = new Date(now.getTime() - 7 * 60_000);
+    const affected = [device({ deviceId: "d1" }), device({ deviceId: "d2" })];
+    const { updated } = partitionRecovery(
+      affected,
+      new Set(["d1", "d2"]),
+      now,
+      new Map([["d1", realRecovery]]),
+    );
+    expect(updated.find((d) => d.deviceId === "d1")?.recoveredAt).toBe(realRecovery.toISOString());
+    // d2 has no recovery event on record — `now` is the best upper bound left.
+    expect(updated.find((d) => d.deviceId === "d2")?.recoveredAt).toBe(now.toISOString());
+  });
+
   it("preserves an already-recovered entry's earlier recoveredAt instead of overwriting with now", () => {
     const earlier = new Date(now.getTime() - 60_000).toISOString();
     const affected = [device({ deviceId: "d1", status: "recovered", recoveredAt: earlier })];

@@ -73,12 +73,20 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
   let downMin = ticket.downDurationMin;
   if (enteringTerminal && !resolvedAt) {
     resolvedAt = now;
-    if (downMin === null && ticket.triggerEventId) {
-      const triggerEvent = await db.networkEvent.findUnique({
-        where: { id: ticket.triggerEventId },
-        select: { receivedAt: true },
-      });
-      if (triggerEvent) downMin = downDurationMin(triggerEvent.receivedAt, now);
+    if (downMin === null) {
+      // Anchor on the trigger PROBLEM event when there is one, else on the
+      // ticket's own openedAt. The trigger-event-only version left every
+      // MASS_OUTAGE ticket (no trigger event by design) with a null duration,
+      // which the Teams resolution post then printed as "0 min".
+      let anchor = ticket.openedAt;
+      if (ticket.triggerEventId) {
+        const triggerEvent = await db.networkEvent.findUnique({
+          where: { id: ticket.triggerEventId },
+          select: { receivedAt: true },
+        });
+        if (triggerEvent) anchor = triggerEvent.receivedAt;
+      }
+      downMin = downDurationMin(anchor, now);
     }
   } else if (leavingTerminal) {
     resolvedAt = null;

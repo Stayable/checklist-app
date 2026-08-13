@@ -57,17 +57,28 @@ export type AffectedDevice = {
  * An entry already marked "recovered" (from an earlier check cycle) is left
  * untouched regardless of `recoveredIds` membership, so its original
  * `recoveredAt` is never overwritten by a later, redundant check.
+ *
+ * `recoveredAtByDevice` (2026-08-13) carries the device's ACTUAL RECOVERY-event
+ * time where the caller could find one. Before it existed, every recovery was
+ * stamped `now` — the moment the 10-minute check happened to run — so the
+ * derived down-duration measured the check's own latency rather than the
+ * outage, and reported ~10–11 min no matter when the devices really came back.
+ * Falls back to `now` for a device that recovered with no RECOVERY event on
+ * record (the check inferred it from `currentStatus`), which is the best
+ * available upper bound.
  */
 export function partitionRecovery(
   affected: AffectedDevice[],
   recoveredIds: Set<string>,
   now: Date,
+  recoveredAtByDevice?: Map<string, Date>,
 ): { updated: AffectedDevice[]; recovered: AffectedDevice[]; stillOffline: AffectedDevice[] } {
   const nowIso = now.toISOString();
   const updated = affected.map((d): AffectedDevice => {
     if (d.status === "recovered") return d; // already recovered — preserve its recoveredAt
     if (recoveredIds.has(d.deviceId)) {
-      return { ...d, status: "recovered", recoveredAt: nowIso };
+      const actual = recoveredAtByDevice?.get(d.deviceId);
+      return { ...d, status: "recovered", recoveredAt: actual ? actual.toISOString() : nowIso };
     }
     return d;
   });

@@ -168,9 +168,25 @@ export async function cascadeParentCloseIfDone(
   });
   if (!allChildrenResolved(siblings.map((s) => s.status))) return;
 
+  // Read openedAt first so the parent gets a recorded duration. A MASS_OUTAGE
+  // parent has no single trigger event, so its outage window is openedAt → the
+  // moment its last child cleared, which is `now`. Without this the parent
+  // resolved with downDurationMin null, and the Teams post announced "0 min"
+  // for outages that ran hours (TKT-20260812-011: 282 min reported as 0).
+  const existing = await tx.ticket.findUnique({
+    where: { id: resolvedTicket.parentTicketId },
+    select: { openedAt: true, downDurationMin: true },
+  });
+
   const parent = await tx.ticket.update({
     where: { id: resolvedTicket.parentTicketId },
-    data: { status: "RESOLVED", resolvedAt: now },
+    data: {
+      status: "RESOLVED",
+      resolvedAt: now,
+      downDurationMin:
+        existing?.downDurationMin ??
+        (existing ? downDurationMin(existing.openedAt, now) : undefined),
+    },
   });
   const parentProperty = await tx.property.findUnique({
     where: { id: parent.propertyId },
