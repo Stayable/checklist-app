@@ -25,8 +25,20 @@ import type { GuestLive } from "@/lib/network/digest";
 // a non-FAILED digest NotificationLog row created since the ET day start.
 // Without that, a retry, a redeploy mid-hour, or overlapping invocations inside
 // the 9 AM hour would each post again. A FAILED row deliberately does NOT count,
-// so a transient Teams outage at 9:00 is retried at 10:00 rather than skipping
+// so a transient failure at 9:00 is retried on a later hour rather than skipping
 // the day silently.
+//
+// ⚠ THAT RETRY DID NOT EXIST UNTIL 2026-08-17, though this comment claimed it
+// did. The gate was `hourET !== SEND_HOUR_ET`, which returns early at 10:00 —
+// so the only attempt was ever 09:00 and a failure there lost the day. It cost a
+// real digest: on 2026-08-17 the Neon compute allowance ran out at ~06:58 ET, the
+// 13:00 UTC invocation died on its first query, and there was no second attempt.
+// The gate is now a WINDOW (SEND_HOUR_ET..LAST_RETRY_HOUR_ET) and the once-a-day
+// row is what stops a duplicate, which is the behaviour described above.
+//
+// The window is capped rather than open-ended because this is a morning
+// operations report. A "daily status" arriving at 11 PM is worse than none: it
+// reads as current when its own numbers are 14 hours stale.
 //
 // WHY THIS POSTS DIRECTLY instead of queueing a PENDING row for the 1-minute
 // sweep like every other Teams notification: the digest's property table has to
@@ -44,6 +56,12 @@ export const maxDuration = 60;
 
 const DIGEST_EVENT = "network_daily_digest";
 const SEND_HOUR_ET = 9;
+/**
+ * Last ET hour that will still attempt the day's digest. 9..12 gives four tries
+ * an hour apart, which covers a compute cold-start, a Neon blip, or a Teams
+ * outage, while keeping the post recognisably a morning report.
+ */
+const LAST_RETRY_HOUR_ET = 12;
 
 /** Window the digest's resolved/avg figures cover. */
 const DIGEST_RANGE = "30d";
@@ -103,8 +121,12 @@ async function handle(req: Request) {
   const dryRun = url.searchParams.get("dry") === "1";
 
   const hourET = Number.parseInt(formatInET(now, "H"), 10);
-  if (!dryRun && hourET !== SEND_HOUR_ET) {
-    return NextResponse.json({ ok: true, skipped: "not_send_hour", hourET });
+  // A WINDOW, not a single hour. Equality here meant one attempt per day and no
+  // retry — see the header note. Duplicate suppression is the once-a-day
+  // NotificationLog row below, not this gate: on a normal day the 09:00 run
+  // writes a SENT row and every later hour in the window skips on that.
+  if (!dryRun && (hourET < SEND_HOUR_ET || hourET > LAST_RETRY_HOUR_ET)) {
+    return NextResponse.json({ ok: true, skipped: "outside_send_window", hourET });
   }
 
   const dayStart = etDayStartUtc(etYYYYMMDD(now));
@@ -159,9 +181,18 @@ async function handle(req: Request) {
       body,
       target: GENERAL_TARGET,
       entityType: "network_digest",
-      // No single entity — the digest is about the portfolio. The ET date makes
-      // the row identifiable and is what the once-a-day guard reads back.
-      entityId: etYYYYMMDD(now),
+      // entityId is deliberately OMITTED. It is a `@db.Uuid` column and this
+      // used to pass the ET date (`"20260817"`), which Postgres rejected every
+      // single day with P2023 "Error creating UUID, invalid length: expected 32,
+      // found 8". Because the Teams post happens ABOVE this write, the digest
+      // landed and then the route 500'd — so the day looked fine in Teams while
+      // no row was ever recorded, and the once-a-day guard therefore always read
+      // zero. Its idempotency has never actually worked; only the single-hour
+      // gate was preventing duplicates.
+      //
+      // Nothing needs the date here: the guard matches on `event` + `createdAt >=
+      // ET day start`, and `digestTitle` already carries the date for a human.
+      // Do not "restore" this field without a non-UUID column to put it in.
     },
   });
 
