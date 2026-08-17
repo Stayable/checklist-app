@@ -15,6 +15,7 @@ This document captures the operational knowledge needed to maintain the RISE8 Op
 - [Monitoring](#monitoring)
 - [Secrets Rotation](#secrets-rotation)
 - [Backup and Recovery](#backup-and-recovery)
+- [Neon Compute Cost](#neon-compute-cost--why-the-db-went-down-2026-08-17-and-how-to-keep-it-cheap)
 
 ---
 
@@ -394,6 +395,93 @@ curl -X POST https://ops.stayable.com/api/cron/cleanup-photos \
 7. **Only now** set `CRON_SECRET` in Vercel Production to enable 5 AM generation — the route is fail-closed until it's set (commit `9cf069d`), and you don't want auto-gen firing against placeholder content.
 
 **After the split:** local dev keeps pointing at the dev DB, so local migrations no longer touch prod. To apply a future migration to prod, run `prisma migrate deploy` against the prod URLs (step 2 pattern), or fold it into a deploy step. Consider a clean prod R2 bucket at the same time (still `rise8-ops-staging` today).
+
+---
+
+## Neon Compute Cost — why the DB went down 2026-08-17, and how to keep it cheap
+
+**What happened.** The whole platform went down at ~06:58 ET on 2026-08-17: every
+cron 500ing, sign-ins failing, network monitoring blind. Cause was not a bug or a
+Neon incident — the **Free plan's 100 CU-hour monthly compute allowance ran out**,
+and Neon suspends compute when it does. Fixed by upgrading the org to **Launch**
+(metered: $0.106/CU-hour compute, $0.35/GB-month storage).
+
+**Why it was inevitable, and the one thing to understand:** Neon bills
+**compute size × wall-clock active time**. It does *not* bill per query. A compute
+autosuspends after an idle period, so what costs money is **how often something
+wakes it** and **how long it lingers before suspending** — never how efficient the
+SQL is. Optimising queries here saves approximately nothing.
+
+`network-timers` ran at `* * * * *`. A query every 60 seconds against a 5-minute
+autosuspend means the compute **never idles** — it runs 24/7:
+
+```
+730 h/month × 0.25 CU = ~182 CU-hours   →   Free allows 100   →   exhausted ~day 16
+```
+
+The outage landed on the 17th. That is arithmetic, not bad luck.
+
+### The four levers, in order of effect
+
+| # | Lever | Where | Effect |
+|---|---|---|---|
+| 1 | **Autosuspend delay** 5 min → 1 min | Neon console (branch → compute) | Largest. Without this, nothing else helps |
+| 2 | **Autoscaling max** pinned to 0.25 CU | Neon console | Direct multiplier on the whole bill |
+| 3 | **Aligned cron minutes** | `vercel.json` | Two crons share one wake instead of two |
+| 4 | **Longer poll interval** | `vercel.json` | Biggest code-side win, but costs alerting latency |
+
+**Levers 1 and 2 are console settings and are not in this repo.** They are also
+the ones that matter most, so check them first when the bill looks wrong.
+
+⚠ **Lever 1 is a precondition, not an optimisation.** Any poll interval shorter
+than the autosuspend delay leaves the compute permanently active, so the bill is
+identical whether you poll every 60 seconds or every 4 minutes. Lengthening the
+interval saves nothing until the autosuspend delay is shorter than the gap
+between polls.
+
+⚠ **Lever 2 is the one that can hurt.** Launch permits up to 16 CU. An always-on
+compute at 0.25 CU is ~$19/month; the same compute left at a 16 CU autoscaling
+max is ~$1,240/month. Pin the max low.
+
+### What the repo currently does
+
+`network-timers` moved `* * * * *` → `*/2 * * * *` on 2026-08-17, aligning it
+with `unifi-poll`'s existing `*/2`. Both now fire on the same even minutes, so
+they wake the compute **once** per two minutes rather than the compute simply
+never sleeping. **This was chosen because it costs no alerting latency** — the
+ticket timers work off a `runAt` column, so a coarser sweep only delays pickup,
+and the 5-/10-minute SLAs have a minute of slack by design.
+
+With autosuspend at 1 minute, the duty cycle becomes roughly
+`(query time + 60 s idle) / 120 s` ≈ **55%**, i.e. ~$10–11/month rather than
+~$19. Estimated from the mechanism, not measured — **check the real figure in
+Neon's usage graph after a few days** before trusting it.
+
+`network-digest` stays hourly and is already free: its ET-hour gate returns
+**before any database call**, so 20 of 24 daily invocations never wake the
+compute. Do not "optimise" it by making it daily — the hourly tick is what gives
+the digest its 9 AM–noon retry window.
+
+### If you need to go further
+
+Push `unifi-poll` and `network-timers` to `*/5`. Duty cycle drops to ~22%
+(≈$4/month), and the cost is alerting latency:
+
+```
+worst case to ticket ≈ 5 min timer + 2 × poll interval
+  */2 → ~9 min      */3 → ~11 min      */5 → ~15 min
+```
+
+The documented accepted budget was **~7 minutes** (ADR-026 / the T11 poller
+notes), so `*/5` roughly doubles it. That is a product decision about how fast a
+dead access point must become a ticket — not a tuning knob to turn quietly.
+
+**The principled fix, not yet built:** replace DB-polled timers with a scheduler
+that holds the delay itself (Inngest is named in CLAUDE.md's stack but is **not
+installed** — no dependency, no code). With real scheduled jobs there is no poll
+at all, so the compute sleeps until there is genuine work and the cost tracks
+actual events instead of the clock. That is the change that makes this problem go
+away rather than get smaller.
 
 ---
 

@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/network-timers",
-      "schedule": "* * * * *"
+      "schedule": "*/2 * * * *"
     },
     {
       "path": "/api/cron/unifi-poll",
