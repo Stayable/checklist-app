@@ -340,7 +340,15 @@ When changing scope or architecture: update the relevant doc and add an entry to
 
 ## Current Status (update this section as work progresses)
 
-**As of:** August 17, 2026 (latest)
+**As of:** August 18, 2026 (latest)
+
+**Short session — one prod change, one status verification, no code shipped.**
+- **`carl@rentstayable.com` and `christopher@rentstayable.com` deactivated in prod** (Kyle's call). `scripts/deactivate-users.ts`, dry-run by default. **Deactivated, not deleted:** `active: false` is refused at both login gates (`lib/auth.ts:42`, `app/login/actions.ts:48`), and a hard delete is refused anyway since both carry provisioning audit rows. **Property memberships kept** (all 8 each) — they grant nothing while inactive and make reactivation from `/admin/users` a one-click restore. Both had `lastLoginAt = never`. Audit rows under `bke@`. **Live AGENT tester set is now 4: abby · bea · karla · randy.**
+- **⚠ Found doing it: there is no session-revocation path.** `authorize()` re-reads the DB, but the `session()` callback reads only the JWT — so deactivating a user who *is* signed in leaves their 30-day cookie valid until expiry. It did not bite here and it will the first time someone with a live session is removed. Same class as the `mustChangePassword` fix, which deliberately reads the flag from the DB instead of the token.
+- **Aruba/Instant On: no movement since 08-17, and prod holds none of it — measured, not assumed.** No `uplink_alerts` table, `TicketType` still `STANDARD, MASS_OUTAGE`, newest applied migration `20260813120000_add_contractor_update_fanout`, and no `INSTANT_ON_WEBHOOK_SECRET` in Vercel Production. **The branch `feat/instant-on-uplink-flaps` is also not pushed** — `git ls-remote` finds nothing, so ~1,776 lines across 17 files exist on one machine, 5 ahead / 3 behind `main`. **Zero flap tickets have ever been created**; the guest-facing WiFi layer at JW/OR/KE/KW is still unmonitored. `TODO.md` §B4 was rewritten from the stale "does Aruba exist at all?" row into the verified state so this is not re-derived again.
+- Unchanged: **`checklist_instances = 0`** (content blocker), and the Neon autosuspend/autoscale change is **still pending** — the deployed cron change saves nothing without it.
+
+**As of:** August 17, 2026
 
 **🔴 PROD OUTAGE 06:58–13:20 ET (~6h22m) — NEON FREE COMPUTE ALLOWANCE EXHAUSTED. Recovered. Two fixes deployed (`ad3ad33`).**
 

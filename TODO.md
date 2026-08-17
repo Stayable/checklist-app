@@ -15,7 +15,29 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-13, later)
+## 🎯 START HERE (updated 2026-08-18)
+
+**Short session. Two things: one prod change, one status verification. No code shipped.**
+
+- **`carl@` and `christopher@` deactivated in prod** (Kyle). Reversible from `/admin/users`; property
+  scope kept so reactivation is one click. **Live tester set is now 4** — abby, bea, karla, randy.
+  Found while doing it: **there is no session-revocation path** — a deactivated user with a live JWT keeps
+  it for up to 30 days, because the `session()` callback reads only the token. Harmless here (neither had
+  ever signed in), real the first time it isn't. Logged in A6b.
+- **Aruba/Instant On: nothing has moved since 08-17, and prod is untouched.** Verified against the prod DB
+  and Vercel, not inferred: no `uplink_alerts` table, `TicketType` still `STANDARD, MASS_OUTAGE`, newest
+  migration `20260813120000`, no `INSTANT_ON_WEBHOOK_SECRET`. **And the branch is not pushed** — it lives
+  on one machine, 5 ahead / 3 behind `main`. B4 rewritten so this is not re-derived a third time.
+- **§Q2 is closed.** Anything still asking "does Aruba exist in the estate" is stale — it is HPE Instant On
+  at JW/OR/KE/KW. The open question is which of JN/LL/SA/DP also run it.
+- **Unchanged and still the real blocker:** `checklist_instances = 0`. Six days into the test round, the
+  four remaining testers have nothing to open. Content, not code.
+- 🧑 **Still pending from 08-17 and the savings depend on it:** Neon autosuspend 5 min → 1 min and
+  autoscale max → 0.25 CU on `stayable-ops-prod`. The deployed cron change saves nothing until it lands.
+
+---
+
+## (previous) START HERE — 2026-08-13, later
 
 **🔧 THREE TEAMS-NOTIFICATION DEFECTS FIXED AND LIVE** (`083779a`, deploy `checklist-otrrusfk9` Ready;
 736 tests, clean typecheck + lint + build). All three were reported by Kyle and all three were confirmed
@@ -198,8 +220,11 @@ Nine RPM/GSA testers live in prod. Guide `docs/ChecklistTesterGuide_RISE8_081226
 
 | Pri | Status | Item |
 |---|---|---|
-| P0 | [~] | **9 AGENT accounts created** (abby · bea · carl · christopher · erika · jeffrey · karla · randy · ruby), all 8 properties each, shared start password, forced change on first login |
+| P0 | [~] | **9 AGENT accounts created** (abby · bea · carl · christopher · erika · jeffrey · karla · randy · ruby), all 8 properties each, shared start password, forced change on first login. **Ruby / Jeffrey / Erika since promoted to MANAGER** (A6c), and **carl@ + christopher@ deactivated 2026-08-18** — so the live tester set is **4: abby · bea · karla · randy** |
+| P0 | [x] | **Access removed for carl@ and christopher@** (Kyle, 2026-08-18) via `scripts/deactivate-users.ts --apply` against prod. **Deactivated, not deleted** — `active: false` is refused at both login gates (`lib/auth.ts:42`, `app/login/actions.ts:48`), and a hard delete is refused anyway because both carry audit rows from provisioning. Property memberships (all 8 each) **left in place on purpose**: they grant nothing while inactive and are what makes reactivation from `/admin/users` a one-click restore. Both had `lastLoginAt = never`, so no live session outlived the change. Audit rows written under `bke@` |
+| P1 | [ ] | ⚠ **There is no session-revocation path.** Deactivating someone who *is* signed in leaves their 30-day JWT valid until expiry — `lib/auth.ts` re-reads the DB in `authorize()` but the `session()` callback reads only the token. It did not bite here (neither account had ever signed in) and it will the first time someone with a live session is removed. Same class as the `mustChangePassword` fix, which deliberately reads the flag from the DB rather than the JWT |
 | P0 | [ ] | ⚠ **Watch the first sign-in.** Nobody has ever logged in as AGENT: the OTP email path and the forced-password-change redirect are both unexercised end to end. A stuck account looks identical to a lost email |
+| P1 | [ ] | Christopher still owes real checklist question content (A6) — removing his access does not change that, but he can no longer see the placeholders directly |
 | P0 | [ ] | Collect feedback; triage into A7/A8 |
 | P1 | [ ] | Decide whether AGENT survives the test round or is retired — it exists for this, and it is a permanent role in the enum either way |
 
@@ -333,12 +358,30 @@ All pure DB work — no vendor dependency, no credentials needed.
 | P2 | [ ] | Brand-new-cluster crash-window reconciliation sweep |
 | P2 | [ ] | Real UniFi/Aruba HMAC scheme + payloads **if** the push path is ever used (the poller made it optional) |
 
-## B4 — Aruba · P2 · **decision, not code**
+## B4 — Aruba / HPE Instant On · P1 · 🟡 **BUILT ON A BRANCH, NOTHING IN PROD**
+
+**✅ §Q2 / N6 is ANSWERED — do not re-derive it.** Aruba is real and it is **HPE Networking Instant On**
+(the SMB line, not Aruba Central), confirmed at **JW · OR · KE · KW**. Its APs hang off UniFi PoE switches
+so the poller sees them as ordinary wired clients — exactly the signature Q2 predicted, and the reason
+Kate's AP counts looked low. The captive portal moved to Instant On too, so **the layer guests actually
+touch is unmonitored at those four properties.** `/api/webhooks/aruba` is **repurposed, not deleted** —
+Instant On publishes no webhook and no API, only email. ADR-031.
+
+**The full B4 table lives on branch `feat/instant-on-uplink-flaps`, which owns this work and will bring it
+when merged.** Read it there (`git show feat/instant-on-uplink-flaps:TODO.md`) rather than porting it here.
+
+**State verified 2026-08-18 — unchanged since it was built on 08-17:**
 
 | Pri | Status | Item |
 |---|---|---|
-| P2 | [!] | **Does Aruba exist in the estate at all?** Parser, event mapping and route are built but unconfigured and fail-closed. All 8 properties appear UniFi-covered | §Q2 |
-| P2 | [ ] | If not: delete `/api/webhooks/aruba` + the `ARUBA` enum path rather than ship a dead route |
+| P1 | [x] | Parser + flap rule (24 tests), ADR-031, per-property Teams posts on open/close, escalation exclusion, ingest + ticket lifecycle + `UPLINK_QUIET_CHECK` on the existing 1-min cron, Cloudflare Email Worker. 5 commits, ~1,776 lines / 17 files |
+| P1 | [ ] | ⚠ **The branch is not pushed to origin** — `git ls-remote --heads origin` returns nothing for it. It exists on one machine only, and it is 5 ahead / 3 behind `main` (behind by the Neon cron fix among others) |
+| P0 | [ ] | 🧑 **Apply migration `20260817120000_add_uplink_alerts` to prod.** Confirmed absent 2026-08-18: no `uplink_alerts` table, `TicketType` is still `STANDARD, MASS_OUTAGE`, newest applied migration is `20260813120000_add_contractor_update_fanout`. **Never applied to any database** — authored by diffing schema files because the dev DB was unreachable. Additive, so DB first, then code |
+| P0 | [ ] | 🧑 **Deploy the Cloudflare Worker** + set `INSTANT_ON_WEBHOOK_SECRET` identically in Cloudflare and Vercel Production (confirmed **not set** in prod 2026-08-18), and point an Instant On notification recipient at the routed address |
+| P1 | [ ] | ⚠ **Server layer is untested** — no DB-integration harness and no reachable DB. The pure rule carries the correctness argument; the first live alert is the first real exercise. **Zero flap tickets have ever been created** |
+| P1 | [ ] | **Sweep the full alert history** to settle whether JN/LL/SA/DP also run Instant On, and to enumerate the subject vocabulary. 1,366+ alerts were sampled, not swept; unknown subject forms are retained-but-unmapped by design, so gaps are safe but invisible |
+| P2 | [ ] | **Who owns a flapping-uplink ticket** — network tech or on-site maintenance? A bad cable in room 203 needs a property-side hand. `assignedTo` is free text, so this is policy, not schema |
+| P2 | [ ] | **No MAC in these emails**, so identity is name+site. An AP renamed in the portal strands its history — the exact failure MAC-keying prevents on the UniFi side. No fix available from this feed |
 
 ## B5 — Teams & Guest WiFi · P2
 
