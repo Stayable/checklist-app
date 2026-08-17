@@ -194,6 +194,8 @@ reminder of it.
 Nine RPM/GSA testers live in prod. Guide `docs/ChecklistTesterGuide_RISE8_081226.md`, launch message
 `docs/TestLaunchMessage_RISE8_081226.md`.
 
+🚩 **MEASURED 2026-08-17: `checklist_instances = 0` in production.** Five days into the test round there is not one checklist instance in the database — nothing generated, nothing submitted, nothing to open. No recurring rule exists, so the 5 AM cron produces nothing, and a tester who signs in correctly still finds an empty Today screen. **The test round has produced zero data**, and it will keep producing zero until the recurring-rules matrix exists (A6, below). Any tester silence to date should be read as "there was nothing to do", not as "no problems found".
+
 | Pri | Status | Item |
 |---|---|---|
 | P0 | [~] | **9 AGENT accounts created** (abby · bea · carl · christopher · erika · jeffrey · karla · randy · ruby), all 8 properties each, shared start password, forced change on first login |
@@ -265,6 +267,22 @@ Nine RPM/GSA testers live in prod. Guide `docs/ChecklistTesterGuide_RISE8_081226
 # TRACK B — Network Monitoring & IT Ticketing · P1 · 🟢 LIVE PILOT
 
 Live for **Kissimmee West only** (12 devices: 9 switches, 2 APs, 1 gateway). ADR-026. Docs in `docs/network/`.
+
+## B0 — 🔴 Prod outage 2026-08-17 (Neon compute allowance) · **recovered, 2 items open**
+
+Platform down **06:58–13:20 ET (~6h22m)**: sign-ins, all four crons, monitoring blind. Not a bug — Neon bills **awake wall-clock time × compute size**, and `network-timers` at `* * * * *` against a 5-min autosuspend meant the compute never idled: ~182 CU-hours/month against Free's **100 per project**. Fixed by upgrading the **"Stayable"** Neon org to Launch. Economics written up in `RUNBOOK.md` §Neon Compute Cost.
+
+| Pri | Status | Item |
+|---|---|---|
+| P0 | [x] | **Diagnosed + recovered.** Root cause confirmed by arithmetic and by `_prisma_migrations`/`information_schema` audit after recovery |
+| P0 | [x] | **Digest `entityId` P2023 fixed** — `@db.Uuid` column fed the ET date, so the digest posted to Teams then 500'd on its own log write. **Prod holds 0 digest rows, ever**; the once-a-day guard had therefore never worked |
+| P0 | [x] | **Digest retry window** 9 AM → noon ET. The old gate (`hourET !== 9`) meant one attempt/day despite a comment claiming otherwise — today's failure lost the day |
+| P0 | [x] | **`network-timers` `* * * * *` → `*/2`**, aligned with `unifi-poll`. No alerting-latency cost. Kyle chose `*/2` (~$10.15/mo) over `*/5` (~$4/mo) to hold ~9 min time-to-ticket |
+| **P0** | **[ ]** | 🧑 **Set autosuspend 5 min → 1 min and autoscaling max → 0.25 CU on `stayable-ops-prod`.** ⚠ **The deployed cron change saves NOTHING until this lands** — no poll interval shorter than the autosuspend delay ever lets the compute sleep. $19.35 → ~$10.15/mo. Launch permits 16 CU, where the same compute is ~$1,240/mo |
+| P1 | [ ] | **Verify the 9 AM digest posts AND writes a `notification_log` row** (first real proof of the fix; nothing has exercised it yet) |
+| P1 | [ ] | Check the real duty cycle in Neon's usage graph after a week — the ~55% figure is estimated from the mechanism, not measured |
+| P2 | [ ] | **Two Neon orgs is a trap.** Prod is in standalone **"Stayable"** (direct Neon billing, us-east-2); the Vercel-managed org holds four unrelated projects. Credits went to the wrong one first. Consolidating needs a cross-region dump/restore — and a suspended DB cannot be dumped, so access always comes first |
+| P2 | [ ] | **The principled fix is to stop polling.** A scheduler holding its own delay (Inngest is in CLAUDE.md's stack but **not installed**) removes the poll entirely, so cost tracks events instead of the clock |
 
 ## B1 — Built and deployed ✅
 

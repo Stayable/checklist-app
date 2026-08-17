@@ -340,7 +340,30 @@ When changing scope or architecture: update the relevant doc and add an entry to
 
 ## Current Status (update this section as work progresses)
 
-**As of:** August 13, 2026 (latest)
+**As of:** August 17, 2026 (latest)
+
+**🔴 PROD OUTAGE 06:58–13:20 ET (~6h22m) — NEON FREE COMPUTE ALLOWANCE EXHAUSTED. Recovered. Two fixes deployed (`ad3ad33`).**
+
+**Cause, and it was arithmetic rather than a bug.** Neon bills **compute size × wall-clock time awake** — never per query. `network-timers` ran `* * * * *`, and a query every 60 s against a 5-minute autosuspend means the compute **never idles**: 730 h/month × 0.25 CU ≈ 182 CU-hours against Free's **100 CU-hours per project**, exhausted ~day 16. It died on the 17th. Everything went with it — sign-ins, all four crons, network monitoring blind. Fixed when Kyle upgraded to **Launch** ($0.106/CU-hour).
+
+**⚠ The credits first went to the wrong org, which cost ~40 minutes.** There are **two Neon orgs**: prod (`stayable-ops-prod` = `ep-summer-cloud-axmco63q`, **us-east-2**) lives in the standalone **"Stayable"** org billed direct by Neon, while the **Vercel-managed** org holds four unrelated us-east-1 projects. `vercel integration ls` on `checklist-app` returns **"No resources found"** — prod was created by hand in the July DB split and its connection string pasted in with `vercel env add`, so provisioning and billing are separate stories. **Plan changes for prod happen at console.neon.tech under the "Stayable" org, not through Vercel.**
+
+**🧑 STILL PENDING AND THE SAVINGS DEPEND ON IT:** set **autosuspend 5 min → 1 min** and **autoscaling max → 0.25 CU** on `stayable-ops-prod`. The deployed cron change saves **nothing** until autosuspend is shorter than the gap between polls. $19.35/mo → ~$10.15/mo. Launch permits 16 CU, where the same always-on compute is ~$1,240/mo — pin the max. Full economics in `RUNBOOK.md` §Neon Compute Cost.
+
+**Deployed off `main` `ad3ad33`:**
+- **Digest could never log itself.** `notificationLog.entityId` is `@db.Uuid` and the route passed the ET date (`"20260817"`) → **P2023 every single day**. Since the Teams post happens *before* the log write, the digest landed and the route then 500'd — so it looked fine in Teams while **prod holds 0 digest rows, ever** (confirmed by query). The once-a-day guard reads those rows, so its idempotency had never worked; only the single-hour gate prevented duplicates. Field dropped — the guard matches on `event` + ET day start and the title already carries the date.
+- **The digest never retried, though its comment claimed it did.** `hourET !== SEND_HOUR_ET` returns early at 10:00, so 09:00 was the only attempt and today's failure lost the day. Now a **window, 9 AM–noon ET**, with the once-a-day row preventing duplicates. Capped because a "daily status" at 11 PM reads as current when it is 14 h stale.
+- **`network-timers` 1 min → `*/2`**, aligned with `unifi-poll` so both wake the compute once. Chosen because it costs **no** alerting latency (timers work off `runAt`). Kyle chose `*/2` (~$10.15) over `*/5` (~$4) to keep ~9 min time-to-ticket rather than ~15.
+
+**Recovery verified functionally, not just a 200:** `unifi-poll` → 16 consoles, **596 devices, 0 events, 0 blind hosts**; `network-timers` clean, Teams queue armed; 37 users, 8 properties, 1,172 rooms, 552 tickets intact.
+
+**🚩 `checklist_instances = 0`.** Nine RPM/GSA testers have been live since 2026-08-12 with **nothing to open** — no rule exists, so the 5 AM cron generates nothing. The test round has produced zero data. This is content, not code, and it is the real blocker on a usable parallel run.
+
+**Two corrections recorded so they are not re-derived:** (a) **nothing is missing from prod** — all 30 tables and all 23 migrations are present; an earlier "four missing contractor tables" claim came from a lazy-loading Neon sidebar and was disproved by `information_schema`; (b) **the two DBs did not fail together** — dev (`ep-falling-moon`) has been down since **early August**, separately, so the "both at once ⇒ account-level enforcement" inference was wrong even though the per-project conclusion holds.
+
+**✅ Q2 / N6 ANSWERED — Aruba is real, and it is HPE *Instant On*.** Built on branch **`feat/instant-on-uplink-flaps`** (5 commits, **NOT merged, NOT deployed, migration never applied**). Detail in that branch's `TODO.md` §B4 and **ADR-031**. Headline: these alerts report **uplink mode (wired vs mesh), not up/down** — a "changed" AP is degraded but still serving WiFi, and "established" is ambiguous *in the vendor's own sentence*, so it is recorded and never acted on. Tickets open on ≥3 degrades/6 h and close on 12 h silence.
+
+**As of:** August 13, 2026
 **🔧 THREE TEAMS-NOTIFICATION DEFECTS FIXED — deploy `checklist-otrrusfk9` Ready, `083779a` on main. 736 tests, clean typecheck + lint + build.** All three were reported by Kyle and confirmed against the live `notification_log` before any code changed.
 - **"View ticket" bounced back into Teams.** The markdown fix (`db1b9b0`, yesterday) was correct but the URL was **relative**: `NEXT_PUBLIC_APP_URL` is **not set in Vercel Production** and all three link builders used `?? ""`, so posts carried `[View ticket](/network/tickets/<id>)` — which Teams resolves against `teams.microsoft.com`. New `lib/app-url.ts` owns this with an **absolute** fallback (`https://ops.rentstayable.com`), plus scheme-adding and trailing-slash stripping, since a bare host reproduces the same bug invisibly. **The env var is still worth setting but the code no longer needs it.**
 - **"came back online within 10 minutes" printed directly above "Down Duration: 11 min".** Two independent errors. (1) `partitionRecovery` stamped every recovery `now` — the moment the 10-min check ran — so the duration measured **the cron's own latency**, not the outage, and always came out 10–11 min (TKT-084: 10.64 → 11; TKT-085: 10.57 → 11). It now uses the device's **earliest RECOVERY event** after the outage opened. (2) The sentence asserted a bound the reply never measured; it now states the count only, and the duration is labelled "longest of the N" because it is a max across devices.
