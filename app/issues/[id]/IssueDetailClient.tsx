@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { IssuePriority, IssueStatus, Role } from "@prisma/client";
 import type { PhotoRef } from "@/lib/checklist-logic";
-import { compressImage, getCurrentPosition, type Position } from "@/lib/image";
+import { acquirePosition, compressImage, type GeoFailure, type Position } from "@/lib/image";
 import { closeIssue, updateIssue } from "../actions";
 
 // Open-issue controls: assignee / status / priority + the resolution flow.
@@ -12,11 +12,24 @@ import { closeIssue, updateIssue } from "../actions";
 // (ADR-015): same compress + per-batch GPS flow as the checklist filler.
 
 type Assignee = { id: string; name: string; role: Role };
-type PhotoItem = { blob: Blob; url: string; position: Position | null };
+type PhotoItem = {
+  blob: Blob;
+  url: string;
+  position: Position | null;
+  /** null while the request is in flight. English-only surface (ADR-013): this
+   *  is a manager screen, unlike the field-facing checklist filler. */
+  gpsFailure: GeoFailure | null;
+};
+
+const GPS_MESSAGE: Record<GeoFailure, string> = {
+  denied: "Location is blocked for this site — allow it in your browser settings.",
+  unavailable: "Your device could not determine a location.",
+  timeout: "Could not get a location in time.",
+  unsupported: "This device cannot report a location.",
+};
 
 const OPEN_STATUSES = [IssueStatus.OPEN, IssueStatus.ASSIGNED, IssueStatus.IN_PROGRESS];
 const PHOTO_MAX = 5;
-const GPS_TIMEOUT_MS = 10_000;
 
 export function IssueDetailClient({
   issueId,
@@ -56,16 +69,22 @@ export function IssueDetailClient({
       blob: c.blob,
       url: URL.createObjectURL(c.blob),
       position: null,
+      gpsFailure: null,
     }));
     setPhotos((prev) => [...prev, ...items]);
-    // GPS captured with the batch, never blocks the preview.
-    getCurrentPosition(GPS_TIMEOUT_MS)
-      .then((pos) => {
-        setPhotos((prev) =>
-          prev.map((it) => (items.includes(it) ? { ...it, position: pos } : it)),
-        );
-      })
-      .catch(() => {});
+    // GPS captured with the batch, never blocks the preview. The failure reason
+    // is kept rather than swallowed — see lib/image.ts acquirePosition.
+    void acquirePosition().then((res) => {
+      setPhotos((prev) =>
+        prev.map((it) =>
+          items.includes(it)
+            ? res.ok
+              ? { ...it, position: res.position, gpsFailure: null }
+              : { ...it, gpsFailure: res.reason }
+            : it,
+        ),
+      );
+    });
   };
 
   // Upload any captured photos via presigned PUTs, returning their PhotoRefs.
@@ -200,6 +219,14 @@ export function IssueDetailClient({
               <div key={i} className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={it.url} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                {/* Per-photo, because each capture makes its own request: one
+                    photo can carry a fix while the next does not. */}
+                <span
+                  aria-hidden
+                  className={`absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+                    it.gpsFailure ? "bg-amber-500" : it.position ? "bg-emerald-500" : "animate-pulse bg-slate-400"
+                  }`}
+                />
                 <button
                   type="button"
                   disabled={pending}
@@ -221,6 +248,17 @@ export function IssueDetailClient({
               </button>
             )}
           </div>
+          {(() => {
+            // One line for the grid, naming the first real failure. Silence
+            // when every photo has a fix — a confirmation per thumbnail is
+            // noise on a screen whose subject is the issue, not the photo.
+            const failed = photos.find((it) => it.gpsFailure);
+            return failed?.gpsFailure ? (
+              <p className="text-xs text-amber-700">
+                {GPS_MESSAGE[failed.gpsFailure]} The photo is still saved.
+              </p>
+            ) : null;
+          })()}
           <input
             ref={fileInput}
             type="file"

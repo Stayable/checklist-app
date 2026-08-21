@@ -87,3 +87,81 @@ export function getCurrentPosition(timeoutMs = 30000): Promise<Position> {
     );
   });
 }
+
+/**
+ * Why a photo has no coordinates. `NO_GPS` on its own is unactionable — the
+ * user cannot tell "blocked in Settings" from "still searching", and neither
+ * could we: the first version of this discarded the reason entirely, so four
+ * of the first five photos in production were unexplainable after the fact.
+ *
+ * `denied` is terminal for the origin until the user changes a browser setting,
+ * so it must never be retried; the others are worth another attempt.
+ */
+export type GeoFailure = "unsupported" | "denied" | "unavailable" | "timeout";
+
+export type GeoResult =
+  | { ok: true; position: Position }
+  | { ok: false; reason: GeoFailure };
+
+/**
+ * Accept a fix up to a minute old. The previous request passed
+ * `maximumAge: 0`, refusing a perfectly good fix the OS already had — the
+ * most expensive possible ask, on the tightest possible deadline.
+ */
+export const GPS_MAX_AGE_MS = 60_000;
+
+/**
+ * A cold GPS needs longer than a warm one. Measured in production 2026-08-20:
+ * a first capture failed at the old 10s deadline, and a second capture 11s
+ * later returned a 39.5m fix — the first call had warmed the receiver for the
+ * second. 25s covers a cold start; the caller never blocks on it.
+ */
+export const GPS_TIMEOUT_MS = 25_000;
+
+/** GeolocationPositionError codes, which are numbers in the DOM spec. */
+const PERMISSION_DENIED = 1;
+const POSITION_UNAVAILABLE = 2;
+
+/**
+ * Acquire a position for geofence evaluation, reporting WHY it failed.
+ *
+ * Deliberately still `enableHighAccuracy: true`. A coarse Wi-Fi fix can be
+ * kilometres wide, and the server evaluates the geofence from coordinates
+ * alone with no regard for accuracy — so accepting coarse fixes would trade
+ * "no verdict" for "a confident wrong verdict" on fences that span 109–243m.
+ * Losing a fix is recoverable; a photo stamped VERIFIED from three blocks away
+ * is not.
+ */
+export function acquirePosition(
+  timeoutMs: number = GPS_TIMEOUT_MS,
+  maxAgeMs: number = GPS_MAX_AGE_MS,
+): Promise<GeoResult> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      resolve({ ok: false, reason: "unsupported" });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) =>
+        resolve({
+          ok: true,
+          position: {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            accuracy: coords.accuracy,
+          },
+        }),
+      (err) =>
+        resolve({
+          ok: false,
+          reason:
+            err.code === PERMISSION_DENIED
+              ? "denied"
+              : err.code === POSITION_UNAVAILABLE
+                ? "unavailable"
+                : "timeout",
+        }),
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: maxAgeMs },
+    );
+  });
+}

@@ -12,7 +12,7 @@ import {
   type PhotoRef,
   type QuestionLike,
 } from "@/lib/checklist-logic";
-import { compressImage, getCurrentPosition, type Position } from "@/lib/image";
+import { acquirePosition, compressImage, type GeoFailure, type Position } from "@/lib/image";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-store";
 import { type CheckoutFlags } from "@/lib/checkout-flags";
 import { SignaturePad } from "@/components/checklist/SignaturePad";
@@ -25,10 +25,66 @@ export type FillQuestion = QuestionLike & { prompt: string };
 // batch, and the client-side capture timestamp (ADR-015 + ADR-021 photo metadata).
 // capturedAt is epoch ms recorded once per batch — iOS strips EXIF so this is
 // the only reliable capture time.
-type PhotoItem = { blob: Blob; url: string; position: Position | null; capturedAt: number };
+type PhotoItem = {
+  blob: Blob;
+  url: string;
+  position: Position | null;
+  capturedAt: number;
+  gps: GpsState;
+};
 type PhotoState = Record<string, PhotoItem[]>;
 
-const GPS_TIMEOUT_MS = 10_000;
+/** UI-only view of the location request. Not persisted in the draft: the fix
+ *  itself is worth keeping across a reload, the reason it failed is not. A
+ *  restored draft with no fix is `unknown`, never `failed` — we cannot know
+ *  which it was, and guessing would put a wrong explanation on screen. */
+type GpsState =
+  | { kind: "pending" }
+  | { kind: "ok" }
+  | { kind: "failed"; reason: GeoFailure }
+  | { kind: "unknown" };
+
+/** How long submit will wait on a location request that is still in flight.
+ *  Bounded well under the 25s acquisition deadline: a field user who has taken
+ *  their photo and pressed Submit must not be held for half a minute. Whatever
+ *  has not landed by then is simply absent, exactly as before. */
+const GPS_SUBMIT_GRACE_MS = 6_000;
+
+/** Worst state across a question's photos, for the one status line under the
+ *  grid. Ordered by how much it should worry the user: something they can fix
+ *  outranks something they cannot, and both outrank "still working". */
+const GPS_SEVERITY: Record<string, number> = {
+  denied: 5,
+  unsupported: 4,
+  unavailable: 3,
+  timeout: 2,
+  pending: 1,
+  ok: 0,
+  unknown: 0,
+};
+
+/** Each failure gets its own sentence, because the remedies differ: a blocked
+ *  permission needs a settings change, a timeout needs another try, and an
+ *  unsupported device needs neither. A single "no location" line would tell a
+ *  housekeeper nothing they could act on. */
+const GPS_MESSAGE_KEY: Record<GeoFailure, "gpsDenied" | "gpsUnavailable" | "gpsTimeout" | "gpsUnsupported"> = {
+  denied: "gpsDenied",
+  unavailable: "gpsUnavailable",
+  timeout: "gpsTimeout",
+  unsupported: "gpsUnsupported",
+};
+
+function gpsKey(g: GpsState): string {
+  return g.kind === "failed" ? g.reason : g.kind;
+}
+
+function worstGps(items: PhotoItem[]): GpsState | null {
+  let worst: GpsState | null = null;
+  for (const it of items) {
+    if (!worst || GPS_SEVERITY[gpsKey(it.gps)] > GPS_SEVERITY[gpsKey(worst)]) worst = it.gps;
+  }
+  return worst;
+}
 
 export function FillClient({
   instanceId,
@@ -56,6 +112,14 @@ export function FillClient({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const hydrated = useRef(false);
+  /** Location requests still in flight, so Submit can give them a bounded
+   *  moment to land instead of racing them and silently losing the fix. */
+  const pendingGps = useRef<Set<Promise<void>>>(new Set());
+  /** Mirror of `photos` for read-at-submit. `uploadPhotoAnswers` runs inside a
+   *  transition and closes over the render's snapshot, so a fix that lands
+   *  during the grace wait would otherwise be dropped on the floor — the exact
+   *  race this change exists to close. */
+  const photosRef = useRef<PhotoState>({});
 
   // Restore any offline draft once on mount, layering it over server answers.
   useEffect(() => {
@@ -73,6 +137,7 @@ export function FillClient({
             blob: b,
             url: URL.createObjectURL(b),
             position: positions[i] ?? null,
+            gps: (positions[i] ? { kind: "ok" } : { kind: "unknown" }) as GpsState,
             // Legacy drafts lack photoTimestamps — fall back to now so the field
             // is always a valid epoch ms (informational only, not enforcement).
             capturedAt: timestamps[i] ?? Date.now(),
@@ -126,6 +191,10 @@ export function FillClient({
     setAnswers((prev) => ({ ...prev, [qid]: value }));
   }, []);
 
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
   const addPhotos = useCallback(
     async (q: FillQuestion, files: FileList) => {
       const max = q.photoMax ?? 10;
@@ -141,6 +210,7 @@ export function FillClient({
         url: URL.createObjectURL(c.blob),
         position: null,
         capturedAt,
+        gps: { kind: "pending" },
       }));
       setPhotos((prev) => ({ ...prev, [q.id]: [...(prev[q.id] ?? []), ...items] }));
       setAnswer(q.id, { count: current.length + items.length, pendingUpload: true });
@@ -148,16 +218,24 @@ export function FillClient({
       // GPS is captured with the batch but never blocks the preview — attach
       // the fix to these items when (if) it resolves. No fix → position stays
       // null → photo lands NO_GPS, which is informational, not enforcement.
-      getCurrentPosition(GPS_TIMEOUT_MS)
-        .then((pos) => {
-          setPhotos((prev) => ({
-            ...prev,
-            [q.id]: (prev[q.id] ?? []).map((it) =>
-              items.includes(it) ? { ...it, position: pos } : it,
-            ),
-          }));
-        })
-        .catch(() => {});
+      //
+      // The outcome is now RECORDED rather than swallowed. The previous version
+      // ended in `.catch(() => {})`, so a blocked permission and a timed-out
+      // cold start were indistinguishable on screen and in the database.
+      const inFlight = acquirePosition().then((res) => {
+        setPhotos((prev) => ({
+          ...prev,
+          [q.id]: (prev[q.id] ?? []).map((it) =>
+            items.includes(it)
+              ? res.ok
+                ? { ...it, position: res.position, gps: { kind: "ok" } as GpsState }
+                : { ...it, gps: { kind: "failed", reason: res.reason } as GpsState }
+              : it,
+          ),
+        }));
+      });
+      pendingGps.current.add(inFlight);
+      void inFlight.finally(() => pendingGps.current.delete(inFlight));
     },
     [photos, setAnswer],
   );
@@ -176,11 +254,23 @@ export function FillClient({
   // Upload photo blobs for visible PHOTO questions via presigned PUTs and
   // return answers with {count, photos: PhotoRef[]} substituted in (ADR-015).
   // Throws on any failure — the draft is untouched, so retry is safe.
+  /** Give any in-flight location request a bounded moment to finish. Without
+   *  this, pressing Submit a few seconds after the shutter discards a fix that
+   *  was about to arrive — the likeliest way a photo ended up NO_GPS. */
+  async function settlePendingGps(): Promise<void> {
+    if (pendingGps.current.size === 0) return;
+    await Promise.race([
+      Promise.allSettled([...pendingGps.current]),
+      new Promise((r) => setTimeout(r, GPS_SUBMIT_GRACE_MS)),
+    ]);
+  }
+
   async function uploadPhotoAnswers(visibleQuestions: FillQuestion[]): Promise<AnswerMap> {
+    await settlePendingGps();
     const finalAnswers: AnswerMap = { ...answers };
     for (const q of visibleQuestions) {
       if (q.type !== QuestionType.PHOTO) continue;
-      const items = photos[q.id] ?? [];
+      const items = photosRef.current[q.id] ?? [];
       if (items.length === 0) continue;
 
       const presignRes = await fetch("/api/photos/presign", {
@@ -279,7 +369,8 @@ export function FillClient({
           q={q}
           value={answers[q.id]}
           error={errors[q.id]}
-          photos={(photos[q.id] ?? []).map((it) => it.url)}
+          photos={(photos[q.id] ?? []).map((it) => ({ url: it.url, gps: it.gps }))}
+          gpsStatus={worstGps(photos[q.id] ?? [])}
           onChange={(v) => setAnswer(q.id, v)}
           onAddPhotos={(files) => void addPhotos(q, files)}
           onRemovePhoto={(i) => removePhoto(q, i)}
@@ -309,6 +400,7 @@ function QuestionField({
   value,
   error,
   photos,
+  gpsStatus,
   onChange,
   onAddPhotos,
   onRemovePhoto,
@@ -316,7 +408,8 @@ function QuestionField({
   q: FillQuestion;
   value: AnswerValue;
   error?: string;
-  photos: string[];
+  photos: { url: string; gps: GpsState }[];
+  gpsStatus: GpsState | null;
   onChange: (v: AnswerValue) => void;
   onAddPhotos: (files: FileList) => void;
   onRemovePhoto: (index: number) => void;
@@ -400,10 +493,24 @@ function QuestionField({
       {q.type === QuestionType.PHOTO && (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
-            {photos.map((url, i) => (
+            {photos.map((ph, i) => (
               <div key={i} className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                <img src={ph.url} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                {/* Per-photo dot: each capture makes its own location request,
+                    so one photo can carry a fix while the next does not. */}
+                {ph.gps.kind !== "unknown" && (
+                  <span
+                    aria-hidden
+                    className={`absolute bottom-1 left-1 h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+                      ph.gps.kind === "ok"
+                        ? "bg-emerald-500"
+                        : ph.gps.kind === "pending"
+                          ? "animate-pulse bg-slate-400"
+                          : "bg-amber-500"
+                    }`}
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => onRemovePhoto(i)}
@@ -421,6 +528,23 @@ function QuestionField({
               +
             </button>
           </div>
+          {gpsStatus && gpsStatus.kind !== "unknown" && (
+            <p
+              className={`text-xs ${
+                gpsStatus.kind === "ok"
+                  ? "text-slate-500"
+                  : gpsStatus.kind === "pending"
+                    ? "text-slate-500"
+                    : "text-amber-700"
+              }`}
+            >
+              {gpsStatus.kind === "ok"
+                ? t("gpsOk")
+                : gpsStatus.kind === "pending"
+                  ? t("gpsPending")
+                  : t(GPS_MESSAGE_KEY[gpsStatus.reason])}
+            </p>
+          )}
           <input
             ref={fileInput}
             type="file"
