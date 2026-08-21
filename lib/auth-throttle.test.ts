@@ -4,6 +4,7 @@ import {
   LOCKOUT_MS,
   MAX_FAILED_ATTEMPTS,
   isLocked,
+  lockoutMinutesRemaining,
   registerFailure,
   registerSuccess,
   type ThrottleState,
@@ -100,5 +101,33 @@ describe("registerSuccess", () => {
       lastFailedLoginAt: null,
       lockedUntil: null,
     });
+  });
+});
+
+describe("lockoutMinutesRemaining", () => {
+  it("returns 0 when there is no lock", () => {
+    expect(lockoutMinutesRemaining({ lockedUntil: null }, T0)).toBe(0);
+  });
+
+  it("returns 0 once the lock has expired", () => {
+    expect(lockoutMinutesRemaining({ lockedUntil: at(LOCKOUT_MS) }, at(LOCKOUT_MS))).toBe(0);
+  });
+
+  it("reports the full lock duration at the moment of locking", () => {
+    expect(lockoutMinutesRemaining({ lockedUntil: at(LOCKOUT_MS) }, T0)).toBe(
+      LOCKOUT_MS / 60_000,
+    );
+  });
+
+  it("rounds up so a partial minute is never under-reported", () => {
+    // 90s left must read as 2 min, not 1 — telling someone 1 min when 90s
+    // remain sends them back to a failing form.
+    expect(lockoutMinutesRemaining({ lockedUntil: at(90_000) }, T0)).toBe(2);
+  });
+
+  it("never reports 0 minutes while still locked", () => {
+    // 1ms of lock left. Flooring at 1 keeps the message truthful: they cannot
+    // sign in yet, so "0 min" would be wrong in the only way that matters.
+    expect(lockoutMinutesRemaining({ lockedUntil: at(1) }, T0)).toBe(1);
   });
 });

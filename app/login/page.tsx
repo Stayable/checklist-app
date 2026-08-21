@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 import { LOCALES, LOCALE_COOKIE, type Locale } from "@/i18n/config";
-import { requestLogin, submitOtp, resendOtp } from "./actions";
+import { requestLogin, submitOtp, resendOtp, type LoginResult } from "./actions";
 
 type Step = "password" | "otp";
 
@@ -25,6 +25,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
+
+  /** A lockout gets a specific message with the wait time; everything else stays
+   *  deliberately generic so a failure can't be attributed to the email or the
+   *  password. Falls back to the generic text if the server ever reports
+   *  "locked" without a duration, so the user is never shown a blank wait. */
+  function errorText(res: Extract<LoginResult, { ok: false }>): string {
+    if (res.error === "locked" && typeof res.lockedMinutes === "number") {
+      return t("lockedError", { minutes: res.lockedMinutes });
+    }
+    return t("error");
+  }
 
   // Login is a field-staff surface, so it is bilingual (ADR-013). Persist the
   // choice in the same cookie the middleware reads.
@@ -47,8 +58,7 @@ export default function LoginPage() {
     } else if (res.ok === "otp") {
       setStep("otp");
     } else {
-      // res.ok === false — generic, no enumeration
-      setError(t("error"));
+      setError(errorText(res));
     }
   }
 
@@ -83,7 +93,7 @@ export default function LoginPage() {
     } else if (res.ok === false && res.error === "email_failed") {
       setResendMsg(t("emailFailed"));
     } else {
-      setError(t("error"));
+      setError(errorText(res));
     }
   }
 

@@ -27,6 +27,7 @@
     "showPassword": "Mostrar contraseña",
     "hidePassword": "Ocultar contraseña",
     "error": "Correo o contraseña inválidos, o tu cuenta está bloqueada temporalmente tras demasiados intentos. Inténtalo más tarde o contacta a tu administrador.",
+    "lockedError": "Demasiados intentos fallidos. Tu cuenta está bloqueada por {minutes} {minutes, plural, one {minuto} other {minutos}} más. Espera e inténtalo de nuevo, o contacta a tu administrador para desbloquearla ahora.",
     "otpTitle": "Ingresa tu código",
     "otpSubtitle": "Te enviamos un código de 6 dígitos. Caduca en 10 minutos.",
     "otpLabel": "Código de 6 dígitos",

@@ -27,6 +27,7 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "error": "Invalid email or password, or your account is temporarily locked after too many attempts. Try again later or contact your administrator.",
+    "lockedError": "Too many failed attempts. Your account is locked for {minutes} more {minutes, plural, one {minute} other {minutes}}. Wait and try again, or contact your administrator to unlock it now.",
     "otpTitle": "Enter your code",
     "otpSubtitle": "We emailed a 6-digit code. It expires in 10 minutes.",
     "otpLabel": "6-digit code",

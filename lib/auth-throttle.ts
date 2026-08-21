@@ -21,6 +21,21 @@ export function isLocked(
 }
 
 /**
+ * Whole minutes left on an active lockout, for the "try again in N min" message
+ * on the login form. Rounded UP and floored at 1: reporting "0 min" to someone
+ * who is still locked reads as "try now", and they would only fail again.
+ * Returns 0 when there is no active lock, so callers can treat 0 as "not locked".
+ */
+export function lockoutMinutesRemaining(
+  state: Pick<ThrottleState, "lockedUntil">,
+  now: Date,
+): number {
+  if (!isLocked(state, now)) return 0;
+  const ms = state.lockedUntil!.getTime() - now.getTime();
+  return Math.max(1, Math.ceil(ms / 60_000));
+}
+
+/**
  * Next throttle state after a FAILED attempt. The failure counter only
  * accumulates within ATTEMPT_WINDOW_MS of the previous failure; an older
  * failure resets the count to 1. On hitting the cap the account is locked and

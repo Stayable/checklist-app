@@ -14,41 +14,58 @@ import {
   parseTrustedToken,
   TRUSTED_MAX_AGE_MS,
 } from "@/lib/trusted-device";
-import { isLocked, registerFailure } from "@/lib/auth-throttle";
+import { isLocked, lockoutMinutesRemaining, registerFailure } from "@/lib/auth-throttle";
 import { TRUSTED_DEVICE_COOKIE } from "@/lib/cookies";
 
 export type LoginResult =
   | { ok: true; redirect: string }
   | { ok: "otp" }
-  | { ok: false; error: string };
+  /** `lockedMinutes` is set only when `error === "locked"`. */
+  | { ok: false; error: string; lockedMinutes?: number };
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Generic pre-check: find the user and validate password + lockout.
- *  Returns the user row on success, or null for any failure.
- *  Intentionally does NOT reveal which check failed (no enumeration).
+type PreCheckResult =
+  | { kind: "ok"; user: NonNullable<Awaited<ReturnType<typeof db.user.findUnique>>> }
+  /** Inside an active lockout. `minutes` is what the form tells the user to wait. */
+  | { kind: "locked"; minutes: number }
+  | { kind: "invalid" };
+
+/** Pre-check: find the user and validate password + lockout.
+ *
+ *  Collapses "no such email", "deactivated" and "wrong password" into a single
+ *  `invalid` so none of them can be told apart — the anti-enumeration property.
+ *  The one exception is `locked`, which IS disclosed with a wait time: a lock
+ *  can only be reached by five failed attempts against that specific address,
+ *  so the caller already knows it resolves to an account. Silence there cost a
+ *  real user half an hour of retrying an unwinnable form (2026-08-21).
  *
  *  On a wrong password this function calls registerFailure and persists the
  *  updated throttle state to the DB — identical to what authorize does — so
  *  that wrong-password attempts via requestLogin/resendOtp trip the lockout
  *  even though they never reach signIn → authorize.
  *
- *  No-double-count guarantee: the wrong-password path returns null here, so
+ *  No-double-count guarantee: the wrong-password path returns non-`ok` here, so
  *  signIn is never called and authorize never runs — registerFailure fires
  *  exactly once per attempt. The correct-password path returns the user without
  *  touching the counter; authorize then calls registerSuccess only after the
  *  2FA gate passes — no double increment.
  */
-async function preCheck(email: string, password: string) {
+async function preCheck(email: string, password: string): Promise<PreCheckResult> {
   const user = await db.user.findUnique({
     where: { email: email.toLowerCase().trim() },
   });
-  if (!user || !user.active) return null;
+  // A missing or deactivated account stays generic: "invalid" is the only answer
+  // that does not confirm an address exists. Only the lockout is disclosed, and
+  // only to someone who already caused it.
+  if (!user || !user.active) return { kind: "invalid" };
 
   const now = new Date();
-  if (isLocked(user, now)) return null;
+  if (isLocked(user, now)) {
+    return { kind: "locked", minutes: lockoutMinutesRemaining(user, now) };
+  }
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
@@ -61,10 +78,14 @@ async function preCheck(email: string, password: string) {
       now,
     );
     await db.user.update({ where: { id: user.id }, data: next });
-    return null;
+    // If THIS attempt is the one that tripped the lock, say so now rather than
+    // reporting a generic failure and letting them keep hammering a form that
+    // cannot succeed for the next half hour.
+    const minutes = lockoutMinutesRemaining(next, now);
+    return minutes > 0 ? { kind: "locked", minutes } : { kind: "invalid" };
   }
 
-  return user;
+  return { kind: "ok", user };
 }
 
 /** Supersede any prior unconsumed OTP rows for this user, insert a fresh one,
@@ -166,11 +187,15 @@ async function setTrustedCookie(userId: string, existingDeviceId?: string): Prom
  */
 export async function requestLogin(email: string, password: string): Promise<LoginResult> {
   // Pre-check (UX gate — do not increment lockout here)
-  const user = await preCheck(email, password);
-  if (!user) {
+  const pre = await preCheck(email, password);
+  if (pre.kind === "locked") {
+    return { ok: false, error: "locked", lockedMinutes: pre.minutes };
+  }
+  if (pre.kind !== "ok") {
     // Generic error — do not reveal whether email exists or password was wrong.
     return { ok: false, error: "invalid" };
   }
+  const user = pre.user;
 
   // Read trusted-device cookie
   const parsed = await readTrustedCookie();
@@ -265,10 +290,14 @@ export async function submitOtp(
  * email cannot be used to spam OTP emails.
  */
 export async function resendOtp(email: string, password: string): Promise<LoginResult> {
-  const user = await preCheck(email, password);
-  if (!user) {
+  const pre = await preCheck(email, password);
+  if (pre.kind === "locked") {
+    return { ok: false, error: "locked", lockedMinutes: pre.minutes };
+  }
+  if (pre.kind !== "ok") {
     return { ok: false, error: "invalid" };
   }
+  const user = pre.user;
 
   const result = await issueOtp(user.id, user.email, user.locale);
   if (!result.ok) {
