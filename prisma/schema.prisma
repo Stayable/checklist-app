@@ -95,7 +95,7 @@ enum InstanceStatus {
 /**
  * Why an assignment stopped being needed or doable.
  * Split by WHO the fact is about, which is what decides whether approval is
- * required (Kyle, 2026-08-22, amending ADR-014):
+ * required (Kyle, 2026-08-21, amending ADR-014):
  * - facts about the ROOM (stayover, not needed, duplicate) close immediately,
  * because the work ceased to exist and a stayover happens daily across
  * 1,172 rooms — an approval queue for it would be noise, not control;

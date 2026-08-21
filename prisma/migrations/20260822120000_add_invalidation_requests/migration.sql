@@ -1,4 +1,11 @@
--- Invalidation requests (ADR-014, amended 2026-08-22 for the stayover case).
+-- Invalidation requests (ADR-014, amended 2026-08-21 ET for the stayover case).
+--
+-- NOTE the directory name says 20260822 and the decision date is 2026-08-21.
+-- The stamp came from the harness clock, which is UTC-derived and runs a day
+-- ahead of Eastern in the evening. The name is NOT corrected: this migration is
+-- already recorded in _prisma_migrations on production, and renaming an applied
+-- migration is how you manufacture drift. Eastern is the operating clock for
+-- every date in this repo (ADR-013).
 --
 -- Additive only: one new enum, three nullable columns, one index, one FK with
 -- ON DELETE SET NULL. No existing column changes type and nothing is dropped,

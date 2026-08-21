@@ -1,7 +1,7 @@
 // Invalidation — closing out an assignment that stopped being needed or doable.
 //
 // ADR-014 made self-invalidation a request that a MANAGER or ADMIN approves.
-// Amended by Kyle 2026-08-22 after Bea's test-round feedback: the approval step
+// Amended by Kyle 2026-08-21 after Bea's test-round feedback: the approval step
 // was aimed at a field user silently dropping work that still needs doing, and
 // a stayover is not that — the work ceased to exist. So the split is by what
 // the reason is a fact ABOUT:

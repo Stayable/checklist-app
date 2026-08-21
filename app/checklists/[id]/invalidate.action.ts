@@ -16,7 +16,7 @@ import { roomDisplay } from "@/lib/room-label";
 
 // Closing out an assignment that stopped being needed or doable.
 //
-// ADR-014 as amended 2026-08-22: reasons that are facts about the ROOM close
+// ADR-014 as amended 2026-08-21: reasons that are facts about the ROOM close
 // immediately; reasons that are facts about the PERSON file a request a manager
 // decides. Every path writes audit_log — immediate closure skips the wait, not
 // the record. lib/invalidation.ts owns the decision so it is unit-testable; this
