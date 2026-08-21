@@ -6,6 +6,7 @@ import { formatDateInET } from "@/lib/datetime";
 import type { AnswerMap, AnswerValue } from "@/lib/checklist-logic";
 import type { CheckoutFlags } from "@/lib/checkout-flags";
 import { roomDisplay } from "@/lib/room-label";
+import { INVALIDATABLE_STATUSES, isInvalidationPending } from "@/lib/invalidation";
 import { FillClient, type FillQuestion } from "./FillClient";
 
 // Checklist filling page (Phase 3). Loads the instance + ordered questions,
@@ -79,6 +80,14 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
   const submitted =
     instance.status === InstanceStatus.SUBMITTED || instance.status === InstanceStatus.REVIEWED;
 
+  // Close-out is offered only while the work is still open. Hiding it on a
+  // submitted checklist is not cosmetic: the action refuses those statuses, so
+  // showing the control would be an invitation to an error message.
+  const canCloseOut =
+    !submitted &&
+    instance.lockedAt == null &&
+    INVALIDATABLE_STATUSES.includes(instance.status);
+
   const initialFlags: CheckoutFlags = {
     notifyCorporate: instance.notifyCorporate,
     returnDeposit: instance.returnDeposit,
@@ -96,6 +105,8 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
       submitted={submitted}
       collectsCheckoutFlags={instance.template.collectsCheckoutFlags}
       initialFlags={initialFlags}
+      canCloseOut={canCloseOut}
+      closeOutPending={isInvalidationPending(instance)}
     />
   );
 }

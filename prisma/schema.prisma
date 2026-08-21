@@ -92,6 +92,28 @@ enum InstanceStatus {
   EXPIRED
 }
 
+/**
+ * Why an assignment stopped being needed or doable.
+ * Split by WHO the fact is about, which is what decides whether approval is
+ * required (Kyle, 2026-08-22, amending ADR-014):
+ * - facts about the ROOM (stayover, not needed, duplicate) close immediately,
+ * because the work ceased to exist and a stayover happens daily across
+ * 1,172 rooms — an approval queue for it would be noise, not control;
+ * - facts about the PERSON (unavailable, no access) need a manager, which is
+ * what ADR-014's approval step was actually aimed at: a field user should
+ * not be able to silently drop work that still needs doing.
+ * OTHER requires approval on purpose — an unclassified reason is exactly the
+ * case a human should read.
+ */
+enum InvalidationReason {
+  STAYOVER
+  ROOM_NOT_NEEDED
+  DUPLICATE
+  STAFF_UNAVAILABLE
+  NO_ACCESS
+  OTHER
+}
+
 // S1 (StayCheck v1.1): manager's manual Pass/Fail completion check at review.
 enum CompletionCheck {
   PASS
@@ -285,6 +307,7 @@ model User {
   assignedInstances     ChecklistInstance[]   @relation("InstanceAssignee")
   reviewedInstances     ChecklistInstance[]   @relation("InstanceReviewer")
   verifiedInstances     ChecklistInstance[]   @relation("InstanceVerifier")
+  invalidationRequests  ChecklistInstance[]   @relation("InstanceInvalidationRequester")
   assignedIssues        Issue[]               @relation("IssueAssignee")
   auditLogs             AuditLog[]
   notifications         NotificationLog[]
@@ -511,8 +534,20 @@ model ChecklistInstance {
   assignedUserId String?        @map("assigned_user_id") @db.Uuid
   status         InstanceStatus @default(SCHEDULED)
 
-  invalidationReason     String? @map("invalidation_reason")
-  reassignedToInstanceId String? @unique @map("reassigned_to_instance_id") @db.Uuid
+  // Free-text note from whoever closed or requested closing this instance.
+  invalidationReason            String?             @map("invalidation_reason")
+  // Structured reason, so a stayover can be counted rather than buried in prose.
+  invalidationReasonCode        InvalidationReason? @map("invalidation_reason_code")
+  // Set when someone asks for closure that needs approval. NOT a new
+  // InstanceStatus value on purpose: `status: { in: [...] }` filters silently
+  // EXCLUDE a new enum member and `notIn` silently INCLUDE it, so adding one
+  // would quietly redefine /review's tabs, the reports denominators, the
+  // dashboard's in-flight tiles and the field home list, all with a clean
+  // typecheck. A pending request is still assigned work; only the surfaces that
+  // care about the request need to know about it.
+  invalidationRequestedAt       DateTime?           @map("invalidation_requested_at") @db.Timestamptz
+  invalidationRequestedByUserId String?             @map("invalidation_requested_by_user_id") @db.Uuid
+  reassignedToInstanceId        String?             @unique @map("reassigned_to_instance_id") @db.Uuid
 
   openedAt         DateTime? @map("opened_at") @db.Timestamptz
   submittedAt      DateTime? @map("submitted_at") @db.Timestamptz
@@ -544,12 +579,13 @@ model ChecklistInstance {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  template     ChecklistTemplate @relation(fields: [templateId], references: [id])
-  property     Property          @relation(fields: [propertyId], references: [id])
-  room         Room?             @relation(fields: [roomId], references: [id])
-  assignedUser User?             @relation("InstanceAssignee", fields: [assignedUserId], references: [id])
-  reviewedBy   User?             @relation("InstanceReviewer", fields: [reviewedByUserId], references: [id])
-  verifiedBy   User?             @relation("InstanceVerifier", fields: [verifiedByUserId], references: [id])
+  template                ChecklistTemplate @relation(fields: [templateId], references: [id])
+  property                Property          @relation(fields: [propertyId], references: [id])
+  room                    Room?             @relation(fields: [roomId], references: [id])
+  assignedUser            User?             @relation("InstanceAssignee", fields: [assignedUserId], references: [id])
+  reviewedBy              User?             @relation("InstanceReviewer", fields: [reviewedByUserId], references: [id])
+  verifiedBy              User?             @relation("InstanceVerifier", fields: [verifiedByUserId], references: [id])
+  invalidationRequestedBy User?             @relation("InstanceInvalidationRequester", fields: [invalidationRequestedByUserId], references: [id])
 
   // Self-relation: an invalidated instance points to its replacement.
   reassignedToInstance ChecklistInstance?  @relation("InstanceReassignment", fields: [reassignedToInstanceId], references: [id])
@@ -565,6 +601,7 @@ model ChecklistInstance {
   @@index([roomId])
   @@index([reviewedByUserId])
   @@index([verifiedByUserId])
+  @@index([invalidationRequestedAt])
   @@map("checklist_instances")
 }
 

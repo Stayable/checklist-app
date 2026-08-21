@@ -17,6 +17,7 @@ import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-store";
 import { type CheckoutFlags } from "@/lib/checkout-flags";
 import { SignaturePad } from "@/components/checklist/SignaturePad";
 import { submitChecklist } from "./actions";
+import { CloseOutPanel } from "./CloseOutPanel";
 import { markOpened } from "./mark-opened.action";
 
 export type FillQuestion = QuestionLike & { prompt: string };
@@ -94,6 +95,8 @@ export function FillClient({
   submitted,
   collectsCheckoutFlags,
   initialFlags,
+  canCloseOut,
+  closeOutPending,
 }: {
   instanceId: string;
   label: string;
@@ -102,6 +105,8 @@ export function FillClient({
   submitted: boolean;
   collectsCheckoutFlags: boolean;
   initialFlags: CheckoutFlags;
+  canCloseOut: boolean;
+  closeOutPending: boolean;
 }) {
   const t = useTranslations("Checklist");
   const [answers, setAnswers] = useState<AnswerMap>(initialAnswers);
@@ -378,6 +383,11 @@ export function FillClient({
       ))}
 
       {collectsCheckoutFlags && <CheckoutFlagsBlock flags={flags} onChange={setFlags} />}
+
+      {/* After the questions and before the fixed Submit bar: completing the
+          work is the normal path, so close-out must be findable without
+          competing with it. */}
+      {canCloseOut && <CloseOutPanel instanceId={instanceId} pending={closeOutPending} />}
 
       <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white p-4">
         <div className="mx-auto max-w-md">

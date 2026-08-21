@@ -4,7 +4,8 @@ import { db } from "@/lib/db";
 import { accessiblePropertyIds, requireManager } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
-import { formatDateInET } from "@/lib/datetime";
+import { CloseOutRequests, type CloseOutRequestRow } from "./CloseOutRequests";
+import { formatDateInET, formatInET } from "@/lib/datetime";
 import { timeToCompleteMinutes } from "@/lib/review";
 import { roomDisplay } from "@/lib/room-label";
 import { presignDownload } from "@/lib/r2";
@@ -103,6 +104,49 @@ export default async function ReviewQueuePage({
     })),
   );
 
+  // Pending close-out requests. Scoped through the SAME scopeIds as the queue —
+  // a panel that disagreed with the table beneath it about which properties are
+  // in view reads as broken data, not a broken query.
+  const closeOutRows = await db.checklistInstance.findMany({
+    where: {
+      propertyId: { in: scopeIds },
+      invalidationRequestedAt: { not: null },
+      status: { notIn: [InstanceStatus.INVALIDATED] },
+    },
+    orderBy: { invalidationRequestedAt: "asc" },
+    take: 50,
+    select: {
+      id: true,
+      title: true,
+      roomLabel: true,
+      scheduledFor: true,
+      invalidationRequestedAt: true,
+      invalidationReason: true,
+      invalidationReasonCode: true,
+      template: { select: { name: true } },
+      property: { select: { shortCode: true } },
+      room: { select: { roomNumber: true } },
+      invalidationRequestedBy: { select: { name: true } },
+    },
+  });
+
+  const closeOutRequests: CloseOutRequestRow[] = closeOutRows.map((i) => {
+    const rd = roomDisplay(i.room, i.roomLabel);
+    return {
+      instanceId: i.id,
+      label:
+        i.title ??
+        [i.template.name, i.property.shortCode, rd ? `Rm ${rd}` : null]
+          .filter(Boolean)
+          .join(" — "),
+      shortCode: i.property.shortCode,
+      requestedBy: i.invalidationRequestedBy?.name ?? "Unknown",
+      requestedAt: i.invalidationRequestedAt ? formatInET(i.invalidationRequestedAt) : "—",
+      reasonCode: i.invalidationReasonCode,
+      note: i.invalidationReason,
+    };
+  });
+
   const counts = await db.checklistInstance.groupBy({
     by: ["status"],
     where: {
@@ -131,6 +175,8 @@ export default async function ReviewQueuePage({
           </Link>
         </nav>
       </header>
+
+      <CloseOutRequests rows={closeOutRequests} />
 
       <nav className="flex gap-1 border-b border-slate-200 text-sm">
         {(

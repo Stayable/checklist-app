@@ -8,7 +8,9 @@ export type NotifyEvent =
   | "review_flagged"
   | "review_redo"
   | "review_verified"
-  | "issue_assigned";
+  | "issue_assigned"
+  | "invalidation_approved"
+  | "invalidation_rejected";
 
 export const NOTIFY_EVENTS: readonly NotifyEvent[] = [
   "review_approved",
@@ -16,6 +18,8 @@ export const NOTIFY_EVENTS: readonly NotifyEvent[] = [
   "review_redo",
   "review_verified",
   "issue_assigned",
+  "invalidation_approved",
+  "invalidation_rejected",
 ] as const;
 
 type Locale = "en" | "es";
@@ -58,6 +62,18 @@ const COPY: Record<Locale, Record<NotifyEvent, EventStrings>> = {
       lead: "An issue was assigned to you.",
       noteLabel: "Details",
     },
+    invalidation_approved: {
+      subject: (l) => `Closed: ${l}`,
+      lead: "Your request to close this checklist was approved. You do not need to complete it.",
+      noteLabel: "Note",
+    },
+    invalidation_rejected: {
+      // Says what to DO, not merely what was decided: a rejection means the
+      // work is still theirs, and that is the part they need to act on.
+      subject: (l) => `Still assigned to you: ${l}`,
+      lead: "Your request to close this checklist was declined, so it is still assigned to you.",
+      noteLabel: "Reason",
+    },
   },
   es: {
     review_approved: {
@@ -84,6 +100,16 @@ const COPY: Record<Locale, Record<NotifyEvent, EventStrings>> = {
       subject: (l) => `Incidencia asignada: ${l}`,
       lead: "Se te asignó una incidencia.",
       noteLabel: "Detalles",
+    },
+    invalidation_approved: {
+      subject: (l) => `Cerrada: ${l}`,
+      lead: "Se aprobó tu solicitud de cerrar esta lista. No necesitas completarla.",
+      noteLabel: "Nota",
+    },
+    invalidation_rejected: {
+      subject: (l) => `Sigue asignada a ti: ${l}`,
+      lead: "Se rechazó tu solicitud de cerrar esta lista, así que sigue asignada a ti.",
+      noteLabel: "Motivo",
     },
   },
 };
