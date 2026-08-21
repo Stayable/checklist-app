@@ -100,6 +100,45 @@ export async function resetPassword(userId: string): Promise<ActionResult> {
   return { ok: true, tempPassword, message: "Password reset. Share the temp password securely." };
 }
 
+/**
+ * Clear a failed-login lockout (ADR-008: 5 failures in 15 min => 30 min lock)
+ * WITHOUT touching the password.
+ *
+ * resetPassword and setUserPassword also clear the lock, but only as a side
+ * effect of overwriting the credential. This is the path for handing access
+ * back to someone who still knows their password — the common case, since the
+ * lock is triggered by typos and stale autofill as often as by a forgotten
+ * password.
+ *
+ * Idempotent by design: clearing an already-expired lock is a no-op on the
+ * user's ability to sign in, so a stale page render can't do harm.
+ */
+export async function unlockUser(userId: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const idOk = z.string().uuid().safeParse(userId);
+  if (!idOk.success) return { ok: false, error: "Invalid user." };
+
+  const target = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, failedLoginAttempts: true, lockedUntil: true },
+  });
+  if (!target) return { ok: false, error: "User not found." };
+
+  await db.user.update({
+    where: { id: target.id },
+    data: { failedLoginAttempts: 0, lastFailedLoginAt: null, lockedUntil: null },
+  });
+  // Record what was cleared, not just that something was: an account that keeps
+  // reappearing here is a person who does not know their password.
+  await writeAudit(admin.id, target.id, "unlock_account", {
+    email: target.email,
+    clearedLockedUntil: target.lockedUntil ? target.lockedUntil.toISOString() : null,
+    clearedFailedAttempts: target.failedLoginAttempts,
+  });
+  revalidatePath("/admin/users");
+  return { ok: true, message: `Lockout cleared for ${target.email}. Password unchanged.` };
+}
+
 /** Set a specific password chosen by the admin (vs. resetPassword's random temp). */
 export async function setUserPassword(
   userId: string,

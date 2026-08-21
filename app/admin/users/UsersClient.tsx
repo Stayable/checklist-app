@@ -15,6 +15,7 @@ import {
   setUserActive,
   setUserPassword,
   setUserProperties,
+  unlockUser,
   type ActionResult,
 } from "./actions";
 
@@ -26,6 +27,9 @@ type AdminUser = {
   locale: Locale;
   active: boolean;
   lastLoginAt: string | null;
+  /** Inside an active failed-login lockout as of server render (ADR-008). */
+  locked: boolean;
+  lockedUntil: string | null;
   propertyIds: string[];
 };
 
@@ -144,6 +148,7 @@ export function UsersClient({
                   })
                 }
                 onReset={() => run(() => resetPassword(u.id))}
+                onUnlock={() => run(() => unlockUser(u.id))}
                 onToggleActive={() => run(() => setUserActive(u.id, !u.active))}
                 onDelete={() => {
                   if (!confirm(`Permanently delete ${u.email}? This can't be undone.`)) return;
@@ -245,6 +250,7 @@ function UserRow({
   onToggleSetPw,
   onSetPw,
   onReset,
+  onUnlock,
   onToggleActive,
   onDelete,
   onSaveProps,
@@ -260,6 +266,7 @@ function UserRow({
   onToggleSetPw: () => void;
   onSetPw: (password: string) => void;
   onReset: () => void;
+  onUnlock: () => void;
   onToggleActive: () => void;
   onDelete: () => void;
   onSaveProps: (ids: string[]) => void;
@@ -284,12 +291,30 @@ function UserRow({
           {user.lastLoginAt ? formatInET(user.lastLoginAt) : "Never"}
         </td>
         <td className="px-4 py-3">
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${user.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-            {user.active ? "Active" : "Inactive"}
-          </span>
+          {/* Active and locked are independent: a locked account is still an
+              active one, temporarily unable to sign in. Show both. */}
+          <div className="flex flex-col items-start gap-1">
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${user.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+              {user.active ? "Active" : "Inactive"}
+            </span>
+            {user.locked && (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                Locked{user.lockedUntil ? ` until ${formatInET(user.lockedUntil, "h:mm a")}` : ""}
+              </span>
+            )}
+          </div>
         </td>
         <td className="px-4 py-3 text-right">
           <div className="flex justify-end gap-3">
+            {user.locked && (
+              <button
+                className="text-xs font-semibold text-amber-700 hover:text-amber-900 disabled:opacity-40"
+                disabled={pending}
+                onClick={onUnlock}
+              >
+                Unlock
+              </button>
+            )}
             <button className={action} disabled={pending} onClick={onReset}>Reset PW</button>
             <button className={action} disabled={pending} onClick={onToggleSetPw}>
               {settingPw ? "Close" : "Set PW"}
