@@ -1141,6 +1141,66 @@ Decision 2 above says contractors are records, not users, and that there are no 
 
 ---
 
+## ADR-031: Closing out a checklist that stopped being needed
+
+**Date:** 2026-08-21 (ET — the harness reported 2026-08-22; see Consequences)
+**Status:** Accepted
+**Amends:** ADR-014, decision 1 (self-invalidation always requires manager approval).
+**Decided by:** Kyle. Shipped to production in `848bac0`; migration `20260822120000` applied before the deploy.
+
+### Context
+
+A **stayover** — a guest extending, so the departure clean never happens — had no representation in the platform. The two things a housekeeper could actually do were both wrong:
+
+- **Submit anyway**, which records a completed departure clean for work nobody did; or
+- **Let it expire**, which records a miss against a person who did nothing wrong.
+
+`INVALIDATED`, `invalidation_reason` and the replacement self-relation had been in the schema since Phase 2 and **nothing ever set them** — the state existed and was unreachable. With 1,172 rooms loaded and the test round live, this is a daily event, not an edge case.
+
+ADR-014 settled that a field user may *request* invalidation with a required note, and a manager approves it. That was written about **"called in sick"** — the case where a field user should not be able to silently drop work that still needs doing. A stayover is not that: the work **ceased to exist**. One rule for both would put a daily, uncontested event into an approval queue, which is noise rather than control.
+
+### Alternatives Considered
+
+1. **Keep ADR-014 as written — everything waits on a manager.** Rejected: a queue full of stayovers would be ignored within a week, and an ignored queue is worse than none, because the miss still lands while everyone believes it is handled.
+2. **Let field staff close anything immediately.** Rejected: that removes exactly the control ADR-014 was built for. "Staff unavailable" and "no access" are claims about a person, and the work still needs doing by someone.
+3. **Add a `PENDING_INVALIDATION` value to `InstanceStatus`.** Rejected, and this is the load-bearing rejection — see decision 3.
+4. **Free-text reason only, no enum.** Rejected: a stayover buried in prose can never be counted, and being able to say how often it happens is most of the value.
+
+### Decision
+
+1. **The reason decides the path, split by what the reason is a fact ABOUT.** Facts about the **room** — `STAYOVER`, `ROOM_NOT_NEEDED`, `DUPLICATE` — close the instance **immediately**, audited, manager notified. Facts about the **person** — `STAFF_UNAVAILABLE`, `NO_ACCESS`, `OTHER` — file a request a manager decides.
+2. **`OTHER` requires approval on purpose.** An unclassified reason is precisely the case a human should read.
+3. **A pending request is NOT a new `InstanceStatus` value.** It is `invalidation_requested_at` + `invalidation_requested_by_user_id` on the row. `status: { in: [...] }` filters silently **EXCLUDE** a new enum member and `notIn` filters silently **INCLUDE** it, so a `PENDING_INVALIDATION` member would have quietly redefined `/review`'s tabs, **both** report denominators, the dashboard's in-flight tiles and the field home list — every one with a clean typecheck and a green build. A pending request **is still assigned work**, so the status stays put and only the surfaces that care learn about the request.
+4. **A note is mandatory in every case, stayovers included.** "Stayover" alone does not say which guest or until when, and that row is the only evidence the work was dropped deliberately.
+5. **Both a structured code and a free-text note.** The code so it can be counted; the note so it can be understood.
+6. **Submitted work cannot be invalidated**, expressed as an explicit allow-list of statuses rather than a denial of the terminal ones, so a status added later has to be considered rather than silently admitted. A filled checklist is a record; "it should not have been done" is a review outcome, not a closure.
+7. **Precedence, in this order:** the review **lock** outranks everything, manager and immediate reason included · an **immediate reason beats the requester's own open request** · the close is a **conditional `updateMany` re-asserting the expected status**, so a submit landing between read and write is never silently discarded.
+8. **Declining clears the request and hands the assignment back**, with the refusal surviving in `audit_log`.
+9. **The `/review` panel is scoped through the same `scopeIds` as the queue beneath it.** A panel that disagrees with its own table reads as broken data, not a broken query.
+
+### Consequences
+
+- **No reporting change was needed.** `lib/reports.ts` already excluded `INVALIDATED` from the completion denominator, so stayovers stop reading as misses the moment the state becomes reachable.
+- **Immediate closure skips the wait, not the record.** Every path writes `audit_log` and surfaces to a manager after the fact.
+- **Rollback is asymmetric, deliberately.** `vercel promote` reverts the code; the migration stays. It is additive — one enum, three nullable columns, an index, a `SET NULL` FK — so older code ignores the columns.
+- **An unclassified `OTHER` becomes the manager's reading queue.** If `OTHER` comes to dominate, that is the signal to add a reason code, not to loosen the rule.
+- **A test whose name contradicted its assertion is what surfaced precedence rule 7.** Worth recording because the defect was in the test: without it, someone who filed "could not access the room" and then learns the guest extended stays trapped behind their own request.
+- **The migration directory keeps its `20260822120000` stamp** although the decision date is 2026-08-21 ET. It is already recorded in `_prisma_migrations` on production, and renaming an applied migration manufactures drift. The stamp came from the harness clock, which is UTC-derived and runs a day ahead of Eastern every evening — which is why the standing rule is to derive the ET date rather than read it off the harness.
+
+### Note on the ADR number
+
+**Three separate pieces of work all claimed 031.** Resolved 2026-08-25 by what is actually in `main` and in production:
+
+| number | work | state |
+|---|---|---|
+| **031** | this one — checklist close-out / stayover | **shipped to prod** `848bac0`, migration applied |
+| **032** | HPE Instant On uplink flapping as its own event class | written as "ADR-031" on the unmerged, unpushed branch `feat/instant-on-uplink-flaps` (`a17b0ed`) — **renumber to 032 at merge** |
+| **033** | contractor update fan-out receiver + wire contract | not written; owed when the pipeline half is built |
+
+The log is append-only, so the number goes to the change that is live. The Instant On ADR is branch-local and unpushed, which makes it the cheap one to move.
+
+---
+
 ## ADR Template (copy for new entries)
 
 ```
