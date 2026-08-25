@@ -87,12 +87,62 @@ const TRADE_BY_TASK: Record<string, Trade> = {
   "Pool leak repair": Trade.PLUMBING,
   "Jetting the drain lines": Trade.PLUMBING,
   Jetting: Trade.PLUMBING,
+  // Week of 08/17. Only rows whose trade is NOT General are listed; cameras,
+  // conduit, paint, drywall, flooring and day-off rows fall to the default.
+  "Fix water leak affecting Unit 167 toilet area": Trade.PLUMBING,
+  "Repair P-traps and verify plumbing is in good condition in the rooms assigned to the rest of the crew (Rooms 224, 233, 138, 142)":
+    Trade.PLUMBING,
+  "Jetting drain lines": Trade.PLUMBING,
+  "Check the AC in the lobby": Trade.HVAC,
+  "Pool electrical work on lights; drainage testing and installing test pumps": Trade.ELECTRICAL,
 };
 
+// Task text this map does not know. Collected, reported at the end of the run,
+// and deliberately not fatal — see tradeFor.
+const unmappedTasks = new Set<string>();
+
+/**
+ * Trade for a task, defaulting to GENERAL.
+ *
+ * This used to throw. Gerardo rewrites the task text every week: of the 65 rows
+ * in the 08/17 week, ZERO matched the map built from the 08/10 week — including
+ * the near-misses ("Cameras project" vs "Cameras and access points project",
+ * "Jetting drain lines" vs "Jetting the drain lines"). A hard throw therefore
+ * stopped the entire week loading on row one, and once the fan-out contract's
+ * §10.6 strip lands, this path is the only thing that loads a week at all.
+ * Contract §9.3: default and report.
+ *
+ * Trade is descriptive metadata on the job. It no longer gates assignment (see
+ * the create branch), so the default cannot misfile a crew update.
+ */
 function tradeFor(task: string): Trade {
   const trade = TRADE_BY_TASK[task];
-  if (!trade) throw new Error(`No trade mapping for task: "${task}" — add it to TRADE_BY_TASK`);
+  if (!trade) {
+    unmappedTasks.add(task);
+    return Trade.GENERAL;
+  }
   return trade;
+}
+
+type ContractorLookup = {
+  id: string;
+  trades: Trade[];
+  properties: { propertyId: string }[];
+};
+
+// Cached for the detection pass only. The apply pass re-reads each contractor so
+// it sees property links added earlier in the same run.
+const contractorCache = new Map<string, ContractorLookup | null>();
+
+async function contractorByName(name: string): Promise<ContractorLookup | null> {
+  const cached = contractorCache.get(name);
+  if (cached !== undefined) return cached;
+  const contractor = await db.contractor.findFirst({
+    where: { name },
+    select: { id: true, trades: true, properties: { select: { propertyId: true } } },
+  });
+  contractorCache.set(name, contractor);
+  return contractor;
 }
 
 function dateColumn(ymd: string): Date {
@@ -139,6 +189,9 @@ async function main() {
   const changes: Change[] = [];
   const conflicts: string[] = [];
   const skipped: string[] = [];
+  const unmappedProperties: string[] = [];
+  const propertyLinksAdded: string[] = [];
+  const tradeMismatches: string[] = [];
 
   for (const row of snapshot.rows) {
     // A row with no date/property/task carries no job (the sheet holds one such
@@ -150,18 +203,50 @@ async function main() {
       continue;
     }
 
+    // An unmapped location is REPORTED AND SKIPPED, never fatal (fan-out
+    // contract §7, the `Boca Condo` case). A ContractorJob requires a property,
+    // so no job can exist for one — but throwing here would take the other 59
+    // rows of the week down with it. Creating a Property row instead is a plan
+    // decision (§9.4: a NAMED row, never `OTHERS`), not a load side effect.
+    // Consequence, stated plainly: crew updates for these rows resolve to
+    // ContractorDailyNote with a null property.
     const property = propertyByCode.get(row.propertyCode);
-    if (!property) throw new Error(`Unknown property code ${row.propertyCode} (row ${row.rowId})`);
+    if (!property) {
+      unmappedProperties.push(
+        `${row.contractor} ${row.date} row ${row.rowId} — "${row.propertyCode}" has no Property row in this app`,
+      );
+      continue;
+    }
 
     const jobId = jobIdByRowId.get(row.rowId) ?? null;
     const target = STATUS_MAP[row.status];
 
     if (!jobId) {
+      // Resolve the assignment HERE rather than in the apply pass, so a dry run
+      // reports the same assignment decision the write would make. Silence about
+      // who a job lands on is the failure mode this whole load is guarding
+      // against.
+      const contractor = await contractorByName(row.contractor);
+      const trade = tradeFor(row.task);
+      if (contractor === null) {
+        skipped.push(`${row.contractor} ${row.date} — no contractor on file with this name`);
+      } else {
+        if (!contractor.trades.includes(trade)) {
+          tradeMismatches.push(
+            `${row.contractor} ${row.date} ${property.shortCode} — job is ${trade}, on file as ${contractor.trades.join("/")}`,
+          );
+        }
+        if (!contractor.properties.some((p) => p.propertyId === property.id)) {
+          propertyLinksAdded.push(`${row.contractor} → ${property.shortCode}`);
+        }
+      }
       changes.push({
         row,
         jobId: null,
         kind: "create",
-        detail: `new sheet row → ${property.shortCode} ${row.date} ${row.status}`,
+        detail: `new sheet row → ${property.shortCode} ${row.date} ${row.status} · ${trade} · ${
+          contractor ? "assigned" : "UNASSIGNED (name not on file)"
+        }`,
       });
       continue;
     }
@@ -254,6 +339,30 @@ async function main() {
     console.log(`\nskipped rows:`);
     for (const s of skipped) console.log(`    ${s}`);
   }
+  if (unmappedProperties.length > 0) {
+    console.log(
+      `\n🚩 UNMAPPED LOCATION — ${unmappedProperties.length} row(s) skipped, no job can exist (fan-out contract §7/§9.4):`,
+    );
+    for (const u of unmappedProperties) console.log(`    ${u}`);
+    console.log(
+      `    Crew updates for these dates will land in ContractorDailyNote with no property.`,
+    );
+  }
+  if (unmappedTasks.size > 0) {
+    console.log(`\n⚠ task text not in TRADE_BY_TASK — defaulted to GENERAL (§9.3):`);
+    for (const t of unmappedTasks) console.log(`    "${t}"`);
+  }
+  if (tradeMismatches.length > 0) {
+    console.log(`\nℹ trade differs from the contractor's file (recorded, does NOT block assignment):`);
+    for (const t of [...new Set(tradeMismatches)]) console.log(`    ${t}`);
+  }
+  if (propertyLinksAdded.length > 0) {
+    const unique = [...new Set(propertyLinksAdded)];
+    console.log(
+      `\nℹ property coverage the sheet implies but the directory lacks — ${unique.length} link(s) will be added, audited:`,
+    );
+    for (const p of unique) console.log(`    ${p}`);
+  }
 
   if (!apply || changes.length === 0) {
     if (!apply && changes.length > 0) console.log("\nRe-run with --apply to write.");
@@ -272,14 +381,27 @@ async function main() {
         select: { id: true, trades: true, properties: { select: { propertyId: true } } },
       });
       const trade = tradeFor(row.task!);
-      // Only assign when the contractor genuinely covers this trade AND
-      // property — the same rule the UI's assign action enforces. Otherwise the
-      // job lands unassigned rather than carrying an assignment the app itself
-      // would reject.
-      const eligible =
-        contractor &&
-        contractor.trades.includes(trade) &&
-        contractor.properties.some((p) => p.propertyId === property.id);
+      // THE SHEET DECIDES WHO WORKS WHERE (Kyle, 2026-08-18).
+      //
+      // This used to assign only when the contractor already covered both the
+      // trade and the property, and left the job unassigned otherwise. Measured
+      // against the 08/17 week that would have stripped 38 of 59 assignments,
+      // because `contractor_properties` and `trades` were both inferred from the
+      // 08/10 sheet and Gerardo moved nearly the whole crew (Jarvis Ramos:
+      // PLUMBING at LL on file, laying flooring at JN this week).
+      //
+      // An unassigned job is not merely cosmetic — the fan-out resolves a crew
+      // update on (workDate, contractor), so a null contractor means no
+      // candidate, the update files as a ContractorDailyNote, and the calendar
+      // looks untouched. The stale vetting list would silently defeat the
+      // feature it is supposed to protect.
+      //
+      // So: assign from the sheet, and treat a missing property link as the
+      // stale artefact it is — add it, audited. A trade mismatch is recorded but
+      // never blocks: trade is descriptive here, and the sheet is Gerardo's.
+      // Reported in the detection pass above; here it only drives the write.
+      const missingPropertyLink =
+        contractor !== null && !contractor.properties.some((p) => p.propertyId === property.id);
       const status = STATUS_MAP[row.status!];
 
       await db.$transaction(async (tx) => {
@@ -290,7 +412,7 @@ async function main() {
             description: row.task!,
             urgent: false,
             status,
-            contractorId: eligible ? contractor!.id : null,
+            contractorId: contractor?.id ?? null,
             scheduledFor: dateColumn(row.date!),
             createdByUserId: actor.id,
             completedAt: status === ContractorJobStatus.DONE ? etDayStartUtc(row.date!) : null,
@@ -308,10 +430,35 @@ async function main() {
               sourceRowId: row.rowId,
               sourceStatus: row.status,
               created: true,
-              assigned: Boolean(eligible),
+              assigned: contractor !== null,
+              propertyLinkAdded: missingPropertyLink,
+              tradeOnFile: contractor?.trades ?? null,
             },
           },
         });
+        // Bring the vetting list up to date with the sheet, in the same
+        // transaction as the assignment it justifies. `createMany` +
+        // skipDuplicates so a concurrent run cannot collide on the composite key.
+        if (missingPropertyLink) {
+          await tx.contractorProperty.createMany({
+            data: [{ contractorId: contractor!.id, propertyId: property.id }],
+            skipDuplicates: true,
+          });
+          await tx.auditLog.create({
+            data: {
+              actorUserId: actor.id,
+              entityType: "Contractor",
+              entityId: contractor!.id,
+              action: "sync",
+              after: {
+                source: snapshot.sheetId,
+                sourceRowId: row.rowId,
+                propertyLinkAdded: property.shortCode,
+                reason: "sheet assigned this contractor to a property they did not cover",
+              },
+            },
+          });
+        }
         if (row.whatsapp) {
           await tx.contractorJobNote.create({
             data: {
