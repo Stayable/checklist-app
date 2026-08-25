@@ -49,6 +49,14 @@ import { db } from "../lib/db";
 import { SOURCE_STATUS_MAP, type SourceStatus } from "../lib/contractor-update";
 import { etDayStartUtc } from "../lib/datetime";
 
+// CONVENTION: the default path always holds the CURRENT week, so the Monday run
+// is one command with no flags. A week that has rolled off keeps a dated copy
+// beside it (…-0817.json) and is loaded with --snapshot.
+//
+// Those dated files are not clutter. Smartsheet reuses one sheet id and the
+// rollover CLEARS THE ROWS IN PLACE — verified 2026-08-25, when the 08/17 and
+// 08/24 captures shared zero rowIds — so once a week rolls over, the capture
+// here is the only record of it that exists anywhere.
 const DEFAULT_SNAPSHOT = "scripts/data/smartsheet-contractor-schedule-snapshot.json";
 const ACTOR_EMAIL = "bke@rentstayable.com";
 const WHATSAPP_AUTHOR = "WhatsApp update (via Smartsheet)";
@@ -95,6 +103,12 @@ const TRADE_BY_TASK: Record<string, Trade> = {
   "Jetting drain lines": Trade.PLUMBING,
   "Check the AC in the lobby": Trade.HVAC,
   "Pool electrical work on lights; drainage testing and installing test pumps": Trade.ELECTRICAL,
+  // Week of 08/24. Same convention: only non-General rows. Pool deck tiles, the
+  // JN chain fence, the AP project, both paint jobs and the day-off rows are all
+  // General and fall to the default. "Jetting drain lines" is already above —
+  // the first task string to survive a week unchanged.
+  "Repair HVAC/AC units in rooms reporting issues": Trade.HVAC,
+  "Palm trimming / tree trimming": Trade.LANDSCAPING,
 };
 
 // Task text this map does not know. Collected, reported at the end of the run,

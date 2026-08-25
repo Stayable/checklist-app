@@ -15,7 +15,94 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-21, later)
+## 🎯 START HERE (updated 2026-08-25)
+
+**No app code shipped. Three commits of housekeeping, one owed ADR written, and one finding that
+changes what the contractor load is for.** Local `main` is **4 commits ahead of `origin/main`** and
+**nothing is pushed** — a push deploys to production, so it is Kyle's call. 778 tests, clean
+typecheck + lint.
+
+| commit | what |
+|---|---|
+| `82b062d` | the reworked plan loader + the 08/17 capture, uncommitted since 08-18 |
+| `187ab54` | `CLAUDE.md` 171 KB -> 46 KB; history to `docs/archive/StatusLog_RISE8_082526.md` |
+| `c4da44c` | **ADR-031** written (close-out/stayover) and the number collision settled |
+| `9c04ab0` | the **08/24–08/28** capture — see below |
+
+**🔴 `CLAUDE.md` HAD STOPPED LOADING.** It was **171 KB against a 150 KB hard limit**, which makes
+every instruction in it inert — the worst failure mode for the file that is meant to be read first.
+The Current Status section was 139 KB of it; everything else is ~32 KB and was untouched. Blocks for
+2026-07-13 → 2026-08-21 moved verbatim to the archive, newest first, and the file now carries a
+**size policy**: newest block in full plus a carry-forward of what is still open, and archive the
+block you supersede. Nothing was lost.
+
+**🔢 ADR-031 settled by what is live.** Three pieces of work claimed 031. **031 = checklist
+close-out**, because it is in production (`848bac0`). **Instant On uplink flaps renumber to 032 at
+merge** — that ADR is written as "ADR-031" on the unmerged, unpushed branch
+`feat/instant-on-uplink-flaps` (`a17b0ed`), which makes it the cheap one to move. **Contractor
+update fan-out takes 033** when the pipeline half exists.
+
+**🗓 THE SHEET ROLLED OVER, AND THE 08/17 WEEK IS GONE FROM SMARTSHEET.** Sheet
+`1391340150542212` now reads *Contractor Schedule 08-24 to 08-28-26*. The rollover clears rows in
+place, so **every rowId in the 08/17 capture is dead** and that file is now the **only surviving
+record of that week** — which is the reason it was worth committing rather than regenerating.
+Two consequences:
+- **Loading 08/17 is now backfill of a finished week, not operations.** It is history worth having,
+  but it is no longer the thing the crews need. **The live week is not loaded either.**
+- **`checklist_instances`-style zero applies here too:** the calendar has been empty through two
+  full contractor weeks.
+
+**📸 The 08/24–08/28 week is captured and ready** — `scripts/data/smartsheet-contractor-schedule-snapshot.json`
+(73 rows, complete, read 2026-08-25 ~11:20 ET). **The dry run STILL cannot be executed from a
+session** — the classifier refuses any command carrying `.env.production.local`, tried again today.
+So Kyle runs it. Both commands are one flag apart:
+
+```
+pnpm dotenv -e .env.production.local -- tsx scripts/sync-contractor-schedule-from-smartsheet.ts
+pnpm dotenv -e .env.production.local -- tsx scripts/sync-contractor-schedule-from-smartsheet.ts --snapshot scripts/data/smartsheet-contractor-schedule-0817.json
+```
+
+**Predicted for the live week, derived from the snapshot and the committed maps — not from a run:**
+**62 of 73 rows loadable** · 11 skipped and reported (7 day-off rows carry no property, 4 rows have
+no date) · statuses **52 PLANNED · 8 IN_PROGRESS · 1 DELAYED · 1 CANCELLED** · **no `Completed`
+rows, so nothing arrives `DONE`** · **1 job created terminal** (Joycer's Monday off at JW) and
+immutable on arrival per ADR-030 · properties JW 28 · DP 11 · JN 8 · SA 8 · LL 4 · KE 3 ·
+**no Boca Condo rows this week, so §Q42 does not bite** · **4 of 8 WhatsApp narratives land as
+`SYSTEM` notes**, the other 4 sit on undated rows and have no job to attach to.
+
+**🆕 A 14th contractor, and he has no phone.** The 13 names are identical to the 08/17 week plus
+**Todd** — one word, no surname — with 4 jobs (LL palm trimming Tue/Wed, KE Thu/Fri). The fan-out
+resolves a crew update on **`(workDate, contractorPhone)`, phone first**, and Todd is not in the
+13-person backfill, so **he has no phone and "Todd" alone is a weak name match**. Every update he
+sends resolves to nothing and becomes a daily note behind a `200 {ok:true}`. **§Q44.**
+
+**🚨 THE PIPELINE IS LIVE AND WRITING TO SMARTSHEET — `D-14j` was wrong.** The tracker still said
+"the pipeline half does not exist". The sheet now carries rows stamped in its own vocabulary:
+`[08/25/2026 10:29 ET] UNCLEAR - needs a human` and three `UNRECOGNISED NUMBER` rows. So the
+Smartsheet-writing half is running. **Unverified from here: whether it also posts to this app** —
+that is `CHECKLIST_APP_URL` on the other side, and reading `contractor_update_captures` needs the
+prod credential the classifier blocks. **Check it before loading either week**, because if the
+receiver is armed against an empty calendar every update becomes a `ContractorDailyNote`.
+
+**⚠ AN UNKNOWN NIGERIAN NUMBER IS MESSAGING THE INTAKE.** `+2349032477221` sent **three messages
+today** (09:07, 09:09, 09:09 ET), all logged `UNRECOGNISED NUMBER - nothing written`. Failing
+closed is the right behaviour and nothing was written. But it is either a wrong number or someone
+probing a WhatsApp endpoint, and **it is writing rows into the live schedule sheet**, so somebody
+should look. **§Q45.**
+
+**📋 The Notes column is not captured and carries real conditions.** Six rows this week say
+*"Pending to confirm; if not, they will stay in St. Augustine to finish installing new pool
+tiles"* — a conditional plan the snapshot shape drops entirely (`Row` has no `notes` field). Not
+changed today: widening the row shape touches the loader's contract, and the fan-out contract is
+owned by the other repo. Worth a decision.
+
+**⚠ Unchanged and still blocking:** **0 recurring rules**, so a tester must hand-create a checklist
+to reach any shipped feature · `checklist_instances = 6` · placeholder question content in all 9
+templates · Neon autosuspend/autoscale still unset · no session-revocation path.
+
+---
+
+## (previous) START HERE - 2026-08-21, later
 
 **Four features shipped to prod off `main`, from Bea's and Randy's test-round feedback plus a
 lockout Kyle hit. `ffdce07..ddd8469`. Last deploy `checklist-suycyl3oy` Ready. 778 tests, clean
@@ -683,9 +770,10 @@ straight to this calendar, replacing the manual snapshot sync's update path and 
 | D-14n | **P0** | [x] | ✅ **13/13 contractor phone numbers live** (§Q40 closed). 12 loaded from the pipeline's `proto/roster.csv`, read at run time and **not committed here** (PII). The 13th needed a human: Gerardo writes the same man as `Alexander Torres` and `Alexander Rafael Oropeza Torres`, roster confidence `medium — NOT confirmed`; the script refused the fuzzy match until Kyle confirmed, then recorded it as a **named alias** rather than by loosening the confidence filter |
 | D-14k | P1 | [ ] | 🧑 **ADR-031 owed** — the pipeline posts contractor updates directly to this app; the Smartsheet snapshot sync's *update* path is superseded (its `create` path is not). Closes §Q36 the way §Q36 recommended. The other repo's handoff brief asked for this **first** and it is still outstanding |
 | D-14l | P2 | [ ] | **No route-level integration tests.** The 41 new tests cover the pure decision layer; the route wiring is covered only by a build and three live probes |
-| D-14j | P1 | [ ] | ⚠ **The pipeline half does not exist.** Handoff written: `docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md` — the exact wire, signing rules, response semantics, and the two proof options. **Copy it into `construction_updates` before working from it** (each side edits only its own repo). ⚠ **Contract §10's "prove on preview first" is not currently available**, and the reason was recorded wrong: verified 2026-08-18, the dev DB `ep-falling-moon` **is reachable** — it just holds 0 users, 0 properties and no `contractor_update*` tables, so there is nothing to resolve an update against; and `CONTRACTOR_UPDATE_SECRET` exists in **Production only**, while Preview builds run `NODE_ENV=production`, so an unset secret 401s every request. Fixing Preview is three steps (add the secret, apply the migration, seed a roster + one job) — or do one controlled production replay aimed at a named job | Nothing can arrive until `construction_updates` builds the §3 call, and it ships behind `CHECKLIST_APP_URL` (unset = off), so its deploy cannot start writing on its own. **Set that variable only after a preview replay passes** (§10 steps 1–3) |
+| D-14j | P1 | [ ] | ⚠ **CORRECTED 2026-08-25 — the pipeline half EXISTS and is writing to Smartsheet.** The sheet carries rows stamped in its own vocabulary (`[08/25/2026 10:29 ET] UNCLEAR - needs a human`, three `UNRECOGNISED NUMBER` rows), so the Smartsheet-writing half is running. **What is still unverified is whether it posts to THIS app** — that is `CHECKLIST_APP_URL` on the other side, and reading `contractor_update_captures` needs the prod credential the classifier blocks. Settle that before loading a week: an armed receiver against an empty calendar turns every update into a `ContractorDailyNote` behind a `200 {ok:true}`. The handoff below still stands as the wire spec. Handoff written: `docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md` — the exact wire, signing rules, response semantics, and the two proof options. **Copy it into `construction_updates` before working from it** (each side edits only its own repo). ⚠ **Contract §10's "prove on preview first" is not currently available**, and the reason was recorded wrong: verified 2026-08-18, the dev DB `ep-falling-moon` **is reachable** — it just holds 0 users, 0 properties and no `contractor_update*` tables, so there is nothing to resolve an update against; and `CONTRACTOR_UPDATE_SECRET` exists in **Production only**, while Preview builds run `NODE_ENV=production`, so an unset secret 401s every request. Fixing Preview is three steps (add the secret, apply the migration, seed a roster + one job) — or do one controlled production replay aimed at a named job | Nothing can arrive until `construction_updates` builds the §3 call, and it ships behind `CHECKLIST_APP_URL` (unset = off), so its deploy cannot start writing on its own. **Set that variable only after a preview replay passes** (§10 steps 1–3) |
 | D-14g | P1 | [ ] | **§10.6 strip:** reduce the sync to its `create` path and rename it a plan loader; delete the update logic. **Only after a full week including a Monday rollover** — the rollover is what proves the design does not key on `smartsheetRowId`. ✅ The `TRADE_BY_TASK` half is **done 2026-08-18** (§9.3, defaults to `GENERAL` + reports); the strip itself is still owed |
-| D-14o | **P0** | [~] | **Load the 08/17–08/21 week — prepared, NOT run.** Captured from sheet `1391340150542212` (same id every week; the rollover clears rows in place, so **every rowId changed** — exactly the §7 case) into `scripts/data/smartsheet-contractor-schedule-snapshot.json`: 66 rows, 13/day + 1 undated, all rowIds unique, 8 WhatsApp narratives. Loader reworked per the three decisions above. **736/736 tests, clean typecheck + lint.** ⚠ **Uncommitted, and the dry run has never been executed** — the classifier blocks `.env.production.local` from a session, so Kyle runs the command in START HERE. Three things to know before firing: **5 jobs are created terminal** (Arlis's Completed leak fix → `DONE`; 4 `Off` days → `CANCELLED`) and are immutable on arrival per ADR-030; this is the **first real use of `DELAYED`** in prod (Jarvis + Jose Felix, 08/17 JN flooring); **7 of 8 WhatsApp narratives land as `SYSTEM` notes**, the 8th (David Recinos, "UNCLEAR — needs a human", 08/18 09:02 ET) has no date so no job and stays only in Smartsheet — someone should read it |
+| D-14q | **P0** | [~] | **Load the LIVE week, 08/24–08/28 — captured, dry run never executed.** `scripts/data/smartsheet-contractor-schedule-snapshot.json`, 73 rows, complete, read 2026-08-25 ~11:20 ET (sheet renamed *Contractor Schedule 08-24 to 08-28-26*). Trade map extended with the two non-General strings this week adds (HVAC repair -> HVAC, palm trimming -> LANDSCAPING); the other six default to GENERAL and are reported. **Predicted from the snapshot and the committed maps, NOT from a run: 62 of 73 loadable** · 11 skipped and reported (7 day-off rows carry no property, 4 rows have no date) · **52 PLANNED · 8 IN_PROGRESS · 1 DELAYED · 1 CANCELLED** · no `Completed` rows so nothing arrives `DONE` · **1 job created terminal** (Joycer's Monday off at JW), immutable on arrival per ADR-030 · JW 28 · DP 11 · JN 8 · SA 8 · LL 4 · KE 3 · **no Boca Condo rows, so §Q42 does not bite this week** · 4 of 8 narratives land as `SYSTEM` notes, the other 4 are undated and have no job. ⚠ **The classifier still refuses `.env.production.local` from a session** (retried today), so Kyle runs the command in START HERE. |
+| D-14o | P1 | [ ] | **08/17–08/21 is now BACKFILL, not operations.** The sheet rolled over, so every rowId in that capture is dead and the file is the **only surviving record of that week** (committed `82b062d`). Loading it is history worth having, and it is no longer what the crews need. Run with `--snapshot scripts/data/smartsheet-contractor-schedule-0817.json`. Predicted when it was captured: 59 creates · 6 Boca skips · 1 undated skip · 5 jobs created terminal (1 `DONE`, 4 `CANCELLED`) · first real `DELAYED` in prod · 7 of 8 narratives as `SYSTEM` notes. **Decide whether backfilling a finished week is worth it at all** before running it. |
 | D-14p | P1 | [ ] | 🧑 **Nobody owns the Monday load, and nothing alerts when it doesn't happen.** Pipeline `P44` / contract §9.4 leave it a standing manual chore; it cannot be automated from this repo (no Smartsheet credential — the sheet is read through a Claude MCP session). This week proves the failure mode: two days of crew work with nowhere to land. Either name a person + a recurring reminder, or build the §9.4 plan fan-out (out of scope for fan-out v1). §Q43 |
 
 **⚠ Migration `20260811120000_add_contractor_scheduling` is authored but applied to NO database, and no
@@ -733,6 +821,9 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 
 | # | Question | Blocks | My recommendation |
 |---|---|---|---|
+| **Q44** | **Todd is a 14th contractor with no phone number.** The 08/24 week adds him — one word, no surname — with 4 jobs (LL palm trimming Tue/Wed, KE Thu/Fri). The fan-out resolves on **`(workDate, contractorPhone)`, phone first**, and he is not in the 13-person backfill. | Every update Todd sends resolves to nothing and lands as a daily note behind a `200 {ok:true}` — the calendar looks untouched | Get his number into the roster **before** arming the receiver. Do NOT paper over it with a name alias: `Todd` alone is exactly the weak match `scripts/backfill-contractor-phones.ts` refuses on purpose, and a wrong match files one man's work under another's name |
+| **Q45** | **An unknown Nigerian number is messaging the WhatsApp intake.** `+2349032477221`, three messages on 2026-08-25 (09:07, 09:09, 09:09 ET), all logged `UNRECOGNISED NUMBER - nothing written`. | Nothing today — it fails closed. But it writes rows into the live schedule sheet, and it is either a wrong number or someone probing the endpoint | Somebody should look at what those messages say. Failing closed is correct and should stay; the question is whether the number needs blocking upstream and whether unmapped-sender rows belong in the schedule sheet at all |
+| **Q46** | **The Notes column is captured nowhere.** Six rows this week read *"Pending to confirm; if not, they will stay in St. Augustine to finish installing new pool tiles"* — a conditional plan the snapshot shape drops (`Row` has no `notes` field). | A job loads as a confident plan when the sheet says it is unconfirmed | Left alone deliberately: widening the row shape touches the loader's contract, and the fan-out contract is owned by the other repo. Decide whether the app needs the field before the §10.6 strip |
 | **Q40** | ✅ **MOSTLY CLOSED 2026-08-13 — 12 of 13 loaded** from the pipeline's `proto/roster.csv` (Kyle pointed at it). Numbers are read from the sibling checkout at run time and **deliberately not committed here** — 13 real mobile numbers are PII and this repo has kept them out of git before. **One open: is `Alexander Torres` (08/10 sheet) the same person as `Alexander Rafael Oropeza Torres` (08/03 sheet, roster confidence `medium`, "NOT confirmed by Gerardo")?** One question to Gerardo, then re-run the script. Until then his updates land as daily notes, which is the safe failure. Original below | Alexander's updates only | Ask Gerardo |
 | **Q40 (original)** | ⚠ **The 13 contractor phone numbers — where do I get them?** The fan-out contract resolves a crew update to a job on `(workDate, contractorPhone)`, matching phone first because the schedule carries name variants (`Ronal S.` vs `Ronal Stevent`). **Prod has 0 of 13 phones and 0 of 13 WhatsApp numbers** — the 2026-08-11 import omitted them on purpose ("will add later"). Your pipeline's Table Storage allowlist is keyed by exactly these numbers; this repo has no source for them | D-14, i.e. the entire fan-out. Without them every update silently lands in `ContractorDailyNote` and the calendar looks unchanged | Export the roster from the pipeline side as `name → E.164` and I will load it. **Do this before pointing the pipeline at production** — otherwise §10 step 4 "watch one real crew message end to end" watches the fallback path, not the feature. Also worth 10 minutes: diff the two rosters by hand, since name matching is the only fallback and the two lists are maintained separately |
 | **Q42** | **`Boca Condo` — create a named `Property` row, or keep skipping it?** It is back: 6 rows in the 08/17 week (Jesus Perez, Orlando Torres, Ronal Stevent × 08/17–18, "Renovation project"), after 30 rows on 08/03 and 0 on 08/10. `ContractorJob.propertyId` is required, so **no job can exist without a property** — the rows are reported and skipped, and those crews' updates land in `ContractorDailyNote` with a null property | Whether three men's work is on the calendar at all. Recurs every week Boca is scheduled | Skipped for the 08/17 week (both days already past, so nothing lost retroactively). **Decide before the next Monday load.** §7 forbids an `OTHERS` bucket and §9.4 wants a **named** row — but `Property` is heavyweight here (rooms, geofence, checklist templates, recurring rules, network devices, Teams channel) and Boca is not a Stayable hotel, so a row appears in every property picker across unrelated features. Palm Beach County if anything legal touches it |

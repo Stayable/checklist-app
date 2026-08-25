@@ -1,0 +1,85 @@
+{
+  "sheetId": "1391340150542212",
+  "sheetName": "Contractor Schedule 08-17 to 08-21-26",
+  "capturedAt": "2026-08-18",
+  "rows": [
+    { "rowId": "5522434483683204", "contractor": "Alexander Torres", "date": "2026-08-17", "propertyCode": "6802", "task": "Install conduit for stairwell cameras", "status": "In Progress", "whatsapp": "Crew reports working on camera installations across the property (Jacksonville West); stairwell conduit task appears to be in progress, though details are unclear." },
+    { "rowId": "104041182003076", "contractor": "Alexander Torres", "date": "2026-08-18", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+    { "rowId": "6296490669637508", "contractor": "Alexander Torres", "date": "2026-08-19", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+    { "rowId": "3200265925820292", "contractor": "Alexander Torres", "date": "2026-08-20", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+    { "rowId": "8126078018256772", "contractor": "Alexander Torres", "date": "2026-08-21", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "3833584623419268", "contractor": "Arlis Velazquez", "date": "2026-08-17", "propertyCode": "4645", "task": "Fix water leak affecting Unit 167 toilet area", "status": "Completed", "whatsapp": "Lakeland Unit 167: replaced toilet angle stop/supply tube and shower cartridge/handle; leak fix appears completed." },
+    { "rowId": "3270634669997956", "contractor": "Arlis Velazquez", "date": "2026-08-18", "propertyCode": "812", "task": "Repair P-traps and verify plumbing is in good condition in the rooms assigned to the rest of the crew (Rooms 224, 233, 138, 142)", "status": "Pending", "whatsapp": null },
+    { "rowId": "7985340529901444", "contractor": "Arlis Velazquez", "date": "2026-08-19", "propertyCode": "812", "task": "Repair P-traps and verify plumbing is in good condition in the rooms assigned to the rest of the crew (Rooms 224, 233, 138, 142)", "status": "Pending", "whatsapp": null },
+    { "rowId": "1511416065556356", "contractor": "Arlis Velazquez", "date": "2026-08-20", "propertyCode": "812", "task": "Repair P-traps and verify plumbing is in good condition in the rooms assigned to the rest of the crew (Rooms 224, 233, 138, 142)", "status": "Pending", "whatsapp": null },
+    { "rowId": "4748378297728900", "contractor": "Arlis Velazquez", "date": "2026-08-21", "propertyCode": "812", "task": "Repair P-traps and verify plumbing is in good condition in the rooms assigned to the rest of the crew (Rooms 224, 233, 138, 142)", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "8337184250789764", "contractor": "Cristian De Leon", "date": "2026-08-17", "propertyCode": "6802", "task": "Day off (requested)", "status": "Off", "whatsapp": null },
+    { "rowId": "4607640809373572", "contractor": "Cristian De Leon", "date": "2026-08-18", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+    { "rowId": "4044690855952260", "contractor": "Cristian De Leon", "date": "2026-08-19", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+    { "rowId": "7703865553190788", "contractor": "Cristian De Leon", "date": "2026-08-20", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+    { "rowId": "807728623779716", "contractor": "Cristian De Leon", "date": "2026-08-21", "propertyCode": "6802", "task": "Install conduit for cameras", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "6366859413815172", "contractor": "David Recinos", "date": "2026-08-17", "propertyCode": "812", "task": "Paint the rooms currently being worked on at Jacksonville North (Rooms 224, 233, 138, 142, and the manager's apartment)", "status": "In Progress", "whatsapp": "Room 233 painted and caulked along all edges at Jacksonville North." },
+    { "rowId": "7774234297368452", "contractor": "David Recinos", "date": "2026-08-18", "propertyCode": "812", "task": "Paint the rooms currently being worked on at Jacksonville North (Rooms 224, 233, 138, 142, and the manager's apartment)", "status": "Pending", "whatsapp": null },
+    { "rowId": "666991135424388", "contractor": "David Recinos", "date": "2026-08-19", "propertyCode": "812", "task": "Paint the rooms currently being worked on at Jacksonville North (Rooms 224, 233, 138, 142, and the manager's apartment)", "status": "Pending", "whatsapp": null },
+    { "rowId": "6015015692926852", "contractor": "David Recinos", "date": "2026-08-20", "propertyCode": "812", "task": "Paint the rooms currently being worked on at Jacksonville North (Rooms 224, 233, 138, 142, and the manager's apartment)", "status": "Pending", "whatsapp": null },
+    { "rowId": "2496578484043652", "contractor": "David Recinos", "date": "2026-08-21", "propertyCode": "812", "task": "Paint the rooms currently being worked on at Jacksonville North (Rooms 224, 233, 138, 142, and the manager's apartment)", "status": "Pending", "whatsapp": null },
+    { "rowId": "7305751147184004", "contractor": "David Recinos", "date": null, "propertyCode": null, "task": null, "status": null, "whatsapp": "[08/18/2026 09:02 ET] UNCLEAR - needs a human, nothing written. En Gachón, VILNORTE" },
+
+    { "rowId": "4115059600129924", "contractor": "Gary Floyd Jr.", "date": "2026-08-17", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+    { "rowId": "6648334390525828", "contractor": "Gary Floyd Jr.", "date": "2026-08-18", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+    { "rowId": "2918790949109636", "contractor": "Gary Floyd Jr.", "date": "2026-08-19", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+    { "rowId": "8266815506612100", "contractor": "Gary Floyd Jr.", "date": "2026-08-20", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+    { "rowId": "1370678577201028", "contractor": "Gary Floyd Jr.", "date": "2026-08-21", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "2707684716576644", "contractor": "Gregoris Gonzalez", "date": "2026-08-17", "propertyCode": "6802", "task": "Cameras project", "status": "In Progress", "whatsapp": "Camera installation continued today at parking lots, hallways, and stairs (conduit piping), with crew of 4." },
+    { "rowId": "6859440623058820", "contractor": "Gregoris Gonzalez", "date": "2026-08-18", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null },
+    { "rowId": "385516158713732", "contractor": "Gregoris Gonzalez", "date": "2026-08-19", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null },
+    { "rowId": "6577965646348164", "contractor": "Gregoris Gonzalez", "date": "2026-08-20", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null },
+    { "rowId": "3059528437464964", "contractor": "Gregoris Gonzalez", "date": "2026-08-21", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "8618659227500420", "contractor": "Jarvis Ramos", "date": "2026-08-17", "propertyCode": "812", "task": "Install flooring and baseboard in Rooms 233, 224, 138, 142", "status": "Delayed", "whatsapp": "Room 233 at Jacksonville North received full paint job (room and headboard wall), fixture changes, and general repairs — but scheduled flooring/baseboard installation was not mentioned as done." },
+    { "rowId": "4396534576840580", "contractor": "Jarvis Ramos", "date": "2026-08-18", "propertyCode": "812", "task": "Install flooring and baseboard in Rooms 233, 224, 138, 142", "status": "Pending", "whatsapp": null },
+    { "rowId": "7422390576480132", "contractor": "Jarvis Ramos", "date": "2026-08-19", "propertyCode": "812", "task": "Off (requested day off)", "status": "Off", "whatsapp": null },
+    { "rowId": "948466112135044", "contractor": "Jarvis Ramos", "date": "2026-08-20", "propertyCode": "812", "task": "Off (requested day off)", "status": "Off", "whatsapp": null },
+    { "rowId": "5874278204571524", "contractor": "Jarvis Ramos", "date": "2026-08-21", "propertyCode": "812", "task": "Off (requested day off)", "status": "Off", "whatsapp": null },
+
+    { "rowId": "7211284343947140", "contractor": "Jesus Perez", "date": "2026-08-17", "propertyCode": "Boca Condo", "task": "Renovation project", "status": "Pending", "whatsapp": null },
+    { "rowId": "1229941088845700", "contractor": "Jesus Perez", "date": "2026-08-18", "propertyCode": "Boca Condo", "task": "Renovation project", "status": "Pending", "whatsapp": null },
+    { "rowId": "4889115786084228", "contractor": "Jesus Perez", "date": "2026-08-19", "propertyCode": "4645", "task": "Pool electrical work on lights; drainage testing and installing test pumps", "status": "Pending", "whatsapp": null },
+    { "rowId": "4326165832662916", "contractor": "Jesus Perez", "date": "2026-08-20", "propertyCode": "4645", "task": "Pool electrical work on lights; drainage testing and installing test pumps", "status": "Pending", "whatsapp": null },
+    { "rowId": "7563128064835460", "contractor": "Jesus Perez", "date": "2026-08-21", "propertyCode": "8700", "task": "Check the AC in the lobby", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "455884902891396", "contractor": "Jose Felix Ortega", "date": "2026-08-17", "propertyCode": "812", "task": "Install flooring and baseboard in Rooms 233, 224, 138, 142", "status": "Delayed", "whatsapp": "Jose Felix Ortega reported painting and sanding work (bathroom, vanity, bathtub, door) in Room 233 at Jacksonville North; scheduled flooring/baseboard installation for Rooms 233, 224, 138, 142 was not confirmed as progressed." },
+    { "rowId": "8900134204211076", "contractor": "Jose Felix Ortega", "date": "2026-08-18", "propertyCode": "812", "task": "Install flooring and baseboard in Rooms 233, 224, 138, 142", "status": "Pending", "whatsapp": null },
+    { "rowId": "1792891042267012", "contractor": "Jose Felix Ortega", "date": "2026-08-19", "propertyCode": "812", "task": "Install flooring and baseboard in Rooms 233, 224, 138, 142", "status": "Pending", "whatsapp": null },
+    { "rowId": "5452065739505540", "contractor": "Jose Felix Ortega", "date": "2026-08-20", "propertyCode": "812", "task": "Install flooring and baseboard in Rooms 233, 224, 138, 142", "status": "Pending", "whatsapp": null },
+    { "rowId": "3622478390886276", "contractor": "Jose Felix Ortega", "date": "2026-08-21", "propertyCode": "812", "task": "Install flooring and baseboard in Rooms 233, 224, 138, 142", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "1018834856312708", "contractor": "Joycer Antonio Parra Munoz", "date": "2026-08-17", "propertyCode": "6802", "task": "Install conduit for stairwell cameras", "status": "Pending", "whatsapp": null },
+    { "rowId": "2144734763155332", "contractor": "Joycer Antonio Parra Munoz", "date": "2026-08-18", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+    { "rowId": "5170590762794884", "contractor": "Joycer Antonio Parra Munoz", "date": "2026-08-19", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+    { "rowId": "3763215879241604", "contractor": "Joycer Antonio Parra Munoz", "date": "2026-08-20", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+    { "rowId": "7000178111414148", "contractor": "Joycer Antonio Parra Munoz", "date": "2026-08-21", "propertyCode": "812", "task": "Repair damaged bathroom drywall in Room 224; repair drywall in the manager's apartment and Room 138; paint tubs in these units, including the tub in Room 233", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "6085384437104516", "contractor": "Orlando Torres", "date": "2026-08-17", "propertyCode": "Boca Condo", "task": "Renovation project", "status": "Pending", "whatsapp": null },
+    { "rowId": "3481740902530948", "contractor": "Orlando Torres", "date": "2026-08-18", "propertyCode": "Boca Condo", "task": "Renovation project", "status": "Pending", "whatsapp": null },
+    { "rowId": "7140915599769476", "contractor": "Orlando Torres", "date": "2026-08-19", "propertyCode": "4645", "task": "Pool electrical work on lights; drainage testing and installing test pumps", "status": "Pending", "whatsapp": null },
+    { "rowId": "244778670358404", "contractor": "Orlando Torres", "date": "2026-08-20", "propertyCode": "4645", "task": "Pool electrical work on lights; drainage testing and installing test pumps", "status": "Pending", "whatsapp": null },
+    { "rowId": "6437228157992836", "contractor": "Orlando Torres", "date": "2026-08-21", "propertyCode": "5399", "task": "Jetting drain lines", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "1581784809734020", "contractor": "Ronal Stevent Rojas Mora", "date": "2026-08-17", "propertyCode": "Boca Condo", "task": "Renovation project", "status": "Pending", "whatsapp": null },
+    { "rowId": "5733540716216196", "contractor": "Ronal Stevent Rojas Mora", "date": "2026-08-18", "propertyCode": "Boca Condo", "task": "Renovation project", "status": "Pending", "whatsapp": null },
+    { "rowId": "2637315972398980", "contractor": "Ronal Stevent Rojas Mora", "date": "2026-08-19", "propertyCode": "4645", "task": "Pool electrical work on lights; drainage testing and installing test pumps", "status": "Pending", "whatsapp": null },
+    { "rowId": "8829765460033412", "contractor": "Ronal Stevent Rojas Mora", "date": "2026-08-20", "propertyCode": "4645", "task": "Pool electrical work on lights; drainage testing and installing test pumps", "status": "Pending", "whatsapp": null },
+    { "rowId": "1933628530622340", "contractor": "Ronal Stevent Rojas Mora", "date": "2026-08-21", "propertyCode": "5399", "task": "Jetting drain lines", "status": "Pending", "whatsapp": null },
+
+    { "rowId": "4959484530261892", "contractor": "Zacharie Edmond", "date": "2026-08-17", "propertyCode": "6802", "task": "Cameras project", "status": "In Progress", "whatsapp": "Crew (Zachary Edmond, Joyce, Alexander, Gregory) bought materials at Home Depot and continued installing new cameras at Jacksonville West." },
+    { "rowId": "2355840995688324", "contractor": "Zacharie Edmond", "date": "2026-08-18", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null },
+    { "rowId": "8548290483322756", "contractor": "Zacharie Edmond", "date": "2026-08-19", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null },
+    { "rowId": "2074366018977668", "contractor": "Zacharie Edmond", "date": "2026-08-20", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null },
+    { "rowId": "5311328251150212", "contractor": "Zacharie Edmond", "date": "2026-08-21", "propertyCode": "6802", "task": "Cameras project", "status": "Pending", "whatsapp": null }
+  ]
+}
