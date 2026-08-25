@@ -27,7 +27,7 @@ typecheck + lint.
 | `82b062d` | the reworked plan loader + the 08/17 capture, uncommitted since 08-18 |
 | `187ab54` | `CLAUDE.md` 171 KB -> 46 KB; history to `docs/archive/StatusLog_RISE8_082526.md` |
 | `c4da44c` | **ADR-031** written (close-out/stayover) and the number collision settled |
-| `9c04ab0` | the **08/24–08/28** capture — see below |
+| `42ebc53` | the **08/24–08/28** capture — see below |
 
 **🔴 `CLAUDE.md` HAD STOPPED LOADING.** It was **171 KB against a 150 KB hard limit**, which makes
 every instruction in it inert — the worst failure mode for the file that is meant to be read first.

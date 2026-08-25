@@ -347,7 +347,30 @@ When changing scope or architecture: update the relevant doc and add an entry to
 carry-forward of what is still open.** When you add a block, move the one it supersedes into
 `docs/archive/StatusLog_RISE8_082526.md` (newest first) and fold anything still live into the carry-forward.
 
-**As of:** August 21, 2026 (latest)
+**As of:** August 25, 2026 (latest)
+
+**🟢 NO APP CODE. Three commits of housekeeping, one owed ADR, one finding that changes what the contractor load is for. `82b062d..42ebc53`. NOTHING PUSHED — local `main` is 4 ahead of `origin/main`, and a push deploys to production, so that is Kyle's call.** 778 tests, clean typecheck + lint, tree clean.
+
+**🔴 THIS FILE HAD STOPPED LOADING.** 171 KB against a **150 KB hard limit**, which makes every instruction in it inert — the worst failure mode for the file that is meant to be read first. The Current Status section was **139 KB of the 171 KB**; everything else (decisions, properties, roles, conventions, people) is ~32 KB and was untouched. Blocks for 2026-07-13 → 2026-08-21 moved verbatim to **`docs/archive/StatusLog_RISE8_082526.md`**, newest first, nothing lost. The size policy above is new and is the point: **newest block in full plus the carry-forward**. Result 171 KB → 46 KB. The 08-21 block below is kept because it is the last block that shipped code, not by oversight.
+
+**🔢 ADR-031 SETTLED — `c4da44c`, and it went to the shipped work.** Three pieces of work claimed 031. **031 = checklist close-out / stayover**, because it is in production (`848bac0`) and its reasoning existed only as a schema comment. **Instant On uplink flaps renumber to 032 at merge** — that ADR is written as "ADR-031" on the unmerged, *unpushed* branch `feat/instant-on-uplink-flaps` (`a17b0ed`), which makes it the cheap one to move. **Contractor update fan-out takes 033** when built. The log is append-only, so the number goes to what is live.
+
+**🗓 THE CONTRACTOR SHEET ROLLED OVER, AND THAT CHANGES THE JOB.** Sheet `1391340150542212` now reads *Contractor Schedule 08-24 to 08-28-26*. The rollover **clears rows in place** — the 08/17 and 08/24 captures share **zero rowIds** — so the 08/17 capture that sat uncommitted for a week is now the **only surviving record of that week anywhere**, which is why committing it (`82b062d`) mattered more than it did on 08-18. Two consequences: **loading 08/17 is backfill of a finished week, not operations**, and **the live week was not loaded either**. The calendar has now been empty through two full contractor weeks.
+- **The live week is captured and ready** (`42ebc53`): 73 rows, complete, read 2026-08-25 ~11:20 ET. The default snapshot path now always means *the current week* so the Monday run needs no flags; rolled-off weeks keep a dated copy loaded with `--snapshot`.
+- **Predicted from the snapshot and the committed maps — NOT from a run: 62 of 73 loadable** · 11 skipped and reported (7 day-off rows carry no property, 4 rows have no date) · **52 PLANNED · 8 IN_PROGRESS · 1 DELAYED · 1 CANCELLED** · **no `Completed` rows, so nothing arrives `DONE`** · **1 job created terminal** (Joycer's Monday off at JW), immutable on arrival per ADR-030 · JW 28 · DP 11 · JN 8 · SA 8 · LL 4 · KE 3 · **no Boca Condo rows, so §Q42 does not bite this week** · 4 of 8 WhatsApp narratives land as `SYSTEM` notes, the other 4 sit on undated rows with no job.
+- ⚠ **The dry run still cannot be executed from a session** — the classifier refuses any command carrying `.env.production.local`, retried today. Kyle runs it; both commands are in `TODO.md` START HERE.
+- `TRADE_BY_TASK` gained the two non-General strings this week adds (HVAC repair → HVAC, palm trimming → LANDSCAPING). The other six default to `GENERAL` and are reported, per the 08-18 decision. `"Jetting drain lines"` is the **first task string to survive a week unchanged**.
+
+**🚨 `D-14j` WAS WRONG — THE PIPELINE EXISTS AND IS WRITING TO SMARTSHEET.** The tracker said "the pipeline half does not exist". The sheet now carries rows stamped in its own vocabulary: `[08/25/2026 10:29 ET] UNCLEAR - needs a human` and three `UNRECOGNISED NUMBER` rows. **Unverified from here: whether it also posts to this app** — that is `CHECKLIST_APP_URL` on the other side, and reading `contractor_update_captures` needs the prod credential the classifier blocks. **Settle it before loading a week:** an armed receiver against an empty calendar turns every update into a `ContractorDailyNote` behind a `200 {ok:true}`.
+
+**🧑 Three new open questions, recorded rather than acted on:**
+- **§Q44 — Todd is a 14th contractor with no phone.** One word, no surname, 4 jobs this week. The fan-out resolves on **`(workDate, contractorPhone)`, phone first**, and he is not in the 13-person backfill, so every update he sends resolves to nothing. **Do not paper over it with a name alias** — `Todd` alone is exactly the weak match `scripts/backfill-contractor-phones.ts` refuses on purpose.
+- **§Q45 — an unknown Nigerian number is messaging the intake.** `+2349032477221`, three messages today, all logged `UNRECOGNISED NUMBER - nothing written`. It fails closed, and it is writing rows into the live schedule sheet.
+- **§Q46 — the Notes column is captured nowhere.** Six rows read *"Pending to confirm; if not, they will stay in St. Augustine…"* — a conditional the snapshot shape drops. Left alone: widening the row shape touches the loader's contract, and that contract is owned by the other repo.
+
+**⚠ Nothing was opened in a browser and nothing was written to prod.** Tests, typecheck, lint, a read-only Smartsheet read, and git — that is the whole evidence base for today.
+
+**As of:** August 21, 2026 (latest code deploy; retained per the size policy above)
 
 **🟢 FOUR FEATURES SHIPPED FROM TEST-ROUND FEEDBACK - `ffdce07..ddd8469`, last deploy `checklist-suycyl3oy` Ready. 778 tests, clean typecheck + lint + build.** Bea and Randy produced the first real feedback of the test round; Kyle relayed it, plus a lockout he hit. **Nothing below has been opened in a browser by me** - tests, types, build and prod payload greps are the whole evidence base, and that caveat covers all four.
 
