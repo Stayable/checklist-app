@@ -15,7 +15,213 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-18)
+## 🎯 START HERE (updated 2026-08-21, later)
+
+**Four features shipped to prod off `main`, from Bea's and Randy's test-round feedback plus a
+lockout Kyle hit. `ffdce07..ddd8469`. Last deploy `checklist-suycyl3oy` Ready. 778 tests, clean
+typecheck + lint + build.** Nothing here has been opened in a browser by me - that is the whole
+caveat and it applies to all four.
+
+| commit | what | deploy |
+|---|---|---|
+| `4923d5d` | admin **Unlock** in `/admin/users`, password untouched | `n2txsxinr` |
+| `01de2f1` | login **names the lockout + the wait** (EN/ES) | `n2txsxinr` |
+| `45a0bfa` | **photo GPS**: real deadline, and say why a fix is missing | `o4tanopx1` |
+| `848bac0` | **close out** a checklist that stopped being needed | `suycyl3oy` |
+| `ddd8469` | date correction, see the harness-clock note below | - |
+
+**⚠ THE HARNESS DATE WAS WRONG BY A DAY and I dated code from it.** The harness reported
+2026-08-22 while Eastern was still **2026-08-21 17:27**. Comments corrected in `ddd8469`; the
+migration directory keeps its `20260822` stamp because it is **already recorded in
+`_prisma_migrations` on prod** and renaming an applied migration manufactures drift. Derive the
+date, never read it off the harness - exactly the rule in the global preferences.
+
+**🔓 bea@ was locked out; unlocked in prod** 2026-08-21 14:44:58Z, password untouched, audit row
+`unlock_account` under `bke@`. ⚠ **That probably was not her fix:** `lastLoginAt = Aug 18 5:20 PM ET`
+with `mustChangePassword = false` means **she set her own password and nobody else knows it**, and
+Kyle said she was typing the wrong one. If she fails again the answer is **Set PW**, not another
+unlock. Second gate: on a different device than Aug 18 she also needs the emailed OTP, and a missing
+OTP email is indistinguishable from a wrong password from her side.
+
+**Lockout policy, measured** (`lib/auth-throttle.ts`, ADR-008): 5 failures in a rolling 15 min ->
+30 min lock, self-clearing. `registerFailure` **zeroes the counter when it locks**, so a locked row
+always reads `failedAttempts=0` - `locked` is the only state that blocks sign-in, which is why the
+Unlock button renders on locked rows only. OTP failures never trip it.
+
+**📸 The NO_GPS diagnosis, so it is not re-derived.** All 5 photos in prod are from this test
+round: 4 `NO_GPS`, 1 `OFF_PROPERTY`. **Randy's pair is the proof** - capture at 15:28:24 failed,
+capture at 15:28:35 returned a **39.5 m** fix, submit at 15:29:01. The first call warmed the receiver
+for the second, so it was a **cold-start timeout, not a permission denial** (a denial is sticky for
+the origin, so the second could not have succeeded). Cause: `enableHighAccuracy` + `maximumAge: 0`
+on a **10 s** deadline - the most expensive ask on the tightest schedule. Now 25 s + 60 s
+`maximumAge`. **`enableHighAccuracy` stays true deliberately:** the server derives the verdict from
+coordinates alone with no regard for accuracy, so accepting kilometre-wide Wi-Fi fixes would trade
+*no verdict* for *a confident wrong verdict* on fences spanning 109-243 m.
+- **Randy's `OFF_PROPERTY` is CORRECT.** `11.4477, 124.4291` is the **Philippines**, ~14,000 km from
+  Lakeland. **Offshore reviewers can never read `VERIFIED`** - so this tester group cannot validate
+  geofencing at all. Decide whether that matters; no code change fixes it.
+- **Bea's 3 remain unexplained** and always will: the reason was discarded by `.catch(() => {})`
+  until this deploy. Ask her which device, and whether she ever saw a location prompt.
+- Also fixed: **submit outran the pending fix** (6 s grace + a ref so a fix landing during the wait
+  is not lost to the transition's stale snapshot). Likely the cause of most of those 4 rows.
+
+**🚪 Close-out / stayover - amends ADR-014, and ADR-031 IS OWED.** Kyle's call: reasons that are
+facts about the **room** (stayover, not needed, duplicate) close **immediately**, audited; facts
+about the **person** (no access, staff unavailable, **other**) need a manager. `OTHER` needs approval
+on purpose. A note is mandatory in every case. Migration `20260822120000` **applied to prod before
+the deploy** and verified via `information_schema`.
+- **NOT a new `InstanceStatus` value**, which was the tempting shape: `status: { in: [...] }` filters
+  silently **EXCLUDE** a new member and `notIn` silently **INCLUDE** it, so `PENDING_INVALIDATION`
+  would have quietly redefined `/review`'s tabs, both report denominators, the dashboard tiles and
+  the field home list - all with a clean typecheck. A pending request is still assigned work.
+- `lib/reports.ts` **already** excludes `INVALIDATED` from the completion denominator, so stayovers
+  stop reading as misses with **no reporting change**.
+- ⚠ **ADR-031 collides** - the Instant On branch also claims 031. Settle the number before writing.
+
+**🧑 Open calls for Kyle:**
+- The lockout message now **discloses that an address is a real account** after 5 failures; nothing
+  did before. Judged acceptable (internal tool, predictable mailboxes, and `Ops`+mailbox passwords in
+  committed code are a far larger exposure). Reversible.
+- **§Q42 Boca Condo** and the **08/17-08/21 week load** are untouched, below.
+
+**⚠ Still true and unchanged:** the **08/17-08/21 contractor week is NOT loaded**; its 2 files plus
+`CLAUDE.md`/`TODO.md` are **still uncommitted**; **0 recurring rules**, so a tester must hand-create
+a checklist to reach any of today's work. `checklist_instances = 6`.
+
+---
+
+## (previous) START HERE - 2026-08-21, earlier
+
+**Account lockout was made operable, both ends. Shipped to prod; nothing else moved.**
+
+Kyle reported bea@ locked out. Two commits, deployed off `main` as
+`ffdce07..01de2f1` → prod deploy `checklist-n2txsxinr` **Ready**. **741 tests**, clean
+typecheck + lint + build. Verified against production: `/login` 200, `/admin/users` +
+`/dashboard` 307, and the new `lockedError` string present in the shipped `/login` payload
+with its ICU placeholder intact — the string reached prod, not just the local build.
+**Rollback:** `vercel promote https://checklist-ljghe0eqx-stayable-admins-projects.vercel.app`.
+Code-only — no migration, no env var, nothing to undo DB-side.
+
+**The policy, measured not assumed** (`lib/auth-throttle.ts`, ADR-008): 5 failed attempts inside
+a **rolling 15-min** window → locked **30 min**, self-clearing. `registerFailure` zeroes the
+counter when it locks, so a locked row always reads `failedAttempts=0` — **`locked` is the only
+state that blocks sign-in**, everything else expires on its own. OTP failures never trip it
+(`lib/auth.ts` deliberately skips `registerFailure` for a bad code), so the lock only ever
+surfaces at the password step.
+
+**🔓 bea@rentstayable.com unlocked in prod** (14:44:58Z), password untouched, audit row
+`unlock_account` under `bke@`. She was locked until 11:01 AM ET; cleared ~16 min early.
+⚠ **Unlocking probably was not her fix.** `lastLoginAt = Aug 18, 5:20 PM ET` and
+`mustChangePassword = false` → **she set her own password and nobody else knows it**. Kyle said
+she was trying the wrong one, so she likely locks again; the real fix is **Set PW** on her row.
+Second gate to expect: on a *different* device than Aug 18 she also needs the emailed OTP — and
+a missing OTP email is indistinguishable from a wrong password from her side.
+
+**Two gaps closed, and why each was a gap:**
+1. **No admin unlock existed.** The only paths that cleared a lock did it as a *side effect* of
+   overwriting the password (`resetPassword`/`setUserPassword`, `app/admin/users/actions.ts`), so
+   handing access back to someone who still knows their password meant taking it away first.
+   Now `unlockUser()` + an amber **Unlock** button that appears **only on locked rows**, and a
+   `Locked until h:mm` badge **beside** Active/Inactive — they are independent (a locked account
+   is still active), and collapsing them would misreport one as the other.
+2. **The login form fused three outcomes into one sentence** — "invalid email or password, **or**
+   your account is temporarily locked… try again later" — with no duration. Not silent, but
+   unattributable. Now `preCheck` returns `ok`/`locked`/`invalid`, and **only `locked` is
+   disclosed**; missing email, deactivated and wrong password stay fused. It also fires on the
+   attempt that **trips** the lock, which is the moment it matters. Bilingual EN+ES (ADR-013 —
+   login is a field-staff surface); ICU plurals rendered at 1/2/30 min in both locales.
+   `lockoutMinutesRemaining` rounds **up** and floors at **1**: a truthful-looking "0 min" sends
+   someone straight back to a form that will still refuse them.
+
+**🧑 Decide: the new disclosure is a real tradeoff, not a free win.** Five failed attempts
+against an address now *confirms that address is an account*; before, nothing did. My read —
+acceptable here: internal tool, 37 users, predictable mailbox addresses, and the `Ops`+mailbox
+password scheme in committed code is a far larger exposure. Non-existent emails never lock and
+still get the generic text. If you would rather not trade it, the alternative is naming the wait
+without confirming the account ("if this account exists it may be locked") — vaguer, and worse
+for the person actually locked out.
+
+**⚠ Neither change has been opened in a browser by me.** The Unlock button and the locked message
+are verified by tests, types, build and a prod payload grep — not by clicking. Cheapest proof is
+Bea's next attempt.
+
+**⚠ Unchanged and still true:** the **08/17–08/21 contractor week is NOT loaded** and its 4 files
+(`CLAUDE.md`, `TODO.md`, the loader, the snapshot) are **still uncommitted** — deliberately left
+out of this deploy, which carries no part of the reworked loader. `checklist_instances = 0`.
+The one owed command is unchanged, below.
+
+---
+
+## (previous) START HERE — 2026-08-18, later
+
+**The 08/17–08/21 week is NOT on the calendar, and the load is prepared but unrun.** Read-only status
+check of the fan-out first (below), then Kyle handed over sheet `1391340150542212` and approved three
+decisions. Code + snapshot are ready, verified, uncommitted; **nothing has been written to prod.**
+
+**🧑 ONE COMMAND OWED — run the dry run, then apply:**
+```
+pnpm dotenv -e .env.production.local -- tsx scripts/sync-contractor-schedule-from-smartsheet.ts
+```
+The sandbox classifier refused this three times from a Claude session (`Stage 2 classifier error` on any
+command carrying `.env.production.local`), so a human has to run it. Predicted output: **59 creates, all
+assigned** · 6 unmapped-location skips (Boca) · 1 undated skip · 8 task strings defaulted to `GENERAL` ·
+9 property links added · ~21 trade mismatches recorded. Compare before appending `--apply`.
+
+**Three decisions Kyle approved 2026-08-18** (all now in code, all reversible):
+1. **`TRADE_BY_TASK` defaults to `GENERAL` and reports** (contract §9.3). It used to throw. Of the 65 rows
+   in this week's sheet, **zero** matched the map built from the 08/10 week — including the near-misses
+   ("Cameras project" vs "Cameras and access points project"). The throw stopped the whole week on row one.
+2. **Boca Condo rows are reported and skipped, not fatal.** 6 rows (Jesus, Orlando, Ronal × 08/17–18).
+   Creating a `Property` row is a plan decision, not a load side effect (§7 forbids `OTHERS`; §9.4 wants a
+   named row) — **§Q42, decide before next Monday.** Those crews' updates will land in `ContractorDailyNote`.
+3. **The sheet decides who works where.** The old eligibility gate (assign only if the contractor already
+   covers the trade *and* the property) would have stripped **38 of 59 assignments**, because coverage and
+   trades were both inferred from the 08/10 sheet and Gerardo moved nearly the whole crew. An unassigned job
+   is invisible to the fan-out — `(workDate, contractor)` finds nothing, the update files as a daily note,
+   and the calendar looks untouched. So: assign from the sheet, add the missing `ContractorProperty` link in
+   the same transaction (audited), record trade mismatch without blocking.
+
+**2026-08-19 addendum — no code, two handovers, one check left unfinished:**
+- **Arming instructions handed over.** Arming is entirely `construction_updates`' work; nothing changes on
+  this side. The spec is `docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md` and its §1 paste-in
+  prompt went to Kyle's clipboard. Sequence: copy the handoff into that repo (still owed, `D-14j`) → build
+  the POST **third** in the chain on all three paths → deploy with `CHECKLIST_APP_URL` **unset** → verify
+  the *deployed artifact* contains the call (believing a commit is what made us think this was armed on
+  08/17) → one replay with the URL set for that run only, aimed at a pre-chosen job, **verified by reading
+  the job's notes** → then set the URL permanently. Rollback is unsetting that one variable.
+- **Answered plainly: a WhatsApp update does NOT reach this app today.** It goes to Smartsheet only. Four
+  links in the chain; link 1 (the pipeline's call) is missing and link 4 (a job to land on) is missing for
+  the 08/17 week. **Load the week before arming**, or every update files as a `ContractorDailyNote` — a
+  `200 {ok:true}` with an unchanged calendar.
+- 🧑 **Starting-password check requested and NOT completed** — Kyle interrupted the prod query, so *who
+  still holds a starting password is unverified*. The mechanism is read, though: `scripts/set-roster-passwords.ts:46`
+  `rosterPassword()` = `"Ops"` + the mailbox's letters, first capitalised (`karla@…` → `OpsKarla`), and
+  `scripts/print-roster-credentials.ts` lists only accounts where `mustChangePassword` is still true, so it
+  is a "who needs telling" list rather than a register. **Finding worth acting on: the scheme is
+  deterministic and lives in committed code**, so anyone with repo read access can compute every unchanged
+  account's password. Forced change on first sign-in plus new-device OTP are the only things standing in
+  front of it. Logged in CROSS-CUTTING.
+- ⚠ **Not re-verified today:** whether the 08/17–08/21 week load was run. Last measured 2026-08-18 — 0 jobs
+  for the week. `scripts/check-schedule-window.ts` answers it read-only.
+
+**⚠ Three things the status check corrected, don't re-derive them:**
+- **The §10.6 strip has NOT happened** and the update path is intact — no outage. It was never scheduled
+  (no cron, no CI); `audit_log` holds exactly **one** `action='sync'` row, 08/11. It is a manual script.
+- **Zero real webhooks have ever arrived.** `contractor_update_captures` holds 4 rows, all
+  `signature_valid=false`: 3 probes from 08/12 plus one I created on 08/18 by probing the live endpoint
+  (`{}` → 401). `contractor_updates` = 0. The unarmed-pipeline assumption holds.
+- **Preview is unusable for a different reason than recorded.** The dev DB `ep-falling-moon` **is
+  reachable** (queried 08/18) — but it holds 25 tables, **0 users, 0 properties**, and no
+  `contractor_update*` tables. Plus `CONTRACTOR_UPDATE_SECRET` is Production-only. Three things to fix, not
+  "the DB is down".
+- **The deployed commit SHA is unknown.** `ops.rentstayable.com` serves `dpl_2QrjbED1gSJrQSzk8J4dA9dx8MDm`
+  (`checklist-ljghe0eqx`, 08/17 13:41 ET) and CLI-created deployments carry **no git metadata**. The written
+  record says `ad3ad33`; that is a record, not a verification. Settle it in the Vercel dashboard's Source
+  panel, or add a build-time SHA route.
+
+---
+
+## (previous) START HERE — 2026-08-18, earlier
 
 **Short session. Two things: one prod change, one status verification. No code shipped.**
 
@@ -237,7 +443,10 @@ Nine RPM/GSA testers live in prod. Guide `docs/ChecklistTesterGuide_RISE8_081226
 | P1 | [ ] | Issues dashboard (open / SLA breach / repeats) |
 | P1 | [ ] | In-app notification centre + unread badge (`IN_APP` rows are already being written, PENDING) |
 | P1 | [ ] | Bulk create UI (template + property + date range + room list) |
-| P1 | [ ] | **Invalidation flow (ADR-014)** — field requests w/ note → manager/admin approves; schema fields already exist |
+| P1 | [x] | **Invalidation flow** - ✅ 2026-08-21, `848bac0`. **Amends ADR-014:** room-facts (stayover / not needed / duplicate) close immediately + audited; person-facts (no access / staff unavailable / other) need a manager. Note mandatory throughout. `/review` gains a scoped pending-requests panel; field surface bilingual EN+ES. **ADR-031 owed - the number collides with the Instant On branch** |
+| P1 | [ ] | **PDF reach** (Bea) - `Export PDF` exists **only** on `/review/[id]`. Not on `/completed`, not a queue row action, no bulk export. ❓ **Ask Bea first:** filled checklists (exists, hard to find) or blank printable ones (net-new)? |
+| P1 | [ ] | **On-page property filter on `/review`** (Bea) - the section IS scoped via the header picker and she has it (AGENT is not a portfolio role, 8 properties => `showPicker` true), but `/completed` has on-page filters and `/review` does not, so it reads as missing. Small |
+| P2 | [ ] | **Template renames** (Bea) - she read `HK Review` / `Manager Review` as the role's main checklist; they are weekly `PER_PROPERTY` supervisory reviews, and the per-room HK work is `ARR` / `DEP`. Her unit-number ask is already satisfied there (a `PER_ROOM` create **requires** picking a room). **Rename display names freely; NEVER touch the codes** - `HKR` / `MGR` are embedded in system IDs and PDF filenames (ADR-009) |
 | P1 | [ ] | 7:00 AM ET daily PM email digest (PRD §8) |
 | P2 | [ ] | Custom report builder + CSV export |
 | P2 | [ ] | Submit → manager email (net-new, not a `SKIPPED` flip) · activation-email flow · unassigned-queue digest |
@@ -462,7 +671,7 @@ straight to this calendar, replacing the manual snapshot sync's update path and 
 
 | Task | Pri | Status | What |
 |---|---|---|---|
-| D-14a | **P0** | [~] | ✅ **12 of 13 loaded to prod 2026-08-13** (`scripts/backfill-contractor-phones.ts --apply`) from the pipeline's own `proto/roster.csv`, which Kyle pointed at. Was 0 of 13 — the 08/11 import omitted them ("will add later"), so every update would have fallen to name matching. ⚠ **One held: `Alexander Torres`.** Gerardo wrote him as `Alexander Rafael Oropeza Torres` on the 08/03 sheet and `Alexander Torres` on 08/10; the roster's own row is **confidence `medium`, "NOT confirmed by Gerardo"**. Both sides independently flagged the same person, so the script refused the fuzzy match rather than guessing — attaching one man's number to another's record files his work under the wrong name. **Needs Gerardo to confirm they are the same person**, then re-run. §Q40 |
+| D-14a | **P0** | [x] | ✅ **Superseded by D-14n — 13 of 13 live, re-verified in prod 2026-08-18** (all 13 rows carry identical `phone` + `whatsapp` in E.164). Historical detail: **12 of 13 loaded to prod 2026-08-13** (`scripts/backfill-contractor-phones.ts --apply`) from the pipeline's own `proto/roster.csv`, which Kyle pointed at. Was 0 of 13 — the 08/11 import omitted them ("will add later"), so every update would have fallen to name matching. ⚠ **One held: `Alexander Torres`.** Gerardo wrote him as `Alexander Rafael Oropeza Torres` on the 08/03 sheet and `Alexander Torres` on 08/10; the roster's own row is **confidence `medium`, "NOT confirmed by Gerardo"**. Both sides independently flagged the same person, so the script refused the fuzzy match rather than guessing — attaching one man's number to another's record files his work under the wrong name. **Needs Gerardo to confirm they are the same person**, then re-run. §Q40 |
 | D-14b | P1 | [x] | **Migration `20260813120000_add_contractor_update_fanout`** — `DELAYED` on `ContractorJobStatus` (closes **§Q35**), `ContractorUpdateResolution`, and **two** tables: `contractor_update_captures` (unconditional, no unique) + `contractor_updates` (`message_sid` unique). Split because capture happens *before* parsing, so a unique key on the capture row would 500 on Twilio's retry instead of returning `duplicate: true`. Not `RawWebhookPayload` — its `source` column is the **device** enum `DeviceSource`. `ADD VALUE … AFTER 'PLANNED'` so the physical enum order matches the declaration order. **Authored only — applied to no database** |
 | D-14c | P1 | [x] | **`lib/contractor-update.ts` — pure**, 41 tests. Zod payload (unknown keys **stripped, not rejected**, per §12), version gate that runs *before* validation, real-calendar-date check (`2026-02-31` is shape-valid and `new Date` overflows it to 3 March), phone normalization, status map, and `decideContractorUpdate` returning `apply-status` / `note-only` / `daily-note` / `ambiguous`. `nameKey` has a test asserting it does **not** match the documented variants — the fallback's limit is pinned, not assumed |
 | D-14d | P1 | [x] | **`STATUS_MAP` divergence made unrepresentable, not merely tested.** The sync script now *imports* `SOURCE_STATUS_MAP` instead of holding a second copy, so the two paths cannot disagree during the §10.6 overlap window. Status arrays updated in the same change, plus a test that every enum value is **open XOR terminal** — the class, not the instance. The one-shot `import-…-0810-0814.ts` keeps its historical `Delayed → PLANNED` map, annotated: it records what was actually written to prod on 08/11, and rewriting it would misdescribe existing rows |
@@ -474,8 +683,10 @@ straight to this calendar, replacing the manual snapshot sync's update path and 
 | D-14n | **P0** | [x] | ✅ **13/13 contractor phone numbers live** (§Q40 closed). 12 loaded from the pipeline's `proto/roster.csv`, read at run time and **not committed here** (PII). The 13th needed a human: Gerardo writes the same man as `Alexander Torres` and `Alexander Rafael Oropeza Torres`, roster confidence `medium — NOT confirmed`; the script refused the fuzzy match until Kyle confirmed, then recorded it as a **named alias** rather than by loosening the confidence filter |
 | D-14k | P1 | [ ] | 🧑 **ADR-031 owed** — the pipeline posts contractor updates directly to this app; the Smartsheet snapshot sync's *update* path is superseded (its `create` path is not). Closes §Q36 the way §Q36 recommended. The other repo's handoff brief asked for this **first** and it is still outstanding |
 | D-14l | P2 | [ ] | **No route-level integration tests.** The 41 new tests cover the pure decision layer; the route wiring is covered only by a build and three live probes |
-| D-14j | P1 | [ ] | ⚠ **The pipeline half does not exist.** Handoff written: `docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md` — the exact wire, signing rules, response semantics, and the two proof options. **Copy it into `construction_updates` before working from it** (each side edits only its own repo). ⚠ **Contract §10's "prove on preview first" is not currently available**: the app's Preview scope has no `CONTRACTOR_UPDATE_SECRET` and points at the dev DB that has been unreachable since early August. Either fix Preview or do one controlled production replay aimed at a named job | Nothing can arrive until `construction_updates` builds the §3 call, and it ships behind `CHECKLIST_APP_URL` (unset = off), so its deploy cannot start writing on its own. **Set that variable only after a preview replay passes** (§10 steps 1–3) |
-| D-14g | P1 | [ ] | **§10.6 strip:** reduce the sync to its `create` path and rename it a plan loader; delete the update logic. **Only after a full week including a Monday rollover** — the rollover is what proves the design does not key on `smartsheetRowId`. Fix `TRADE_BY_TASK`'s throw at the same time (§9.3): it is a hard error on new task wording, and after the strip that path is the only thing loading a week |
+| D-14j | P1 | [ ] | ⚠ **The pipeline half does not exist.** Handoff written: `docs/ContractorUpdateFanout_PipelineHandoff_RISE8_081326.md` — the exact wire, signing rules, response semantics, and the two proof options. **Copy it into `construction_updates` before working from it** (each side edits only its own repo). ⚠ **Contract §10's "prove on preview first" is not currently available**, and the reason was recorded wrong: verified 2026-08-18, the dev DB `ep-falling-moon` **is reachable** — it just holds 0 users, 0 properties and no `contractor_update*` tables, so there is nothing to resolve an update against; and `CONTRACTOR_UPDATE_SECRET` exists in **Production only**, while Preview builds run `NODE_ENV=production`, so an unset secret 401s every request. Fixing Preview is three steps (add the secret, apply the migration, seed a roster + one job) — or do one controlled production replay aimed at a named job | Nothing can arrive until `construction_updates` builds the §3 call, and it ships behind `CHECKLIST_APP_URL` (unset = off), so its deploy cannot start writing on its own. **Set that variable only after a preview replay passes** (§10 steps 1–3) |
+| D-14g | P1 | [ ] | **§10.6 strip:** reduce the sync to its `create` path and rename it a plan loader; delete the update logic. **Only after a full week including a Monday rollover** — the rollover is what proves the design does not key on `smartsheetRowId`. ✅ The `TRADE_BY_TASK` half is **done 2026-08-18** (§9.3, defaults to `GENERAL` + reports); the strip itself is still owed |
+| D-14o | **P0** | [~] | **Load the 08/17–08/21 week — prepared, NOT run.** Captured from sheet `1391340150542212` (same id every week; the rollover clears rows in place, so **every rowId changed** — exactly the §7 case) into `scripts/data/smartsheet-contractor-schedule-snapshot.json`: 66 rows, 13/day + 1 undated, all rowIds unique, 8 WhatsApp narratives. Loader reworked per the three decisions above. **736/736 tests, clean typecheck + lint.** ⚠ **Uncommitted, and the dry run has never been executed** — the classifier blocks `.env.production.local` from a session, so Kyle runs the command in START HERE. Three things to know before firing: **5 jobs are created terminal** (Arlis's Completed leak fix → `DONE`; 4 `Off` days → `CANCELLED`) and are immutable on arrival per ADR-030; this is the **first real use of `DELAYED`** in prod (Jarvis + Jose Felix, 08/17 JN flooring); **7 of 8 WhatsApp narratives land as `SYSTEM` notes**, the 8th (David Recinos, "UNCLEAR — needs a human", 08/18 09:02 ET) has no date so no job and stays only in Smartsheet — someone should read it |
+| D-14p | P1 | [ ] | 🧑 **Nobody owns the Monday load, and nothing alerts when it doesn't happen.** Pipeline `P44` / contract §9.4 leave it a standing manual chore; it cannot be automated from this repo (no Smartsheet credential — the sheet is read through a Claude MCP session). This week proves the failure mode: two days of crew work with nowhere to land. Either name a person + a recurring reminder, or build the §9.4 plan fan-out (out of scope for fan-out v1). §Q43 |
 
 **⚠ Migration `20260811120000_add_contractor_scheduling` is authored but applied to NO database, and no
 code is deployed.** Additive, so prod order is **DB first, then code** (the 2026-08-03 drop inverted
@@ -498,6 +709,10 @@ unverified. Hand-off, in order: (1) apply the migration to prod `ep-summer-cloud
 | P1 | [ ] | **CI: GitHub Actions** — lint + typecheck + tests on PR. Everything is verified locally today; nothing stops a bad push |
 | P1 | [ ] | Playwright e2e on login → submit → review |
 | P1 | [ ] | Rotate temp admin password before real staff onboard |
+| P1 | [x] | **Admin can release a lockout without changing the password** — ✅ 2026-08-21, `4923d5d`. `unlockUser()` + Unlock button + `Locked until` badge in `/admin/users`; `scripts/unlock-user.ts` is the CLI equivalent (dry-run by default) for when nobody is at a browser. Audit action `unlock_account` records **what** was cleared, so an account that keeps reappearing there identifies a person who does not know their password |
+| P1 | [x] | **Login names the lockout and the wait** — ✅ 2026-08-21, `01de2f1`. Bilingual EN+ES. ⚠ **New disclosure:** 5 failed attempts now confirm the address is an account. Judged acceptable (see START HERE); revisit if this app is ever exposed beyond staff |
+| P2 | [ ] | Login discloses `locked` but not `deactivated` — a deactivated user gets the generic text forever and no path forward. Cheap fix once someone actually hits it; leaving it generic is the safer default until then |
+| P1 | [ ] | **Starting passwords are derivable from committed code.** `rosterPassword()` (`scripts/set-roster-passwords.ts:46`) is `"Ops"` + the mailbox local part's letters, first capitalised — so repo read access yields every account's password until that person changes it. Mitigations already in place: `mustChangePassword` blocks the app until a new one is set, and a new device needs an emailed OTP. Options if this matters: generate per-person random starting passwords (then the print script becomes the only source and must be treated as secret), or keep the scheme and accept it as a first-login-only credential. ⚠ **Who still holds one is UNVERIFIED** — the 08-19 check was interrupted before the query ran |
 | P1 | [ ] | **`AUTH_SECRET` is triple-purpose** (NextAuth secret + OTP pepper + trusted-device HMAC). Splitting rotates live secrets → coordinated change, deferred to A11 |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |
 | P2 | [ ] | Sentry alerts wired per RUNBOOK §Monitoring |
@@ -520,6 +735,8 @@ Grouped by owner. Each says what it blocks and my recommendation, so it can be a
 |---|---|---|---|
 | **Q40** | ✅ **MOSTLY CLOSED 2026-08-13 — 12 of 13 loaded** from the pipeline's `proto/roster.csv` (Kyle pointed at it). Numbers are read from the sibling checkout at run time and **deliberately not committed here** — 13 real mobile numbers are PII and this repo has kept them out of git before. **One open: is `Alexander Torres` (08/10 sheet) the same person as `Alexander Rafael Oropeza Torres` (08/03 sheet, roster confidence `medium`, "NOT confirmed by Gerardo")?** One question to Gerardo, then re-run the script. Until then his updates land as daily notes, which is the safe failure. Original below | Alexander's updates only | Ask Gerardo |
 | **Q40 (original)** | ⚠ **The 13 contractor phone numbers — where do I get them?** The fan-out contract resolves a crew update to a job on `(workDate, contractorPhone)`, matching phone first because the schedule carries name variants (`Ronal S.` vs `Ronal Stevent`). **Prod has 0 of 13 phones and 0 of 13 WhatsApp numbers** — the 2026-08-11 import omitted them on purpose ("will add later"). Your pipeline's Table Storage allowlist is keyed by exactly these numbers; this repo has no source for them | D-14, i.e. the entire fan-out. Without them every update silently lands in `ContractorDailyNote` and the calendar looks unchanged | Export the roster from the pipeline side as `name → E.164` and I will load it. **Do this before pointing the pipeline at production** — otherwise §10 step 4 "watch one real crew message end to end" watches the fallback path, not the feature. Also worth 10 minutes: diff the two rosters by hand, since name matching is the only fallback and the two lists are maintained separately |
+| **Q42** | **`Boca Condo` — create a named `Property` row, or keep skipping it?** It is back: 6 rows in the 08/17 week (Jesus Perez, Orlando Torres, Ronal Stevent × 08/17–18, "Renovation project"), after 30 rows on 08/03 and 0 on 08/10. `ContractorJob.propertyId` is required, so **no job can exist without a property** — the rows are reported and skipped, and those crews' updates land in `ContractorDailyNote` with a null property | Whether three men's work is on the calendar at all. Recurs every week Boca is scheduled | Skipped for the 08/17 week (both days already past, so nothing lost retroactively). **Decide before the next Monday load.** §7 forbids an `OTHERS` bucket and §9.4 wants a **named** row — but `Property` is heavyweight here (rooms, geofence, checklist templates, recurring rules, network devices, Teams channel) and Boca is not a Stayable hotel, so a row appears in every property picker across unrelated features. Palm Beach County if anything legal touches it |
+| **Q43** | **Who loads the week every Monday, and how would anyone know it didn't happen?** No cron, no CI, no alert; it cannot be automated from this repo (no Smartsheet credential). Missed this Monday: the week was still empty on Tuesday with two days of crew reports already written to Smartsheet | Every fanned-out update that week resolves to `ContractorDailyNote` and the calendar reads empty — indistinguishable from nothing having been sent | Name a person plus a recurring reminder, **or** build the §9.4 plan fan-out (`POST /api/rollover` after a successful Smartsheet rollover), which is explicitly out of scope for fan-out v1. Interim check: `scripts/check-schedule-window.ts` is read-only and answers "which days have jobs?" |
 | **Q41** | **What should the fan-out do when one contractor has two jobs on one day?** The contract asserts `(date, contractor)` is unique — true of sheet rows, **not an invariant here**: `/maintenance/jobs/new` lets a manager create a second one by hand and nothing prevents it. No collision exists today (65 jobs, all assigned) | D-14c only — a branch in the decision function | **Don't guess.** Write a `ContractorDailyNote` naming both job ids and report it, rather than picking one. Attaching a crew's report to the wrong job is worse than an unplaced note a human can file. Cheap to decide now |
 | **Q35** | ✅ **CLOSED 2026-08-13 — `DELAYED` added** (migration `20260813120000`, authored not applied). Pending and Delayed are now distinct on the calendar, and the source vocabulary maps one-to-one onto the enum. `OPEN_JOB_STATUSES` gained it (a delayed job is still live work) and a test pins that every status is open XOR terminal. Original below | — | Closed |
 | **Q35 (original)** | **"Delayed" cannot be expressed.** `ContractorJobStatus` is PLANNED/IN_PROGRESS/DONE/CANCELLED, so Smartsheet's Pending *and* Delayed both map to PLANNED — a Pending→Delayed change moves nothing in the status field. The sync records it as a note by tracking the last-seen source status in `audit_log`, or it would be invisible. Three jobs sat in Delayed on 2026-08-12 | Whether the calendar can show what the sheet shows | **Add `DELAYED` to the enum** if it is operationally real, which it looks to be — one additive migration, a label, a colour. Roughly 30 min. Otherwise it stays a note and the two systems disagree on screen |
