@@ -22,11 +22,14 @@ The client posts `roomId`; the action's Zod schema no longer has that key, so `r
 and every PER_ROOM create fails with *"This checklist is per-room — select at least one room."*
 Not committed, not deployed — working tree only.
 
-**Two ways out. Kyle's call, not mine to take unilaterally while you hold the tree:**
-1. **Finish it** — port the multi-select client (see design below) so the two halves match.
-2. **Park it** — `git checkout -- app/checklists/new/actions.ts lib/manual-create.ts lib/manual-create.test.ts`.
-   The full change is saved as a patch at
-   `<scratchpad>/multiroom-wip.patch` (707 lines) and can be reapplied with `git apply`.
+**RESOLVED 2026-08-31 (Kyle): carry it over, don't commit yet.** Session `checklist-app-4b` switched the
+tree to `main`, my three files applied cleanly and stay uncommitted; `ManualCreateClient.tsx` conflicted
+on the 3-way and was reverted to `main`'s version rather than resolved, because the new batch-create
+wizard replaces that file wholesale. The 707-line patch at `<scratchpad>/multiroom-wip.patch` is
+preserved but **must not be re-applied — it is already applied.**
+
+**Tree ownership handed to `checklist-app-4b` on 2026-08-31.** This session is done editing
+`lib/manual-create.ts`, `app/checklists/new/actions.ts` and `lib/manual-create.test.ts`.
 
 ---
 
@@ -70,8 +73,23 @@ My first attempt was built on a stale branch that predated `zone` and **would ha
 per-zone "select all"** — at 167 rooms that is the difference between usable and not, and
 "Building A today" is exactly how the work is split.
 
-`MAX_ROOMS_PER_CREATE` is currently **60**, which is *below* a full property (127–167). If the
-intent is "select the whole building," check the largest zone's room count before trusting 60.
+### ❌ `MAX_ROOMS_PER_CREATE = 60` IS WRONG, AND SO IS ITS COMMENT — mine, measured 2026-08-31
+
+The comment I shipped on that constant — *"60 is above the biggest Stayable property's room count"* —
+is **false and must not survive into a commit.** Measured from
+`scripts/data/RoomZoning_Stayable_081226.json`:
+
+| | | | | | | | |
+|---|---|---|---|---|---|---|---|
+| KE 167 | KW 160 | LL 157 | DP 153 | SA 140 | OR 135 | JW 133 | JN 127 |
+
+**1,172 rooms total. Largest single zone: 80 (DP, Building B)** — then KW Building C 60, LL Building B
+56, JW Building E 52, JN Building A 40, OR 37, KE/SA 36.
+
+So 60 blocks a whole-property create **and** blocks a single-building create at DP — the exact
+"Building A today" case `groupRoomsByZone` exists to serve. `checklist-app-4b` measured this
+independently and reached the same figures; its spec sets **200**, plus
+`MAX_INSTANCES_PER_CREATE = 400` to bound subjects × dates.
 
 ---
 

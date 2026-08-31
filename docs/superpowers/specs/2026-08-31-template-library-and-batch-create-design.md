@@ -41,7 +41,7 @@ immediately**, so work is committed freely and pushed in completed chunks, not p
 | D13 | Per-field notes | Visible to submitter, **no reply thread**, no resolve loop |
 | D14 | Teams target | New per-property field; **build it, leave unset** until Kate supplies IDs (§Q4) |
 | D15 | Property picker | **"All my properties"** — spans only what the user can access |
-| D16 | Room source | **DB only.** Connector supplies no room inventory; no occupancy sync here |
+| D16 | Room source | **DB only.** Connector supplies no room inventory; no occupancy sync here. **Verified twice, independently** — see §4a |
 | D17 | Wizard editing | **Per-batch assignee + due time** |
 
 ---
@@ -138,7 +138,40 @@ This is the same hazard CLAUDE.md records for `InstanceStatus`: a new enum membe
 a green build. **All 34 must be visited, and an exhaustiveness test must pin it**, in the manner
 of the existing `rbac.test.ts` role test.
 
+Three specific sites, called out because a boolean is hiding the branch:
+
+1. **`validateRoomSelection({ perRoom: boolean })`** (`lib/manual-create.ts:67`) — a boolean cannot
+   express a third subject. It must take the `TemplateScope` (and, once W1 lands, `copies`) so the
+   compiler forces a decision when a member is added.
+2. **The `perRoom` guard** (`actions.ts:94-95`) decides whether `roomIds` is honoured at all.
+   `PER_ZONE` needs its own answer here, not `perRoom`'s.
+3. **The `roomLabel` fallback** (`actions.ts:117`, `:192`) keeps a free-text label only when there is
+   no real `Room` row. `PER_ZONE` has a zone but no room, so it falls into the free-text path by
+   default — which is almost certainly wrong and must be decided explicitly.
+
+The `perRoom` boolean is threaded through six sites in `actions.ts`. Replacing it with the scope is
+part of W1, not a later cleanup.
+
 ---
+
+## 4a. Rooms and Cloudbeds — settled, do not re-derive
+
+Two sessions checked this independently on 2026-08-31 and agree:
+
+- **There is no room-inventory endpoint through MCP.** Both connectors (`Cloudbeds` and
+  `Stayable Dashboard - Shared`) are the same server with the same 14 tools. `get_today` is
+  counts-only. `get_daily_report` is per-property aggregates. **Room-level detail exists for exactly
+  one thing: blocked rooms, via `get_ooo_rooms`** — verified live against Lakeland (real numbers
+  `119`, `183`, `240`, `APT1`, with types and reasons).
+- **The room inventory is already here and it already came from Cloudbeds.** `scripts/load-rooms.ts`
+  + `scripts/data/RoomZoning_Stayable_081226.json`, migration `20260812130000_add_room_zone_and_type`,
+  loaded 2026-08-12. 1,172 rooms with `zone` and `roomType`. The "get room data out of Cloudbeds"
+  question was answered by that one-time export, not by an API.
+- **`§Q12` ("Cloudbeds per-property read-only API keys") is stale.** The keys exist and work — in the
+  `dashboard.rentstayable.com` project, not in this repo.
+- **The real remaining gap is occupancy, not inventory.** The export deliberately excluded occupancy
+  and OOO state, so every room sits at the `VACANT` default. D16 leaves it there for this scope; if
+  it is ever closed, `get_ooo_rooms` is the lever.
 
 ## 4. Workstreams
 
@@ -252,7 +285,7 @@ room belongs to the property.
 
 ### W5 — Instance naming (D8)
 
-`{Template} {ShortCode} {ScopeToken} {MMDDYY}`:
+`{Template} {ShortCode} {ScopeToken} {MMDDYYYY}`:
 
 - `Housekeeping Checklist LL 201 09012026`
 - `812 PM PA Checklist JN Randy R. 09012026`
@@ -267,6 +300,14 @@ was specified but never fully implemented — shipped code produces `Arrival Che
 join key.
 
 The preview is live in the wizard and is the exact string written.
+
+⚠ **The date is `MMDDYYYY`, eight digits — not the project's `MMDDYY`.** `09012026`, not `090126`.
+This is deliberate: it is what Kyle wrote in the brief and what he approved in the preview. But it
+**diverges from the file-naming convention in CLAUDE.md** (`Title_PropertyID_MMDDYY`), which drives
+the PDF filenames these instances sit beside — `Arrival_4645_052626_Rm312.pdf` is six digits. So a
+checklist named `…09012026` will export a PDF named `…090126`. Whichever way this goes, it is
+inherited by the amending ADR and by every instance created after it: **a find-and-replace now, a
+data migration later.** Flagged to Kyle; the eight-digit form stands until he says otherwise.
 
 ### W6 — Permissions (D7)
 
