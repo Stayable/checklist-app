@@ -159,7 +159,7 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
     select: {
       allProperties: true,
       properties: { select: { propertyId: true } },
-      _count: { select: { instances: true } },
+      _count: { select: { instances: true, questions: true } },
       questions: {
         orderBy: { orderIndex: "asc" },
         select: { type: true, prompt: true, required: true, photoMax: true, failFlagsIssue: true },
@@ -219,7 +219,25 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
   await db.$transaction(async (tx) => {
     await tx.checklistTemplate.update({
       where: { id },
-      data: { name, defaultRole, scope, copies, reviewLevel, allProperties },
+      data: {
+        name,
+        defaultRole,
+        scope,
+        copies,
+        reviewLevel,
+        allProperties,
+        // A seeded draft is `active: false` with zero questions, and that is
+        // exactly how /templates tells a DRAFT from a RETIRED template. The
+        // moment someone writes the first question the pair stops being
+        // distinguishable -- an inactive template WITH questions looks retired,
+        // so a half-authored draft would vanish from the list it was authored
+        // from. Flip it on that transition only: 0 questions -> some questions.
+        // Deliberately NOT `active: questions.length > 0`, which would silently
+        // re-activate a template an admin had chosen to deactivate.
+        ...(current._count.questions === 0 && questions.length > 0
+          ? { active: true }
+          : {}),
+      },
     });
     // Replace property associations.
     await tx.templateProperty.deleteMany({ where: { templateId: id } });

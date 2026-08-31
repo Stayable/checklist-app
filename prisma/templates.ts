@@ -264,7 +264,7 @@ export const TEMPLATES: SeedTemplate[] = [
     code: "MNT",
     name: "Maintenance Checklist",
     defaultRole: Role.MT,
-    scope: TemplateScope.AD_HOC,
+    scope: TemplateScope.PER_PROPERTY,
     copies: InstanceMultiplicity.PER_TASK,
     reviewLevel: ReviewLevel.MANAGER,
     allProperties: true,

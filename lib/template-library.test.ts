@@ -206,3 +206,16 @@ describe("seedActiveFields — the upsert split", () => {
     expect(writers.map((t) => t.code).sort()).toEqual(["HKR", "MGR", "PAR"]);
   });
 });
+
+describe("Maintenance Checklist scope", () => {
+  it("covers the whole property, one instance per task", () => {
+    // Kyle's list reads "Maintenance Checklist - Daily - per task, per location".
+    // "per location" is the property, so this is PER_PROPERTY + PER_TASK, not
+    // AD_HOC. It was seeded AD_HOC first; subjectKindFor resolves both to TASK,
+    // so the bug would have been invisible at runtime -- pinned here instead.
+    const mnt = byCode.get("MNT");
+    expect(mnt).toBeDefined();
+    expect(mnt!.scope).toBe(TemplateScope.PER_PROPERTY);
+    expect(mnt!.copies).toBe(InstanceMultiplicity.PER_TASK);
+  });
+});
