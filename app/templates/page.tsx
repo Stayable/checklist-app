@@ -14,7 +14,11 @@ export default async function TemplatesPage() {
   const scopedIds = resolveScopedPropertyIds(accessible, activeId);
 
   const templates = await db.checklistTemplate.findMany({
-    where: { active: true },
+    // Active templates, plus the W2 drafts — seeded `active: false` with zero
+    // questions and waiting for Kyle to author them. `questions: { none: {} }`
+    // is what separates a draft from a RETIRED template: a retired one (HKR /
+    // PAR / MGR) still carries its question set, so it stays out of this list.
+    where: { OR: [{ active: true }, { questions: { none: {} } }] },
     orderBy: { name: "asc" },
     select: {
       id: true,

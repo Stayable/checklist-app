@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteTemplate } from "./actions";
+import {
+  applyTemplateFilter,
+  countNeedsQuestions,
+  isDraft,
+  type TemplateFilter,
+} from "@/lib/template-filters";
 
 type Row = {
   id: string;
@@ -21,6 +27,10 @@ export function TemplatesClient({ rows }: { rows: Row[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [filter, setFilter] = useState<TemplateFilter>("ALL");
+
+  const needsQuestionsCount = countNeedsQuestions(rows);
+  const visible = applyTemplateFilter(rows, filter);
 
   function onDelete(id: string, name: string) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
@@ -52,13 +62,34 @@ export function TemplatesClient({ rows }: { rows: Row[] }) {
           {banner.text}
         </div>
       )}
-      {rows.map((t) => (
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterChip label={`All (${rows.length})`} selected={filter === "ALL"} onClick={() => setFilter("ALL")} />
+        <FilterChip
+          label={`Needs questions (${needsQuestionsCount})`}
+          selected={filter === "NEEDS_QUESTIONS"}
+          onClick={() => setFilter("NEEDS_QUESTIONS")}
+        />
+      </div>
+      {visible.length === 0 && (
+        <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-600">
+          Every template in this scope has questions.
+        </p>
+      )}
+      {visible.map((t) => (
         <div key={t.id} className="flex items-center justify-between rounded-lg bg-white p-4 ring-1 ring-slate-200 shadow-sm">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-900">{t.name}</span>
               <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{t.code}</span>
               {t.allProperties && <span className="rounded bg-sky-50 px-1.5 py-0.5 text-xs text-sky-700">All properties</span>}
+              {isDraft(t) && (
+                <span
+                  className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800"
+                  title="No questions yet — this template cannot be filled until it has at least one."
+                >
+                  Draft
+                </span>
+              )}
             </div>
             <p className="mt-0.5 text-xs text-slate-500">
               {t.questionCount} question{t.questionCount === 1 ? "" : "s"} · {t.scope} · {t.instanceCount} checklist{t.instanceCount === 1 ? "" : "s"}
@@ -85,5 +116,30 @@ export function TemplatesClient({ rows }: { rows: Row[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function FilterChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`rounded-full px-3 py-1 text-sm font-medium ring-1 ${
+        selected
+          ? "bg-navy text-white ring-navy"
+          : "bg-white text-slate-700 ring-slate-300 hover:bg-slate-50"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
