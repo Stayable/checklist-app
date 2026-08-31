@@ -1,8 +1,9 @@
 // components/shell/AppShell.tsx
 import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
-import { accessibleProperties, isPortfolioRole } from "@/lib/rbac";
+import { accessibleProperties } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
+import { shouldShowPropertyPicker } from "@/lib/property-picker";
 import { NAV_COLLAPSED_COOKIE, navSectionsForRole } from "@/lib/nav";
 import { ShellChrome } from "./ShellChrome";
 
@@ -16,7 +17,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   const role = session.user.role;
   const properties = await accessibleProperties({ id: session.user.id, role });
-  const showPicker = !isPortfolioRole(role) && properties.length > 1;
+  // W7: the picker is now shown to portfolio roles too. Every property-scoped
+  // page already calls getCurrentPropertyId itself, so a CORPORATE/ADMIN cookie
+  // was always honoured — there was simply no control to set it, and no way for
+  // a scoped manager to get back to seeing all of their properties at once.
+  // Narrowing is not widening: the option list is accessibleProperties, and the
+  // server still resolves scope through resolveScopedPropertyIds.
+  const showPicker = shouldShowPropertyPicker(properties.length);
   const currentPropertyId = showPicker
     ? await getCurrentPropertyId(properties.map((p) => p.id))
     : null;
