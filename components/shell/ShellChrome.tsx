@@ -12,6 +12,7 @@ import {
   type NavSection,
 } from "@/lib/nav";
 import type { PickerProperty } from "@/lib/rbac";
+import { allPropertiesLabel } from "@/lib/property-picker";
 import { PropertyPicker } from "@/components/PropertyPicker";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -59,6 +60,9 @@ export function ShellChrome({
   }
 
   const activeProperty = properties.find((p) => p.id === currentPropertyId);
+  // No active property now means the deliberate all-scope selection, not "unset"
+  // — so the collapsed rail says ALL rather than the old "··" placeholder.
+  const allScopeLabel = allPropertiesLabel(role, properties.length);
 
   const footer = (
     <div className="flex flex-col gap-3 px-2">
@@ -74,7 +78,9 @@ export function ShellChrome({
           </span>
         </span>
       </Link>
-      {showPicker && <PropertyPicker properties={properties} current={currentPropertyId} />}
+      {showPicker && (
+        <PropertyPicker properties={properties} current={currentPropertyId} role={role} />
+      )}
       <div className="flex items-center justify-between">
         <OnlineStatus />
         <SignOutButton />
@@ -97,16 +103,16 @@ export function ShellChrome({
           type="button"
           onClick={() => setCollapsed(false)}
           title={
-            activeProperty ? `${activeProperty.shortCode} — ${activeProperty.name}` : "Choose property"
+            activeProperty ? `${activeProperty.shortCode} — ${activeProperty.name}` : allScopeLabel
           }
           aria-label={
             activeProperty
               ? `Property ${activeProperty.name}. Expand navigation to change.`
-              : "Choose property"
+              : `${allScopeLabel}. Expand navigation to change.`
           }
           className="rounded-lg bg-white/10 px-1.5 py-1 text-xs font-bold text-white hover:bg-white/20"
         >
-          {activeProperty?.shortCode ?? "··"}
+          {activeProperty?.shortCode ?? "ALL"}
         </button>
       )}
       <OnlineStatus />
@@ -134,7 +140,11 @@ export function ShellChrome({
           <div className="flex items-center gap-2">
             <OnlineStatus />
             {showPicker && (
-              <PropertyPicker properties={properties} current={currentPropertyId} />
+              <PropertyPicker
+                properties={properties}
+                current={currentPropertyId}
+                role={role}
+              />
             )}
             <Link href="/profile" aria-label="Profile" className="text-navy">
               <User className="h-5 w-5" />
