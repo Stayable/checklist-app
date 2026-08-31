@@ -12,7 +12,7 @@ contractor update fan-out.
 
 ## 1. Why
 
-Ten separate asks from the 2026-08 test round, plus the real blocker behind all of them:
+Eleven asks from the 2026-08 test round, plus the real blocker behind all of them:
 **the 9 seeded templates hold placeholder questions**, and the 31 templates the business
 actually runs in Connecteam have no home in the app. Field staff cannot be trained on
 placeholder content, so this work sits on the critical path to cutover.
@@ -33,7 +33,7 @@ immediately**, so work is committed freely and pushed in completed chunks, not p
 | D5 | The 16 property variants | **28 separate templates**, different questions per property |
 | D6 | "To Create" section | **No new feature.** 31 draft templates + one `Needs questions` filter chip |
 | D7 | Permissions | Six named people → **`ADMIN`**. MANAGER / AGENT / CORPORATE → **view-only** templates |
-| D8 | Instance name format | `{Template} {ShortCode} {ScopeToken} {MMDDYY}` |
+| D8 | Instance name format | `{Template} {ShortCode} {ScopeToken} {MMDDYYYY}` (8-digit — see W5) |
 | D9 | Save as Draft | **Batch definition only.** No instances, no new `InstanceStatus` |
 | D10 | Issues filters | `Open · Unassigned · Resolved` + 4 priorities. Duplicate killed |
 | D11 | `WONT_FIX` | Hide the chip and the setter. **Enum value stays** |
@@ -41,7 +41,7 @@ immediately**, so work is committed freely and pushed in completed chunks, not p
 | D13 | Per-field notes | Visible to submitter, **no reply thread**, no resolve loop |
 | D14 | Teams target | New per-property field; **build it, leave unset** until Kate supplies IDs (§Q4) |
 | D15 | Property picker | **"All my properties"** — spans only what the user can access |
-| D16 | Room source | **DB only.** Connector supplies no room inventory; no occupancy sync here. **Verified twice, independently** — see §4a |
+| D16 | Room source | **DB only.** Connector supplies no room inventory; no occupancy sync here. **Verified twice, independently** — see §3a |
 | D17 | Wizard editing | **Per-batch assignee + due time** |
 
 ---
@@ -154,7 +154,7 @@ part of W1, not a later cleanup.
 
 ---
 
-## 4a. Rooms and Cloudbeds — settled, do not re-derive
+## 3a. Rooms and Cloudbeds — settled, do not re-derive
 
 Two sessions checked this independently on 2026-08-31 and agree:
 
@@ -175,7 +175,7 @@ Two sessions checked this independently on 2026-08-31 and agree:
 
 ## 4. Workstreams
 
-1→2→3→4 is a chain. 5–10 are independent and can land in any order.
+1→2→3→4 is a chain. 5–11 are independent and can land in any order.
 
 ### W1 — Two-axis scope (blocks W2, W3, W4)
 
@@ -357,6 +357,25 @@ per property as Kate supplies IDs. A failure at one property never blocks anothe
 type. Visible to the submitter when the submission returns. No reply thread, no unread state, no
 resolve loop — CLAUDE.md lists chat/messaging as out of scope and this deliberately stays short of
 it. Bilingual EN+ES on the field-staff surface per ADR-013; the review surface stays English-only.
+
+### W11 — `/review` in-page property filter
+
+**A different gap from W7, not a duplicate of it.** W7 fixes the *header picker*. This fixes the
+*page*: `app/review/page.tsx:30` accepts only `searchParams: { filter?: string }`, so property comes
+from the header cookie alone. `shortCode` is already selected and rendered per row (`:62`, `:85`) but
+is not filterable, and there is no property column heading — so a portfolio reviewer cannot see all
+8 properties at once and group by property.
+
+Add a property column and property filter chips beside the existing status tabs, taking a
+`property` search param that composes with `filter`. Mirrors the shipped network ticket-filter
+pattern (`lib/network/ticket-filters.ts`). Chips are drawn from `accessiblePropertyIds`, so a scoped
+user sees only theirs. Scope stays enforced server-side through the same `scopeIds` the queue
+already uses — a filter is a narrowing of what the user may see, never a widening.
+
+This closes the ask recorded in CLAUDE.md as Bea's: `/completed` has on-page filters and `/review`
+has none, which is what she was reacting to. **Verified 2026-09-01** — `Export PDF` already exists at
+`app/review/[id]/page.tsx:180`, so that half of her feedback needs no work; only bulk/zip export is
+genuinely missing, and that stays out of scope (§A7, P2).
 
 ---
 
