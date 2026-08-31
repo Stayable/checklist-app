@@ -27,7 +27,7 @@ immediately**, so work is committed freely and pushed in completed chunks, not p
 | # | Decision | Chosen |
 |---|---|---|
 | D1 | Base branch | `main`, single branch. `rv9B6` abandoned in place |
-| D2 | The 475 WIP lines | Ported to `main`, uncommitted. 3 of 4 files clean; `ManualCreateClient.tsx` conflicted, reverted, patch kept |
+| D2 | The 475 WIP lines | Ported to `main`, uncommitted. 3 of 4 files clean; `ManualCreateClient.tsx` conflicted, reverted, patch kept. **Authored by session `checklist-app-c0`** — see `HandoffMultiRoomCreate_RISE8_083126.md` |
 | D3 | Scope model | **Two axes** — subject × copies, not one flat enum |
 | D4 | Who is on shift | **Manager picks people at create time.** No Paycom, no roster inference |
 | D5 | The 16 property variants | **28 separate templates**, different questions per property |
@@ -219,8 +219,12 @@ listing every instance → Create.**
 
 The subject picker varies by `subject × copies`:
 
-- `PER_ROOM` → room list from the DB, grouped by `zone`, with `Select all` / `Clear`.
-  **No occupancy or OOO signal** (D16) — `rooms.status` is a documented default, not a fact.
+- `PER_ROOM` → room list from the DB, **grouped by `zone` with a per-zone "select all"**.
+  `groupRoomsByZone` already exists (`ManualCreateClient.tsx:191`) and must be kept — a property
+  here has 127–167 rooms, so a flat list of numbers is a scroll with no landmarks, and "Building A
+  today" is how the work is actually split. **No occupancy or OOO signal** (D16) — `rooms.status`
+  is a documented default, not a fact. Zoning for **JW, DP and KW is flagged provisional** at the
+  source.
 - `PER_ZONE` → the property's zone list.
 - `PER_PROPERTY` + `ONE` → nothing to pick.
 - `PER_PROPERTY` + `PER_ASSIGNEE` → checkbox list of users at that property whose role matches
@@ -228,10 +232,23 @@ The subject picker varies by `subject × copies`:
 - `PER_PROPERTY` + `PER_TASK` → free-text task names, one per line.
 
 Instance count = `subjects × dates`. Three rooms × two dates = six instances, each its own
-`ChecklistInstance`, system ID, PDF and review row (ADR-009). `MAX_ROOMS_PER_CREATE = 60` caps
-**subjects per batch**; a second cap, `MAX_INSTANCES_PER_CREATE = 200`, bounds the whole
-submission across every batch. 200 is above any plausible day (the largest property is under 200
-rooms and nobody creates a week at once) and still bounds the write batch.
+`ChecklistInstance`, system ID, PDF and review row (ADR-009).
+
+⚠ **`MAX_ROOMS_PER_CREATE = 60` must be raised to 200.** The constant ships with the comment
+*"60 is above the biggest Stayable property's room count"*, which is **false**. Measured from
+`scripts/data/RoomZoning_Stayable_081226.json`: `KE 167 · KW 160 · LL 157 · DP 153 · SA 140 ·
+OR 135 · JW 133 · JN 127`, 1,172 rooms total, and the **largest single zone is 80 rooms**. At 60
+the cap blocks not just a whole-property create but a single building — the exact "Building A
+today" case the zone grouping exists to serve. 200 clears the largest property with headroom.
+
+A second cap, `MAX_INSTANCES_PER_CREATE = 400`, bounds the whole submission across every batch
+(a full property × two days). See §7.8 — at that size the sequential write loop needs a duration
+check before the cap is trusted.
+
+**No wrapping transaction.** Creates are sequential, each with the existing P2002 sequence retry,
+because a P2002 inside a transaction poisons it and defeats the retry — the same reasoning already
+written down in `lib/network/ticketing.server.ts`. The server re-validates that every submitted
+room belongs to the property.
 
 ### W5 — Instance naming (D8)
 
@@ -334,10 +351,21 @@ the Network device/ticket orphan fixes (separate work — `NetworkOrphanQueries_
 4. **Real question content for all 31 templates** — owed by Karla / Christopher. This spec builds the
    shelf; it does not fill it. **Still the hard blocker for cutover.**
 5. **Current roles of the six** named people are unverified, and `jj@rentstayable.com` may not exist.
-6. **`MAX_INSTANCES_PER_CREATE = 200`** is my number, not Kyle's. Cheap to change.
+6. **`MAX_INSTANCES_PER_CREATE = 400`** is my number, not Kyle's. Cheap to change.
 7. **There is no `AM` (Area Manager) role.** `Role` is `HK · PA · MT · MANAGER · CORPORATE · ADMIN ·
    NETWORK_TECH · AGENT`, so `Property Inspection — per AM` has no assignee pool to draw from. Three
    ways out, none chosen: draw from `CORPORATE` (area managers span properties, so this is the
    closest fit and needs no schema change); draw from `MANAGER` (wrong — a property manager is not an
    area manager); or add an `AM` role, which touches `rbac.ts`, `role-display.ts` and the
    exhaustiveness tests. **Needs Kyle's call before W2 seeds this template.**
+8. **The sequential write loop is unmeasured at scale.** No wrapping transaction (by design, see W4),
+   so 400 instances is 400 round trips plus retries, against a Neon instance that autosuspends. Time
+   one full-property create before trusting `MAX_INSTANCES_PER_CREATE = 400`; if it is slow the fix
+   is chunking with progress, not a transaction.
+9. **The working tree is mid-port and manual per-room create is currently BROKEN there.**
+   `actions.ts` takes `roomIds: string[]`; `ManualCreateClient.tsx` is still `main`'s version and
+   posts singular `roomId`, so the Zod schema defaults `roomIds` to `[]` and every `PER_ROOM` create
+   fails with *"This checklist is per-room — select at least one room."* **Typecheck passes** — the
+   mismatch is across the form boundary, so types do not catch it. Nothing committed, nothing
+   deployed. W4 closes this by replacing the client; until then the tree is not runnable for that
+   flow.
