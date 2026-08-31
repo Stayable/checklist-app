@@ -428,9 +428,10 @@ device/ticket orphan fixes (`NetworkOrphanQueries_RISE8_083126.sql`).
    400 instances is 400 round trips plus retries against a Neon instance that autosuspends. Time one
    full-property create before trusting 400; if it is slow the fix is chunking with progress, not a
    transaction.
-7. **The working tree is mid-port and manual per-room create is BROKEN there.** `actions.ts` takes
-   `roomIds: string[]`; `ManualCreateClient.tsx` is still `main`'s version and posts singular
-   `roomId`, so the Zod schema defaults `roomIds` to `[]` and every `PER_ROOM` create fails with
-   *"This checklist is per-room — select at least one room."* **Typecheck passes** — the mismatch is
-   across the form boundary. Nothing committed, nothing deployed. **W4 closes this, and it must close
-   before the soft launch.**
+7. **~~The working tree is mid-port and manual per-room create is BROKEN there.~~ FIXED
+   2026-08-31, `f4eb8d5`.** The action took `roomIds: string[]` while the client posted singular
+   `roomId`; Zod stripped the unknown key, `roomIds` fell back to `[]`, and every `PER_ROOM` create
+   failed with *"select at least one room"* — with a clean typecheck, because the mismatch lives
+   across the form boundary. `resolveRoomIds` now accepts both shapes, `roomIds` winning when
+   non-empty, and is pinned by 5 tests. **`roomId` is transitional — delete it in W4** once the
+   multi-select client posts `roomIds`.
