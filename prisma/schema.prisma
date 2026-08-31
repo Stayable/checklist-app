@@ -60,6 +60,27 @@ enum TemplateScope {
   AD_HOC
 }
 
+// W1 / ADR-034 (owed). The SECOND scope axis.
+//
+// TemplateScope answers "what is this checklist ABOUT" (a room, the property).
+// InstanceMultiplicity answers "how many copies exist per subject per day".
+// They are independent: "812 PM PA Checklist" is PER_PROPERTY + PER_ASSIGNEE
+// (one per PA on shift), while "Roof PM" is PER_PROPERTY + ONE.
+//
+// Modelled as a second field rather than more TemplateScope members on purpose:
+// PER_PA and PER_PM would be the same behaviour with a different role, so every
+// new role would need another enum member and every `scope ===` check would have
+// to learn it.
+enum InstanceMultiplicity {
+  ONE // one instance per subject
+  // One per person the creator ticks at create time. The role pool comes from
+  // ChecklistTemplate.defaultRole. NOT derived from shift data -- the app has
+  // none (Paycom owns scheduling and is out of scope), so the creator chooses.
+  PER_ASSIGNEE
+  // One per task the creator names, e.g. Maintenance / Property Task.
+  PER_TASK
+}
+
 enum ReviewLevel {
   NONE
   MANAGER
@@ -421,21 +442,23 @@ model Room {
 // ---------------------------------------------------------------------------
 
 model ChecklistTemplate {
-  id                    String        @id @default(uuid()) @db.Uuid
+  id                    String               @id @default(uuid()) @db.Uuid
   // ADR-009 templateCode used in the CL-{prop}-{code}-{date}-{seq} system ID.
-  code                  String        @unique @db.VarChar(8)
+  code                  String               @unique @db.VarChar(8)
   name                  String
-  version               Int           @default(1)
-  defaultRole           Role          @map("default_role")
+  version               Int                  @default(1)
+  defaultRole           Role                 @map("default_role")
   scope                 TemplateScope
-  reviewLevel           ReviewLevel   @default(MANAGER) @map("review_level")
-  active                Boolean       @default(true)
-  allProperties         Boolean       @default(false) @map("all_properties")
+  reviewLevel           ReviewLevel          @default(MANAGER) @map("review_level")
+  // W1: how many instances one subject yields per day. See InstanceMultiplicity.
+  copies                InstanceMultiplicity @default(ONE)
+  active                Boolean              @default(true)
+  allProperties         Boolean              @default(false) @map("all_properties")
   // S1: gates the checkout-flag capture block (fill flow + review confirm).
   // On for Departure/checkout-type templates, off elsewhere.
-  collectsCheckoutFlags Boolean       @default(false) @map("collects_checkout_flags")
-  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  collectsCheckoutFlags Boolean              @default(false) @map("collects_checkout_flags")
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz
 
   questions      Question[]
   recurringRules RecurringRule[]
@@ -528,6 +551,11 @@ model ChecklistInstance {
   templateId String  @map("template_id") @db.Uuid
   propertyId String  @map("property_id") @db.Uuid
   roomId     String? @map("room_id") @db.Uuid
+
+  // W1: scope token for a PER_TASK instance ("Pool gate", "Jetting drain lines").
+  // Deliberately its own column and NOT parsed back out of `title`: title is a
+  // composed display string and parsing it is fragile.
+  taskLabel String? @map("task_label")
 
   scheduledFor   DateTime       @map("scheduled_for") @db.Date
   dueAt          DateTime?      @map("due_at") @db.Timestamptz

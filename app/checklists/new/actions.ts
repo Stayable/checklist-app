@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { InstanceStatus, Prisma, TemplateScope } from "@prisma/client";
+import { InstanceStatus, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireManager, canAccessProperty } from "@/lib/rbac";
@@ -10,9 +10,10 @@ import { etDateOnly, etYYYYMMDD } from "@/lib/datetime";
 import {
   MAX_ROOMS_PER_CREATE,
   resolveRoomIds,
+  subjectKindFor,
+  validateSubjectSelection,
   planRoomInstances,
   summarizeCreateResult,
-  validateRoomSelection,
 } from "@/lib/manual-create";
 
 export type ActionResult =
@@ -43,6 +44,9 @@ const schema = z.object({
   roomId: z.string().uuid().nullable().optional(),
   // S1: free-text room label when no Room row is chosen (e.g. "-", "Suite").
   roomLabel: z.string().trim().max(120).optional(),
+  // W1: scope token for a PER_TASK template ("Pool gate"). Single for now; the
+  // batch wizard (W4) will send one per instance.
+  taskLabel: z.string().trim().min(1).max(120).optional(),
   assignedUserId: z.string().uuid().nullable().optional(),
   title: z.string().trim().min(1, "Title is required"),
   // ADR-009 force-create: create even where a live instance already exists today.
@@ -66,6 +70,7 @@ export async function createInstanceManually(
     roomIds: roomIdsInput,
     roomId: legacyRoomId,
     roomLabel,
+    taskLabel,
     assignedUserId,
     title,
     allowDuplicates,
@@ -82,6 +87,7 @@ export async function createInstanceManually(
     select: {
       code: true,
       scope: true,
+      copies: true,
       active: true,
       allProperties: true,
       properties: { select: { propertyId: true } },
@@ -102,11 +108,34 @@ export async function createInstanceManually(
     };
   }
 
-  const perRoom = template.scope === TemplateScope.PER_ROOM;
-  const requested = perRoom ? roomIds : [];
-  const selectionError = validateRoomSelection({
-    perRoom,
-    count: requested.length,
+  // W1: two scope axes. `scope` says what the checklist is about; `copies` says
+  // how many exist per subject. subjectKindFor collapses them into the one thing
+  // this screen enumerates, and REJECTS the nonsense combinations rather than
+  // silently picking an axis (which would create a wrong instance count).
+  const subject = subjectKindFor(template.scope, template.copies);
+  if (!subject.ok) return { ok: false, error: subject.error };
+  const kind = subject.kind;
+
+  // Only ROOM enumerates a list on this screen today. ASSIGNEE and TASK create a
+  // single instance here -- one person, or one task -- which is correct but not
+  // yet plural; the batch wizard (W4) adds the multi-select. Counting the single
+  // value keeps the same validation path rather than a second one.
+  const requested = kind === "ROOM" ? roomIds : [];
+  const selectedCount =
+    kind === "ROOM"
+      ? requested.length
+      : kind === "ASSIGNEE"
+        ? assignedUserId
+          ? 1
+          : 0
+        : kind === "TASK"
+          ? taskLabel
+            ? 1
+            : 0
+          : 0;
+  const selectionError = validateSubjectSelection({
+    kind,
+    count: selectedCount,
   });
   if (selectionError) return { ok: false, error: selectionError };
 
@@ -124,8 +153,10 @@ export async function createInstanceManually(
     }
   }
 
-  // Free-text label only kept when there is no real Room row.
-  const effectiveRoomLabel = perRoom ? null : (roomLabel?.trim() || null);
+  // Free-text label only kept when there is no real Room row. A per-assignee or
+  // per-task instance has no Room, so it may still carry one.
+  const effectiveRoomLabel = kind === "ROOM" ? null : (roomLabel?.trim() || null);
+  const effectiveTaskLabel = kind === "TASK" ? (taskLabel?.trim() ?? null) : null;
 
   // Need the property's short code (propertyId field) for the system ID.
   const property = await db.property.findUnique({
@@ -164,7 +195,7 @@ export async function createInstanceManually(
     allowDuplicates: allowDuplicates === true,
   });
 
-  if (perRoom && plan.create.length === 0) {
+  if (kind === "ROOM" && plan.create.length === 0) {
     return {
       ok: false,
       error:
@@ -201,6 +232,7 @@ export async function createInstanceManually(
           propertyId,
           roomId,
           roomLabel: roomId ? null : effectiveRoomLabel,
+          taskLabel: effectiveTaskLabel,
           scheduledFor: target,
           assignedUserId: assignedUserId ?? null,
           status: assignedUserId
@@ -222,8 +254,9 @@ export async function createInstanceManually(
     }
   }
 
-  // PER_ROOM creates one instance per room; everything else creates exactly one.
-  const targets: (string | null)[] = perRoom ? plan.create : [null];
+  // ROOM creates one instance per room; every other kind creates exactly one
+  // here (W4 makes ASSIGNEE and TASK plural too).
+  const targets: (string | null)[] = kind === "ROOM" ? plan.create : [null];
   const createdIds: string[] = [];
   const failedRoomIds: string[] = [];
 

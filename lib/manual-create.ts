@@ -1,3 +1,5 @@
+import { InstanceMultiplicity, TemplateScope } from "@prisma/client";
+
 import { formatDateInET } from "./datetime";
 
 /**
@@ -69,21 +71,76 @@ export function planRoomInstances({
 }
 
 /**
- * Validation message for a room selection, or null when it's acceptable.
- * PER_ROOM templates need at least one room; everything is capped.
+ * What a template enumerates when you create it.
+ *
+ * Replaces the `perRoom` boolean, which could only express two of four cases
+ * and silently treated everything that was not PER_ROOM as "one instance, no
+ * subject" -- which is wrong for a per-PA or per-task template.
  */
-export function validateRoomSelection({
-  perRoom,
+export type SubjectKind = "ROOM" | "ASSIGNEE" | "TASK" | "NONE";
+
+export type SubjectPlan =
+  | { ok: true; kind: SubjectKind }
+  | { ok: false; error: string };
+
+/**
+ * Resolve the two scope axes into the one thing the create screen enumerates.
+ *
+ * `copies` wins when it is not ONE, because the multiplicity axis names the
+ * thing you tick: a PER_ASSIGNEE template enumerates people even though its
+ * subject is the property.
+ *
+ * PER_ROOM combined with a non-ONE multiplicity is REJECTED rather than
+ * resolved. It would mean one instance per room per person -- a cross product
+ * nothing in the estate asks for, and quietly picking one of the two axes would
+ * create a confidently wrong number of checklists.
+ */
+export function subjectKindFor(
+  scope: TemplateScope,
+  copies: InstanceMultiplicity,
+): SubjectPlan {
+  if (scope === TemplateScope.PER_ROOM && copies !== InstanceMultiplicity.ONE) {
+    return {
+      ok: false,
+      error:
+        "A per-room checklist cannot also be per-person or per-task. Set the template to one copy per room.",
+    };
+  }
+  if (copies === InstanceMultiplicity.PER_ASSIGNEE) return { ok: true, kind: "ASSIGNEE" };
+  if (copies === InstanceMultiplicity.PER_TASK) return { ok: true, kind: "TASK" };
+  if (scope === TemplateScope.PER_ROOM) return { ok: true, kind: "ROOM" };
+  return { ok: true, kind: "NONE" };
+}
+
+/** Noun for a subject kind, singular and plural, for user-facing messages. */
+const SUBJECT_NOUN: Record<Exclude<SubjectKind, "NONE">, [string, string]> = {
+  ROOM: ["room", "rooms"],
+  ASSIGNEE: ["person", "people"],
+  TASK: ["task", "tasks"],
+};
+
+/**
+ * Validation message for a subject selection, or null when it's acceptable.
+ * A template that enumerates something needs at least one; everything is capped.
+ */
+export function validateSubjectSelection({
+  kind,
   count,
 }: {
-  perRoom: boolean;
+  kind: SubjectKind;
   count: number;
 }): string | null {
-  if (perRoom && count === 0) {
-    return "This checklist is per-room — select at least one room.";
+  if (kind === "NONE") {
+    return count > 0
+      ? "This checklist covers the whole property — there is nothing to select."
+      : null;
+  }
+  const [one, many] = SUBJECT_NOUN[kind];
+  if (count === 0) {
+    return `This checklist is per-${one} — select at least one ${one}.`;
   }
   if (count > MAX_ROOMS_PER_CREATE) {
-    return `Select at most ${MAX_ROOMS_PER_CREATE} rooms at once.`;
+    return `Select at most ${MAX_ROOMS_PER_CREATE} ${many} at once.`;
   }
   return null;
 }
