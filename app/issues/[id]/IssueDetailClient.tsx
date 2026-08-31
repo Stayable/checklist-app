@@ -48,7 +48,6 @@ export function IssueDetailClient({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [resolveNote, setResolveNote] = useState("");
-  const [closing, setClosing] = useState<"RESOLVED" | "WONT_FIX" | null>(null);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
@@ -119,9 +118,12 @@ export function IssueDetailClient({
     }));
   }
 
-  function onClose(target: "RESOLVED" | "WONT_FIX") {
+  // W8 (2026-08-31): "Won't fix" is gone as a settable outcome — resolve is the
+  // only close path now. The IssueStatus.WONT_FIX enum value deliberately
+  // stays so pre-existing rows still read and render (page.tsx's `closed`
+  // check, closeIssue's "Already closed." guard, the presign route).
+  function onClose() {
     setError(null);
-    setClosing(target);
     startTransition(async () => {
       let refs: PhotoRef[];
       try {
@@ -131,7 +133,7 @@ export function IssueDetailClient({
         return;
       }
       const result = await closeIssue(issueId, {
-        status: target === "RESOLVED" ? IssueStatus.RESOLVED : IssueStatus.WONT_FIX,
+        status: IssueStatus.RESOLVED,
         note: resolveNote,
         photos: refs,
       });
@@ -276,17 +278,10 @@ export function IssueDetailClient({
         <div className="mt-3 flex gap-2">
           <button
             disabled={pending || resolveNote.trim().length === 0}
-            onClick={() => onClose("RESOLVED")}
+            onClick={() => onClose()}
             className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
           >
-            {pending && closing === "RESOLVED" ? "Resolving…" : "Mark resolved"}
-          </button>
-          <button
-            disabled={pending || resolveNote.trim().length === 0}
-            onClick={() => onClose("WONT_FIX")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
-          >
-            {pending && closing === "WONT_FIX" ? "Closing…" : "Won't fix"}
+            {pending ? "Resolving…" : "Mark resolved"}
           </button>
         </div>
       </div>

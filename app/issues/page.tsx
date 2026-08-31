@@ -1,16 +1,29 @@
 import Link from "next/link";
-import { IssuePriority, IssueStatus } from "@prisma/client";
+import { IssuePriority } from "@prisma/client";
 import { db } from "@/lib/db";
 import { accessiblePropertyIds, requireManager } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { formatInET } from "@/lib/datetime";
 import { isSlaBreached } from "@/lib/review";
+import {
+  ISSUE_PRIORITY_LABEL,
+  ISSUE_STATUS_FILTERS,
+  ISSUE_STATUS_FILTER_LABEL,
+  issueStatusParam,
+  issueWhereFilters,
+  parseIssueFilters,
+} from "@/lib/issue-filters";
 
 // Issues list (Phase 4). Property-scoped; filterable by status + priority via
 // search params. English-only manager surface (ADR-013).
-
-const OPEN_STATUSES = [IssueStatus.OPEN, IssueStatus.ASSIGNED, IssueStatus.IN_PROGRESS];
+//
+// W8 (2026-08-31): the chip row is Open | Unassigned | Resolved + the four
+// priorities. The raw `Object.values(IssueStatus)` loop is gone — it rendered a
+// second chip also labelled "Open" that meant only IssueStatus.OPEN, next to
+// the hardcoded one that meant the OPEN + ASSIGNED + IN_PROGRESS rollup. Two
+// chips, one word, different results. Filter parsing and the where-clause now
+// live in lib/issue-filters.ts so they are unit-tested (see its test file).
 
 const PRIORITY_BADGE: Record<IssuePriority, string> = {
   URGENT: "bg-red-100 text-red-800",
@@ -25,23 +38,17 @@ export default async function IssuesPage({
   searchParams: Promise<{ status?: string; priority?: string }>;
 }) {
   const user = await requireManager();
-  const { status: rawStatus, priority: rawPriority } = await searchParams;
-
-  const statusFilter =
-    rawStatus && rawStatus in IssueStatus ? (rawStatus as IssueStatus) : null;
-  const priorityFilter =
-    rawPriority && rawPriority in IssuePriority ? (rawPriority as IssuePriority) : null;
+  const filters = parseIssueFilters(await searchParams);
+  const statusParam = issueStatusParam(filters.status);
 
   const propertyIds = await accessiblePropertyIds(user);
   const currentPropertyId = await getCurrentPropertyId(propertyIds);
   const scopeIds = resolveScopedPropertyIds(propertyIds, currentPropertyId);
 
   const issues = await db.issue.findMany({
-    where: {
-      propertyId: { in: scopeIds },
-      status: statusFilter ? statusFilter : { in: OPEN_STATUSES },
-      ...(priorityFilter ? { priority: priorityFilter } : {}),
-    },
+    // Scope is emitted inside issueWhereFilters, once. Do not spread another
+    // propertyId over this — the later key would win and replace the scope.
+    where: issueWhereFilters(filters, scopeIds),
     orderBy: [{ slaTargetAt: "asc" }, { createdAt: "desc" }],
     take: 200,
     select: {
@@ -73,7 +80,7 @@ export default async function IssuesPage({
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Issues</h1>
           <p className="text-sm text-slate-500">
-            {statusFilter ? statusFilter : "Open"} issues, soonest SLA first
+            {ISSUE_STATUS_FILTER_LABEL[filters.status]} issues, soonest SLA first
           </p>
         </div>
         <nav className="flex gap-2 text-sm">
@@ -87,29 +94,23 @@ export default async function IssuesPage({
       </header>
 
       <div className="flex flex-wrap gap-2 text-sm">
-        <Link
-          href={linkFor(undefined, rawPriority)}
-          className={`rounded-full px-3 py-1 font-semibold ${!statusFilter ? "bg-slate-900 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-        >
-          Open
-        </Link>
-        {Object.values(IssueStatus).map((s) => (
+        {ISSUE_STATUS_FILTERS.map((s) => (
           <Link
             key={s}
-            href={linkFor(s, rawPriority)}
-            className={`rounded-full px-3 py-1 font-semibold ${statusFilter === s ? "bg-slate-900 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+            href={linkFor(issueStatusParam(s), filters.priority ?? undefined)}
+            className={`rounded-full px-3 py-1 font-semibold ${filters.status === s ? "bg-slate-900 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
           >
-            {s.replace(/_/g, " ")}
+            {ISSUE_STATUS_FILTER_LABEL[s]}
           </Link>
         ))}
         <span className="mx-2 text-slate-300">|</span>
         {Object.values(IssuePriority).map((p) => (
           <Link
             key={p}
-            href={linkFor(rawStatus, priorityFilter === p ? undefined : p)}
-            className={`rounded-full px-3 py-1 font-semibold ${priorityFilter === p ? "bg-slate-900 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+            href={linkFor(statusParam, filters.priority === p ? undefined : p)}
+            className={`rounded-full px-3 py-1 font-semibold ${filters.priority === p ? "bg-slate-900 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
           >
-            {p}
+            {ISSUE_PRIORITY_LABEL[p]}
           </Link>
         ))}
       </div>

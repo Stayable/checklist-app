@@ -15,7 +15,7 @@ import {
 } from "@/lib/notify.server";
 
 // Issue pipeline actions (Phase 4). Open-state edits via updateIssue; closing
-// (RESOLVED / WONT_FIX) goes through closeIssue and requires a resolution note
+// goes through closeIssue and requires a resolution note
 // and accepts optional resolution-evidence photos (ADR-015 — uploaded to R2 by
 // the client via presigned PUTs, persisted as issue-keyed Photo rows here).
 
@@ -45,6 +45,10 @@ async function loadGuarded(issueId: string) {
   return { ok: true as const, user, issue };
 }
 
+// Terminal statuses. WONT_FIX is no longer settable (W8, 2026-08-31) but stays
+// listed here: rows closed that way before the change must still be recognised
+// as closed, both by updateIssue's refusal to reopen them and by closeIssue's
+// "Already closed." guard. The enum value is deliberately not removed.
 const CLOSED: IssueStatus[] = [IssueStatus.RESOLVED, IssueStatus.WONT_FIX];
 
 const updateSchema = z.object({
@@ -161,7 +165,9 @@ const photoRefSchema = z.object({
 });
 
 const closeSchema = z.object({
-  status: z.enum([IssueStatus.RESOLVED, IssueStatus.WONT_FIX]),
+  // RESOLVED only (W8). A client posting WONT_FIX is now rejected here, not
+  // just hidden in the UI — removing a button is not a server-side guarantee.
+  status: z.literal(IssueStatus.RESOLVED),
   note: z.string().trim().min(1, "A resolution note is required.").max(2000),
   photos: z.array(photoRefSchema).max(ISSUE_PHOTO_MAX).optional(),
 });
@@ -221,7 +227,7 @@ export async function closeIssue(issueId: string, input: unknown): Promise<Issue
         actorUserId: user.id,
         entityType: "issue",
         entityId: issueId,
-        action: status === IssueStatus.RESOLVED ? "resolve" : "wont_fix",
+        action: "resolve",
         before: { status: issue.status },
         after: { status, note, photoCount: photoRows.length },
       },
