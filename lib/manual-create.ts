@@ -111,3 +111,26 @@ export function summarizeCreateResult({
   }
   return parts.join(" ");
 }
+
+/**
+ * Normalise the two room-selection shapes the create action accepts.
+ *
+ * The multi-select client posts `roomIds: string[]`; the older client posts a
+ * single `roomId`. Zod strips unknown keys, so when the action only knew about
+ * `roomIds` the old client's room silently vanished and every PER_ROOM create
+ * was rejected with "select at least one room" -- while typecheck stayed clean,
+ * because the mismatch lives across the form boundary where types do not reach.
+ *
+ * `roomIds` wins whenever it is non-empty, so a new client is never overridden
+ * by a stale singular field. Drop the `roomId` parameter once no client sends it.
+ */
+export function resolveRoomIds({
+  roomIds,
+  roomId,
+}: {
+  roomIds?: readonly string[] | null;
+  roomId?: string | null;
+}): string[] {
+  if (roomIds && roomIds.length > 0) return [...roomIds];
+  return roomId ? [roomId] : [];
+}
