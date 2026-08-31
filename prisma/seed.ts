@@ -1,6 +1,6 @@
 import { InstanceStatus, IssuePriority, PrismaClient, Role, RoomStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { TEMPLATES } from "./templates";
+import { TEMPLATES, seedActiveFields } from "./templates";
 import { etDateOnly, etYYYYMMDD } from "../lib/datetime";
 import { SLA_PLACEHOLDER_HOURS } from "../lib/review";
 
@@ -89,27 +89,46 @@ async function main() {
 
   console.log("Seeding checklist templates + questions (PLACEHOLDER content)…");
   for (const tmpl of TEMPLATES) {
+    const activeFields = seedActiveFields(tmpl.lifecycle);
     const template = await db.checklistTemplate.upsert({
       where: { code: tmpl.code },
+      // `code` is deliberately absent from `update` — ADR-009 bakes it into every
+      // instance system ID and PDF filename, so it is the join key, never a value
+      // to re-assert. `active` is absent too unless the template is RETIRED; see
+      // seedActiveFields() for why.
       update: {
         name: tmpl.name,
         defaultRole: tmpl.defaultRole,
         scope: tmpl.scope,
+        copies: tmpl.copies,
         reviewLevel: tmpl.reviewLevel,
         allProperties: tmpl.allProperties,
-        active: true,
+        ...(activeFields.update === undefined ? {} : { active: activeFields.update }),
       },
       create: {
         code: tmpl.code,
         name: tmpl.name,
         defaultRole: tmpl.defaultRole,
         scope: tmpl.scope,
+        copies: tmpl.copies,
         reviewLevel: tmpl.reviewLevel,
         allProperties: tmpl.allProperties,
+        active: activeFields.create,
       },
     });
-    // Replace questions wholesale so re-seeding tracks edits to templates.ts.
-    await db.question.deleteMany({ where: { templateId: template.id } });
+
+    // Questions are seeded ONLY into a template that has none.
+    //
+    // This used to delete-and-recreate on every run so that edits to templates.ts
+    // propagated. That is no longer safe: the W2 templates ship with zero
+    // questions BY DESIGN and Kyle authors their real content in the builder, so
+    // a wholesale replace would silently delete his work every time anyone ran
+    // the seed. The trade is that re-wording a placeholder here no longer reaches
+    // a database that already has rows — edit those in the builder, or delete the
+    // template's questions first.
+    const existingQuestions = await db.question.count({ where: { templateId: template.id } });
+    if (existingQuestions > 0 || tmpl.questions.length === 0) continue;
+
     await db.question.createMany({
       data: tmpl.questions.map((qn) => ({
         templateId: template.id,
