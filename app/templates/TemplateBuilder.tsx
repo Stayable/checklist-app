@@ -2,7 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { QuestionType, Role, ReviewLevel, TemplateScope } from "@prisma/client";
+import {
+  InstanceMultiplicity,
+  QuestionType,
+  Role,
+  ReviewLevel,
+  TemplateScope,
+} from "@prisma/client";
 import { createTemplate, updateTemplate } from "./actions";
 
 export type BuilderProperty = { id: string; shortCode: string; name: string };
@@ -18,6 +24,7 @@ export type BuilderInitial = {
   name: string;
   defaultRole: Role;
   scope: TemplateScope;
+  copies: InstanceMultiplicity;
   reviewLevel: ReviewLevel;
   allProperties: boolean;
   propertyIds: string[];
@@ -28,6 +35,20 @@ export type BuilderInitial = {
 // on move/remove). Client-only — stripped before the payload hits the action.
 type QRow = BuilderQuestion & { _uid: string };
 const newUid = () => crypto.randomUUID();
+
+// Plain-language labels. The raw enum names are shown to nobody: whoever writes
+// a template is describing operations, not reading the schema.
+const SCOPE_LABEL: Record<TemplateScope, string> = {
+  [TemplateScope.PER_ROOM]: "One room",
+  [TemplateScope.PER_PROPERTY]: "The whole property",
+  [TemplateScope.AD_HOC]: "Ad hoc",
+};
+
+const COPIES_LABEL: Record<InstanceMultiplicity, string> = {
+  [InstanceMultiplicity.ONE]: "One checklist",
+  [InstanceMultiplicity.PER_ASSIGNEE]: "One per person on shift",
+  [InstanceMultiplicity.PER_TASK]: "One per task",
+};
 
 const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
   { value: QuestionType.SHORT_TEXT, label: "Single line text" },
@@ -59,6 +80,17 @@ export function TemplateBuilder({
   const [name, setName] = useState(initial.name);
   const [defaultRole, setDefaultRole] = useState(initial.defaultRole);
   const [scope, setScope] = useState(initial.scope);
+  const [copies, setCopies] = useState(initial.copies);
+
+  // A per-room checklist cannot also be per-person or per-task -- that is one
+  // instance per room PER person, which nothing asks for and which
+  // subjectKindFor rejects server-side. Disabling the control is not enough:
+  // without this reset, picking "one per task" and then switching to "one room"
+  // would submit the stale value and be refused on save with no obvious cause.
+  function changeScope(next: TemplateScope) {
+    setScope(next);
+    if (next === TemplateScope.PER_ROOM) setCopies(InstanceMultiplicity.ONE);
+  }
   const [reviewLevel, setReviewLevel] = useState(initial.reviewLevel);
   const [allProperties, setAllProperties] = useState(initial.allProperties);
   const [propertyIds, setPropertyIds] = useState<string[]>(initial.propertyIds);
@@ -94,6 +126,7 @@ export function TemplateBuilder({
       name,
       defaultRole,
       scope,
+      copies,
       reviewLevel,
       allProperties,
       propertyIds: allProperties ? [] : propertyIds,
@@ -135,10 +168,23 @@ export function TemplateBuilder({
               {Object.values(Role).map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </label>
-          <label className="text-sm font-medium text-slate-700">Scope
-            <select value={scope} onChange={(e) => setScope(e.target.value as TemplateScope)}
+          <label className="text-sm font-medium text-slate-700">What it covers
+            <select value={scope} onChange={(e) => changeScope(e.target.value as TemplateScope)}
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-              {Object.values(TemplateScope).map((s) => <option key={s} value={s}>{s}</option>)}
+              {Object.values(TemplateScope).map((s) => (
+                <option key={s} value={s}>{SCOPE_LABEL[s]}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700">How many per day
+            <select
+              value={copies}
+              onChange={(e) => setCopies(e.target.value as InstanceMultiplicity)}
+              disabled={scope === TemplateScope.PER_ROOM}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400">
+              {Object.values(InstanceMultiplicity).map((c) => (
+                <option key={c} value={c}>{COPIES_LABEL[c]}</option>
+              ))}
             </select>
           </label>
           <label className="text-sm font-medium text-slate-700">Review level

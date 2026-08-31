@@ -1,9 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma, QuestionType, Role, ReviewLevel, TemplateScope } from "@prisma/client";
+import {
+  InstanceMultiplicity,
+  Prisma,
+  QuestionType,
+  Role,
+  ReviewLevel,
+  TemplateScope,
+} from "@prisma/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { subjectKindFor } from "@/lib/manual-create";
 import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
 import { deriveTemplateCode } from "@/lib/template-code";
 import { canManageTemplate } from "@/lib/template-access";
@@ -34,10 +42,26 @@ const templateSchema = z.object({
   name: z.string().trim().min(1, "Title is required"),
   defaultRole: z.nativeEnum(Role),
   scope: z.nativeEnum(TemplateScope),
+  // W1 second axis: how many instances one subject yields per day.
+  copies: z.nativeEnum(InstanceMultiplicity).default(InstanceMultiplicity.ONE),
   reviewLevel: z.nativeEnum(ReviewLevel).default(ReviewLevel.MANAGER),
   allProperties: z.boolean().default(false),
   propertyIds: z.array(z.string().uuid()).default([]),
   questions: z.array(questionSchema).min(1, "Add at least one question"),
+}).superRefine((t, ctx) => {
+  // The builder disables the control for this case, but the server is the
+  // authority: a per-room checklist that is also per-person or per-task means
+  // one instance per room PER person, a cross product nothing in the estate
+  // asks for. subjectKindFor refuses it at create time, so refusing it here
+  // stops a template being saved in a shape that can never be used.
+  const subject = subjectKindFor(t.scope, t.copies);
+  if (!subject.ok) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["copies"],
+      message: subject.error,
+    });
+  }
 });
 
 async function writeAudit(
@@ -71,7 +95,7 @@ export async function createTemplate(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { name, defaultRole, scope, reviewLevel, allProperties, propertyIds, questions } =
+  const { name, defaultRole, scope, copies, reviewLevel, allProperties, propertyIds, questions } =
     parsed.data;
 
   if (!allProperties && propertyIds.length === 0) {
@@ -91,6 +115,7 @@ export async function createTemplate(input: unknown): Promise<ActionResult> {
         name,
         defaultRole,
         scope,
+        copies,
         reviewLevel,
         allProperties,
         properties: allProperties
@@ -123,7 +148,7 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { name, defaultRole, scope, reviewLevel, allProperties, propertyIds, questions } =
+  const { name, defaultRole, scope, copies, reviewLevel, allProperties, propertyIds, questions } =
     parsed.data;
   if (!allProperties && propertyIds.length === 0) {
     return { ok: false, error: "Choose at least one property, or mark it All properties." };
@@ -194,7 +219,7 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
   await db.$transaction(async (tx) => {
     await tx.checklistTemplate.update({
       where: { id },
-      data: { name, defaultRole, scope, reviewLevel, allProperties },
+      data: { name, defaultRole, scope, copies, reviewLevel, allProperties },
     });
     // Replace property associations.
     await tx.templateProperty.deleteMany({ where: { templateId: id } });

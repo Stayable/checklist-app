@@ -1,4 +1,10 @@
-import { Role, ReviewLevel, TemplateScope, QuestionType } from "@prisma/client";
+import {
+  InstanceMultiplicity,
+  Role,
+  ReviewLevel,
+  TemplateScope,
+  QuestionType,
+} from "@prisma/client";
 import { requireManager, accessibleProperties } from "@/lib/rbac";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { TemplateBuilder } from "../TemplateBuilder";
@@ -16,6 +22,7 @@ export default async function NewTemplatePage() {
           name: "",
           defaultRole: Role.HK,
           scope: TemplateScope.PER_ROOM,
+          copies: InstanceMultiplicity.ONE,
           reviewLevel: ReviewLevel.MANAGER,
           allProperties: false,
           propertyIds: [],

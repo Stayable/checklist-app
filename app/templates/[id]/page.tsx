@@ -15,7 +15,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
   const t = await db.checklistTemplate.findUnique({
     where: { id },
     select: {
-      id: true, name: true, defaultRole: true, scope: true, reviewLevel: true, allProperties: true,
+      id: true, name: true, defaultRole: true, scope: true, copies: true, reviewLevel: true, allProperties: true,
       properties: { select: { propertyId: true } },
       questions: {
         orderBy: { orderIndex: "asc" },
@@ -37,7 +37,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
         canUseAllProperties={user.role === Role.ADMIN}
         properties={properties}
         initial={{
-          id: t.id, name: t.name, defaultRole: t.defaultRole, scope: t.scope, reviewLevel: t.reviewLevel,
+          id: t.id, name: t.name, defaultRole: t.defaultRole, scope: t.scope, copies: t.copies, reviewLevel: t.reviewLevel,
           allProperties: t.allProperties, propertyIds,
           questions: t.questions.map((q) => ({
             type: q.type, prompt: q.prompt, required: q.required, photoMax: q.photoMax, failFlagsIssue: q.failFlagsIssue,
