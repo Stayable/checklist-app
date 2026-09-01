@@ -147,7 +147,7 @@ export async function loadNetworkOverview(params: {
     // same read, not a heavier one.
     db.device.findMany({
       where: { ...inScope, currentStatus: DeviceStatus.OFFLINE },
-      select: { id: true, propertyId: true, updatedAt: true },
+      select: { id: true, propertyId: true, updatedAt: true, suppressedAt: true },
     }),
     // N4: devices whose console can't be reached are UNKNOWN, not OFFLINE, so
     // they must be counted separately — an unmonitored fleet must never render
@@ -212,6 +212,9 @@ export async function loadNetworkOverview(params: {
       status: "OFFLINE" as const,
       openProblemEventId: null, // not needed for coverage, only for arming
       offlineSince: d.updatedAt,
+      // A device acknowledged as won't-fix is not a gap anyone should act on,
+      // so it must not inflate the card the reconciler's backlog is read from.
+      suppressed: d.suppressedAt != null,
     })),
     deviceIdsWithOpenTicket: openTickets
       .map((t) => t.deviceId)

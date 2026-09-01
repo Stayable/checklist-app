@@ -65,7 +65,10 @@ export async function runReArmSweep(
 
   const [offlineRows, openTickets, pendingJobs] = await Promise.all([
     db.device.findMany({
-      where: { ...inScope, currentStatus: DeviceStatus.OFFLINE },
+      // suppressedAt filtered in SQL as well as in the pure layer: the pure
+      // filter is what the tests pin, this is what keeps the row out of a
+      // 640-device read in the first place.
+      where: { ...inScope, currentStatus: DeviceStatus.OFFLINE, suppressedAt: null },
       select: { id: true, propertyId: true, updatedAt: true, lastSeenAt: true },
     }),
     // deviceId AND ticketType in one read: the per-device coverage set and the

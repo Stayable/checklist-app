@@ -219,3 +219,76 @@ export async function addTicketNote(input: unknown): Promise<TicketActionResult>
   revalidatePath(`/network/tickets/${ticketId}`);
   return { ok: true };
 }
+
+/**
+ * Acknowledge a device as won't-fix, or take the acknowledgement back.
+ *
+ * The re-arm sweep closed a real hole — four paths left a device OFFLINE with
+ * no ticket forever — but it makes ONE case worse. A decommissioned unit that
+ * UniFi still reports offline now loops: resolve the ticket, the sweep re-arms
+ * it, a new ticket opens ~7 minutes later, forever. Before the sweep that
+ * device sat silently stranded; after it, it is a ticket generator.
+ *
+ * That loop is CORRECT for a device somebody will repair and useless for one
+ * nobody will, and no amount of polling can tell those apart. Only a person
+ * can, so this is the place they say so.
+ *
+ * Suppression stops TICKETING, not MONITORING. The poller keeps updating the
+ * device's status, so a suppressed device that comes back ONLINE is visible at
+ * once — this silences the alarm, it does not unplug the sensor.
+ */
+export async function setDeviceSuppressed(
+  deviceId: string,
+  suppressed: boolean,
+  reason?: string,
+): Promise<TicketActionResult> {
+  const user = await requireNetworkAccess();
+
+  const trimmed = reason?.trim() ?? "";
+  if (suppressed && trimmed.length < 3) {
+    // A silenced device with no stated reason is indistinguishable from one
+    // silenced by mistake, and nobody months later can tell which.
+    return { ok: false, error: "Say why this device will not be fixed." };
+  }
+
+  const device = await db.device.findUnique({
+    where: { id: deviceId },
+    select: { id: true, name: true, currentStatus: true, suppressedAt: true },
+  });
+  if (!device) return { ok: false, error: "Device not found." };
+  if (suppressed === (device.suppressedAt != null)) {
+    return {
+      ok: false,
+      error: suppressed ? "Already acknowledged." : "Not currently acknowledged.",
+    };
+  }
+
+  await db.device.update({
+    where: { id: deviceId },
+    data: suppressed
+      ? {
+          suppressedAt: new Date(),
+          suppressedReason: trimmed,
+          suppressedById: user.id,
+        }
+      : { suppressedAt: null, suppressedReason: null, suppressedById: null },
+  });
+
+  await db.auditLog.create({
+    data: {
+      actorUserId: user.id,
+      entityType: "device",
+      entityId: deviceId,
+      action: suppressed ? "suppress" : "unsuppress",
+      after: {
+        name: device.name,
+        statusAtTheTime: device.currentStatus,
+        reason: suppressed ? trimmed : null,
+      },
+    },
+  });
+
+  revalidatePath("/network");
+  revalidatePath("/network/tickets");
+  return { ok: true };
+}

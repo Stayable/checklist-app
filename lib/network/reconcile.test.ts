@@ -282,3 +282,66 @@ describe("the three stranding paths this closes", () => {
     expect(plan({ devices }).reArm).toHaveLength(1);
   });
 });
+
+describe("suppression — the loop the sweep would otherwise create", () => {
+  it("never re-arms a device acknowledged as won't-fix", () => {
+    // Without this the sweep loops on a decommissioned unit forever: a tech
+    // resolves the ticket, the sweep re-arms it, a new ticket opens ~7 minutes
+    // later. Correct for a device somebody will repair, useless for one nobody
+    // will — and only a person can tell those apart.
+    const out = uncoveredOfflineDevices({
+      devices: [device("dead", { suppressed: true }), device("real")],
+      deviceIdsWithOpenTicket: [],
+      propertyIdsWithOpenMassOutage: [],
+    });
+    expect(out.map((d) => d.deviceId)).toEqual(["real"]);
+  });
+
+  it("keeps re-arming its neighbours at the same property", () => {
+    // Silencing one device must not silence the rack it sits in.
+    const out = uncoveredOfflineDevices({
+      devices: [
+        device("dead", { suppressed: true }),
+        device("n1"),
+        device("n2"),
+      ],
+      deviceIdsWithOpenTicket: [],
+      propertyIdsWithOpenMassOutage: [],
+    });
+    expect(out).toHaveLength(2);
+  });
+
+  it("treats an absent flag as not suppressed", () => {
+    // The field is optional, so every existing caller and every row written
+    // before the column existed must keep behaving exactly as before.
+    const bare = device("d1");
+    delete (bare as { suppressed?: boolean }).suppressed;
+    const out = uncoveredOfflineDevices({
+      devices: [bare],
+      deviceIdsWithOpenTicket: [],
+      propertyIdsWithOpenMassOutage: [],
+    });
+    expect(out).toHaveLength(1);
+  });
+
+  it("does not stop the device being counted as offline", () => {
+    // Suppression silences TICKETING, not MONITORING. A suppressed device that
+    // comes back ONLINE must be visible at once, so its status still moves.
+    const back = device("dead", { suppressed: true, status: "ONLINE" });
+    expect(back.status).toBe("ONLINE");
+    const out = uncoveredOfflineDevices({
+      devices: [back],
+      deviceIdsWithOpenTicket: [],
+      propertyIdsWithOpenMassOutage: [],
+    });
+    expect(out).toHaveLength(0);
+  });
+
+  it("excludes suppressed devices from the plan, not just the list", () => {
+    const p = plan({ devices: [device("dead", { suppressed: true })] });
+    expect(p.reArm).toHaveLength(0);
+    // and not merely deferred or parked as unarmable — it is simply gone
+    expect(p.unarmable).toHaveLength(0);
+    expect(p.deferred).toBe(0);
+  });
+});

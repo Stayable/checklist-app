@@ -799,22 +799,36 @@ model SlaDefault {
 // A monitored device (camera or AP). Uniquely keyed by name+property so repeat
 // webhooks upsert the same row (DevSpec §4.2).
 model Device {
-  id            String       @id @default(uuid()) @db.Uuid
-  deviceKey     String       @unique @map("device_key") // `${name}_${propertyId}`
-  name          String
-  type          DeviceType
-  source        DeviceSource
-  propertyId    String       @map("property_id") @db.Uuid
+  id               String       @id @default(uuid()) @db.Uuid
+  deviceKey        String       @unique @map("device_key") // `${name}_${propertyId}`
+  name             String
+  type             DeviceType
+  source           DeviceSource
+  propertyId       String       @map("property_id") @db.Uuid
   /// Site Manager host id of the console this device is reported by. Nullable:
   /// webhook-sourced devices have no console, and rows predating 2026-07-31 are
   /// backfilled by the next poll rather than by a migration. Deliberately not an
   /// FK — the console registry is a code constant (lib/network/unifi-hosts.ts),
   /// not a table, and labels are resolved from it at render time.
-  consoleHostId String?      @map("console_host_id")
-  lastSeenAt    DateTime?    @map("last_seen_at") @db.Timestamptz
-  currentStatus DeviceStatus @default(UNKNOWN) @map("current_status")
-  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+  consoleHostId    String?      @map("console_host_id")
+  lastSeenAt       DateTime?    @map("last_seen_at") @db.Timestamptz
+  currentStatus    DeviceStatus @default(UNKNOWN) @map("current_status")
+  // Acknowledged as "will not be fixed" — a decommissioned unit that UniFi
+  // still reports offline. Without this the reconciler loops on it forever:
+  // a tech resolves the ticket, the sweep re-arms it, a new ticket opens ~7
+  // minutes later. That loop is CORRECT for a device somebody will repair and
+  // useless for one nobody will, and only a human can tell the two apart.
+  //
+  // Suppression hides the device from ticketing, NOT from monitoring: its
+  // status keeps updating, so a suppressed device that comes back ONLINE is
+  // visible immediately and can be un-suppressed. Deliberately not a boolean —
+  // who silenced it and why is the first question anyone asks later.
+  suppressedAt     DateTime?    @map("suppressed_at") @db.Timestamptz
+  suppressedReason String?      @map("suppressed_reason")
+  suppressedById   String?      @map("suppressed_by_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   events   NetworkEvent[]

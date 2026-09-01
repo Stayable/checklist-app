@@ -72,6 +72,12 @@ export type ReconcileDevice = {
   openProblemEventId: string | null;
   /** Oldest-first ordering key, so the backlog drains deterministically. */
   offlineSince: Date;
+  /**
+   * Acknowledged as won't-fix. Excluded from re-arming, because the sweep would
+   * otherwise loop on a decommissioned unit forever: resolve -> re-arm ->
+   * ticket -> resolve. Monitoring still updates its status; only ticketing stops.
+   */
+  suppressed?: boolean;
 };
 
 export type ReconcileInput = {
@@ -101,6 +107,11 @@ export type ReArmPlan = {
   unarmable: string[];
   /** Over the cap this tick; re-offered next tick. */
   deferred: number;
+  /**
+   * Skipped because a person acknowledged them as won't-fix. Reported rather
+   * than silently dropped: a rising number here is somebody muting the estate.
+   */
+  skippedSuppressed: number;
   /** Skipped because their property is under an open MASS_OUTAGE ticket. */
   skippedMassOutage: number;
   /** Skipped because a STANDARD_TIMER is already pending (cause #1). */
@@ -132,6 +143,7 @@ export function uncoveredOfflineDevices(input: ReconcileInput): ReconcileDevice[
 
   return input.devices
     .filter((d) => d.status === "OFFLINE")
+    .filter((d) => !d.suppressed)
     .filter((d) => !ticketed.has(d.deviceId))
     .filter((d) => !massOutage.has(d.propertyId))
     .sort((a, b) => a.offlineSince.getTime() - b.offlineSince.getTime());
@@ -155,9 +167,18 @@ export function planReArm(input: ReArmInput): ReArmPlan {
   let skippedMassOutage = 0;
   let skippedPendingTimer = 0;
 
+  let skippedSuppressed = 0;
+
   const candidates = input.devices
     .filter((d) => d.status === "OFFLINE")
     .filter((d) => {
+      // Acknowledged won't-fix. Checked FIRST and counted separately: a
+      // suppressed device is not a gap anyone should act on, and folding it
+      // into another skip bucket would hide that somebody silenced it.
+      if (d.suppressed) {
+        skippedSuppressed += 1;
+        return false;
+      }
       if (ticketed.has(d.deviceId)) return false;
       if (massOutage.has(d.propertyId)) {
         skippedMassOutage += 1;
@@ -181,6 +202,7 @@ export function planReArm(input: ReArmInput): ReArmPlan {
       eventId: d.openProblemEventId as string,
     })),
     unarmable,
+    skippedSuppressed,
     deferred: Math.max(0, armable.length - cap),
     skippedMassOutage,
     skippedPendingTimer,

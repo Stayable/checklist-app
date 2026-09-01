@@ -11,6 +11,7 @@ Expect TWO pending, in this order:
 - `20260831140000_add_checklist_batch_drafts`
 - `20260831150000_add_template_published_at`
 - `20260901120000_add_question_hint`
+- `20260901130000_add_device_suppression`
 ⚠ If `20260813120000_add_contractor_update_fanout` is also listed as pending, STOP
 and tell me — step 2 would apply it too, and it is not part of this work.
 
