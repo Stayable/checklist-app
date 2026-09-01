@@ -31,6 +31,25 @@ Idempotent and safe to re-run: `update` never touches `active` except to keep th
 three retired ones down, and questions are only written to a template that has
 none — so nothing you author in the builder is overwritten by a later run.
 
+## 3b. Replace the placeholder questions and clear the test instances
+The seed writes questions only to a template that has NONE, so on prod the six
+originals (ARR / DEP / MNT / PWR / RPM / RIN) keep their development
+placeholders. This replaces them with the extracted Connecteam sets and removes
+the test-round checklist instances.
+
+Dry run first — prints every instance and question it would touch, writes nothing:
+```
+pnpm dotenv -e .env.production.local -- tsx scripts/reset-template-questions.ts
+```
+Then, once the plan looks right:
+```
+pnpm dotenv -e .env.production.local -- tsx scripts/reset-template-questions.ts --apply
+```
+⚠ Deletes ALL `checklist_instances`. Order is enforced (instances first, which
+cascades responses and photos, then questions) because `Response.question` has
+no cascade. Runs in one transaction — a partial apply would be worse than a
+failure. R2 objects are NOT deleted; the orphans are test-round images.
+
 ## 4. Deploy
 Push `main`. That is what makes it live for the testers.
 
