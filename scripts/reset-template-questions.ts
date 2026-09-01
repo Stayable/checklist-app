@@ -25,6 +25,20 @@
  * survives with a null source rather than blocking the delete. Those issues are
  * reported before deleting, because losing the link is a real loss of context.
  *
+ * IT ALSO RENAMES AND UNPUBLISHES THEM
+ * These six are the only templates that reach production already published, so
+ * without this they would be the only six whose question set changes with NO
+ * review step -- swapped underneath whoever is mid-shift. Kyle's call: after the
+ * real content lands they go back to being drafts, and a Property Manager
+ * reviews and publishes them like every other template.
+ *
+ * The name comes from CONNECTEAM_NAMES, i.e. what the people filling the form
+ * in already call it. Several seeded names were inherited from Smartsheet SHEET
+ * names that match no Connecteam form at all.
+ *
+ * `code` is NEVER touched. ADR-009 bakes it into every system ID and PDF
+ * filename already issued.
+ *
  * ⚠ R2 OBJECTS ARE NOT DELETED. Removing a Photo row orphans its R2 object.
  * That is deliberate: the platform policy is keep-photos-forever (ADR-013) and
  * this script must not be the thing that starts deleting from object storage.
@@ -32,7 +46,10 @@
  */
 import { PrismaClient } from "@prisma/client";
 
-import { CONNECTEAM_QUESTIONS } from "../prisma/data/connecteam-questions";
+import {
+  CONNECTEAM_NAMES,
+  CONNECTEAM_QUESTIONS,
+} from "../prisma/data/connecteam-questions";
 
 const db = new PrismaClient();
 
@@ -74,9 +91,14 @@ async function main() {
   for (const t of templates) {
     const incoming = CONNECTEAM_QUESTIONS[t.code]?.length ?? 0;
     plannedQuestionDeletes += t._count.questions;
+    const realName = CONNECTEAM_NAMES[t.code];
     console.log(
       `  ${t.code.padEnd(5)} ${String(t._count.questions).padStart(3)} placeholder -> ${String(incoming).padStart(3)} extracted   (${t._count.instances} instances)`,
     );
+    if (realName && realName !== t.name) {
+      console.log(`        rename: "${t.name}" -> "${realName}"`);
+    }
+    console.log(`        unpublish -> Draft (filled), awaiting PM review`);
     if (incoming === 0) {
       console.log(
         `        ! no extracted set for ${t.code}; its questions would be deleted and NOT replaced.`,
@@ -154,6 +176,18 @@ async function main() {
     let createdQuestions = 0;
     for (const t of templates) {
       const incoming = CONNECTEAM_QUESTIONS[t.code] ?? [];
+      // Back to a draft, under its real Connecteam name. publishedAt is cleared
+      // as well as active: publishedAt set + inactive means RETIRED, and these
+      // are the opposite of retired — they are awaiting a first review.
+      await tx.checklistTemplate.update({
+        where: { id: t.id },
+        data: {
+          name: CONNECTEAM_NAMES[t.code] ?? undefined,
+          active: false,
+          publishedAt: null,
+        },
+      });
+
       const del = await tx.question.deleteMany({ where: { templateId: t.id } });
       deletedQuestions += del.count;
       if (incoming.length > 0) {
@@ -180,11 +214,20 @@ async function main() {
   heading("After");
   const after = await db.checklistTemplate.findMany({
     where: { code: { in: [...CODES] } },
-    select: { code: true, _count: { select: { questions: true } } },
+    select: {
+      code: true,
+      name: true,
+      active: true,
+      publishedAt: true,
+      _count: { select: { questions: true } },
+    },
     orderBy: { code: "asc" },
   });
   for (const t of after) {
-    console.log(`  ${t.code.padEnd(5)} ${t._count.questions} questions`);
+    const state = t.publishedAt == null ? "Draft (filled)" : t.active ? "Published" : "Retired";
+    console.log(
+      `  ${t.code.padEnd(5)} ${String(t._count.questions).padStart(3)} questions  ${state.padEnd(15)} ${t.name}`,
+    );
   }
   console.log(`  checklist instances remaining: ${await db.checklistInstance.count()}`);
 }

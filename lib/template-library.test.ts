@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { InstanceMultiplicity, ReviewLevel, Role, TemplateScope } from "@prisma/client";
+import { CONNECTEAM_NAMES } from "../prisma/data/connecteam-questions";
 import {
   TEMPLATES,
   TEMPLATE_CODE_MAX_LENGTH,
@@ -128,9 +129,9 @@ describe("W3 — retire and rename", () => {
     expect(get("ARR").name).toBe("Arrival Checklist");
     expect(get("DEP").name).toBe("Due Out Checklist");
     expect(get("MNT").name).toBe("Maintenance Checklist");
-    expect(get("PWR").name).toBe("Monthly Pressure Washing");
-    expect(get("RPM").name).toBe("Roof PM Checklist");
-    expect(get("RIN").name).toBe("Monthly Room Inspection");
+    expect(get("PWR").name).toBe("Monthly Pressure Washing Checklist");
+    expect(get("RPM").name).toBe("Roof Preventive Maintenance Checklist");
+    expect(get("RIN").name).toBe("Room Inspection Checklist");
     for (const code of ["ARR", "DEP", "MNT", "PWR", "RPM", "RIN"]) {
       expect(get(code).lifecycle).toBe("ACTIVE");
     }
@@ -278,6 +279,19 @@ describe("seedActiveFields — publish state", () => {
     // author and must not rewrite it on a re-run.
     for (const l of ["ACTIVE", "DRAFT", "RETIRED"] as const) {
       expect(Object.keys(seedActiveFields(l))).not.toContain("publishedAtOnUpdate");
+    }
+  });
+});
+
+describe("names match the live Connecteam forms", () => {
+  it("uses the form name the people filling it in already use", () => {
+    // Several seeded names were inherited from Smartsheet SHEET names that
+    // match no Connecteam form at all — "HK Review" and "Maintenance Report"
+    // are sheets, not templates. Where a form was extracted, its real name wins.
+    for (const t of TEMPLATES) {
+      const real = CONNECTEAM_NAMES[t.code];
+      if (!real) continue;
+      expect(t.name).toBe(real);
     }
   });
 });

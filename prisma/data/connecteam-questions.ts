@@ -19,6 +19,45 @@ export type ConnecteamQuestion = {
   required: boolean;
 };
 
+/**
+ * The form's ACTUAL name in Connecteam, keyed by our template code.
+ *
+ * Kept separate from the question sets because it answers a different
+ * question: what the people filling this in already call it. Several of our
+ * seeded names were inherited from Smartsheet SHEET names, which turned out
+ * not to match any Connecteam form at all -- `HK Review` and
+ * `Maintenance Report` are sheet names, not templates.
+ */
+export const CONNECTEAM_NAMES: Record<string, string> = {
+  "ARR": "Arrival Checklist",
+  "DEP": "Due Out Checklist",
+  "DOWALK": "Due Out Room Walk",
+  "HKC": "Housekeeping Checklist",
+  "LFLIP": "Lease Arrival/Lease Flip Checklist",
+  "MGR2295": "2295 Manager Checklist",
+  "MGR2535": "2535 Manager Checklist",
+  "MGR44199": "44199 Manager Checklist",
+  "MGR4645": "4645 Manager Checklist",
+  "MGR5399": "5399 Manager Checklist",
+  "MGR6802": "6802 Manager Checklist",
+  "MGR812": "812 Manager Checklist",
+  "MGR8700": "8700 Manager Checklist",
+  "MNT": "Maintenance Checklist",
+  "PAAM": "AM PA Checklist",
+  "PINSP": "Property Inspection Checklist",
+  "PPA2295": "2295 PM PA Checklist",
+  "PPA2535": "2535 PM PA Checklist",
+  "PPA44199": "44199 PM PA Checklist",
+  "PPA4645": "4645 PM PA Checklist",
+  "PPA5399": "5399 PM PA Checklist",
+  "PPA6802": "6802 PM PA Checklist",
+  "PPA812": "812 PM PA Checklist",
+  "PPA8700": "8700 PM PA Checklist",
+  "PWR": "Monthly Pressure Washing Checklist",
+  "RIN": "Room Inspection Checklist",
+  "RPM": "Roof Preventive Maintenance Checklist",
+};
+
 export const CONNECTEAM_QUESTIONS: Record<string, ConnecteamQuestion[]> = {
   // Arrival Checklist — 31 questions
   "ARR": [

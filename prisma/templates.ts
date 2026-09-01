@@ -307,7 +307,7 @@ export const TEMPLATES: SeedTemplate[] = [
   },
   {
     code: "PWR",
-    name: "Monthly Pressure Washing",
+    name: "Monthly Pressure Washing Checklist",
     defaultRole: Role.MT,
     scope: TemplateScope.PER_PROPERTY,
     copies: InstanceMultiplicity.ONE,
@@ -319,7 +319,7 @@ export const TEMPLATES: SeedTemplate[] = [
   },
   {
     code: "RPM",
-    name: "Roof PM Checklist",
+    name: "Roof Preventive Maintenance Checklist",
     defaultRole: Role.MT,
     scope: TemplateScope.PER_PROPERTY,
     copies: InstanceMultiplicity.ONE,
@@ -331,7 +331,7 @@ export const TEMPLATES: SeedTemplate[] = [
   },
   {
     code: "RIN",
-    name: "Monthly Room Inspection",
+    name: "Room Inspection Checklist",
     defaultRole: Role.MANAGER,
     scope: TemplateScope.PER_ROOM,
     copies: InstanceMultiplicity.ONE,
@@ -355,7 +355,7 @@ export const TEMPLATES: SeedTemplate[] = [
   // =========================================================================
   draft({
     code: "LFLIP",
-    name: "Lease Arrival / Lease Flip Checklist",
+    name: "Lease Arrival/Lease Flip Checklist",
     defaultRole: Role.HK,
     scope: TemplateScope.PER_ROOM,
     copies: InstanceMultiplicity.ONE,
