@@ -1,0 +1,22 @@
+-- Question hint (2026-09-01 ET, derived — the harness clock is 12h ahead here).
+--
+-- A secondary line under the prompt, matching how Connecteam renders its forms.
+-- This is load-bearing rather than cosmetic: the PM PA checkpoint block repeats
+-- the SAME prompt three times --
+--
+--   CHECKPOINT 1: Take a photo of the pool area / Toma una foto...   7:00pm
+--   CHECKPOINT 1: Take a photo of the pool area / Toma una foto...   10:00pm
+--   CHECKPOINT 1: Take a photo of the pool area / Toma una foto...   End of shift
+--
+-- -- and the hint is the ONLY thing that distinguishes them. They are three
+-- questions and not one three-photo question on purpose: each round then
+-- carries its own capture time and its own geofence stamp, which is the whole
+-- point of a checkpoint round. Folding the time into `prompt` would bury the
+-- distinguishing detail inside a string nobody can filter or reorder on.
+--
+-- Additive: one nullable column. Nothing dropped, no type changed, so code
+-- deployed before this migration keeps working.
+-- APPLY BEFORE DEPLOYING THE CODE THAT READS IT.
+
+-- AlterTable
+ALTER TABLE "questions" ADD COLUMN "hint" TEXT;

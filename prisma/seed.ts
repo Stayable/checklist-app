@@ -136,6 +136,7 @@ async function main() {
         orderIndex: qn.orderIndex,
         type: qn.type,
         prompt: qn.prompt,
+        hint: qn.hint ?? null,
         required: qn.required ?? true,
         options: qn.options ? qn.options : undefined,
         photoMin: qn.photoMin ?? null,

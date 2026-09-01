@@ -65,10 +65,48 @@ describe("library shape", () => {
     for (const t of TEMPLATES) expect(t.allProperties).toBe(true);
   });
 
-  it("gives every new template zero questions", () => {
-    for (const t of TEMPLATES.filter((x) => x.lifecycle === "DRAFT")) {
-      expect(t.questions).toEqual([]);
+  it("gives drafts their extracted questions but never publishes them", () => {
+    // Drafts used to ship empty. They now carry the question sets extracted
+    // from the Connecteam PDF archive -- but filling a template must NOT
+    // publish it: a Property Manager reviews the set and publishes it.
+    const drafts = TEMPLATES.filter((x) => x.lifecycle === "DRAFT");
+    const filled = drafts.filter((t) => t.questions.length > 0);
+    expect(filled.length).toBeGreaterThan(0);
+    for (const t of drafts) {
+      expect(seedActiveFields(t.lifecycle).create).toBe(false);
+      expect(seedActiveFields(t.lifecycle).publishedAtOnCreate).toBeNull();
     }
+  });
+
+  it("expands each checkpoint into three questions with distinct hints", () => {
+    // Confirmed against the live Connecteam form: the same prompt appears three
+    // times, distinguished only by a time sub-label. Three questions, not one
+    // three-photo question, so each round carries its own capture time.
+    const pm = get("PPA8700");
+    const checkpoints = pm.questions.filter((q) => /^CHECKPOINT \d/.test(q.prompt));
+    expect(checkpoints.length).toBeGreaterThan(0);
+    const byPrompt = new Map<string, string[]>();
+    for (const q of checkpoints) {
+      byPrompt.set(q.prompt, [...(byPrompt.get(q.prompt) ?? []), q.hint ?? ""]);
+    }
+    for (const [, hints] of byPrompt) {
+      expect(hints).toEqual(["7:00pm", "10:00pm", "End of shift"]);
+    }
+  });
+
+  it("carries the operators' bilingual wording rather than English only", () => {
+    // ADR-013 field-staff Spanish, in the operators' own words.
+    const pm = get("PPA8700");
+    const bilingual = pm.questions.filter((q) => q.prompt.includes(" / "));
+    expect(bilingual.length).toBeGreaterThan(pm.questions.length / 2);
+  });
+
+  it("duplicates 812 PM PA, which has no Connecteam source at all", () => {
+    // 110 attachments enumerated, zero Smartsheet-wide. Kyle's call: copy a
+    // sibling. 8700 is one of the six sharing the standard shape; 4645 is NOT
+    // used as the source because it is the short one.
+    const copied = get("PPA812");
+    expect(copied.questions.length).toBe(get("PPA8700").questions.length);
   });
 
   it("leaves the 9 original templates' question sets in place", () => {

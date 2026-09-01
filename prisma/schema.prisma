@@ -486,6 +486,11 @@ model Question {
   orderIndex     Int          @map("order_index")
   type           QuestionType
   prompt         String
+  // Secondary line under the prompt, as Connecteam renders it. Load-bearing,
+  // not decoration: a PM PA checkpoint repeats the SAME prompt three times and
+  // only the hint ("7:00pm" / "10:00pm" / "End of shift") tells the three
+  // apart. Folding it into `prompt` would bury the one distinguishing detail.
+  hint           String?
   required       Boolean      @default(true)
   options        Json? // for SINGLE / MULTI
   photoMin       Int?         @map("photo_min")

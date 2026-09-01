@@ -20,7 +20,7 @@ import { submitChecklist } from "./actions";
 import { CloseOutPanel } from "./CloseOutPanel";
 import { markOpened } from "./mark-opened.action";
 
-export type FillQuestion = QuestionLike & { prompt: string };
+export type FillQuestion = QuestionLike & { prompt: string; hint?: string | null };
 
 // One captured photo: compressed bytes, preview URL, GPS fix taken with its
 // batch, and the client-side capture timestamp (ADR-015 + ADR-021 photo metadata).
@@ -440,6 +440,12 @@ function QuestionField({
       <label className="text-sm font-medium text-slate-800">
         {q.prompt}
         {q.required ? <span className="text-red-500"> *</span> : <span className="ml-1 text-xs text-slate-400">({t("optional")})</span>}
+        {/* Secondary line, as Connecteam renders it. For a checkpoint round this
+            is the ONLY thing separating three otherwise-identical prompts, so it
+            must not be hidden on small screens. */}
+        {q.hint && (
+          <span className="mt-0.5 block text-xs font-normal text-slate-500">{q.hint}</span>
+        )}
       </label>
 
       {q.type === QuestionType.SHORT_TEXT && (

@@ -1,3 +1,18 @@
+// The TEMPLATE METADATA below (code, name, role, scope, copies, review level,
+// cadence) is authoritative and hand-written.
+//
+// The QUESTION SETS are GENERATED -- see prisma/data/connecteam-questions.ts and
+// scripts/build-connecteam-questions.ts. They are extracted from the completed-
+// checklist PDFs that Connecteam files into Smartsheet, so the prompts are the
+// operators' own wording and are already bilingual `English / Espanol`.
+//
+// Two limits, and neither is cosmetic:
+//   1. Every question TYPE is INFERRED from how the PDF rendered the field.
+//      Connecteam's real field definitions were never visible.
+//   2. Extraction can only see what the PDFs render. A branch nobody has taken
+//      may hold questions nobody has seen.
+// That is exactly why a filled template seeds as a DRAFT: a Property Manager
+// reviews the question set and publishes it themselves.
 import {
   InstanceMultiplicity,
   QuestionType,
@@ -21,7 +36,7 @@ import {
 // do it once an instance exists. Every code must fit 8 characters; that is why
 // the PM PA family is PPA{propertyId} and not PAPM{propertyId} (PAPM44199 is 9).
 //
-// ⚠️  PLACEHOLDER QUESTION CONTENT  ⚠️
+// ⚠️  QUESTION CONTENT IS EXTRACTED, AND EVERY TYPE IS INFERRED  ⚠️
 // The TEMPLATE METADATA below (code, name, role, scope, copies, review level,
 // cadence) is authoritative. The QUESTION SETS on the 9 original templates are
 // DEVELOPMENT PLACEHOLDERS only. They exist so the Phase-3 filling UI has real
@@ -33,7 +48,29 @@ import {
 // in the builder, and /templates surfaces them under "Needs questions".
 // ===========================================================================
 
+import { CONNECTEAM_QUESTIONS } from "./data/connecteam-questions";
+
+/**
+ * The real Connecteam question set for a code, or [] if none was extracted.
+ *
+ * Extracted from the completed-checklist PDFs Connecteam files into Smartsheet
+ * (scripts/build-connecteam-questions.ts). Prompts are the operators' own
+ * bilingual wording. Types are INFERRED from PDF rendering and are what a
+ * Property Manager reviews before publishing -- which is exactly why a filled
+ * template is still a DRAFT.
+ */
+function connecteam(code: string): SeedQuestion[] {
+  return (CONNECTEAM_QUESTIONS[code] ?? []).map((q) => ({
+    orderIndex: q.orderIndex,
+    type: q.type,
+    prompt: q.prompt,
+    hint: q.hint,
+    required: q.required,
+  }));
+}
+
 export type SeedQuestion = {
+  hint?: string;
   orderIndex: number;
   type: QuestionType;
   prompt: string;
@@ -154,7 +191,7 @@ function perPropertyFamily(args: {
     allProperties: true,
     lifecycle: "DRAFT" as const,
     cadence: args.cadence,
-    questions: [],
+    questions: connecteam(`${args.prefix}${propertyId}`),
   }));
 }
 
@@ -178,7 +215,7 @@ function draft(args: {
     allProperties: true,
     lifecycle: "DRAFT",
     cadence: args.cadence,
-    questions: [],
+    questions: connecteam(args.code),
   };
 }
 
@@ -193,16 +230,7 @@ export const TEMPLATES: SeedTemplate[] = [
     allProperties: true,
     lifecycle: "ACTIVE",
     cadence: "daily / per room",
-    questions: [
-      q(0, QuestionType.SECTION_DIVIDER, "Room condition", { required: false }),
-      q(1, QuestionType.PASSFAIL, "[placeholder] Room passes arrival inspection", { failFlagsIssue: true }),
-      q(2, QuestionType.YESNO, "[placeholder] Linens and towels stocked to par?"),
-      q(3, QuestionType.SINGLE, "[placeholder] Overall cleanliness rating", { options: ["Excellent", "Acceptable", "Needs rework"] }),
-      q(4, QuestionType.PHOTO, "[placeholder] Photo of made bed", { photoMin: 1, photoMax: 3 }),
-      q(5, QuestionType.PHOTO, "[placeholder] Photo of bathroom", { photoMin: 1, photoMax: 3 }),
-      q(6, QuestionType.LONG_TEXT, "[placeholder] Notes / issues found", { required: false }),
-      q(7, QuestionType.SIGNATURE, "[placeholder] Attendant signature"),
-    ],
+    questions: connecteam('ARR'),
   },
   {
     code: "DEP",
@@ -214,13 +242,7 @@ export const TEMPLATES: SeedTemplate[] = [
     allProperties: true,
     lifecycle: "ACTIVE",
     cadence: "daily / per room",
-    questions: [
-      q(0, QuestionType.MULTI, "[placeholder] Items requiring restock", { required: false, options: ["Coffee", "Toiletries", "Towels", "Trash liners"] }),
-      q(1, QuestionType.PASSFAIL, "[placeholder] Room ready for next guest", { failFlagsIssue: true }),
-      q(2, QuestionType.NUMBER, "[placeholder] Number of damaged items", { required: false }),
-      q(3, QuestionType.PHOTO, "[placeholder] Photo of departure condition", { photoMin: 1, photoMax: 5 }),
-      q(4, QuestionType.SIGNATURE, "[placeholder] Attendant signature"),
-    ],
+    questions: connecteam('DEP'),
   },
   {
     code: "HKR",
@@ -281,14 +303,7 @@ export const TEMPLATES: SeedTemplate[] = [
     allProperties: true,
     lifecycle: "ACTIVE",
     cadence: "daily / per task or area",
-    questions: [
-      q(0, QuestionType.SHORT_TEXT, "[placeholder] Task / area"),
-      q(1, QuestionType.SINGLE, "[placeholder] Category", { options: ["Plumbing", "Electrical", "HVAC", "Structural", "Other"] }),
-      q(2, QuestionType.PASSFAIL, "[placeholder] Repair completed", { failFlagsIssue: true }),
-      q(3, QuestionType.PHOTO, "[placeholder] Before photo", { photoMin: 1, photoMax: 3 }),
-      q(4, QuestionType.PHOTO, "[placeholder] After photo", { required: false, photoMin: 1, photoMax: 3 }),
-      q(5, QuestionType.LONG_TEXT, "[placeholder] Work performed", { required: false }),
-    ],
+    questions: connecteam('MNT'),
   },
   {
     code: "PWR",
@@ -300,11 +315,7 @@ export const TEMPLATES: SeedTemplate[] = [
     allProperties: true,
     lifecycle: "ACTIVE",
     cadence: "monthly / per property",
-    questions: [
-      q(0, QuestionType.MULTI, "[placeholder] Areas washed", { options: ["Sidewalks", "Breezeways", "Stairs", "Parking", "Dumpster pad"] }),
-      q(1, QuestionType.PHOTO, "[placeholder] Completion photo", { photoMin: 1, photoMax: 5 }),
-      q(2, QuestionType.SIGNATURE, "[placeholder] Technician signature"),
-    ],
+    questions: connecteam('PWR'),
   },
   {
     code: "RPM",
@@ -316,12 +327,7 @@ export const TEMPLATES: SeedTemplate[] = [
     allProperties: true,
     lifecycle: "ACTIVE",
     cadence: "quarterly / per property",
-    questions: [
-      q(0, QuestionType.PASSFAIL, "[placeholder] Roof free of visible damage", { failFlagsIssue: true }),
-      q(1, QuestionType.YESNO, "[placeholder] Drains and gutters clear?"),
-      q(2, QuestionType.PHOTO, "[placeholder] Roof condition photos", { photoMin: 2, photoMax: 8 }),
-      q(3, QuestionType.LONG_TEXT, "[placeholder] Findings", { required: false }),
-    ],
+    questions: connecteam('RPM'),
   },
   {
     code: "RIN",
@@ -333,12 +339,7 @@ export const TEMPLATES: SeedTemplate[] = [
     allProperties: true,
     lifecycle: "ACTIVE",
     cadence: "ad-hoc / per room",
-    questions: [
-      q(0, QuestionType.PASSFAIL, "[placeholder] Room passes inspection", { failFlagsIssue: true }),
-      q(1, QuestionType.SINGLE, "[placeholder] Result", { options: ["Pass", "Conditional", "Fail"] }),
-      q(2, QuestionType.PHOTO, "[placeholder] Inspection photo", { photoMin: 1, photoMax: 5 }),
-      q(3, QuestionType.LONG_TEXT, "[placeholder] Inspector notes", { required: false }),
-    ],
+    questions: connecteam('RIN'),
   },
 
   // =========================================================================

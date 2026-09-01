@@ -1,0 +1,258 @@
+{
+  "extractedAt": "2026-09-01T03:35:00-04:00",
+  "extractedAtNote": "Eastern time (America/New_York). Harness clock reported 2026-09-01; ET date at extraction was 2026-09-01 early AM. Filename keeps the 083126 stamp assigned by the task.",
+  "sheets": [
+    { "sheetId": 2950463565549444, "sheetName": "! Connecteam HK Review Checklist", "attachmentCount": 98, "distinctTemplatesFound": ["Housekeeping Checklist"] },
+    { "sheetId": 436308476383108, "sheetName": "! Connecteam Maintenance Report", "attachmentCount": 153, "distinctTemplatesFound": ["Maintenance Checklist"] },
+    { "sheetId": 5635790408208260, "sheetName": "! Connecteam Room Inspection Checklist", "attachmentCount": 2773, "distinctTemplatesFound": ["Room Inspection Checklist", "Property Inspection Checklist"] },
+    { "sheetId": 1575536129167236, "sheetName": "! Connecteam Pressure Washing Checklist", "attachmentCount": 0, "distinctTemplatesFound": [] },
+    { "sheetId": 8670160677195652, "sheetName": "! Connecteam Roof Preventive Maintenance Checklist", "attachmentCount": 0, "distinctTemplatesFound": [] },
+    { "sheetId": 6927789434294148, "sheetName": "Copy of Connecteam Arrival Review Checklist", "attachmentCount": null, "inMyAssignedSlice": false, "distinctTemplatesFound": ["Monthly Pressure Washing Checklist", "Roof Preventive Maintenance Checklist"], "note": "NOT one of my five assigned sheets. Pressure Washing and Roof PM PDFs live here, not on their own (empty) sheets. Extracted from here because the assigned sheets have zero attachments. Another agent may also be working this sheet." }
+  ],
+  "templates": [
+    {
+      "connecteamName": "Housekeeping Checklist",
+      "sheetId": 2950463565549444,
+      "internalTitleInPdf": "Housekeeping Checklist",
+      "filenamePattern": "Housekeeping Checklist MM_DD_YY_MM_DD_YYYY_First_Last_N.pdf",
+      "samples": [
+        { "attachmentId": 4680989631483780, "fileName": "Housekeeping Checklist 08_31_26_08_31_2026_Jamie_Westinghouse_15.pdf", "date": "08/31/26", "submitter": "Jamie Westinghouse", "propertyShortCodeInPdf": "JW" },
+        { "attachmentId": 4574373672292228, "fileName": "Housekeeping Checklist 08_29_26_08_29_2026_Jose_Ricardo Padron_1.pdf", "date": "08/29/26", "submitter": "Jose Ricardo Padron", "propertyShortCodeInPdf": "JR" },
+        { "attachmentId": 6896775232130948, "fileName": "Housekeeping Checklist 08_27_26_08_27_2026_Adela_Medina_4.pdf", "date": "08/27/26", "submitter": "Adela Medina", "propertyShortCodeInPdf": "AM" }
+      ],
+      "sectionsSeen": ["Housekeeping Checklist", "Bedroom", "Bathroom", "Transforming Spaces", "Final Questions"],
+      "allSamplesIdentical": true,
+      "questions": [
+        { "order": 1, "prompt": "Housekeeping Checklist", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 2, "prompt": "Unit #", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Bare label, no answer rendered in any sample. Could be a TEXT field or a section divider; TEXT is the likelier reading given 'Unit #'." },
+        { "order": 3, "prompt": "Bedroom", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 4, "prompt": "Take a picture of any bad damage/stains / Foto de cualquir mancha o daño", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Source typo 'cualquir' preserved verbatim." },
+        { "order": 5, "prompt": "Take a picture of empty microwave / Tome una foto del microondas vacío", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 6, "prompt": "Take picture of empty refrigerator / Tome una fotografía del refrigerador vacío", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 7, "prompt": "Take a photo behind the refrigerator / Toma una foto detrás del refrigerador", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 8, "prompt": "Take a photo behind the microwave / Toma una foto detrás del microondas", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 9, "prompt": "Take a picture of cleaned room with all lights on / Foto del cuarto limpio con las luces encendidas", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 10, "prompt": "Bathroom", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 11, "prompt": "Take a picture of cleaned toilet / Foto del inodoro limpio", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 12, "prompt": "Take picture of clean tub / Foto de la bañera limpia", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 13, "prompt": "Take a picture of the bathroom floor / Toma una foto del piso del baño", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 14, "prompt": "Take a picture of the toiletries/towels in place / Tome una fotografía de los artículos de tocador/toallas colocados", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 15, "prompt": "Transforming Spaces", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 16, "prompt": "Before", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Inside 'Transforming Spaces'. Multi-photo: one sample carried 8 photos under Before." },
+        { "order": 17, "prompt": "After", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Inside 'Transforming Spaces'. Multi-photo." },
+        { "order": 18, "prompt": "Notes/Comments:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "- cabinet has burn marks on it will see if night crew can assist with this.\n- beds needed (deep clean )" },
+        { "order": 19, "prompt": "Final Questions", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 20, "prompt": "Does the room smell like it was smoked in? / Fumaron en la habitacion?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No" },
+        { "order": 21, "prompt": "Should the guest get their deposit back? / Deberia el guest recibir su deposito?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "Yes" },
+        { "order": 22, "prompt": "Does the room need the ozone machine? / El cuarto necesita maquina de Ozono?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No" },
+        { "order": 23, "prompt": "Do you see any roaches? / Ves cucarachas?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No" },
+        { "order": 24, "prompt": "Is anything broken or missing or need to be reported to management? / Algo roto o que falta en la habitacion?", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "Todo bien en la habitación.", "note": "Free text, not YESNO: answers across samples were 'N/A', 'No', and a Spanish sentence." },
+        { "order": 25, "prompt": "Does the room need to go OOO? / El cuarto necesita ponerse fuera de servicio?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No" },
+        { "order": 26, "prompt": "Who completed the checklist? / ¿Quién completó la lista de verificación?", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "Adela medina" },
+        { "order": 27, "prompt": "Signature:", "inferredType": "SIGNATURE", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null }
+      ]
+    },
+    {
+      "connecteamName": "Maintenance Checklist",
+      "sheetId": 436308476383108,
+      "internalTitleInPdf": "Maintenance Checklist",
+      "filenamePattern": "Maintenance Checklist MM_DD_YY_MM_DD_YYYY_First_Last_N.pdf",
+      "samples": [
+        { "attachmentId": 8383214128107396, "fileName": "Maintenance Checklist 08_31_26_08_31_2026_Michael_Monahan_4.pdf", "date": "08/31/26", "submitter": "Michael Monahan" },
+        { "attachmentId": 7290713799561092, "fileName": "Maintenance Checklist 08_28_26_08_28_2026_Gabriel_Lima_3.pdf", "date": "08/28/26", "submitter": "Gabriel Lima" },
+        { "attachmentId": 1326783249944452, "fileName": "Maintenance Checklist 08_26_26_08_26_2026_Brandon_Perl_1.pdf", "date": "08/26/26", "submitter": "Brandon Perl" },
+        { "attachmentId": 3554422125662084, "fileName": "Maintenance Checklist 08_31_26_08_31_2026_Jose_Paredes_20.pdf", "date": "08/31/26", "submitter": "Jose Paredes" }
+      ],
+      "sectionsSeen": ["Maintenance Checklist", "Activities/Tasks", "Transforming Spaces"],
+      "allSamplesIdentical": true,
+      "questions": [
+        { "order": 1, "prompt": "Maintenance Checklist", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null },
+        { "order": 2, "prompt": "Maintenance Personnel / Personal de mantenimiento", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Mike" },
+        { "order": 3, "prompt": "Activities/Tasks", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Rendered with a sub-caption: 'Update task based on actual / Actualizar de la tarea según el real'." },
+        { "order": 4, "prompt": "Task", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Change light fixture" },
+        { "order": 5, "prompt": "Location/Room Number / Ubicacion/Habitatacion", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "318", "note": "Source typo 'Habitatacion' preserved verbatim." },
+        { "order": 6, "prompt": "Before", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Inside 'Activities/Tasks'. Multi-photo." },
+        { "order": 7, "prompt": "After", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Inside 'Activities/Tasks'. Multi-photo." },
+        { "order": 8, "prompt": "I have uploaded a BEFORE and AFTER photo of the task (needs to be real-time) / He subido una foto de ANTES y DESPUÉS de la tarea (debe ser en tiempo real)", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Yes" },
+        { "order": 9, "prompt": "Total Time spent on the task? (in mins or hours) / ¿Tiempo total dedicado a la tarea? (en minutos u horas)", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "30 minutes" },
+        { "order": 10, "prompt": "Completed the task? / ¿Está completada la tarea?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Yes" },
+        { "order": 11, "prompt": "Comments and Assessment: Need more tools? / Comentarios y valoraciones: ¿Necesita más herramientas?", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Sorayed roach spray in hidden areas" },
+        { "order": 12, "prompt": "Transforming Spaces", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null },
+        { "order": 13, "prompt": "Before", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Second 'Before', inside 'Transforming Spaces'. Distinct from order 6." },
+        { "order": 14, "prompt": "After", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Second 'After', inside 'Transforming Spaces'. Distinct from order 7." },
+        { "order": 15, "prompt": "Notes/Comments:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Dust webs" },
+        { "order": 16, "prompt": "Signature:", "inferredType": "SIGNATURE", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null }
+      ]
+    },
+    {
+      "connecteamName": "Room Inspection Checklist",
+      "sheetId": 5635790408208260,
+      "internalTitleInPdf": "Room Inspection Checklist",
+      "filenamePattern": "{propertyId} [Monthly ]Room Inspection Checklist[ -|_] Bldg {X} [_|-] {Month} {Year}_MM_DD_YYYY_First_Last_N.pdf",
+      "filenameVariantsSeen": [
+        "2295 Monthly Room Inspection Checklist_Bldg B- August 2026",
+        "2295 Monthly Room Inspection Checklist_Bldg A- August 2026",
+        "2295 August Monthly Room Inspection Checklist - Building D",
+        "2295  Room Inspection Checklist_Bldg C - August 2026",
+        "2295 Room Inspection Checklist - Bldg A _ Dec 2025",
+        "2535 Monthly Room Inspection Checklist August 2026 Bldg D",
+        "44199 Room Inspection Checklist - Bldg A _ August 2026",
+        "44199 Room Inspection Checklist - Bldg B _ August 2026",
+        "5399 Room Inspection Checklist - Bldg A _ Dec 2025",
+        "8700 Room Inspection Checklist - Bldg A _ Dec 2025",
+        "4645 Room Inspection Checklist - Bldg A _ Dec 2025"
+      ],
+      "filenameVariantNote": "Filenames vary wildly (Monthly/not, Bldg/Building, dash/underscore, double spaces) but the INTERNAL PDF title is always exactly 'Room Inspection Checklist'. Treat these as one template, not many.",
+      "samples": [
+        { "attachmentId": 3700518552506244, "fileName": "2295 Monthly Room Inspection Checklist_Bldg B- August 2026_08_14_2026_Thalia_Morales_1.pdf", "date": "08/14/2026", "submitter": "Thalia Morales", "propertyId": 2295 },
+        { "attachmentId": 16779735633796, "fileName": "2535 Monthly Room Inspection Checklist August 2026 Bldg D_08_11_2026_Shayla_Shane_21.pdf", "date": "08/11/2026", "submitter": "Shayla Shane", "propertyId": 2535 },
+        { "attachmentId": 7634208231952260, "fileName": "44199 Room Inspection Checklist - Bldg A _ August 2026_08_22_2026_Skyla_Johnson_60.pdf", "date": "08/22/2026", "submitter": "Skyla Johnson", "propertyId": 44199 }
+      ],
+      "sectionsSeen": ["Room Inspection Checklist", "Inspection", "Questions", "Signature"],
+      "allSamplesIdentical": true,
+      "questions": [
+        { "order": 1, "prompt": "Room Inspection Checklist", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 2, "prompt": "Bldg and Unit #", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "B#121", "note": "Free text, not a picker: answers were 'B#121', '222', 'Bldg A unit 210'." },
+        { "order": 3, "prompt": "Take a photo of the entry door / Tome una foto de la puerta de entrada", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "FIRST of two near-identical entry-door questions. Spanish here is 'Tome una foto'. Sits BEFORE the 'Inspection' section. See order 9." },
+        { "order": 4, "prompt": "Is the room vacant? / ¿La habitación está vacía?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No" },
+        { "order": 5, "prompt": "Please provide additional notes:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Follow-up to order 4. Empty in all 3 samples. Prompt text repeats at orders 7, 19 and 27 — they are distinct fields." },
+        { "order": 6, "prompt": "Is the room OOO? If yes, make sure there are no new issues and skip to the end of the checklist / ¿La habitación está OOO? En caso afirmativo, asegúrese de que no haya problemas nuevos y vaya al final de la lista de verificación", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No", "note": "BRANCHING QUESTION. A 'Yes' skips to the end. All 3 samples answered No, so the skipped path was never exercised — nothing conditional downstream was observed being hidden." },
+        { "order": 7, "prompt": "Please provide additional notes:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Follow-up to order 6. Empty in all 3 samples." },
+        { "order": 8, "prompt": "Inspection", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 9, "prompt": "Take a photo of the entry door / Toma una foto de la puerta de entrada", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "SECOND entry-door question. Spanish here is 'Toma una foto' (vs 'Tome' at order 3). Genuine duplicate in the Connecteam source — flag for Kyle: may be intentional (before/after entry) or template debt worth collapsing." },
+        { "order": 10, "prompt": "Take a photo of the room number with the door open / Toma una foto del número de habitación con la puerta abierta", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 11, "prompt": "Take a photo of the AC filter / Tome una foto del filtro de AC", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 12, "prompt": "Take a photo of the AC plaque / Tome una foto de la placa del aire acondicionado", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 13, "prompt": "Take a photo of the smoke detector / Tome una foto del detector de humo", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 14, "prompt": "Take a photo of the bathroom fixtures / Tome una foto de los accesorios del baño", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 15, "prompt": "Take a photo of the toilet sticker / Take a photo of the toilet sticker", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "SOURCE BUG, preserved verbatim: the Spanish half of the bilingual pair is the English string repeated. Needs a real ES translation on rebuild." },
+        { "order": 16, "prompt": "Check for any soft spots in the floor / Revisa si hay áreas blandas en el piso", "inferredType": "PHOTO", "typeIsInferred": true, "typeUncertain": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "TYPE UNCERTAIN. No answer and no clear photo marker in any sample. Grouped with the photo block, but the wording ('Check for...') reads like a YESNO or a task acknowledgement. Verify against the live Connecteam template." },
+        { "order": 17, "prompt": "Questions", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 18, "prompt": "Is the room kept in a clean and sanitary manner? / ¿Se mantiene la habitación en condiciones limpias e higiénicas?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "Yes" },
+        { "order": 19, "prompt": "Please provide additional notes:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Follow-up to order 18. Empty in all 3 samples." },
+        { "order": 20, "prompt": "Is there any damage caused by the guest? / ¿Hay algún daño causado por el huésped?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No" },
+        { "order": 21, "prompt": "(If yes) Please provide a short description of the damage/s:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "CONDITIONAL on order 20 = Yes. All 3 samples answered No, so this was never filled — the prompt text is confirmed but its behaviour on Yes is not." },
+        { "order": 22, "prompt": "Are there any signs of AMG? / ¿Hay algún signo de AMG?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No", "note": "'AMG' is an unexplained internal acronym. Confirm its meaning with Ops before rebuilding." },
+        { "order": 23, "prompt": "(If yes) Please provide a short description:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "CONDITIONAL on order 22 = Yes. Never filled in any sample." },
+        { "order": 24, "prompt": "Are there any obvious maintenance issues that need to be addressed? / ¿Hay algún problema de mantenimiento obvio que deba abordarse?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "No" },
+        { "order": 25, "prompt": "(If yes) Please provide a short description of the issue/s:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "CONDITIONAL on order 24 = Yes. Never filled in any sample." },
+        { "order": 26, "prompt": "Are all people/pets present registered to the unit? / ¿Están todas las personas/mascotas presentes registradas en la unidad?", "inferredType": "YESNO", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "Yes", "note": "One sample answered 'No' with no follow-up note filled." },
+        { "order": 27, "prompt": "Please provide additional notes:", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null, "note": "Follow-up to order 26. Empty in all 3 samples." },
+        { "order": 28, "prompt": "Signature", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null },
+        { "order": 29, "prompt": "Who completed the checklist? / ¿Quién completó la lista de verificación?", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": "Thalia" },
+        { "order": 30, "prompt": "Signature:", "inferredType": "SIGNATURE", "typeIsInferred": true, "seenInSamples": 3, "ofSamples": 3, "sampleAnswer": null }
+      ]
+    },
+    {
+      "connecteamName": "Property Inspection Checklist",
+      "sheetId": 5635790408208260,
+      "internalTitleInPdf": null,
+      "internalTitleNote": "No internal template title line and no section headers — the PDF opens straight into questions after the header block.",
+      "filenamePattern": "{propertyId} Property Inspection Checklist - {Month} {Year}_MM_DD_YYYY_First_Last_N.pdf",
+      "samples": [
+        { "attachmentId": 6709968854617988, "fileName": "2295 Property Inspection Checklist - April 2026_04_09_2026_Shay_Harper_1.pdf", "date": "04/09/2026", "submitter": "Shay Harper", "propertyId": 2295 },
+        { "attachmentId": 8963665970106244, "fileName": "2295 Property Inspection Checklist - April 2026_04_09_2026_Shay_Harper_2.pdf", "date": "04/09/2026", "submitter": "Shay Harper", "propertyId": 2295 }
+      ],
+      "sampleIndependenceWarning": "WEAKEST TEMPLATE IN THIS FILE. Only 2 attachments of this template exist anywhere in Smartsheet, and both are the same day (04/09/2026), same submitter (Shay Harper), same property (2295). This is effectively ONE independent sample. Anything conditional or role-specific could be missing and there is no second observation to catch it.",
+      "sectionsSeen": [],
+      "allSamplesIdentical": true,
+      "questions": [
+        { "order": 1, "prompt": "Is the lobby area warm, clean, and welcoming?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null, "note": "Reads like a YESNO but renders as a photo-attached item with no text answer — same as every other item here." },
+        { "order": 2, "prompt": "Take a picture of the dumpster pad areas", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 3, "prompt": "Take photos of 3 ooo rooms (unless property has less than 3)", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null, "note": "Multi-photo: ~14 photo pages under this item." },
+        { "order": 4, "prompt": "Take pictures of 3 vacant clean rooms", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 5, "prompt": "Check any departures from yesterday or today. Were they stripped on the day of departure?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 6, "prompt": "Check the maintenance room, is it clean and organized?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 7, "prompt": "Are property trash cans at a decent fill level?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 8, "prompt": "Any rooms observed in clear violation of Stayable policies? Any cars that need to be towed?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 9, "prompt": "If HK is working, is HK card organized? What mop is being used?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 10, "prompt": "Is the pool area clean and appealing? Is the pool open?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 11, "prompt": "Any hazardous conditions or areas of immediate concern?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null },
+        { "order": 12, "prompt": "Is the guest laundry room clean and invting?", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 2, "ofSamples": 2, "sampleAnswer": null, "note": "Source typo 'invting' preserved verbatim." }
+      ]
+    },
+    {
+      "connecteamName": "Monthly Pressure Washing Checklist",
+      "sheetId": 6927789434294148,
+      "sheetIdNote": "NOT on the assigned Pressure Washing sheet 1575536129167236, which has ZERO attachments. These PDFs live on 'Copy of Connecteam Arrival Review Checklist'.",
+      "internalTitleInPdf": "Monthly Pressure Washing Checklist",
+      "filenameVariantsSeen": ["Pressure Washing Checklist _ {Month} {Year}", "Monthly Pressure Washing Checklist _ {Month} {Year}"],
+      "filenameVariantNote": "Filename drops 'Monthly' on older submissions (Nov 2025 – Jan 2026) and carries it from Feb 2026 on. The INTERNAL title is 'Monthly Pressure Washing Checklist' in all four samples, including the older ones — so this is one template, renamed in the filename only.",
+      "samples": [
+        { "attachmentId": 4905644161273732, "fileName": "Pressure Washing Checklist _ Jan 2026_06_01_2026_Nathan_Paul_2.pdf", "date": "06/01/2026", "submitter": "Nathan Paul" },
+        { "attachmentId": 2816826920701828, "fileName": "Pressure Washing Checklist _ November 2025_06_11_2025_Nelson_Camacho_3.pdf", "date": "06/11/2025", "submitter": "Nelson Camacho" },
+        { "attachmentId": 1488385327271812, "fileName": "Monthly Pressure Washing Checklist _ March 2026_03_09_2026_Milus_Josile_1.pdf", "date": "03/09/2026", "submitter": "Milus Josile" },
+        { "attachmentId": 6680823501197188, "fileName": "Monthly Pressure Washing Checklist _ February 2026_02_10_2026_Ronnie_Battle_1.pdf", "date": "02/10/2026", "submitter": "Ronnie Battle" }
+      ],
+      "sectionsSeen": ["Monthly Pressure Washing Checklist", "Activities/Tasks"],
+      "allSamplesIdentical": true,
+      "questions": [
+        { "order": 1, "prompt": "Monthly Pressure Washing Checklist", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null },
+        { "order": 2, "prompt": "Maintenance Personnel / Personal de mantenimiento", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Milus Josile" },
+        { "order": 3, "prompt": "Activities/Tasks", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null },
+        { "order": 4, "prompt": "Pressure wash all walkways / Lavar con presión todos los pasillos", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo: up to 10 photos under this item." },
+        { "order": 5, "prompt": "Pressure wash all stairs / Lavar con presión todas las escaleras", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 6, "prompt": "Pressure wash all curbing / Lavar con presión todos los bordillos", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo. Zero photos attached in 3 of 4 samples — the question is present regardless, so it is optional, not conditional." },
+        { "order": 7, "prompt": "Pressure wash exterior building surfaces as needed / Lavar con presión las áreas exteriores de los edificios según sea necesario", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 8, "prompt": "Ensure all washed areas are free from debris and standing water / Asegurarse de que las áreas lavadas estén libres de residuos y agua estancada", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 9, "prompt": "Comments and Assessment / Comentarios y Evaluación", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Pressure washed middle stairway section and front b bldg..." },
+        { "order": 10, "prompt": "Signature:", "inferredType": "SIGNATURE", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null }
+      ]
+    },
+    {
+      "connecteamName": "Roof Preventive Maintenance Checklist",
+      "sheetId": 6927789434294148,
+      "sheetIdNote": "NOT on the assigned Roof PM sheet 8670160677195652, which has ZERO attachments. These PDFs live on 'Copy of Connecteam Arrival Review Checklist'.",
+      "internalTitleInPdf": "Roof Preventive Maintenance Checklist",
+      "filenameVariantsSeen": [
+        "Roof Preventive Maintenance Checklist _ {Month} {Year}",
+        "Roof Preventive Maintenance Checklist - {Month} {Year}",
+        "Roof Preventive Maintenance Checklist 11_17-21_25"
+      ],
+      "samples": [
+        { "attachmentId": 2465047923691396, "fileName": "Roof Preventive Maintenance Checklist _ February 2026_02_25_2026_Andrew_Powell_3.pdf", "date": "02/25/2026", "submitter": "Andrew Powell" },
+        { "attachmentId": 7038544990211972, "fileName": "Roof Preventive Maintenance Checklist _ Jan 2026_01_21_2026_Milus_Josile_1.pdf", "date": "01/21/2026", "submitter": "Milus Josile" },
+        { "attachmentId": 3936999362826116, "fileName": "Roof Preventive Maintenance Checklist - November 2025_18_11_2025_Nelson_Camacho_4.pdf", "date": "18/11/2025", "submitter": "Nelson Camacho" },
+        { "attachmentId": 8440598990196612, "fileName": "Roof Preventive Maintenance Checklist 11_17-21_25_17_11_2025_Milus_Josile_2.pdf", "date": "17/11/2025", "submitter": "Milus Josile" }
+      ],
+      "sectionsSeen": ["Roof Preventive Maintenance Checklist", "Activities/Tasks"],
+      "allSamplesIdentical": true,
+      "questions": [
+        { "order": 1, "prompt": "Roof Preventive Maintenance Checklist", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null },
+        { "order": 2, "prompt": "Maintenance Personnel / Personal de mantenimiento", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "Andrew Powell" },
+        { "order": 3, "prompt": "Activities/Tasks", "inferredType": "SECTION_DIVIDER", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null },
+        { "order": 4, "prompt": "Sweep off all debris from the roof / Barrer y retirar todos los escombros del techo", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 5, "prompt": "Clean all drains thoroughly / Limpiar bien todos los desagües", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 6, "prompt": "Make sure no drain caps are missing / Asegurarse de que no falten tapas en los desagües", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 7, "prompt": "Ensure all drains are clear and flowing properly / Verificar que todos los desagües estén despejados y fluyan correctamente", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 8, "prompt": "Check for pooling water or signs of leaks / Revisar si hay acumulación de agua o señales de filtraciones", "inferredType": "PHOTO", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null, "note": "Multi-photo." },
+        { "order": 9, "prompt": "Comments and Assessment / Comentarios y Evaluación", "inferredType": "TEXT", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": "There is a part of the floor that lelf up need to be repairing after that all look great." },
+        { "order": 10, "prompt": "Signature:", "inferredType": "SIGNATURE", "typeIsInferred": true, "seenInSamples": 4, "ofSamples": 4, "sampleAnswer": null }
+      ]
+    }
+  ],
+  "notesTemplatesNotFound": [
+    "HK Review — NOT FOUND. Sheet 2950463565549444 is named '! Connecteam HK Review Checklist' but all 98 of its attachments are 'Housekeeping Checklist'. A global attachment search for \"HK Review\" returns 0 results across all of Smartsheet. The sheet name is a misnomer; the template it actually collects is Housekeeping Checklist.",
+    "Maintenance Report — NOT FOUND. Sheet 436308476383108 is named '! Connecteam Maintenance Report' but all 153 of its attachments are 'Maintenance Checklist'. A global attachment search for \"Maintenance Report\" returns 0 results. Same misnomer pattern.",
+    "Property Task Checklist — NOT FOUND anywhere. Global attachment search returns 0 results.",
+    "Lock Installation Checklist — NOT FOUND anywhere. Global attachment search returns 0 results.",
+    "Stayable Renovation Completion Checklist — NOT FOUND anywhere. Global attachment search for \"Renovation Completion\" returns 0 results.",
+    "Daily Contractor Checklist — NOT FOUND anywhere. Global attachment search returns 0 results."
+  ],
+  "notes": [
+    "SHEET-NAME vs TEMPLATE-NAME MISMATCH is the headline finding. Three of the five assigned sheets are named for a template they do not contain: 'HK Review Checklist' holds Housekeeping Checklist, 'Maintenance Report' holds Maintenance Checklist, and the Pressure Washing / Roof PM sheets hold nothing at all. Do not use sheet names as the template inventory.",
+    "TWO ASSIGNED SHEETS ARE EMPTY. Sheet 1575536129167236 (Pressure Washing) and 8670160677195652 (Roof PM) both return totalCount 0 at SHEET scope — no row, sheet or discussion attachments, at any date. They are not 'no recent monthlies'; they have never received a PDF.",
+    "PRESSURE WASHING AND ROOF PM PDFs LIVE ON A DIFFERENT SHEET: 6927789434294148, 'Copy of Connecteam Arrival Review Checklist'. 13 Pressure Washing and 31 Roof PM attachments, dating Nov 2025 – Jun 2026. I extracted both templates from there. That sheet is NOT in my assigned slice — if another agent owns it, these two templates may be duplicated in their output. De-duplicate on connecteamName before loading.",
+    "BOTH MONTHLY TEMPLATES STOPPED. Latest Pressure Washing submission is 06/01/2026; latest Roof PM is 05/01/2026 (a Dec-2025-titled form filed late). Nothing since. Either the cadence lapsed or submissions moved somewhere I did not look. Worth asking Ops before assuming these templates are still live.",
+    "PROPERTY INSPECTION CHECKLIST IS BARELY EVIDENCED — 2 attachments total in all of Smartsheet, same day, same submitter, same property. Treat its question list as one observation, not two. It is also the only template here with no bilingual text, no sections and no signature, which suggests it is an older or differently-authored form.",
+    "ROOM INSPECTION HAS A DUPLICATE QUESTION: 'Take a photo of the entry door' appears at order 3 and again at order 9, differing only in the Spanish verb ('Tome' vs 'Toma'). Present in all 3 samples across 3 properties, so it is in the template, not a rendering artifact. Decide on rebuild whether to keep both.",
+    "ROOM INSPECTION HAS A BROKEN TRANSLATION: 'Take a photo of the toilet sticker / Take a photo of the toilet sticker' — the Spanish half is the English string. Needs a real ES translation.",
+    "CONDITIONAL BRANCHES WERE NEVER EXERCISED in the Room Inspection samples. Orders 21, 23 and 25 are '(If yes)' follow-ups and all 3 samples answered No to their parents; order 6 ('Is the room OOO?') skips to the end of the checklist on Yes and was answered No in all 3. Their prompt text is confirmed but their behaviour is not, and a Yes path could reveal additional questions I never saw.",
+    "SAMPLING COVERAGE: Housekeeping 3 samples / 3 days / 3 submitters. Maintenance 4 / 3 days / 4 submitters. Room Inspection 3 / 3 days / 3 submitters / 3 properties. Pressure Washing 4 / 4 months / 4 submitters. Roof PM 4 / 4 dates / 3 submitters. Property Inspection 2 / 1 day / 1 submitter — the weak one.",
+    "EVERY inferredType in this file is a GUESS derived from PDF rendering (answer shape, photo page markers, colon presence). None was verified against the live Connecteam template. The only type I would call near-certain is SIGNATURE. The least certain is Room Inspection order 16 ('Check for any soft spots in the floor'), flagged inline.",
+    "SECTION_DIVIDER entries occupy order slots in these lists. Strip them before counting questions: Housekeeping 27 rows = 22 questions + 5 dividers; Maintenance 16 = 13 + 3; Room Inspection 30 = 26 + 4; Pressure Washing 10 = 8 + 2; Roof PM 10 = 8 + 2; Property Inspection 12 = 12 + 0.",
+    "NOT EXHAUSTIVELY VERIFIED: the Room Inspection sheet holds 2,773 attachments across 28 pages. I enumerated page 1 (newest, Aug 2026) and page 28 (oldest, Dec 2025) in full and ran targeted global searches for every candidate template name. Pages 2–27 were not enumerated, so a template appearing only in the middle of that range could have been missed. The targeted searches make that unlikely but not impossible.",
+    "Filename dates are unreliable as submission dates. Some Roof PM and Pressure Washing filenames use DD_MM_YYYY (e.g. '18_11_2025') while the app-generated portion uses MM_DD_YYYY. The in-PDF timestamp line is the trustworthy source and is what I recorded in the 'date' fields where they conflict.",
+    "Read-only throughout: only list_attachments, get_attachment and search were called. No Smartsheet writes. No repo files were modified — this JSON is the only file created."
+  ]
+}

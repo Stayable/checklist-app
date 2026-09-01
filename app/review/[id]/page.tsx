@@ -266,7 +266,12 @@ export default async function ReviewDetailPage({
               </h3>
             ) : (
               <div key={q.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                <p className="mb-1 text-sm font-semibold text-slate-900">{q.prompt}</p>
+                <p className="mb-1 text-sm font-semibold text-slate-900">
+                  {q.prompt}
+                  {q.hint && (
+                    <span className="ml-2 text-xs font-normal text-slate-500">{q.hint}</span>
+                  )}
+                </p>
                 <div className="text-sm text-slate-700">
                   <AnswerView
                     type={q.type}

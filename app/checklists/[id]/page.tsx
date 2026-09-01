@@ -51,6 +51,7 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
     id: q.id,
     type: q.type,
     prompt: q.prompt,
+    hint: q.hint,
     required: q.required,
     options: (q.options as string[] | null) ?? null,
     photoMin: q.photoMin,

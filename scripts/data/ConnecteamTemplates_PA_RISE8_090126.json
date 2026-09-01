@@ -1,0 +1,2178 @@
+{
+  "extractedAt": "2026-09-01T15:35:47.398Z",
+  "extractedAtEastern": "2026-09-01 11:35 ET (America/New_York)",
+  "sheetId": 7775480560177028,
+  "sheetName": "! Connecteam PA Review Checklist",
+  "extractedBy": "Claude Code agent, read-only Smartsheet access; pdftotext -layout -enc UTF-8",
+  "templates": [
+    {
+      "connecteamName": "AM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 8115198270279556,
+          "fileName": "AM PA Checklist 08_29_26_08_29_2026_Raul_Hernandez_4.pdf",
+          "date": "08/29/26",
+          "submitter": "Raul Hernandez"
+        },
+        {
+          "attachmentId": 7216931630124932,
+          "fileName": "AM PA Checklist 08_30_26_08_30_2026_Cassie_Johnson_3.pdf",
+          "date": "08/30/26",
+          "submitter": "Cassie Johnson"
+        },
+        {
+          "attachmentId": 5483633119760260,
+          "fileName": "AM PA Checklist 08_31_26_08_31_2026_Marianne_Anderson_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Marianne Anderson"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "Prior to Departure",
+        "Transforming Spaces",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Empty Property Garbage Cans / Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Tidy Dumpster Area / Limpiar area del dumpster",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Pick Up Trash From Parking Lot and Property Perimeter / Recoja la basura del estacionamiento y del perímetro de la propiedad",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Empty Smoking Containers / Vacias contenedores de cigarillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Walk and Sweep Stairwells / Barrer escaleras",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Take a photo of each stairway / Toma una foto de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "Tasks",
+          "prompt": "Arrange Pool Furniture / Ordenar sillas/mesas y muebles de la piscina",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 8,
+          "section": "Tasks",
+          "prompt": "Brush Pool and Collect Debris in Pool Area and Courtyard / Cepillar piscina y colectar escombros al rededor",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 9,
+          "section": "Tasks",
+          "prompt": "Vacuum/Tidy Vending Area / Limpiar area de maquina dispensadora si alguna",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 10,
+          "section": "Tasks",
+          "prompt": "Vacuum/Tidy Guest Laundry / Limpiar lavanderia de los huespedes",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 11,
+          "section": "Tasks",
+          "prompt": "Vacuum Cobwebs and Dead Bugs from doorways, walls and light fixtures - MONDAY/THURSDAY and AS NEEDED / Pasar aspiradora en paredes y luces con telarañas",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 12,
+          "section": "Tasks",
+          "prompt": "Test Pool Chemicals / Examinar quimicos de la piscina",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 13,
+          "section": "Tasks",
+          "prompt": "Post Non-Compliance Notices / Colocar cartas de incumplimiento si alguna",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 14,
+          "section": "Tasks",
+          "prompt": "Clean Employee Restroom / Limpiar baños de empleados",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 15,
+          "section": "Tasks",
+          "prompt": "Refill Paper Products and Soap / Rellenar jabon y poner productos de papel",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 16,
+          "section": "Tasks",
+          "prompt": "Clean Front Desk Countertops / Limpiar el mostrador del front desk",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 17,
+          "section": "Tasks",
+          "prompt": "Vacuum and Mop Lobby Floors / Aspirar y trapear lobby",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 18,
+          "section": "Tasks",
+          "prompt": "Clean Exterior Lobby Windows / Limpiar ventanas exteriores del lobby",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 19,
+          "section": "Tasks",
+          "prompt": "Spray KILZ on Scuff Marks and Graffiti on Walls / Usar spray KILZ para manchas o grafitis en la pared",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 20,
+          "section": "Tasks",
+          "prompt": "Confirm All Back-of-House Areas are Vacated and Locked / Verificar que todas las areas comunes esten cerradas y partes traseras de la propiedad",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 21,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 22,
+          "section": "Tasks",
+          "prompt": "Obtain list of due outs from PM / Obtener lista de pendientes a salir",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 23,
+          "section": "Prior to Departure",
+          "prompt": "Is anything broken or missing or need to be reported to management? / Algo roto o que falta en la habitacion?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 24,
+          "section": "Prior to Departure",
+          "prompt": "If yes, please provide short description. / En caso afirmativo, sírvase proporcionar una breve descripción.",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 25,
+          "section": "Transforming Spaces",
+          "prompt": "Before",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 26,
+          "section": "Transforming Spaces",
+          "prompt": "After",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 27,
+          "section": "Transforming Spaces",
+          "prompt": "Notes/Comments",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "There was no due-out list sent"
+        },
+        {
+          "order": 28,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 29,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 30,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 31,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 32,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Raul"
+        },
+        {
+          "order": 33,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    },
+    {
+      "connecteamName": "812 PM PA Checklist",
+      "status": "NOT_FOUND",
+      "samples": [],
+      "sectionsSeen": [],
+      "questions": [],
+      "notFoundEvidence": "Enumerated all 110 attachments on sheet 7775480560177028 (list_attachments, SHEET scope, both pages). No attachment name begins with '812'. Smartsheet-wide search for the exact phrase \"812 PM PA Checklist\" and for \"812 PM\" (attachments scope) both returned 0 results. Jacksonville North (812) submits the shared 'AM PA Checklist' but has no PM PA Checklist template in this sheet."
+    },
+    {
+      "connecteamName": "2295 PM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 6258179387068292,
+          "fileName": "2295 PM PA Checklist 08_25_26_08_25_2026_Raul_Hernandez_1.pdf",
+          "date": "08/25/26",
+          "submitter": "Raul Hernandez"
+        },
+        {
+          "attachmentId": 8839019444998020,
+          "fileName": "2295 PM PA Checklist 08_29_26_08_29_2026_Thalia_Morales_1.pdf",
+          "date": "08/29/26",
+          "submitter": "Thalia Morales"
+        },
+        {
+          "attachmentId": 2567557826383748,
+          "fileName": "2295 PM PA Checklist 08_31_26_08_31_2026_Antonella_Sosa_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Antonella Sosa"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+        "Maintenance Calls",
+        "Transforming Spaces",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Lock pool at required time / Cerrar la piscina a la hora requerida",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Empty property garbage cans/ Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Mop the hallways / Trapea los pasillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Take a photo underneath each stairway / Toma una foto debajo de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Clean lobby bathroom / Baño limpio en el vestíbulo",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 1: Take a photo of the front of lobby building / Tome una foto del frente del edificio del vestíbulo",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 8,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 2: Take a photo of the pool deck / Tome una foto de la terraza de la piscina",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 9,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 3: Take a photo of the dumpster pad / Tome una foto del contenedor de basura",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 10,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 4: Take a photo of the upstairs corner of building A&B walkway / Tome una foto de la esquina de arriba de la pasarela del edificio A&B",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 11,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 5: Take a photo of the upstairs corner of building D&E walkway / Tome una foto de la esquina de arriba del pasillo D&E del edificio",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 12,
+          "section": "Maintenance Calls",
+          "prompt": "Did you do any maintenance call today? / ¿Hiciste alguna llamada de mantenimiento hoy?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 13,
+          "section": "Maintenance Calls",
+          "prompt": "If yes, provide short description / En caso afirmativo, proporcione una breve descripción",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 14,
+          "section": "Transforming Spaces",
+          "prompt": "Before",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 15,
+          "section": "Transforming Spaces",
+          "prompt": "After",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 16,
+          "section": "Transforming Spaces",
+          "prompt": "Notes/Comments",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 17,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 18,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 19,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 20,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 21,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Raúl"
+        },
+        {
+          "order": 22,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    },
+    {
+      "connecteamName": "2535 PM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 4306402135674756,
+          "fileName": "2535 PM PA Checklist 08_25_26_08_25_2026_Jamie_Westinghouse_1.pdf",
+          "date": "08/25/26",
+          "submitter": "Jamie Westinghouse"
+        },
+        {
+          "attachmentId": 1988936980139908,
+          "fileName": "2535 PM PA Checklist 08_30_26_08_30_2026_Shearman_Mackenzie_1.pdf",
+          "date": "08/30/26",
+          "submitter": "Shearman Mackenzie"
+        },
+        {
+          "attachmentId": 8505076040503172,
+          "fileName": "2535 PM PA Checklist 08_31_26_08_31_2026_Cassie_Johnson_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Cassie Johnson"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+        "Maintenance Calls",
+        "Transforming Spaces",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Lock pool at required time / Cerrar la piscina a la hora requerida",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Empty property garbage cans/ Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Mop the hallways / Trapea los pasillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Take a photo underneath each stairway / Toma una foto debajo de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Clean lobby bathroom / Baño limpio en el vestíbulo",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 1: Take a photo of the front of office building from sidewalk / Tome una fotografía del frente del edificio de oficinas desde la acera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 8,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 2: Take a photo of the dumpster area / Tome una foto del área del contenedor de basura",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 9,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 3: Take a photo of the walkway by room 255 with room number in focus / Tome una fotografía del pasillo junto a la habitación 255 con el número de habitación enfocado",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 10,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 4: Take a photo of the walkway by room 138 with room number in focus / Tome una fotografía del pasillo junto a la habitación 138 con el número de habitación enfocado",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 11,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 5: Take a photo of the walkway by room 136 with room number in focus / Tome una fotografía del pasillo junto a la habitación 136 con el número de habitación enfocado",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 12,
+          "section": "Maintenance Calls",
+          "prompt": "Did you do any maintenance call today? / ¿Hiciste alguna llamada de mantenimiento hoy?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 13,
+          "section": "Maintenance Calls",
+          "prompt": "If yes, provide short description / En caso afirmativo, proporcione una breve descripción",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Clogged tub in 257"
+        },
+        {
+          "order": 14,
+          "section": "Transforming Spaces",
+          "prompt": "Before",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 15,
+          "section": "Transforming Spaces",
+          "prompt": "After",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 16,
+          "section": "Transforming Spaces",
+          "prompt": "Notes/Comments",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "N/A"
+        },
+        {
+          "order": 17,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 18,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 19,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 20,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 21,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Jamie Westinghouse"
+        },
+        {
+          "order": 22,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    },
+    {
+      "connecteamName": "4645 PM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 1360078742392708,
+          "fileName": "4645 PM PA Checklist 08_25_26_08_25_2026_Katherine_Ouellette_1.pdf",
+          "date": "08/25/26",
+          "submitter": "Katherine Ouellette"
+        },
+        {
+          "attachmentId": 6779750258216836,
+          "fileName": "4645 PM PA Checklist 08_30_26_08_30_2026_Sheryle_Burkett_1.pdf",
+          "date": "08/30/26",
+          "submitter": "Sheryle Burkett"
+        },
+        {
+          "attachmentId": 1724846588202884,
+          "fileName": "4645 PM PA Checklist 08_31_26_08_31_2026_Nita_Mincey_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Nita Mincey"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+        "Maintenance Calls",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Lock pool at required time / Cerrar la piscina a la hora requerida",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Empty property garbage cans/ Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Mop the hallways / Trapea los pasillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Take a photo underneath each stairway / Toma una foto debajo de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Clean lobby bathroom / Baño limpio en el vestíbulo",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 1: Take a photo of the roll of dumpsters / Toma una foto del rollo de contenedores de basura",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 8,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 2: Take a photo of the courtyard taken from in front of room 100 / Tome una foto del patio tomada frente a la habitación 100",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 9,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 3: Take a photo of the walkway with room 130 in focus / Tome una fotografía de la pasarela con la habitación 130 enfocada",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 10,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 4: Take a photo of the corner walkway at room 244 / Tome una foto del pasillo de la esquina de la habitación 244",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 11,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 5: Take a photo of the tot lot / Toma una foto del patio de recreo",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 12,
+          "section": "Maintenance Calls",
+          "prompt": "Did you do any maintenance call today? / ¿Hiciste alguna llamada de mantenimiento hoy?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 13,
+          "section": "Maintenance Calls",
+          "prompt": "If yes, provide short description / En caso afirmativo, proporcione una breve descripción",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 14,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 15,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 16,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 17,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 18,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Katie"
+        },
+        {
+          "order": 19,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    },
+    {
+      "connecteamName": "5399 PM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 7618906479824772,
+          "fileName": "5399 PM PA Checklist 08_25_26_08_25_2026_Nathalie_Rivera_1.pdf",
+          "date": "08/25/26",
+          "submitter": "Nathalie Rivera"
+        },
+        {
+          "attachmentId": 2271671986589572,
+          "fileName": "5399 PM PA Checklist 08_27_26_08_27_2026_Fernando_Varela_1.pdf",
+          "date": "08/27/26",
+          "submitter": "Fernando Varela"
+        },
+        {
+          "attachmentId": 7519945834270596,
+          "fileName": "5399 PM PA Checklist 08_31_26_08_31_2026_Nathalie_Rivera_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Nathalie Rivera"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+        "Maintenance Calls",
+        "Transforming Spaces",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Lock pool at required time / Cerrar la piscina a la hora requerida",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Empty property garbage cans/ Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Mop the hallways / Trapea los pasillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Take a photo underneath each stairway / Toma una foto debajo de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Clean lobby bathroom / Baño limpio en el vestíbulo",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 1: Take a photo of the walkway by room 101 with room number in focus / Tome una fotografía del pasillo junto a la habitación 101 con el número de habitación enfocado",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 8,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 2: Take a photo of the pool deck / Tome una foto de la terraza de la piscina",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 9,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 3: Take a photo of the walkway by room 135 with room number in focus / Tome una fotografía del pasillo junto a la habitación 135 con el número de habitación enfocado",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 10,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 4: Take a photo of the front of hotel from near the street / Tome una foto del frente del hotel desde cerca de la calle",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 11,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 5: Take a photo of the dumpster area / Tome una foto del área del contenedor de basura",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 12,
+          "section": "Maintenance Calls",
+          "prompt": "Did you do any maintenance call today? / ¿Hiciste alguna llamada de mantenimiento hoy?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 13,
+          "section": "Maintenance Calls",
+          "prompt": "If yes, provide short description / En caso afirmativo, proporcione una breve descripción",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 14,
+          "section": "Transforming Spaces",
+          "prompt": "Before",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 15,
+          "section": "Transforming Spaces",
+          "prompt": "After",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 16,
+          "section": "Transforming Spaces",
+          "prompt": "Notes/Comments",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 17,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 18,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 19,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 20,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 21,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Nathalie"
+        },
+        {
+          "order": 22,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    },
+    {
+      "connecteamName": "6802 PM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 3250870973009796,
+          "fileName": "6802 PM PA Checklist 08_25_26_08_25_2026_Tanoni_Gibson_1.pdf",
+          "date": "08/25/26",
+          "submitter": "Tanoni Gibson"
+        },
+        {
+          "attachmentId": 7759141790453636,
+          "fileName": "6802 PM PA Checklist 08_30_26_08_31_2026_La'Torya_Yarbrough_1.pdf",
+          "date": "08/30/26",
+          "submitter": "La'Torya Yarbrough"
+        },
+        {
+          "attachmentId": 498286271041412,
+          "fileName": "6802 PM PA Checklist 08_31_26_08_31_2026_Tanoni_Gibson_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Tanoni Gibson"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+        "Maintenance Calls",
+        "Transforming Spaces",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Lock pool at required time / Cerrar la piscina a la hora requerida",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Empty property garbage cans/ Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Mop the hallways / Trapea los pasillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Take a photo underneath each stairway / Toma una foto debajo de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Clean lobby bathroom / Baño limpio en el vestíbulo",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 1: Take a photo of the front of the lobby from middle of parking lot / Tome una foto del frente del vestíbulo desde el medio del estacionamiento",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 8,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 2: Take a photo of behind dumpsters / Tome una foto detrás de los contenedores de basura",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 9,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 3: Take a photo of the pool deck / Tome una foto de la terraza de la piscina",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 10,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 4: Take a photo of the back fence line from right corner / Tome una foto de la línea de la valla trasera desde la esquina derecha",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 11,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 5: Take a photo of the back fence line from left corner / Tome una foto de la línea de la valla trasera desde la esquina izquierda",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 12,
+          "section": "Maintenance Calls",
+          "prompt": "Did you do any maintenance call today? / ¿Hiciste alguna llamada de mantenimiento hoy?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 13,
+          "section": "Maintenance Calls",
+          "prompt": "If yes, provide short description / En caso afirmativo, proporcione una breve descripción",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "114 door battery"
+        },
+        {
+          "order": 14,
+          "section": "Transforming Spaces",
+          "prompt": "Before",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 15,
+          "section": "Transforming Spaces",
+          "prompt": "After",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 16,
+          "section": "Transforming Spaces",
+          "prompt": "Notes/Comments",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 17,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 18,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 19,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 20,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 21,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Tanoni"
+        },
+        {
+          "order": 22,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    },
+    {
+      "connecteamName": "8700 PM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 571697028566916,
+          "fileName": "8700 PM PA Checklist 08_25_26_08_25_2026_Erica_Cardona_1.pdf",
+          "date": "08/25/26",
+          "submitter": "Erica Cardona"
+        },
+        {
+          "attachmentId": 5225976521723780,
+          "fileName": "8700 PM PA Checklist 08_30_26_08_30_2026_Angela_Smith_1.pdf",
+          "date": "08/30/26",
+          "submitter": "Angela Smith"
+        },
+        {
+          "attachmentId": 3835908913532804,
+          "fileName": "8700 PM PA Checklist 08_31_26_08_31_2026_Erica_Cardona_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Erica Cardona"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+        "Maintenance Calls",
+        "Transforming Spaces",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Lock pool at required time / Cerrar la piscina a la hora requerida",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Empty property garbage cans/ Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Mop the hallways / Trapea los pasillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Take a photo underneath each stairway / Toma una foto debajo de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Clean lobby bathroom / Baño limpio en el vestíbulo",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 1: Take a photo of the pool area / Toma una foto del área de la piscina",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 8,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 2: Take a photo of building 1 facing tech institute / Tome una foto del edificio 1 frente al instituto tecnológico",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 9,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 3: Take a photo of building 2 second floor facing parking lot and pool / Tome una foto del edificio 2, segundo piso, frente al estacionamiento y la piscina",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 10,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 4: Take a photo of the parking lot beside old ballroom / Tome una foto del estacionamiento al lado del antiguo salón de baile",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 11,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 5: Take a photo of the dumpster area / Tome una foto del área del contenedor de basura",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 12,
+          "section": "Maintenance Calls",
+          "prompt": "Did you do any maintenance call today? / ¿Hiciste alguna llamada de mantenimiento hoy?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 13,
+          "section": "Maintenance Calls",
+          "prompt": "If yes, provide short description / En caso afirmativo, proporcione una breve descripción",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 14,
+          "section": "Transforming Spaces",
+          "prompt": "Before",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 15,
+          "section": "Transforming Spaces",
+          "prompt": "After",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 16,
+          "section": "Transforming Spaces",
+          "prompt": "Notes/Comments",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 17,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 18,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 19,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 20,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 21,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Erica"
+        },
+        {
+          "order": 22,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    },
+    {
+      "connecteamName": "44199 PM PA Checklist",
+      "status": "EXTRACTED",
+      "samples": [
+        {
+          "attachmentId": 800384139300740,
+          "fileName": "44199 PM PA Checklist 08_25_26_08_25_2026_Shalin_Fox_1.pdf",
+          "date": "08/25/26",
+          "submitter": "Shalin Fox"
+        },
+        {
+          "attachmentId": 7821228287889284,
+          "fileName": "44199 PM PA Checklist 08_30_26_08_30_2026_Skyla_Johnson_1.pdf",
+          "date": "08/30/26",
+          "submitter": "Skyla Johnson"
+        },
+        {
+          "attachmentId": 272959468900228,
+          "fileName": "44199 PM PA Checklist 08_31_26_08_31_2026_Larhence_Cyriaque_1.pdf",
+          "date": "08/31/26",
+          "submitter": "Larhence Cyriaque"
+        }
+      ],
+      "sectionsSeen": [
+        "Tasks",
+        "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+        "Maintenance Calls",
+        "Transforming Spaces",
+        "Timesheet",
+        "For Verification"
+      ],
+      "questions": [
+        {
+          "order": 1,
+          "section": "Tasks",
+          "prompt": "Lock pool at required time / Cerrar la piscina a la hora requerida",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 2,
+          "section": "Tasks",
+          "prompt": "Empty property garbage cans/ Vaciar botes de basura",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 3,
+          "section": "Tasks",
+          "prompt": "Mop the hallways / Trapea los pasillos",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 4,
+          "section": "Tasks",
+          "prompt": "Take a photo underneath each stairway / Toma una foto debajo de cada escalera",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 5,
+          "section": "Tasks",
+          "prompt": "Clean lobby bathroom / Baño limpio en el vestíbulo",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 6,
+          "section": "Tasks",
+          "prompt": "Check the parking area for any inoperable vehicles, then put a sticker for towing / Revise el área de estacionamiento para detectar cualquier vehículo averiado y luego coloque una pegatina para remolque",
+          "inferredType": "TASK_CHECKBOX",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 7,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 1: Take a photo of the front of the lobby / Tome una foto del frente del vestíbulo desde el medio del estacionamiento",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 8,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 2: Take a photo of behind dumpsters / Tome una foto detrás de los contenedores de basura",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 9,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 3: Take a photo of the pool deck / Tome una foto de la terraza de la piscina",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 10,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 4: Take a hallway photo from room 135 / Tome una foto del pasillo desde la habitación 135",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 11,
+          "section": "CHECKPOINT (Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT) / (Tome fotografía de CADA punto de control cada 7PM, 10PM y FINAL DE TURNO)",
+          "prompt": "CHECKPOINT 5: Take a hallway photo from room 141 / Tome una foto del pasillo desde la habitación 141",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null,
+          "repeatedTimesInPdf": 3
+        },
+        {
+          "order": 12,
+          "section": "Maintenance Calls",
+          "prompt": "Did you do any maintenance call today? / ¿Hiciste alguna llamada de mantenimiento hoy?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "No"
+        },
+        {
+          "order": 13,
+          "section": "Maintenance Calls",
+          "prompt": "If yes, provide short description / En caso afirmativo, proporcione una breve descripción",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 14,
+          "section": "Transforming Spaces",
+          "prompt": "Before",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 15,
+          "section": "Transforming Spaces",
+          "prompt": "After",
+          "inferredType": "PHOTO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 16,
+          "section": "Transforming Spaces",
+          "prompt": "Notes/Comments",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        },
+        {
+          "order": 17,
+          "section": "Timesheet",
+          "prompt": "Did you clock-in? / Registro su entrada?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 18,
+          "section": "Timesheet",
+          "prompt": "Did you clock-out for your break? / Registro su salida al descanso/almuerzo?",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 19,
+          "section": "Timesheet",
+          "prompt": "Did you clock back in for your break? / Registro su entrada del descanso/almuerzo",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 20,
+          "section": "Timesheet",
+          "prompt": "Did you clock out for the day? / Registro su salida",
+          "inferredType": "YESNO",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "Yes"
+        },
+        {
+          "order": 21,
+          "section": "For Verification",
+          "prompt": "What is your name? / Cual es su nombre",
+          "inferredType": "TEXT",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": "shalin"
+        },
+        {
+          "order": 22,
+          "section": "For Verification",
+          "prompt": "Signature",
+          "inferredType": "SIGNATURE",
+          "typeIsInferred": true,
+          "seenInSamples": 3,
+          "ofSamples": 3,
+          "sampleAnswer": null
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "812 PM PA CHECKLIST DOES NOT EXIST on this sheet. See templates[].notFoundEvidence for the 812 entry. Only 8 of the 9 requested templates were extractable.",
+    "EVERY inferredType is a GUESS derived from the rendered answer text in completed PDFs. Connecteam's real field types were never read. Verify all of them before building templates.",
+    "inferredType 'TASK_CHECKBOX' is NOT in the type vocabulary the task specified. It was added deliberately: ~6-22 items per template render as a bare line with no answer value at all, which is the signature of a Connecteam task/checkbox item, not free text. Labelling them 'TEXT' (the specified fallback) would have been actively misleading for a rebuild. Treat it as 'bare item, no captured value - probably a checkbox'.",
+    "SAMPLING FOUND NO VARIANCE. 3 samples per template, different days and (mostly) different submitters, produced identical question sets in every case - seenInSamples === ofSamples for all 174 questions. The likely reason is that these Connecteam PDFs render the FULL question set including unanswered items, not just answered ones. That makes the extraction more trustworthy than the brief assumed, but it also means sampling did NOT prove the absence of conditional/branching questions - it only showed the PDF renderer does not hide them.",
+    "CHECKPOINT items carry repeatedTimesInPdf: 3. Each CHECKPOINT prompt is printed three times in a row in every PDF, matching the section header '(Take picture of EACH checkpoint every 7PM, 10PM and END OF SHIFT)'. UNRESOLVED: this is either ONE photo question that accepts 3 photos, or THREE separate questions. The PDF cannot distinguish them. Decide against Connecteam itself before building.",
+    "4645 PM PA Checklist genuinely OMITS the 'Transforming Spaces' section (Before photo / After photo / Notes/Comments). Verified by grep across all 3 samples: 0 occurrences, while all other templates have exactly 1. This is a real template difference at Lakeland, not a parsing artifact. 19 questions vs 22 elsewhere.",
+    "The CHECKPOINT section header is a multi-line centered block in the PDF and was reassembled programmatically. Its canonical text is the same in all 7 PM templates.",
+    "All prompts are bilingual EN / ES separated by ' / ', already matching ADR-013's bilingual field-staff requirement. Spanish is the operators' existing wording - reuse it rather than re-translating.",
+    "Prompts were reassembled from wrapped PDF lines using heuristics (lowercase-start continuation, trailing-hyphen continuation). Long prompts are the most likely place for a join error. Spot-check items 3, 11 and 21 of AM PA Checklist and item 6 of every PM template.",
+    "'Notes/Comments' renders as 'Notes/Comments::' in the PDF (double colon). The trailing colons were stripped from the prompt.",
+    "sampleAnswer is the first non-empty answer found across the samples and is illustrative only - it is one worker's response on one day, not an allowed-value list. No SINGLE-choice type was assigned anywhere because no question produced a small closed set of non-Yes/No answers.",
+    "FILENAME DATE IS ONE DAY BEHIND. The file is named ...083126 as specified by the task, but this extraction ran on 2026-09-01 at 11:35 ET. Rename to ConnecteamTemplates_PA_RISE8_090126.json if the convention Title_PropertyID_MMDDYY is meant to carry the true Eastern date.",
+    "Smartsheet access was strictly read-only: list_attachments, search, get_attachment. No rows, comments or attachments were created, modified or deleted.",
+    "PDFs render page/media markers as 'n/NN' on their own lines; these were stripped and are not questions."
+  ]
+}
