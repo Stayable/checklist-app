@@ -394,6 +394,11 @@ export async function runMassOutageCheck(
     });
   }
 
+  // Still-offline devices this check failed to give a ticket to. Tracked
+  // because the job below used to be marked DONE regardless — see the
+  // reschedule at the end of this function for why that stranded them.
+  let uncoveredChildren = 0;
+
   if (property) {
     // Finding 3: `affected`/`updated` was already persisted above, so if this
     // loop throws partway through, the job is left PENDING and retried by
@@ -416,6 +421,7 @@ export async function runMassOutageCheck(
           console.error(
             `mass-outage: no PROBLEM event found for still-offline device ${d.deviceId}, skipping child ticket`,
           );
+          uncoveredChildren += 1;
           continue;
         }
         await createStandardTicket(db, {
@@ -430,8 +436,13 @@ export async function runMassOutageCheck(
           `mass-outage: failed creating child ticket for device ${d.deviceId}`,
           err,
         );
+        uncoveredChildren += 1;
       }
     }
+  } else {
+    // No property row resolved — nothing above ran, so every still-offline
+    // device is uncovered.
+    uncoveredChildren = stillOffline.length;
   }
 
   await db.ticket.update({
@@ -451,6 +462,35 @@ export async function runMassOutageCheck(
           }
         : { status: "IN_PROGRESS" },
   });
+
+  // Schedule the NEXT check when this one left a still-offline device with no
+  // ticket (2026-08-31, orphan-device fix D).
+  //
+  // Exactly one MASS_OUTAGE_CHECK job is ever created per mass-outage ticket —
+  // by `createMassOutageTicket`. This function then marked it DONE
+  // unconditionally, including on the paths that swallow a per-device failure
+  // (the createStandardTicket catch, and the "no PROBLEM event on record" skip).
+  // A device that lost its child ticket that way was stranded twice over: it is
+  // OFFLINE with no ticket, and the reconciliation sweep deliberately skips it
+  // because its property has an open MASS_OUTAGE parent. Worse, the parent
+  // itself could never close — `cascadeParentCloseIfDone` needs EVERY child
+  // resolved, and the missing one can never resolve.
+  //
+  // Rescheduling rather than leaving this job PENDING keeps the retry at the
+  // 10-minute mass-outage cadence instead of hammering it every minute; the
+  // check is idempotent (hasOpenTicketForDevice guards each child, and
+  // partitionRecovery preserves already-recovered entries), and it stops on its
+  // own as soon as every still-offline device has a ticket or has recovered.
+  if (uncoveredChildren > 0 && stillOffline.length > 0) {
+    await db.networkJob.create({
+      data: {
+        kind: "MASS_OUTAGE_CHECK",
+        runAt: new Date(now.getTime() + MASS_OUTAGE_CHECK_MIN * 60_000),
+        ticketId: ticket.id,
+        status: "PENDING",
+      },
+    });
+  }
 
   await db.networkJob.update({ where: { id: job.id }, data: { status: "DONE" } });
 }

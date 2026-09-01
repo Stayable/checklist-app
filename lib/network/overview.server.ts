@@ -1,7 +1,8 @@
-import { DeviceStatus, TicketStatus } from "@prisma/client";
+import { DeviceStatus, TicketStatus, TicketType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { escalationLevel } from "./escalation";
 import { type NetworkScope, scopeWhere } from "./scope";
+import { uncoveredOfflineDevices } from "./reconcile";
 
 // The numbers behind the /network dashboard (extracted 2026-08-01).
 //
@@ -24,6 +25,23 @@ export type NetworkOverviewCards = {
   openTickets: number;
   escalated: number;
   devicesOffline: number;
+  /**
+   * Offline devices that no open ticket names and that no open MASS_OUTAGE
+   * ticket at their property covers (2026-08-31).
+   *
+   * This figure exists because "24 offline / 21 open tickets" was two peer
+   * cards a reader had to subtract in their head — and the difference is not
+   * one thing. Some of it is legitimate (the 5-7 minute gap before a ticket
+   * timer fires, and devices rolled up under a mass outage); some of it was a
+   * genuine bug class where a device stayed OFFLINE with nobody owning it.
+   * Naming the number turns an inference into a work item.
+   *
+   * It is computed from the SAME predicate the reconciliation sweep works
+   * from (`uncoveredOfflineDevices`), so the card and the reconciler's backlog
+   * cannot disagree — if this is standing non-zero, the sweep is telling you
+   * why in the poll outcome (`unarmable` / `deferred`).
+   */
+  devicesOfflineNoTicket: number;
   devicesUnknown: number;
   devicesTotal: number;
   propertiesWithIssues: number;
@@ -96,7 +114,7 @@ export async function loadNetworkOverview(params: {
 
   const [
     openTickets,
-    devicesOffline,
+    offlineDevices,
     devicesUnknown,
     devicesTotal,
     resolvedDurations,
@@ -117,10 +135,20 @@ export async function loadNetworkOverview(params: {
         openedAt: true,
         propertyId: true,
         property: { select: { shortCode: true } },
+        // `deviceId` (not just the device's name) so the offline set can be
+        // diffed against what is actually ticketed without a second query.
+        deviceId: true,
         device: { select: { name: true } },
       },
     }),
-    db.device.count({ where: { ...inScope, currentStatus: DeviceStatus.OFFLINE } }),
+    // findMany, not count: the ids are needed for `devicesOfflineNoTicket` and
+    // the row count is the same figure `devicesOffline` always was. Only
+    // offline rows come back — a handful out of the estate — so this is the
+    // same read, not a heavier one.
+    db.device.findMany({
+      where: { ...inScope, currentStatus: DeviceStatus.OFFLINE },
+      select: { id: true, propertyId: true, updatedAt: true },
+    }),
     // N4: devices whose console can't be reached are UNKNOWN, not OFFLINE, so
     // they must be counted separately — an unmonitored fleet must never render
     // as a healthy one.
@@ -174,6 +202,25 @@ export async function loadNetworkOverview(params: {
     };
   });
 
+  // Same predicate as the reconciliation sweep, deliberately — see the doc on
+  // `devicesOfflineNoTicket`. No extra query: both inputs come out of the reads
+  // already issued above.
+  const offlineNoTicket = uncoveredOfflineDevices({
+    devices: offlineDevices.map((d) => ({
+      deviceId: d.id,
+      propertyId: d.propertyId,
+      status: "OFFLINE" as const,
+      openProblemEventId: null, // not needed for coverage, only for arming
+      offlineSince: d.updatedAt,
+    })),
+    deviceIdsWithOpenTicket: openTickets
+      .map((t) => t.deviceId)
+      .filter((id): id is string => id !== null),
+    propertyIdsWithOpenMassOutage: openTickets
+      .filter((t) => t.ticketType === TicketType.MASS_OUTAGE)
+      .map((t) => t.propertyId),
+  });
+
   const avgResolutionMin =
     resolvedDurations.length === 0
       ? null
@@ -188,7 +235,8 @@ export async function loadNetworkOverview(params: {
       escalated: openTickets.filter(
         (t) => escalationLevel({ openedAt: t.openedAt, now, status: t.status }) === "ESCALATED",
       ).length,
-      devicesOffline,
+      devicesOffline: offlineDevices.length,
+      devicesOfflineNoTicket: offlineNoTicket.length,
       devicesUnknown,
       devicesTotal,
       propertiesWithIssues: new Set(openTickets.map((t) => t.propertyId)).size,

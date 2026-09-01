@@ -90,6 +90,7 @@ export default async function NetworkDashboardPage({
       openTickets: openTicketCount,
       escalated: escalatedCount,
       devicesOffline,
+      devicesOfflineNoTicket,
       devicesUnknown,
       devicesTotal,
       propertiesWithIssues,
@@ -133,6 +134,19 @@ export default async function NetworkDashboardPage({
         </p>
       )}
 
+      {devicesOfflineNoTicket > 0 && (
+        <p className="rounded-lg bg-yellow-50 px-4 py-3 text-sm text-yellow-900 ring-1 ring-yellow-300">
+          <span className="font-semibold">
+            {devicesOfflineNoTicket} offline device{devicesOfflineNoTicket === 1 ? " has" : "s have"}{" "}
+            no open ticket.
+          </span>{" "}
+          A few minutes&rsquo; worth is normal — a device gets a ticket about 5–7 minutes after it
+          drops, and devices rolled up under a mass outage are excluded from this count. A figure
+          that stays here across polls is work nobody owns: monitoring re-arms the ticket timer each
+          poll, so anything still listed could not be re-armed and needs a look.
+        </p>
+      )}
+
       {!isAnyTeamsWebhookConfigured() && (
         <p className="text-xs text-slate-400">
           Teams notifications: not configured — ticket events are logged, not posted.
@@ -156,6 +170,22 @@ export default async function NetworkDashboardPage({
           label="Devices currently offline"
           value={devicesOffline}
           tone="bg-amber-50 text-amber-800 ring-amber-200"
+        />
+        {/* Names the gap between the two cards above it. "24 offline / 21 open
+            tickets" used to be a subtraction the reader had to do in their head,
+            and the answer was ambiguous — part of it is the legitimate 5-7 min
+            ticket-timer delay, part of it was devices genuinely stranded with
+            nobody owning them. Same predicate as the reconciliation sweep
+            (lib/network/reconcile.ts), so this number IS the reconciler's
+            backlog rather than a second opinion about it. */}
+        <SummaryCard
+          label="Offline · no ticket"
+          value={devicesOfflineNoTicket}
+          tone={
+            devicesOfflineNoTicket > 0
+              ? "bg-yellow-50 text-yellow-900 ring-yellow-300"
+              : "bg-slate-50 text-slate-700 ring-slate-200"
+          }
         />
         <SummaryCard
           label="Unverifiable (console unreachable)"
