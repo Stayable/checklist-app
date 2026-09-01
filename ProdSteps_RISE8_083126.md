@@ -6,7 +6,9 @@ Run in this order. Steps 1–3 are prod writes; I did not run any of them.
 ```
 pnpm dotenv -e .env.production.local -- npx prisma migrate status
 ```
-Expect ONE pending: `20260831130000_add_template_multiplicity`.
+Expect TWO pending, in this order:
+- `20260831130000_add_template_multiplicity`
+- `20260831140000_add_checklist_batch_drafts`
 ⚠ If `20260813120000_add_contractor_update_fanout` is also listed as pending, STOP
 and tell me — step 2 would apply it too, and it is not part of this work.
 
@@ -14,8 +16,9 @@ and tell me — step 2 would apply it too, and it is not part of this work.
 ```
 pnpm dotenv -e .env.production.local -- npx prisma migrate deploy
 ```
-Additive only: one enum, one defaulted column, one nullable column. Nothing is
-dropped, so the code currently running in production keeps working after it.
+Additive only: one enum, one defaulted column, one nullable column, and one new
+table. Nothing is dropped and no column changes type, so the code currently
+running in production keeps working after it.
 
 ## 3. Seed the 28 templates
 ```
