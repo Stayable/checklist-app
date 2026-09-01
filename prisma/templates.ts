@@ -87,14 +87,25 @@ export const TEMPLATE_CODE_MAX_LENGTH = 8;
 export function seedActiveFields(lifecycle: TemplateLifecycle): {
   create: boolean;
   update: boolean | undefined;
+  /**
+   * `publishedAt` on CREATE only, and never on update -- it records a thing
+   * that happened, not a thing this file decides.
+   *
+   * ACTIVE and RETIRED templates have both genuinely been in service, so they
+   * are stamped; without it a retired template reads as a filled draft and is
+   * offered for review again. A DRAFT is null: seeding a template must not
+   * publish it, because the flow is that a Property Manager reviews the
+   * question set and publishes it themselves.
+   */
+  publishedAtOnCreate: Date | null;
 } {
   switch (lifecycle) {
     case "ACTIVE":
-      return { create: true, update: undefined };
+      return { create: true, update: undefined, publishedAtOnCreate: new Date() };
     case "DRAFT":
-      return { create: false, update: undefined };
+      return { create: false, update: undefined, publishedAtOnCreate: null };
     case "RETIRED":
-      return { create: false, update: false };
+      return { create: false, update: false, publishedAtOnCreate: new Date() };
   }
 }
 

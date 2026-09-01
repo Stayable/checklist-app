@@ -455,6 +455,16 @@ model ChecklistTemplate {
   // W1: how many instances one subject yields per day. See InstanceMultiplicity.
   copies                InstanceMultiplicity @default(ONE)
   active                Boolean              @default(true)
+  // When this template was first published for real use, or null if never.
+  //
+  // `active` alone cannot tell a FILLED-BUT-UNREVIEWED draft from a RETIRED
+  // template -- both are active:false with questions attached. That ambiguity
+  // is not cosmetic: it decides whether /templates offers a Publish button or
+  // hides the row. publishedAt resolves it permanently:
+  //   publishedAt null                -> draft (empty if 0 questions, else filled)
+  //   publishedAt set + active true   -> published, in use
+  //   publishedAt set + active false  -> retired
+  publishedAt           DateTime?            @map("published_at") @db.Timestamptz
   allProperties         Boolean              @default(false) @map("all_properties")
   // S1: gates the checkout-flag capture block (fill flow + review confirm).
   // On for Departure/checkout-type templates, off elsewhere.

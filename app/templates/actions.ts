@@ -226,17 +226,12 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
         copies,
         reviewLevel,
         allProperties,
-        // A seeded draft is `active: false` with zero questions, and that is
-        // exactly how /templates tells a DRAFT from a RETIRED template. The
-        // moment someone writes the first question the pair stops being
-        // distinguishable -- an inactive template WITH questions looks retired,
-        // so a half-authored draft would vanish from the list it was authored
-        // from. Flip it on that transition only: 0 questions -> some questions.
-        // Deliberately NOT `active: questions.length > 0`, which would silently
-        // re-activate a template an admin had chosen to deactivate.
-        ...(current._count.questions === 0 && questions.length > 0
-          ? { active: true }
-          : {}),
+        // NOTE: filling a template does NOT publish it. An earlier version
+        // flipped `active` on the 0-questions -> some-questions transition, to
+        // stop a half-authored draft looking retired. `publishedAt` now carries
+        // that distinction instead, because Kyle's flow is that a Property
+        // Manager reviews the finished question set and publishes it. Editing
+        // must never publish on their behalf.
       },
     });
     // Replace property associations.
@@ -308,4 +303,65 @@ export async function deleteTemplate(id: string): Promise<ActionResult> {
   await writeAudit(user.id, id, "delete", { name: t.name });
   revalidatePath("/templates");
   return { ok: true, message: `Deleted "${t.name}".` };
+}
+
+/**
+ * Publish a template, or take it out of service.
+ *
+ * Separate from the edit actions on purpose. Authoring a question set and
+ * deciding it is fit for field staff are different acts by different people:
+ * the content is written (or extracted from the Connecteam archive) and a
+ * Property Manager reviews it and publishes it themselves.
+ *
+ * So this is manager-or-above, while editing stays ADMIN-only. A manager can
+ * put a template into service or pull it out; they cannot rewrite its questions.
+ */
+export async function setTemplatePublished(
+  id: string,
+  published: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await requireManager();
+
+  const t = await db.checklistTemplate.findUnique({
+    where: { id },
+    select: {
+      active: true,
+      publishedAt: true,
+      _count: { select: { questions: true } },
+    },
+  });
+  if (!t) return { ok: false, error: "Template not found." };
+
+  if (published && t._count.questions === 0) {
+    return {
+      ok: false,
+      error:
+        "This template has no questions yet. Field staff would be able to open it and not fill it.",
+    };
+  }
+  if (published === t.active) {
+    return {
+      ok: false,
+      error: published ? "Already published." : "Already unpublished.",
+    };
+  }
+
+  await db.checklistTemplate.update({
+    where: { id },
+    data: {
+      active: published,
+      // Stamped once, on first publish, and never cleared. Clearing it on
+      // unpublish would turn a retired template back into a draft and offer it
+      // for review a second time.
+      ...(published && t.publishedAt == null ? { publishedAt: new Date() } : {}),
+    },
+  });
+
+  await writeAudit(user.id, id, published ? "publish" : "unpublish", {
+    questions: t._count.questions,
+    firstPublish: t.publishedAt == null,
+  });
+
+  revalidatePath("/templates");
+  return { ok: true };
 }

@@ -190,15 +190,15 @@ describe("the two per-property families", () => {
 describe("seedActiveFields — the upsert split", () => {
   // The whole point: re-running the seed must never un-do a human's decision.
   it("never re-asserts `active` for an ACTIVE template", () => {
-    expect(seedActiveFields("ACTIVE")).toEqual({ create: true, update: undefined });
+    expect(seedActiveFields("ACTIVE")).toMatchObject({ create: true, update: undefined });
   });
 
   it("never re-asserts `active` for a DRAFT — a draft Kyle activates stays active", () => {
-    expect(seedActiveFields("DRAFT")).toEqual({ create: false, update: undefined });
+    expect(seedActiveFields("DRAFT")).toMatchObject({ create: false, update: undefined });
   });
 
   it("does re-assert `active: false` for a RETIRED template", () => {
-    expect(seedActiveFields("RETIRED")).toEqual({ create: false, update: false });
+    expect(seedActiveFields("RETIRED")).toMatchObject({ create: false, update: false });
   });
 
   it("only RETIRED writes to `active` on re-seed", () => {
@@ -217,5 +217,29 @@ describe("Maintenance Checklist scope", () => {
     expect(mnt).toBeDefined();
     expect(mnt!.scope).toBe(TemplateScope.PER_PROPERTY);
     expect(mnt!.copies).toBe(InstanceMultiplicity.PER_TASK);
+  });
+});
+
+describe("seedActiveFields — publish state", () => {
+  it("does NOT publish a seeded draft", () => {
+    // The whole point of Kyle's flow: the question set is filled in, then a
+    // Property Manager reviews it and publishes it. Seeding must not do that
+    // on their behalf.
+    expect(seedActiveFields("DRAFT").publishedAtOnCreate).toBeNull();
+  });
+
+  it("stamps a template that has genuinely been in service", () => {
+    // Without this a retired template reads as a filled draft and gets offered
+    // for review a second time.
+    expect(seedActiveFields("ACTIVE").publishedAtOnCreate).toBeInstanceOf(Date);
+    expect(seedActiveFields("RETIRED").publishedAtOnCreate).toBeInstanceOf(Date);
+  });
+
+  it("never re-asserts publish state on update", () => {
+    // publishedAt records something that happened; the seed file is not its
+    // author and must not rewrite it on a re-run.
+    for (const l of ["ACTIVE", "DRAFT", "RETIRED"] as const) {
+      expect(Object.keys(seedActiveFields(l))).not.toContain("publishedAtOnUpdate");
+    }
   });
 });

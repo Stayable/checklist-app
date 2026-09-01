@@ -18,13 +18,21 @@ export default async function TemplatesPage() {
     // questions and waiting for Kyle to author them. `questions: { none: {} }`
     // is what separates a draft from a RETIRED template: a retired one (HKR /
     // PAR / MGR) still carries its question set, so it stays out of this list.
-    where: { OR: [{ active: true }, { questions: { none: {} } }] },
+    // Published templates, plus every never-published draft (empty or filled).
+    // A RETIRED template -- published once, now inactive -- is deliberately
+    // absent; it is history, not work. The previous form of this clause was
+    // `active OR questions none`, which hid a FILLED draft: the moment someone
+    // wrote the first question the row vanished from the list they were
+    // authoring it in.
+    where: { OR: [{ active: true }, { publishedAt: null }] },
     orderBy: { name: "asc" },
     select: {
       id: true,
       code: true,
       name: true,
       scope: true,
+      active: true,
+      publishedAt: true,
       defaultRole: true,
       reviewLevel: true,
       allProperties: true,
@@ -46,6 +54,12 @@ export default async function TemplatesPage() {
         propertyIds,
         questionCount: t._count.questions,
         instanceCount: t._count.instances,
+        active: t.active,
+        // Serialised for the client component; lifecycleOf accepts the string.
+        publishedAt: t.publishedAt ? t.publishedAt.toISOString() : null,
+        // Reviewing a finished question set and putting it into service is a
+        // manager's call, even though authoring the questions is ADMIN-only.
+        canPublish: true,
         canManage: canManageTemplate(user.role, accessible, { allProperties: t.allProperties, propertyIds }),
         appliesHere: propertyIds.some((id) => scopedSet.has(id)) || t.allProperties,
       };

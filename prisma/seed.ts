@@ -114,6 +114,7 @@ async function main() {
         reviewLevel: tmpl.reviewLevel,
         allProperties: tmpl.allProperties,
         active: activeFields.create,
+        publishedAt: activeFields.publishedAtOnCreate,
       },
     });
 
