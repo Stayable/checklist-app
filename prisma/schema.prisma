@@ -337,6 +337,7 @@ model User {
   contractorJobsCreated ContractorJob[]       @relation("ContractorJobCreatedBy")
   contractorJobNotes    ContractorJobNote[]   @relation("ContractorJobNoteAuthor")
   contractorDailyNotes  ContractorDailyNote[] @relation("ContractorDailyNoteAuthor")
+  batchDrafts           ChecklistBatchDraft[] @relation("BatchDraftAuthor")
 
   @@map("users")
 }
@@ -371,6 +372,7 @@ model Property {
   contractors          ContractorProperty[]
   contractorJobs       ContractorJob[]
   contractorDailyNotes ContractorDailyNote[]
+  batchDrafts          ChecklistBatchDraft[]
 
   @@map("properties")
 }
@@ -631,6 +633,47 @@ model ChecklistInstance {
   @@index([verifiedByUserId])
   @@index([invalidationRequestedAt])
   @@map("checklist_instances")
+}
+
+// D9 — the batch wizard's saved state, and NOTHING more.
+//
+// WHY A TABLE AND NOT AN INSTANCE STATUS. A draft is the *definition* of work a
+// manager is still composing; it is not work. Modelling it as a
+// ChecklistInstance in some PENDING state would put unreal rows in the field
+// staff's home list, in /review's tabs and in both report denominators — and a
+// new InstanceStatus member is silently EXCLUDED by `status: { in: [...] }` and
+// silently INCLUDED by `notIn`, so every one of those surfaces would change
+// meaning with a clean typecheck. That is the hazard pinned by a test and
+// written down in migration 20260822120000, which is why the stayover work
+// added no status either. ZERO ChecklistInstance rows exist until Create.
+//
+// `batches` is the wizard's own input array, stored verbatim — BatchInput[]
+// from lib/batch-create.ts:
+//   [{ templateId, roomIds[], assigneeIds[], taskLabels[], dates[], assignedUserId }]
+// Json because the wizard's shape is still moving and a draft is a convenience,
+// not a record. The cost is that it is UNTRUSTED ON READ — a row written by an
+// older wizard need not match today's shape — so every read validates it with
+// Zod (lib/batch-draft.ts) and reports a stale draft rather than throwing.
+//
+// PRIVATE TO ITS AUTHOR. There is no shared-draft feature: every query is keyed
+// by (createdByUserId, propertyId), never by id alone.
+model ChecklistBatchDraft {
+  id              String   @id @default(uuid()) @db.Uuid
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  propertyId      String   @map("property_id") @db.Uuid
+  /// Optional label ("Tomorrow's HK"). Null means the UI shows a derived one.
+  name            String?
+  batches         Json
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  createdBy User     @relation("BatchDraftAuthor", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([createdByUserId])
+  // The list query: one author's drafts at one property, newest first.
+  @@index([createdByUserId, propertyId, updatedAt])
+  @@map("checklist_batch_drafts")
 }
 
 model Response {
