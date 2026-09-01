@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { db } from "@/lib/db";
-import { etDateOnly } from "@/lib/datetime";
-import { nextManualLabelDefault } from "@/lib/manual-create";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { ManualCreateClient } from "./ManualCreateClient";
+import { BatchCreateClient } from "./BatchCreateClient";
 
 export const metadata: Metadata = {
   title: "Create Checklist — StayCheck",
@@ -26,6 +24,8 @@ export default async function NewChecklistPage() {
       id: true,
       name: true,
       scope: true,
+      copies: true,
+      defaultRole: true,
       allProperties: true,
       properties: { select: { propertyId: true } },
     },
@@ -38,11 +38,15 @@ export default async function NewChecklistPage() {
         t.properties.some((p) => p.propertyId === activePropertyId)),
   );
 
-  const today = etDateOnly();
-  const defaultTitleFor: Record<string, string> = {};
-  for (const t of templates) {
-    defaultTitleFor[t.id] = nextManualLabelDefault(t.name, today);
-  }
+  const propertyShortCode = activePropertyId
+    ? ((
+        await db.property.findUnique({
+          where: { id: activePropertyId },
+          select: { shortCode: true },
+        })
+      )?.shortCode ?? "")
+    : "";
+
 
   // Rooms + assignees are property-scoped; empty arrays when no property selected.
   const [rooms, assignees] = activePropertyId
@@ -59,7 +63,8 @@ export default async function NewChecklistPage() {
             properties: { some: { propertyId: activePropertyId } },
           },
           orderBy: { name: "asc" },
-          select: { id: true, name: true },
+          // role drives the PER_ASSIGNEE pool: a per-PA checklist offers PAs.
+          select: { id: true, name: true, role: true },
         }),
       ])
     : [[], []];
@@ -68,18 +73,20 @@ export default async function NewChecklistPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Create a checklist"
-        subtitle="Creates one checklist immediately — no recurrence"
+        subtitle="Build one or more batches, preview the names, then create"
       />
-      <ManualCreateClient
+      <BatchCreateClient
         templates={templates.map((t) => ({
           id: t.id,
           name: t.name,
           scope: t.scope,
+          copies: t.copies,
+          defaultRole: t.defaultRole,
         }))}
         rooms={rooms}
         assignees={assignees}
         activePropertyId={activePropertyId}
-        defaultTitleFor={defaultTitleFor}
+        propertyShortCode={propertyShortCode}
       />
     </div>
   );
