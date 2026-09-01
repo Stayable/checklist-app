@@ -5,6 +5,7 @@ import { allocateTicketNumber } from "./ticketing.server";
 import { monitoredHosts } from "./unifi-hosts";
 import { fetchUnifiSnapshot, isUnifiConfigured, type UnifiFabric } from "./unifi-api";
 import { decidePoll, type BlindHost, type ObservedDevice, type PollDecision } from "./unifi-poll";
+import { runReArmSweep, type ReArmOutcome } from "./reconcile.server";
 
 // UniFi poller orchestration (T11, 2026-07-27).
 //
@@ -41,6 +42,8 @@ export type PollOutcome = {
   blindHosts: number;
   blindTicketsOpened: number;
   blindTicketsResolved: number;
+  /** Offline-device reconciliation. Absent when the sweep itself threw. */
+  reconcile?: ReArmOutcome;
 };
 
 /**
@@ -271,11 +274,22 @@ export async function runUnifiPoll(now: Date = new Date()): Promise<PollOutcome>
     now,
   });
 
-  const inventory = await upsertInventory(decision.observedDevices, propertyIdByRef, now);
-
   // Events go through the untouched webhook ingest path. `rawBody` is a
   // synthetic marker: the poller has no HTTP body, and nothing downstream
   // reads it today (see ingestWebhook's doc comment).
+  //
+  // INGEST BEFORE INVENTORY (2026-08-31, orphan-device fix C). This used to run
+  // after `upsertInventory`, which stranded any device FIRST SEEN offline whose
+  // PROBLEM ingest then threw: the inventory create branch had already written
+  // `currentStatus: OFFLINE`, so on the next tick `previous === OFFLINE` was not
+  // a transition and the PROBLEM never re-fired — a device permanently offline
+  // with no event and no ticket. Ingesting first means `ingestWebhook`'s own
+  // upsert is what creates the row (same deviceKey — the poller passes the MAC
+  // as `deviceIdent`), so a failed ingest leaves NO row at all and the next tick
+  // sees a first sighting again and retries. `upsertInventory` then runs and
+  // fills in name/type/console for whatever ingest created or left alone; its
+  // update branch still refuses to write status, so nothing here gives the
+  // poller a second way to clear an OFFLINE device behind a ticket's back.
   let eventsIngested = 0;
   let eventsFailed = 0;
   for (const event of decision.events) {
@@ -299,6 +313,8 @@ export async function runUnifiPoll(now: Date = new Date()): Promise<PollOutcome>
     }
   }
 
+  const inventory = await upsertInventory(decision.observedDevices, propertyIdByRef, now);
+
   const devicesMarkedUnknown = await markDevicesUnknown(decision.unknownDeviceKeys);
 
   let blindTicketsOpened = 0;
@@ -320,9 +336,28 @@ export async function runUnifiPoll(now: Date = new Date()): Promise<PollOutcome>
     });
   const blindTicketsResolved = await resolveBlindTickets(healthyLabels, now);
 
+  // Reconciliation, LAST (2026-08-31). Events are transitions-only, so a device
+  // whose ticket disappeared without it coming back up is invisible to every
+  // step above — see lib/network/reconcile.ts. Runs after ingest (so this tick's
+  // legitimate new timers are already PENDING and get skipped) and after
+  // markDevicesUnknown (so blind-console devices are UNKNOWN, not OFFLINE,
+  // before the offline set is read). Own try/catch: reconciliation is a
+  // backstop, and a backstop that can fail the sweep it backstops is worse than
+  // no backstop at all.
+  let reconcile: ReArmOutcome | undefined;
+  try {
+    reconcile = await runReArmSweep([...propertyIdByRef.values()], now);
+  } catch (error) {
+    console.error(
+      "[unifi-poll] re-arm sweep failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
   return {
     configured: true,
     ok: true,
+    reconcile,
     keysUsed: fetched.keysUsed,
     keysFailed: fetched.keysFailed,
     fabricsFailed: fetched.fabricsFailed,

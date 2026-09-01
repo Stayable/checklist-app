@@ -50,7 +50,10 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
   }
   const { ticketId, status, assignedTo, resolutionNotes } = parsed.data;
 
-  const ticket = await db.ticket.findUnique({ where: { id: ticketId } });
+  const ticket = await db.ticket.findUnique({
+    where: { id: ticketId },
+    include: { device: { select: { id: true, name: true, currentStatus: true } } },
+  });
   // Same message for missing and out-of-scope: a distinct "not yours" would
   // confirm the ticket exists. Re-checked server-side rather than trusting the
   // page that rendered the form.
@@ -93,6 +96,24 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
     downMin = null;
   }
 
+  // Closing a ticket on a device that is STILL DOWN used to strand it silently.
+  // This action wrote Ticket + AuditLog and nothing else, and `decidePoll` emits
+  // on transitions only — so offline -> offline never re-fires and the device sat
+  // OFFLINE on the dashboard forever with nobody owning it. That is the largest
+  // single contributor to the "offline devices > open tickets" gap.
+  //
+  // The reconciliation is NOT done here. `runReArmSweep` (lib/network/
+  // reconcile.server.ts) already re-arms exactly this case on the next poll
+  // tick, with the mass-outage, pending-timer and cap guards applied; doing it a
+  // second time in this action would be a second ticket-creating authority that
+  // can drift from the first. What this action owes is the TRAIL — so the tech
+  // who closed it is told why a new ticket appears in ~7 minutes, instead of it
+  // looking like the system ignored them.
+  const strandedDevice =
+    enteringTerminal && ticket.device !== null && ticket.device.currentStatus === "OFFLINE"
+      ? ticket.device
+      : null;
+
   await db.$transaction(async (tx) => {
     const updated = await tx.ticket.update({
       where: { id: ticketId },
@@ -115,9 +136,32 @@ export async function updateTicket(input: unknown): Promise<TicketActionResult> 
           assignedTo: ticket.assignedTo,
           resolutionNotes: ticket.resolutionNotes,
         },
-        after: { status, assignedTo, resolutionNotes },
+        after: {
+          status,
+          assignedTo,
+          resolutionNotes,
+          // Recorded on the audit row too, not only in the note: a device that
+          // keeps reappearing here is one somebody closes repeatedly without
+          // fixing, and that pattern is only visible in the audit log.
+          ...(strandedDevice ? { deviceStillOffline: true } : {}),
+        },
       },
     });
+
+    if (strandedDevice) {
+      await tx.ticketNote.create({
+        data: {
+          ticketId,
+          source: "MANUAL",
+          author: "System",
+          content:
+            `Closed while ${strandedDevice.name} is still reported OFFLINE. ` +
+            "The device has not recovered, so monitoring will re-open a ticket for it " +
+            "within about 7 minutes. To stop that, bring the device back up — or, if it " +
+            "has been decommissioned, remove it from UniFi so it stops being polled.",
+        },
+      });
+    }
 
     if (enteringTerminal) {
       await cascadeParentCloseIfDone(tx, updated, now);

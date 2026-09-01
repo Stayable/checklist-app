@@ -62,6 +62,7 @@ function overview(over: OverviewOverrides = {}): NetworkOverview {
       openTickets: 0,
       escalated: 0,
       devicesOffline: 0,
+      devicesOfflineNoTicket: 0,
       devicesUnknown: 0,
       devicesTotal: 640,
       propertiesWithIssues: 0,
