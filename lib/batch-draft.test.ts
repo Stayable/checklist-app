@@ -244,3 +244,34 @@ describe("deriveDraftName / draftDisplayName", () => {
     expect(draftDisplayName(null, batches)).toBe("1 batch · Sep 1");
   });
 });
+
+describe("dueTime survives the draft round-trip", () => {
+  it("keeps a per-batch due time", () => {
+    // The wizard sends dueTime and the create action accepts it. Until
+    // BatchInput and this schema both named it, an unknown key was stripped on
+    // read: the draft saved fine and came back silently without its due time.
+    const r = parseDraftBatches([
+      {
+        templateId: "11111111-1111-4111-8111-111111111111",
+        roomIds: [],
+        assigneeIds: [],
+        taskLabels: [],
+        dates: ["2026-09-01"],
+        dueTime: "17:00",
+      },
+    ]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.batches[0]!.dueTime).toBe("17:00");
+  });
+
+  it("accepts a null due time and rejects a malformed one", () => {
+    const base = {
+      templateId: "11111111-1111-4111-8111-111111111111",
+      dates: ["2026-09-01"],
+    };
+    expect(parseDraftBatches([{ ...base, dueTime: null }]).ok).toBe(true);
+    expect(parseDraftBatches([{ ...base, dueTime: "25:00" }]).ok).toBe(false);
+    expect(parseDraftBatches([{ ...base, dueTime: "5pm" }]).ok).toBe(false);
+  });
+});

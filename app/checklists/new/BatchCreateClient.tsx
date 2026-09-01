@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { InstanceMultiplicity, Role, TemplateScope } from "@prisma/client";
 
@@ -13,6 +13,13 @@ import {
 import { buildInstanceName, type ScopeToken } from "@/lib/instance-name";
 import { etYYYYMMDD } from "@/lib/datetime";
 import { createChecklistBatches } from "./batch.actions";
+import {
+  deleteBatchDraft,
+  listBatchDrafts,
+  loadBatchDraft,
+  saveBatchDraft,
+  type DraftSummary,
+} from "./draft.actions";
 
 // W4 — the batch create wizard.
 //
@@ -98,6 +105,88 @@ export function BatchCreateClient({
   const [batches, setBatches] = useState<Batch[]>(() =>
     templates.length > 0 ? [emptyBatch(templates[0]!.id)] : [],
   );
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<DraftSummary[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const refreshDrafts = useCallback(async () => {
+    if (!activePropertyId) return;
+    const res = await listBatchDrafts(activePropertyId);
+    if (res.ok) setDrafts(res.drafts);
+  }, [activePropertyId]);
+
+  useEffect(() => {
+    void refreshDrafts();
+  }, [refreshDrafts]);
+
+  /** The wizard's state as the shape both the draft and the action take. */
+  function toBatchPayload() {
+    return batches.map((b) => ({
+      templateId: b.templateId,
+      roomIds: b.roomIds,
+      assigneeIds: b.assigneeIds,
+      taskLabels: taskLabelsFrom(b.taskText),
+      dates: b.dates,
+      assignedUserId: b.assignedUserId,
+      dueTime: b.dueTime || null,
+    }));
+  }
+
+  function saveDraft() {
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await saveBatchDraft({
+        id: draftId,
+        propertyId: activePropertyId,
+        batches: toBatchPayload(),
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setDraftId(res.id);
+      setNotice(res.message ?? "Draft saved.");
+      await refreshDrafts();
+    });
+  }
+
+  function openDraft(id: string) {
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await loadBatchDraft(id);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setDraftId(res.id);
+      setBatches(
+        res.batches.map((b) => ({
+          uid: newUid(),
+          templateId: b.templateId,
+          roomIds: [...(b.roomIds ?? [])],
+          assigneeIds: [...(b.assigneeIds ?? [])],
+          taskText: (b.taskLabels ?? []).join("\n"),
+          dates: [...b.dates],
+          assignedUserId: b.assignedUserId ?? null,
+          dueTime: b.dueTime ?? "",
+        })),
+      );
+    });
+  }
+
+  function removeDraft(id: string) {
+    startTransition(async () => {
+      const res = await deleteBatchDraft(id);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      if (draftId === id) setDraftId(null);
+      await refreshDrafts();
+    });
+  }
 
   const templateById = useMemo(
     () => new Map(templates.map((t) => [t.id, t])),
@@ -191,6 +280,9 @@ export function BatchCreateClient({
         setError(res.error);
         return;
       }
+      // The draft has become real checklists; leaving it would invite creating
+      // the same batch twice.
+      if (draftId) await deleteBatchDraft(draftId);
       router.push(res.created === 1 && res.firstId ? `/checklists/${res.firstId}` : "/checklists");
       router.refresh();
     });
@@ -513,7 +605,9 @@ export function BatchCreateClient({
         Create even if one already exists that day
       </label>
 
-      <div className="flex items-center gap-3">
+      {notice && <p className="text-sm text-emerald-700">{notice}</p>}
+
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           disabled={!preview.ok || total === 0 || pending}
@@ -521,6 +615,14 @@ export function BatchCreateClient({
           className="rounded-md bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
           Create {total > 0 ? total : ""}
+        </button>
+        <button
+          type="button"
+          disabled={pending || batches.length === 0}
+          onClick={saveDraft}
+          className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-40"
+        >
+          {draftId ? "Update draft" : "Save as draft"}
         </button>
         <span className="text-sm text-slate-500">
           {total > MAX_INSTANCES_PER_CREATE
@@ -530,6 +632,51 @@ export function BatchCreateClient({
               : ""}
         </span>
       </div>
+
+      {drafts.length > 0 && (
+        <section className="rounded-xl border border-slate-200 bg-white p-4">
+          <h2 className="mb-2 text-sm font-semibold text-slate-900">
+            Saved drafts
+          </h2>
+          <ul className="divide-y divide-slate-100">
+            {drafts.map((d) => (
+              <li key={d.id} className="flex items-center justify-between py-2">
+                <span className="text-sm text-slate-700">
+                  {d.name}
+                  <span className="ml-2 text-xs text-slate-400">
+                    {d.batchCount} batch{d.batchCount === 1 ? "" : "es"}
+                  </span>
+                  {!d.usable && (
+                    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                      outdated
+                    </span>
+                  )}
+                </span>
+                <span className="flex gap-3">
+                  {d.usable && (
+                    <button
+                      type="button"
+                      onClick={() => openDraft(d.id)}
+                      disabled={pending}
+                      className="text-sm font-medium text-navy hover:underline"
+                    >
+                      Open
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeDraft(d.id)}
+                    disabled={pending}
+                    className="text-sm font-medium text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ---- confirm ---- */}
       {confirming && preview.ok && (

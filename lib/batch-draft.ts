@@ -55,6 +55,13 @@ const batchInputSchema = z.object({
   /** ET calendar days, `yyyy-mm-dd`. Never parsed into a Date here — see ymdLabel. */
   dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(366).default([]),
   assignedUserId: z.string().uuid().nullable().optional(),
+  // ET wall-clock HH:mm. Present because the wizard sends it; without it the
+  // field is stripped on read and a reloaded draft silently loses its due time.
+  dueTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .nullable()
+    .optional(),
 });
 
 /**

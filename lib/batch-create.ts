@@ -32,6 +32,15 @@ export type BatchInput = {
   dates: readonly string[];
   /** Who the created instances are assigned to. Null leaves them unassigned. */
   assignedUserId?: string | null;
+  /**
+   * ET wall-clock `HH:mm` the created instances are due, or null for none.
+   *
+   * Not used by the expansion — it is per-batch metadata the create action
+   * applies to every instance the batch yields. It lives on BatchInput anyway
+   * because BatchInput is what a saved draft round-trips through: a field the
+   * wizard sends but this type does not name is silently dropped on reload.
+   */
+  dueTime?: string | null;
 };
 
 export type PlannedInstance = {
