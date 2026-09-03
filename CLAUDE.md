@@ -347,60 +347,70 @@ When changing scope or architecture: update the relevant doc and add an entry to
 carry-forward of what is still open.** When you add a block, move the one it supersedes into
 `docs/archive/StatusLog_RISE8_082526.md` (newest first) and fold anything still live into the carry-forward.
 
-**As of:** August 25, 2026 (latest)
+**As of:** September 3, 2026 (Eastern, derived — the harness clock runs ~12h ahead on this machine)
 
-**🟢 NO APP CODE. Three commits of housekeeping, one owed ADR, one finding that changes what the contractor load is for. `82b062d..42ebc53`. NOTHING PUSHED — local `main` is 4 ahead of `origin/main`, and a push deploys to production, so that is Kyle's call.** 778 tests, clean typecheck + lint, tree clean.
+**🟢 DEPLOYED TO PRODUCTION. 33 commits pushed `0362798..bf8c564`, five migrations applied, the template
+library filled from the real Connecteam forms, test data cleared.** 956 tests, clean typecheck + lint.
+The single largest shipping day this project has had.
 
-**🔴 THIS FILE HAD STOPPED LOADING.** 171 KB against a **150 KB hard limit**, which makes every instruction in it inert — the worst failure mode for the file that is meant to be read first. The Current Status section was **139 KB of the 171 KB**; everything else (decisions, properties, roles, conventions, people) is ~32 KB and was untouched. Blocks for 2026-07-13 → 2026-08-21 moved verbatim to **`docs/archive/StatusLog_RISE8_082526.md`**, newest first, nothing lost. The size policy above is new and is the point: **newest block in full plus the carry-forward**. Result 171 KB → 46 KB. The 08-21 block below is kept because it is the last block that shipped code, not by oversight.
+**📋 THE TEMPLATE LIBRARY IS REAL CONTENT NOW — 27 templates, 669 questions, extracted not typed.**
+Every completed Connecteam checklist is auto-filed into Smartsheet as a PDF row attachment, and those PDFs
+carry the full ordered question list. Three agents pulled 2–3 samples per template across different days and
+submitters, unioned them, and the result was generated into `prisma/data/connecteam-questions.ts` by
+`scripts/build-connecteam-questions.ts`. **Prompts are the operators' own wording and already bilingual
+`English / Español`** — that is ADR-013 field-staff Spanish satisfied for free and better than machine
+translation. **Do not send it for translation review.**
+- **All 27 are `Draft (filled)`, none published.** Filling a template deliberately does NOT publish it: a
+  Property Manager reviews the question set and publishes it themselves. That flow is the reason
+  `publishedAt` exists (see below).
+- ⚠ **Every question TYPE is INFERRED** from PDF rendering — Connecteam's real field definitions were never
+  visible. 56 bare task lines became `PASSFAIL` (Kyle's call — it unlocks `failFlagsIssue`, so a missed task
+  raises an Issue instead of sitting invisible). A question no sample ever answered seeded `required: false`;
+  photos and signatures are exempt.
+- **Checkpoints are THREE questions, not one three-photo question** — confirmed against a live Connecteam
+  screenshot. Same prompt three times, separated only by a time sub-label, so each round carries its own
+  `capturedAt` and geofence stamp. That sub-label needed somewhere to live → `Question.hint`.
 
-**🔢 ADR-031 SETTLED — `c4da44c`, and it went to the shipped work.** Three pieces of work claimed 031. **031 = checklist close-out / stayover**, because it is in production (`848bac0`) and its reasoning existed only as a schema comment. **Instant On uplink flaps renumber to 032 at merge** — that ADR is written as "ADR-031" on the unmerged, *unpushed* branch `feat/instant-on-uplink-flaps` (`a17b0ed`), which makes it the cheap one to move. **Contractor update fan-out takes 033** when built. The log is append-only, so the number goes to what is live.
+**🔴 FOUR CORRECTIONS THAT OVERTURNED THINGS THIS FILE USED TO SAY:**
+1. **"HK Review" and "Maintenance Report" are Smartsheet SHEET names, not Connecteam templates.** Global
+   attachment search returns ZERO for both. The real forms are `Housekeeping Checklist` and
+   `Maintenance Checklist`. Kyle said this on day one and was argued with using `prisma/templates.ts` seed
+   data — which was itself a guess. **The seed was never evidence about Connecteam.**
+2. **`812 PM PA Checklist` does not exist.** 110 attachments enumerated, zero Smartsheet-wide. Jacksonville
+   North files the shared `AM PA Checklist` and has no PM PA form. Seeded as a **copy of 8700** on Kyle's
+   instruction — so every question in it is a guess about what JN should do. **4645 was deliberately NOT the
+   source: it genuinely omits the whole "Transforming Spaces" section (19 questions vs 22), which is the
+   proof that keeping 28 separate templates was right rather than one template scoped to 8 properties.**
+3. **`MAX_ROOMS_PER_CREATE` was 60 with a comment claiming that exceeded the biggest property.** False —
+   measured: `KE 167 · KW 160 · LL 157 · DP 153 · SA 140 · OR 135 · JW 133 · JN 127`, 1,172 rooms, largest
+   single zone **80**. At 60 it blocked a whole-property create *and* a single building. Now 200.
+4. **The `n/NN` markers in those PDFs are PAGE numbers, not question numbers.** Anything sized from them is
+   wrong; a template renders a different NN each day because photo questions accept multiple images.
 
-**🗓 THE CONTRACTOR SHEET ROLLED OVER, AND THAT CHANGES THE JOB.** Sheet `1391340150542212` now reads *Contractor Schedule 08-24 to 08-28-26*. The rollover **clears rows in place** — the 08/17 and 08/24 captures share **zero rowIds** — so the 08/17 capture that sat uncommitted for a week is now the **only surviving record of that week anywhere**, which is why committing it (`82b062d`) mattered more than it did on 08-18. Two consequences: **loading 08/17 is backfill of a finished week, not operations**, and **the live week was not loaded either**. The calendar has now been empty through two full contractor weeks.
-- **The live week is captured and ready** (`42ebc53`): 73 rows, complete, read 2026-08-25 ~11:20 ET. The default snapshot path now always means *the current week* so the Monday run needs no flags; rolled-off weeks keep a dated copy loaded with `--snapshot`.
-- **Predicted from the snapshot and the committed maps — NOT from a run: 62 of 73 loadable** · 11 skipped and reported (7 day-off rows carry no property, 4 rows have no date) · **52 PLANNED · 8 IN_PROGRESS · 1 DELAYED · 1 CANCELLED** · **no `Completed` rows, so nothing arrives `DONE`** · **1 job created terminal** (Joycer's Monday off at JW), immutable on arrival per ADR-030 · JW 28 · DP 11 · JN 8 · SA 8 · LL 4 · KE 3 · **no Boca Condo rows, so §Q42 does not bite this week** · 4 of 8 WhatsApp narratives land as `SYSTEM` notes, the other 4 sit on undated rows with no job.
-- ⚠ **The dry run still cannot be executed from a session** — the classifier refuses any command carrying `.env.production.local`, retried today. Kyle runs it; both commands are in `TODO.md` START HERE.
-- `TRADE_BY_TASK` gained the two non-General strings this week adds (HVAC repair → HVAC, palm trimming → LANDSCAPING). The other six default to `GENERAL` and are reported, per the 08-18 decision. `"Jetting drain lines"` is the **first task string to survive a week unchanged**.
+**🏗 WHAT SHIPPED (all on `main`, all live):**
+- **Two-axis template scope** — `TemplateScope` (what it is about) × new `InstanceMultiplicity`
+  (`ONE`/`PER_ASSIGNEE`/`PER_TASK`). `subjectKindFor()` collapses them and **REJECTS** per-room + per-person
+  rather than picking an axis. `PER_ZONE` was considered and **dropped** on Kyle's call, which removed a
+  34-site audit. The old `perRoom` boolean is gone.
+- **Batch create wizard** (`/checklists/new`) — N batches, subjects × dates, live name preview, confirm
+  dialog, Save as Draft. The preview runs the **same** `planBatches`/`buildInstanceName` the server action
+  runs, so what is approved is what is written. **`createInstanceManually` was DELETED** — an exported server
+  action is a live HTTP endpoint, so a dead one is attack surface.
+- **Naming (amends ADR-009)** — `{Template} {ShortCode} {ScopeToken} {MMDDYY}`, six digits so a checklist and
+  its exported PDF agree. `systemId` untouched.
+- **Publish state** — `publishedAt` null = draft (empty or filled), set + active = published, set + inactive
+  = retired. Managers may **publish**, editing questions stays ADMIN-only.
+- **Property picker** gained `All properties` / `All my properties`; **Issues** lost its duplicate "Open" chip
+  and `WONT_FIX` as a settable status (enum value kept).
+- **Network:** a re-arm sweep for OFFLINE devices with no ticket and no pending timer (creates timer *jobs*,
+  not tickets, so the cron stays the only ticketing authority), an "offline with no open ticket" dashboard
+  figure, and **device suppression** with an Acknowledge button on the ticket page.
 
-**🚨 `D-14j` WAS WRONG — THE PIPELINE EXISTS AND IS WRITING TO SMARTSHEET.** The tracker said "the pipeline half does not exist". The sheet now carries rows stamped in its own vocabulary: `[08/25/2026 10:29 ET] UNCLEAR - needs a human` and three `UNRECOGNISED NUMBER` rows. **Unverified from here: whether it also posts to this app** — that is `CHECKLIST_APP_URL` on the other side, and reading `contractor_update_captures` needs the prod credential the classifier blocks. **Settle it before loading a week:** an armed receiver against an empty calendar turns every update into a `ContractorDailyNote` behind a `200 {ok:true}`.
+**⚠ THE THING THAT MATTERS MOST: NOTHING HAS BEEN OPENED IN A BROWSER.** Not the wizard, not the 167-room
+picker, not the confirm dialog, not the Publish button, not the Acknowledge panel, not a 38-question PM PA
+form on a phone. 956 tests, clean types and lint are the **entire** evidence base for a day of UI work.
+**The next real signal is somebody filling one checklist end to end on a real device.**
 
-**🧑 Three new open questions, recorded rather than acted on:**
-- **§Q44 — Todd is a 14th contractor with no phone.** One word, no surname, 4 jobs this week. The fan-out resolves on **`(workDate, contractorPhone)`, phone first**, and he is not in the 13-person backfill, so every update he sends resolves to nothing. **Do not paper over it with a name alias** — `Todd` alone is exactly the weak match `scripts/backfill-contractor-phones.ts` refuses on purpose.
-- **§Q45 — an unknown Nigerian number is messaging the intake.** `+2349032477221`, three messages today, all logged `UNRECOGNISED NUMBER - nothing written`. It fails closed, and it is writing rows into the live schedule sheet.
-- **§Q46 — the Notes column is captured nowhere.** Six rows read *"Pending to confirm; if not, they will stay in St. Augustine…"* — a conditional the snapshot shape drops. Left alone: widening the row shape touches the loader's contract, and that contract is owned by the other repo.
-
-**⚠ Nothing was opened in a browser and nothing was written to prod.** Tests, typecheck, lint, a read-only Smartsheet read, and git — that is the whole evidence base for today.
-
-**As of:** August 21, 2026 (latest code deploy; retained per the size policy above)
-
-**🟢 FOUR FEATURES SHIPPED FROM TEST-ROUND FEEDBACK - `ffdce07..ddd8469`, last deploy `checklist-suycyl3oy` Ready. 778 tests, clean typecheck + lint + build.** Bea and Randy produced the first real feedback of the test round; Kyle relayed it, plus a lockout he hit. **Nothing below has been opened in a browser by me** - tests, types, build and prod payload greps are the whole evidence base, and that caveat covers all four.
-
-**⚠ THE HARNESS DATE WAS WRONG BY A DAY AND I DATED CODE FROM IT.** The harness reported 2026-08-22 while Eastern was still **2026-08-21, 5:27 PM**. Corrected in `ddd8469`; the migration directory keeps its `20260822` stamp on purpose because it is **already recorded in `_prisma_migrations` on prod**, and renaming an applied migration manufactures drift. The global rule stands: **derive the ET date, never read it off the harness.**
-
-**🔓 1. Admin unlock (`4923d5d`).** There was **no unlock path** - the only ways to clear a lockout did it as a **side effect of overwriting the password** (`resetPassword` / `setUserPassword`), so handing access back to someone who still knew their password meant taking it away first. Now `unlockUser()` + an amber **Unlock** button on locked rows + a `Locked until h:mm` badge **beside** Active/Inactive (they are independent - a locked account is still active). Lock state is evaluated **once server-side** so the badge cannot hydrate against a different clock. The audit row records **what** was cleared, so an account that keeps reappearing there identifies a person who does not know their password. `scripts/unlock-user.ts` is the CLI equivalent, dry-run by default.
-- **The load-bearing detail** (`lib/auth-throttle.ts`, ADR-008): 5 failures in a rolling 15 min -> 30 min lock, self-clearing, and `registerFailure` **zeroes the counter when it locks** - so a locked row always reads `failedAttempts=0`. `locked` is therefore the **only** state that blocks sign-in and every other counter expires on its own, which is why Unlock renders on locked rows only.
-- **bea@ unlocked in prod** 14:44:58Z, password untouched. ⚠ **Probably not her fix:** `lastLoginAt = Aug 18 5:20 PM ET` with `mustChangePassword = false` means **she chose her own password and nobody else knows it**, and Kyle said she was typing the wrong one. Next step is **Set PW**, not another unlock. And on a different device than Aug 18 she also needs the emailed OTP - **a missing OTP email is indistinguishable from a wrong password** from her side.
-
-**💬 2. Login names the lockout and the wait (`01de2f1`).** **Correcting my own first claim in-session: it was not silent, it was unattributable** - the old copy fused *"invalid email or password, **or** your account is temporarily locked... try again later"* into one sentence with no duration. `preCheck` now returns `ok`/`locked`/`invalid`; **only `locked` is disclosed** while missing email, deactivated and wrong password stay fused. It also fires on the attempt that **trips** the lock, or the first thing the user learns is that their next five minutes of typing were pointless. `lockoutMinutesRemaining` rounds **up** and floors at **1**, because a truthful-looking **"0 min" sends someone straight back to a form that will still refuse them**. Bilingual EN+ES (ADR-013); ICU plurals verified at 1/2/30 min in both locales.
-- **🧑 ONE DECISION OWED:** five failures against an address now **confirms it is a real account**; nothing did before. My read is acceptable here (internal tool, 37 users, predictable mailboxes, and the `Ops`+mailbox starting-password scheme in **committed code** is a far larger exposure), and non-existent emails never lock so they keep the generic text. Reversible if Kyle disagrees.
-
-**📸 3. Photo GPS (`45a0bfa`) - diagnosed from data, and it was not permissions.** All 5 photos in prod are the test round's first ever: **4 `NO_GPS`, 1 `OFF_PROPERTY`**. **Randy's pair is the proof** - capture 15:28:24 failed, capture 15:28:35 returned a **39.5 m** fix, submit 15:29:01. The first call **warmed the receiver for the second**, so it was a **cold-start timeout**; a denial is sticky for the origin, so the second could not otherwise have succeeded. Cause was `enableHighAccuracy` + `maximumAge: 0` on a **10 s** deadline - the most expensive possible ask on the tightest possible schedule. Now **25 s + 60 s `maximumAge`**.
-- **`enableHighAccuracy` stays true deliberately.** The server derives the geofence verdict from **coordinates alone with no regard for accuracy**, and fences span 109-243 m, so accepting kilometre-wide Wi-Fi fixes would trade *no verdict* for *a confident wrong verdict*. Losing a fix is recoverable; a photo stamped VERIFIED from three blocks away is not.
-- **The second half of the bug was `.catch(() => {})`.** The reason was discarded, so blocked / timed-out / no-hardware were one indistinguishable state on screen and in the DB - which is why **Bea's three photos can never be explained**. `acquirePosition()` now resolves a typed reason rather than rejecting, since every caller treats a missing fix as informational and a throw only invites another empty catch. Each reason gets its own sentence because the remedies differ.
-- **A third bug found in there:** pressing Submit shortly after the shutter **discarded a fix that was about to arrive** - likely the cause of most of those 4 rows. 6 s grace at submit, plus a ref so a fix landing **during** that wait is not lost to the transition's stale snapshot. Fixing the timeout alone would have left the same symptom.
-- **⚠ Randy's `OFF_PROPERTY` is CORRECT, not a bug:** `11.4477, 124.4291` is the **Philippines**, ~14,000 km from Lakeland. **Offshore reviewers can never read `VERIFIED`** - geofencing was designed for on-property Florida staff, so **this tester group cannot validate it at all**. No code change fixes that; it is a decision.
-
-**🚪 4. Close-out / stayover (`848bac0`) - AMENDS ADR-014, and ADR-031 IS OWED.** A stayover had no representation: the two things a housekeeper could do were both wrong - submit for work that never happened (counts a stayover as a completed departure) or let it expire (counts it as a miss). `INVALIDATED`, `invalidation_reason` and the replacement self-relation had sat in the schema since Phase 2 with **nothing ever setting them**.
-- **Kyle's call, splitting by what the reason is a fact ABOUT:** the **room** (stayover / not needed / duplicate) closes **immediately**, audited, manager notified; the **person** (no access / staff unavailable / **other**) files a request a manager decides. `OTHER` needs approval on purpose - an unclassified reason is exactly what a human should read. **A note is mandatory in every case**, stayovers included: "Stayover" alone does not say which guest or until when, and that row is the only evidence the work was dropped deliberately. ADR-014's approval step was aimed at *"called in sick"*, where a field user should not silently drop work that still needs doing; a stayover is not that.
-- **NOT a new `InstanceStatus` value**, which was the tempting shape. `status: { in: [...] }` filters silently **EXCLUDE** a new enum member and `notIn` silently **INCLUDE** it, so `PENDING_INVALIDATION` would have quietly redefined `/review`'s tabs, **both** report denominators, the dashboard's in-flight tiles and the field home list - every one with a clean typecheck and a green build. A pending request **is still assigned work**, so the status stays put and only the surfaces that care learn about it.
-- Other calls: submitted work **cannot** be invalidated (a filled checklist is a record; "should not have been done" is a review outcome) written as an explicit allow-list so a future status must be considered · the **lock check outranks everything**, manager and immediate reason included · an immediate reason **beats the requester's own open request**, or someone who filed "could not access the room" and then learns the guest extended is trapped behind their own request - **found because a test I wrote had a name contradicting its assertion** · the close is a **conditional `updateMany` re-asserting status**, so a submit landing between read and write is never silently discarded · decline **clears the request and hands the assignment back**, the refusal surviving in `audit_log` · the `/review` panel is scoped through the **same `scopeIds`** as the queue, since a panel disagreeing with the table under it reads as broken data.
-- `lib/reports.ts` **already** excludes `INVALIDATED` from the completion denominator, so stayovers stop reading as misses with **no reporting change**. Migration `20260822120000` **applied to prod BEFORE the deploy** (additive: enum + 3 nullable columns + index + `SET NULL` FK) and verified via `information_schema`. ⚠ **Rollback is asymmetric on purpose** - `vercel promote` reverts the code, the migration stays; the columns are nullable so older code ignores them.
-- ⚠ **ADR-031 collides** - the Instant On branch also claims 031. Settle the number before writing it.
-
-**📋 Bea's other five items, triaged against the code rather than guessed:** her `HK Review` / `Manager Review` rename asks come from reading them as the role's main checklist - they are weekly `PER_PROPERTY` supervisory reviews, and the per-room HK work is `ARR` / `DEP`, where **her unit-number request is already satisfied** (a `PER_ROOM` create *requires* picking a room from the 1,172 loaded). **Rename display names freely; never touch the codes** - `HKR`/`MGR` are embedded in system IDs and PDF filenames (ADR-009). `/review` **is** already property-scoped and she **does** have the picker (AGENT is not a portfolio role, 8 properties => `showPicker` true) - the ask comes from `/completed` having on-page filters while `/review` has none. `Export PDF` exists but **only** on `/review/[id]`: not on `/completed`, not a row action, no bulk. **Ask her whether she means filled or blank printable PDFs** before building.
-
-**⚠ Unchanged and still blocking:** the **08/17-08/21 contractor week is NOT loaded** and its 2 files remain **uncommitted** (no part of the reworked loader is in any of today's deploys) · **0 recurring rules**, so a tester must hand-create a checklist to reach any of today's work · `checklist_instances = 6`.
-
----
 
 ### Carry-forward — still live from earlier sessions (full history: `docs/archive/StatusLog_RISE8_082526.md`)
 
@@ -409,10 +419,25 @@ The dated session blocks for **2026-07-13 → 2026-08-21** were moved to
 171 KB and stopped loading. Read that file before re-deriving anything about how a feature
 got the way it is. Only the items below are still **open** — everything else there is history.
 
-**Blocking the checklist test round (content/config, not code):**
-- **0 recurring rules exist**, so the 5 AM cron generates nothing and a tester must hand-create a checklist to reach any shipped feature. `checklist_instances = 6` (the whole test round's output).
-- **The 08/17–08/21 contractor week was never loaded** and its 2 files are still uncommitted (`scripts/sync-contractor-schedule-from-smartsheet.ts` + the snapshot). The reworked loader is in **no deploy**. Kyle runs the dry run — the sandbox classifier refuses any command carrying `.env.production.local`: `pnpm dotenv -e .env.production.local -- tsx scripts/sync-contractor-schedule-from-smartsheet.ts`
-- **Real question content is still placeholder** across all 9 templates (owed by Karla / Christopher).
+**Blocking the soft launch (content/config, not code):**
+- **27 templates are `Draft (filled)` and NONE are published.** Nothing is usable by field staff until a
+  Property Manager reviews and publishes each one. Review was ongoing as of 09-03.
+- **0 recurring rules exist**, so the 5 AM cron generates nothing and every checklist must be hand-created
+  through the wizard. `/rules` is built and empty. **`checklist_instances = 0`** — the test round's 9 were
+  deleted 09-03 along with their 23 responses and 5 photos (the R2 objects are orphaned, deliberately).
+- **4 templates have no Connecteam source and must be written by hand** — `Property Task Checklist`
+  (seeded, empty) plus `Lock Installation`, `Stayable Renovation Completion` and `Daily Contractor`
+  (parked under D22, not seeded, frequency/scope still Kyle's to set). Zero attachments anywhere for any
+  of them. Note the last one cannot be contractor-*filled* — ADR-028 deleted contractor identity.
+- **Four templates are stale or thin and should not be published without asking Ops:** `Monthly Pressure
+  Washing` last filed **01 Jun 2026**, `Roof Preventive Maintenance` **01 May 2026**, `44199 Manager
+  Checklist` **10 Apr 2026** (and on an archived "Copy of" sheet), `Due Out Room Walk` **8 PDFs all from
+  the single day 07 Apr 2026** — an abandoned trial. Publishing a lapsed monthly puts work back on
+  someone's schedule.
+- **`812 PM PA Checklist` is a copy of 8700**, not JN's process. Wants a JN manager's eyes before publish.
+- **`Unit #` extracted as `PHOTO`** on Arrival and Due Out — the PDF format implies photo, the semantics
+  read like a text field. Two lines to change, on the two most-filled checklists in the estate. Unverified.
+- **The 08/17–08/21 contractor week was never loaded** and its 2 files are still uncommitted (`scripts/sync-contractor-schedule-from-smartsheet.ts` + the snapshot). The reworked loader is in **no deploy**. Kyle runs the dry run: `pnpm dotenv -e .env.production.local -- tsx scripts/sync-contractor-schedule-from-smartsheet.ts`
 - **Nobody owns the Monday contractor load and nothing alerts when it is missed** (§Q43).
 
 **Decisions owed (Kyle/Kate):**
@@ -420,12 +445,17 @@ got the way it is. Only the items below are still **open** — everything else t
 - **Lockout disclosure** — five failures now confirms an address is a real account. My read is that it is acceptable here; reversible if Kyle disagrees.
 - **Offshore reviewers can never read `VERIFIED`** — geofencing assumes on-property Florida staff, so this tester group cannot validate photo verification at all. No code fixes that.
 - **Backfill the 92 null-duration MASS_OUTAGE tickets?** Deliberately not done — it moves the dashboard's average-downtime tile, which is a data decision.
-- **Bea's `Export PDF` ask** — ask her whether she means filled or blank printable PDFs before building. `/review/[id]` is the only place it exists today (no row action, no bulk, not on `/completed`).
+- **Bea's `Export PDF` ask** — `/review/[id]` already HAS the button (`page.tsx:180`); only bulk/zip export is missing. Ask whether she means filled or blank printable PDFs before building.
+- **`reviewLevel` on the new templates was a guess** — `MANAGER` for field-staff templates, `CORPORATE` for the 8 Manager Checklists, on the reasoning that a manager should not approve their own checklist.
+- **Managers can PUBLISH but not EDIT templates** — the narrow reading of "PMs check the template and publish it themselves". If they should also edit the questions they review, it is a one-line change in `lib/template-access.ts`.
+- **W7 contradicts CLAUDE.md's own ADR-013 line** — "hidden for CORPORATE/ADMIN (portfolio default)" is no longer true; portfolio roles now see the picker. Kyle asked for it; **the ADR-013 line above needs updating or the change reverting.**
+- **`WONT_FIX` issues are unreachable from the list** — the chip is gone, so nothing surfaces them. Folding them into `Resolved` is one line.
 - **§Q32–34 (UniFi reconciliation)** — devices that vanish from UniFi stay `OFFLINE` forever holding a ticket · Lakeland's console UI and API disagree · ONLINE-WINS hides 44 Orlando cameras a retired recorder calls offline. **None were "fixed"** on purpose.
 
 **Security / ops debt:**
 - **No session-revocation path.** `authorize()` re-reads the DB but the `session()` callback reads only the JWT, so deactivating a signed-in user leaves their 30-day cookie valid until expiry.
-- **Starting passwords are derivable from the repo** — `rosterPassword()` = `"Ops"` + mailbox letters, in committed code. `mustChangePassword` + the new-device OTP are the only barriers. P1.
+- **Starting passwords are derivable from the repo** — `rosterPassword()` = `"Ops"` + capitalised mailbox letters (`bea@` → `OpsBea`), in committed code. `mustChangePassword` + the new-device OTP are the only barriers. P1. **There is no `Stayable<Name>!` scheme; that memory is the admin password `StayableCheck`.** Three schemes exist: admin `StayableCheck`, corporate baseline `ChangeMe!2026`, everyone else `rosterPassword()`. `scripts/print-roster-credentials.ts` prints the real list.
+- **`prisma/seed.ts:64` RESETS the admin password on every run** — `passwordHash` is in the *update* branch, so a seed silently un-rotates it. The corporate loop three lines below deliberately omits it with a comment saying why; the admin branch never got the same treatment. Raised 09-03, Kyle said "no worries" — recorded, not fixed.
 - **Neon: autosuspend 5 min → 1 min and autoscale max → 0.25 CU are STILL not set** on `stayable-ops-prod`. The deployed cron change saves nothing until autosuspend is shorter than the poll gap ($19.35/mo → ~$10.15/mo). Plan changes happen at console.neon.tech under the **"Stayable"** org, not through Vercel.
 - **Dev DB `ep-falling-moon` has been down since early August** — 0 users, 0 properties, no `contractor_update*` tables — so Preview is unusable and migrations are hand-authored.
 - **`feat/instant-on-uplink-flaps` is not pushed** (~1,776 lines, 17 files, one machine) and its migration is unapplied. Zero flap tickets have ever been created; guest WiFi at JW/OR/KE/KW is unmonitored.
@@ -436,11 +466,15 @@ got the way it is. Only the items below are still **open** — everything else t
 - **The Vercel CLI IS installed** (54.18.3); the session-start hook claiming otherwise is wrong.
 - **Prisma `in:` lists silently EXCLUDE a new enum value and `notIn:` lists silently INCLUDE it** — pinned by a test. This is why the stayover work added no new `InstanceStatus`.
 - **Rollback is code-only** for the recent deploys (`vercel promote <url>`); the 08/22 migration is additive and nullable, so it stays.
+- **Prisma's default interactive-transaction timeout is FIVE SECONDS**, and Neon autosuspends — so the first query in a script pays a cold start. A ~19-round-trip transaction died on `P2028` in production on 09-03. Batch the writes *and* raise `timeout`/`maxWait`; `maxWait` is what covers acquiring the connection at all.
+- **The Connecteam question content lives in Smartsheet as PDF row attachments**, filed automatically on every completed checklist, and `pdftotext -layout` (already installed at `/mingw64/bin`) extracts it cleanly. That is how the library was built and how to re-check any prompt. Snapshots: `scripts/data/ConnecteamTemplates_*_RISE8_090126.json`.
+- **There is no Connecteam MCP** and the Cloudbeds/Stayable Dashboard connectors have **no room-inventory tool** — room-level detail exists only for blocked rooms (`get_ooo_rooms`). The 1,172-room inventory already came from Cloudbeds via a one-time export on 2026-08-12. **§Q12 is stale** — the per-property keys exist, in the `dashboard.rentstayable.com` project.
+- **An exported server action is a live HTTP endpoint.** A dead one is attack surface, not clutter — which is why `createInstanceManually` was deleted rather than left.
 
 ### Open questions awaiting answer
-1. Final list of recurring rules per template per property — Owner: Property Managers — Needed by Week 5 (shifted from Wk 4 by ADR-012)
+1. **Final list of recurring rules per template per property** — Owner: Property Managers. **Now the single biggest gap between "deployed" and "usable":** the templates exist and are filled, but nothing generates a checklist without rules, so every one has to be hand-created. The cadence per template IS known (Kyle's list: daily / monthly, and the per-property families are per-PA / per-PM), so this is mostly a matter of deciding which properties and confirming after publish — not a discovery exercise
 2. SLA defaults per issue priority — Owner: Christopher — Needed by Week 4
-3. **Spanish translation reviewer (person)** — Karla / Christopher / external? — Owner: Kate — review pass itself moved to **Phase 8** (ADR-014); ES strings keep shipping machine-drafted
+3. ~~**Spanish translation reviewer**~~ — **largely moot for checklist content as of 2026-09-03.** Every extracted prompt is already bilingual in the operators' own wording (`English / Español`), so the 27 templates need no translation pass. Still open for UI strings the app itself renders
 4. **Teams workspace inventory** — 1 corporate + 8 property channels w/ Incoming Webhook URLs — Owner: Kate — Needed by Week 7
 5. **Stayable branding kit** — logo, palette, wordmark "Stayable Operations" — Owner: Kate — Needed by Week 7
 6. ~~**Final CONTRACTOR-audience template list**~~ — Owner: Kate — **on hold**: contractor checklists themselves are in question (§Q31, ADR-028)
