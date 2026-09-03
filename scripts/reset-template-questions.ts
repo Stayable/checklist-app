@@ -169,43 +169,60 @@ async function main() {
   // apply is the worst outcome: instances gone but questions still fake, or
   // questions deleted and not replaced.
   heading("Applying");
-  const result = await db.$transaction(async (tx) => {
-    const deletedInstances = await tx.checklistInstance.deleteMany({});
+  // Batched into as few round trips as the work allows, because the first
+  // attempt at this died on P2028: Prisma's default interactive-transaction
+  // limit is FIVE SECONDS, and a per-template loop was ~19 round trips against
+  // a Neon instance that autosuspends, so the first query pays a cold start.
+  // Nothing applied — which is the transaction doing exactly its job.
+  //
+  // Now: 1 instance delete + 1 question delete + 1 question create + one update
+  // per template (unavoidable, each takes a different name). The timeout is
+  // raised as well as the trip count reduced; relying on either alone would be
+  // betting that a cold Neon is fast today.
+  const templateIds = templates.map((t) => t.id);
+  const allQuestions = templates.flatMap((t) =>
+    (CONNECTEAM_QUESTIONS[t.code] ?? []).map((q) => ({
+      templateId: t.id,
+      orderIndex: q.orderIndex,
+      type: q.type,
+      prompt: q.prompt,
+      hint: q.hint ?? null,
+      required: q.required,
+    })),
+  );
 
-    let deletedQuestions = 0;
-    let createdQuestions = 0;
-    for (const t of templates) {
-      const incoming = CONNECTEAM_QUESTIONS[t.code] ?? [];
+  const result = await db.$transaction(
+    async (tx) => {
+      const deletedInstances = await tx.checklistInstance.deleteMany({});
+      const del = await tx.question.deleteMany({
+        where: { templateId: { in: templateIds } },
+      });
+
       // Back to a draft, under its real Connecteam name. publishedAt is cleared
       // as well as active: publishedAt set + inactive means RETIRED, and these
       // are the opposite of retired — they are awaiting a first review.
-      await tx.checklistTemplate.update({
-        where: { id: t.id },
-        data: {
-          name: CONNECTEAM_NAMES[t.code] ?? undefined,
-          active: false,
-          publishedAt: null,
-        },
-      });
-
-      const del = await tx.question.deleteMany({ where: { templateId: t.id } });
-      deletedQuestions += del.count;
-      if (incoming.length > 0) {
-        const made = await tx.question.createMany({
-          data: incoming.map((q) => ({
-            templateId: t.id,
-            orderIndex: q.orderIndex,
-            type: q.type,
-            prompt: q.prompt,
-            hint: q.hint ?? null,
-            required: q.required,
-          })),
+      for (const t of templates) {
+        await tx.checklistTemplate.update({
+          where: { id: t.id },
+          data: {
+            name: CONNECTEAM_NAMES[t.code] ?? undefined,
+            active: false,
+            publishedAt: null,
+          },
         });
-        createdQuestions += made.count;
       }
-    }
-    return { deletedInstances: deletedInstances.count, deletedQuestions, createdQuestions };
-  });
+
+      const made = await tx.question.createMany({ data: allQuestions });
+      return {
+        deletedInstances: deletedInstances.count,
+        deletedQuestions: del.count,
+        createdQuestions: made.count,
+      };
+    },
+    // 2 minutes, not 5 seconds. maxWait covers acquiring the connection at all,
+    // which on a suspended Neon compute is where a cold start actually lands.
+    { maxWait: 20_000, timeout: 120_000 },
+  );
 
   console.log(`  instances deleted: ${result.deletedInstances}`);
   console.log(`  questions deleted: ${result.deletedQuestions}`);
