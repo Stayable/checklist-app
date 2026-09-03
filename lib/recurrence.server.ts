@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { etDateOnly, etYYYYMMDD } from "@/lib/datetime";
 import {
   buildSystemId,
+  canAutoGenerate,
   expandRooms,
   shouldGenerateOn,
   type RecurrencePattern,
@@ -18,7 +19,14 @@ export type GenerateResult = {
   rulesEvaluated: number;
   rulesFired: number;
   instancesCreated: number;
-  instancesSkipped: number; // already existed
+  instancesSkipped: number;
+  /**
+   * Rules whose template cannot be generated unattended (PER_ASSIGNEE needs
+   * shift data, PER_TASK needs today's tasks). Counted rather than silently
+   * dropped: a non-zero value means somebody put a wizard-only template on a
+   * schedule and is expecting checklists that will never appear.
+   */
+  rulesSkippedNotAutoGenerable: number; // already existed
   errors: { ruleId: string; message: string }[];
 };
 
@@ -47,6 +55,7 @@ export async function generateForDate(
     rulesFired: 0,
     instancesCreated: 0,
     instancesSkipped: 0,
+    rulesSkippedNotAutoGenerable: 0,
     errors: [],
   };
 
@@ -75,6 +84,18 @@ export async function generateForDate(
         });
       if (!fires) continue;
       result.rulesFired++;
+
+      // The generator resolves targets from `scope` alone and knows nothing
+      // about `copies` — and cannot, because PER_ASSIGNEE needs shift data the
+      // app does not have and PER_TASK needs today's tasks. Unguarded it does
+      // not fail; it silently turns a per-person checklist into ONE unassigned
+      // property-wide instance, which looks like work got scheduled when it
+      // did not. Skip instead. /rules refuses to create these rules at all,
+      // so reaching this line means a rule predates that guard.
+      if (!canAutoGenerate(rule.template.copies)) {
+        result.rulesSkippedNotAutoGenerable++;
+        continue;
+      }
 
       // Resolve targets: one instance per matching room for PER_ROOM, else a
       // single property-wide instance.

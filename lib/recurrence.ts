@@ -1,3 +1,4 @@
+import { InstanceMultiplicity } from "@prisma/client";
 // Pure recurrence engine (ADR-009). No DB, no I/O — the generation action and
 // cron wire real data into these functions, and they're covered by Vitest.
 //
@@ -200,4 +201,40 @@ export function buildHumanLabel(parts: {
   if (parts.scope) segments.push(parts.scope);
   segments.push(parts.dateLabel);
   return segments.join(" — ");
+}
+
+/**
+ * Whether the 5 AM generator can create instances for a template unattended.
+ *
+ * The generator resolves targets from `scope` alone — one per room, or one for
+ * the property. It has no notion of `copies`, and CANNOT be given one:
+ *
+ *   PER_ASSIGNEE needs to know who is on shift. The app has no shift data at
+ *   all — Paycom owns scheduling and is explicitly out of scope (ADR/D4), which
+ *   is exactly why the batch wizard asks a human to tick the people.
+ *   PER_TASK needs to know today's tasks. Nothing supplies them.
+ *
+ * Left unguarded the generator does not fail, which is worse: a per-PA
+ * checklist silently becomes ONE unassigned property-wide instance, and a
+ * per-task checklist becomes one with no task on it. Both look like work got
+ * scheduled when it did not.
+ *
+ * So these templates are wizard-only by design, not by omission.
+ */
+export function canAutoGenerate(copies: InstanceMultiplicity): boolean {
+  return copies === InstanceMultiplicity.ONE;
+}
+
+/** Why a template cannot be put on a schedule, for the /rules form. */
+export function autoGenerateBlockedReason(
+  copies: InstanceMultiplicity,
+): string | null {
+  switch (copies) {
+    case InstanceMultiplicity.ONE:
+      return null;
+    case InstanceMultiplicity.PER_ASSIGNEE:
+      return "This checklist is one per person on shift, and the app has no shift data — create it from Create a checklist, ticking who is working.";
+    case InstanceMultiplicity.PER_TASK:
+      return "This checklist is one per task, and the tasks are only known on the day — create it from Create a checklist.";
+  }
 }

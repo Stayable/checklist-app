@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Role, TemplateScope } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canAccessProperty, requireManager } from "@/lib/rbac";
+import { autoGenerateBlockedReason } from "@/lib/recurrence";
 import { generateForDate } from "@/lib/recurrence.server";
 
 // Recurring-rule mutations (ADR-009). Manager can manage rules at their own
@@ -69,9 +70,17 @@ export async function createRule(input: unknown): Promise<RuleResult> {
   }
   const template = await db.checklistTemplate.findUnique({
     where: { id: data.templateId },
-    select: { id: true, scope: true, active: true },
+    select: { id: true, scope: true, copies: true, active: true },
   });
   if (!template || !template.active) return { ok: false, error: "Template not found." };
+
+  // Some templates cannot be generated unattended at all — the 5 AM cron
+  // resolves targets from `scope` and has no way to learn who is on shift or
+  // what today's tasks are. Refusing here is the point: without it a rule is
+  // accepted, fires every morning, and produces one unassigned property-wide
+  // instance that looks like the work was scheduled when it was not.
+  const blocked = autoGenerateBlockedReason(template.copies);
+  if (blocked) return { ok: false, error: blocked };
 
   // Scope only applies to PER_ROOM templates; ignore (store null) otherwise.
   const scope = template.scope === TemplateScope.PER_ROOM ? (data.scope ?? null) : null;

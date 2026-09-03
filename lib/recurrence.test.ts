@@ -1,7 +1,10 @@
+import { InstanceMultiplicity } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import {
+  autoGenerateBlockedReason,
   buildHumanLabel,
   buildSystemId,
+  canAutoGenerate,
   describePattern,
   describeScope,
   expandRooms,
@@ -162,5 +165,40 @@ describe("buildHumanLabel", () => {
         dateLabel: "May 2026",
       }),
     ).toBe("Pressure Washing — JW — May 2026");
+  });
+});
+
+describe("canAutoGenerate — which templates the 5 AM cron may create", () => {
+  it("allows a plain one-per-subject template", () => {
+    expect(canAutoGenerate(InstanceMultiplicity.ONE)).toBe(true);
+  });
+
+  it("refuses per-assignee: the app has no shift data at all", () => {
+    // Paycom owns scheduling and is out of scope. Unguarded the generator does
+    // not fail — it silently makes ONE unassigned property-wide instance, which
+    // looks like work got scheduled when it did not.
+    expect(canAutoGenerate(InstanceMultiplicity.PER_ASSIGNEE)).toBe(false);
+  });
+
+  it("refuses per-task: the tasks are only known on the day", () => {
+    expect(canAutoGenerate(InstanceMultiplicity.PER_TASK)).toBe(false);
+  });
+
+  it("covers every InstanceMultiplicity member", () => {
+    // Pins exhaustiveness: a new member must be considered here rather than
+    // defaulting into "the cron may generate this".
+    for (const c of Object.values(InstanceMultiplicity)) {
+      expect(typeof canAutoGenerate(c)).toBe("boolean");
+    }
+    expect(Object.values(InstanceMultiplicity)).toHaveLength(3);
+  });
+
+  it("gives a reason a person can act on, naming the alternative", () => {
+    for (const c of [InstanceMultiplicity.PER_ASSIGNEE, InstanceMultiplicity.PER_TASK]) {
+      const reason = autoGenerateBlockedReason(c);
+      expect(reason).toBeTruthy();
+      expect(reason).toContain("Create a checklist");
+    }
+    expect(autoGenerateBlockedReason(InstanceMultiplicity.ONE)).toBeNull();
   });
 });
