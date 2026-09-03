@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TicketStatus, TicketType } from "@prisma/client";
+import { DeviceStatus, TicketStatus, TicketType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireNetworkAccess } from "@/lib/rbac";
 import { networkScopeFor } from "@/lib/network/scope.server";
@@ -41,7 +41,15 @@ export default async function TicketDetailPage({
     where: { id },
     include: {
       property: { select: { id: true, shortCode: true, teamsChannelId: true } },
-      device: { select: { id: true, name: true } },
+      device: {
+        select: {
+          id: true,
+          name: true,
+          currentStatus: true,
+          suppressedAt: true,
+          suppressedReason: true,
+        },
+      },
       parentTicket: { select: { id: true, ticketNumber: true } },
       childTickets: {
         select: { id: true, ticketNumber: true, status: true },
@@ -316,6 +324,21 @@ export default async function TicketDetailPage({
             status={ticket.status}
             assignedTo={ticket.assignedTo}
             resolutionNotes={ticket.resolutionNotes}
+            device={
+              ticket.device
+                ? {
+                    id: ticket.device.id,
+                    name: ticket.device.name,
+                    isOffline: ticket.device.currentStatus === DeviceStatus.OFFLINE,
+                    // Serialised for the client island; only its presence and
+                    // the reason text are read there.
+                    suppressedAt: ticket.device.suppressedAt
+                      ? ticket.device.suppressedAt.toISOString()
+                      : null,
+                    suppressedReason: ticket.device.suppressedReason,
+                  }
+                : null
+            }
           />
         </aside>
       </div>
