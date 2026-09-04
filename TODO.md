@@ -15,7 +15,58 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-08-25)
+## 🎯 START HERE (updated 2026-09-03)
+
+**Tracker checkpoint only — this block was reconstructed from `git log` and the `CLAUDE.md`
+Current Status block, not from a live session.** `CLAUDE.md` was refreshed 2026-09-03 (`a7ddc02`);
+this file was last touched 2026-08-31 and had fallen 4 commits behind. `CLAUDE.md` is the fuller
+record of the 09-03 shipping day — read it first; this block exists so the tracker is not lying.
+
+**🟢 Everything is pushed.** `main == origin/main`, nothing ahead, nothing behind.
+**961 tests, clean typecheck + lint** (count from `91bf8e7`; `CLAUDE.md` says 956, taken before the
+recurrence tests landed).
+
+| commit | what |
+|---|---|
+| `91bf8e7` | **the 5 AM cron cannot generate per-person or per-task checklists** — the guard |
+| `a7ddc02` | `CLAUDE.md` status for 2026-09-03; superseded block archived |
+| `bf8c564` | `/network` — suppression gets a button |
+| `06e0848` | reset script died on Prisma's 5-second transaction limit |
+
+**🛑 THE GENERATOR NOW REFUSES WHAT IT CANNOT KNOW (`91bf8e7`).** The multiplicity axis was
+wired into the wizard and the template builder and never into `generateForDate`, which resolves
+targets from `scope` alone. A `PER_ASSIGNEE` rule would have created **one unassigned property-wide
+instance** instead of one per PA on shift; a `PER_TASK` rule, one with no task on it. It cannot be
+taught to do it properly — `PER_ASSIGNEE` needs shift data the app does not have (Paycom owns
+scheduling, out of scope) and `PER_TASK` needs today's tasks, which nothing supplies. So `/rules`
+rejects the rule at creation naming the alternative, and the generator skips any rule that predates
+the guard, counting them in **`rulesSkippedNotAutoGenerable`** — **a non-zero value means somebody is
+expecting checklists that will never appear. Watch it.**
+- **Consequence worth stating: 18 of the 27 templates are wizard-only by design.** Only
+  `ONE`-per-subject templates can ever be put on a schedule.
+
+**📋 The template library is real content — 27 templates, 669 questions, extracted not typed.**
+All 27 sit at `Draft (filled)`, **none published** — filling deliberately does not publish; a Property
+Manager reviews and publishes. Prompts are the operators' own wording and already bilingual
+`English / Español`. **Do not send it for translation review.** Every question TYPE is INFERRED from
+PDF rendering — see `CLAUDE.md` for the four corrections that overturned earlier claims in this file.
+
+**⚠ UNCOMMITTED, and it is the only dirty file in the repo:**
+`HandoffMultiRoomCreate_RISE8_083126.md` (+22 −4) — the **2026-08-31 accuracy audit** that found
+**3 of 7 answers in the handoff table were wrong** (#3 stayover close-out and #4 departure stayover
+are *built*, `848bac0`; #7 PDF download button *exists*, `app/review/[id]/page.tsx:181`). Cause: the
+assessment was made on a branch **96 commits behind `main`**. Corrected net: only **#6** (in-page
+property filter on `/review`) and **#2** (multi-room select) remain as builds. **Commit it or lose it.**
+
+**⚠ Carried forward from 2026-08-25, NOT re-verified this checkpoint** — recurring-rule count,
+`checklist_instances` count, Neon autosuspend/autoscale, session-revocation path, and the whole
+contractor-schedule / WhatsApp fan-out thread (§Q42, §Q44, §Q45, the Nigerian number). The
+"placeholder question content" blocker **is resolved** — the library replaced it. Everything else in
+the block below stands until someone checks.
+
+---
+
+## (previous) START HERE - 2026-08-25
 
 **No app code shipped. Three commits of housekeeping, one owed ADR written, and one finding that
 changes what the contractor load is for.** Local `main` is **4 commits ahead of `origin/main`** and
