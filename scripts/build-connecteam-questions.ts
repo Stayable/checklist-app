@@ -65,7 +65,39 @@ for (const id of PROPERTY_IDS) {
  */
 const CHECKPOINT_SLOTS = ["7:00pm", "10:00pm", "End of shift"];
 
+/**
+ * Prompts whose inferred type the extraction itself flagged as uncertain, and
+ * which the evidence resolves the other way.
+ *
+ * `Unit #` rendered as a bare label with no value in every ARR / DEP / LFLIP
+ * sample, which in this PDF format reads as PHOTO -- so that is what the
+ * extraction recorded, with a note saying it could equally be a text field
+ * nobody filled in. Two things settle it as text:
+ *
+ *   1. The SAME prompt was read as TEXT in the Housekeeping Checklist.
+ *   2. `Bldg and Unit #` on the Room Inspection Checklist is the only sample
+ *      anywhere that was actually ANSWERED -- "B#121", "222", "Bldg A unit
+ *      210". Free text, not a picker and not a photo.
+ *
+ * A unit number is also the identifying field of the submission; a photo of it
+ * cannot be searched, filtered or joined to a room.
+ *
+ * ⚠ Still unverified against Connecteam's real field definitions, which were
+ * never visible. This is a better reading of the same evidence, not a fact.
+ */
+const OVERRIDES: Record<string, { type: QuestionType; required: boolean }> = {
+  // `required` is pinned rather than recomputed. isRequired() makes every PHOTO
+  // required, so changing the type alone would quietly flip this field to
+  // optional as a side effect. Whether a unit number should be required at all
+  // is a separate question -- our PER_ROOM instances already carry the room as
+  // their subject, which Connecteam had no concept of.
+  "Unit #": { type: QuestionType.SHORT_TEXT, required: true },
+};
+
 function mapType(q: ExtractedQuestion): QuestionType {
+  const override = OVERRIDES[q.prompt.trim()];
+  if (override) return override.type;
+
   switch (q.inferredType) {
     case "PHOTO":
       return QuestionType.PHOTO;
@@ -98,6 +130,8 @@ function mapType(q: ExtractedQuestion): QuestionType {
  * photos carrying a required marker.
  */
 function isRequired(q: ExtractedQuestion, type: QuestionType): boolean {
+  const override = OVERRIDES[q.prompt.trim()];
+  if (override) return override.required;
   if (type === QuestionType.SECTION_DIVIDER) return false;
   if (type === QuestionType.PHOTO || type === QuestionType.SIGNATURE) return true;
   return q.sampleAnswer != null && q.sampleAnswer !== "";

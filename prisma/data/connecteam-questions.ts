@@ -62,7 +62,7 @@ export const CONNECTEAM_QUESTIONS: Record<string, ConnecteamQuestion[]> = {
   // Arrival Checklist — 31 questions
   "ARR": [
     { orderIndex: 0, type: QuestionType.SECTION_DIVIDER, prompt: "Tasks", required: false },
-    { orderIndex: 1, type: QuestionType.PHOTO, prompt: "Unit #", required: true },
+    { orderIndex: 1, type: QuestionType.SHORT_TEXT, prompt: "Unit #", required: true },
     { orderIndex: 2, type: QuestionType.PHOTO, prompt: "Take picture of empty refrigerator", required: true },
     { orderIndex: 3, type: QuestionType.PHOTO, prompt: "Take picture of empty microwave", required: true },
     { orderIndex: 4, type: QuestionType.PHOTO, prompt: "Take picture of outside of refrigerator", required: true },
@@ -95,7 +95,7 @@ export const CONNECTEAM_QUESTIONS: Record<string, ConnecteamQuestion[]> = {
   ],
   // Due Out Checklist — 19 questions
   "DEP": [
-    { orderIndex: 0, type: QuestionType.PHOTO, prompt: "Unit #", required: true },
+    { orderIndex: 0, type: QuestionType.SHORT_TEXT, prompt: "Unit #", required: true },
     { orderIndex: 1, type: QuestionType.SECTION_DIVIDER, prompt: "Tasks", required: false },
     { orderIndex: 2, type: QuestionType.PHOTO, prompt: "Take a photo of the linen cart with trash bags / Toma una foto del carrito de ropa blanca con bolsas de basura", required: true },
     { orderIndex: 3, type: QuestionType.PHOTO, prompt: "Take a photo of the room before it is stripped / Tome una foto de la habitación antes de que la desmantelen", required: true },
@@ -129,7 +129,7 @@ export const CONNECTEAM_QUESTIONS: Record<string, ConnecteamQuestion[]> = {
   ],
   // Housekeeping Checklist — 22 questions
   "HKC": [
-    { orderIndex: 0, type: QuestionType.SHORT_TEXT, prompt: "Unit #", required: false },
+    { orderIndex: 0, type: QuestionType.SHORT_TEXT, prompt: "Unit #", required: true },
     { orderIndex: 1, type: QuestionType.PHOTO, prompt: "Take a picture of any bad damage/stains / Foto de cualquir mancha o daño", required: true },
     { orderIndex: 2, type: QuestionType.PHOTO, prompt: "Take a picture of empty microwave / Tome una foto del microondas vacío", required: true },
     { orderIndex: 3, type: QuestionType.PHOTO, prompt: "Take picture of empty refrigerator / Tome una fotografía del refrigerador vacío", required: true },
@@ -156,7 +156,7 @@ export const CONNECTEAM_QUESTIONS: Record<string, ConnecteamQuestion[]> = {
   "LFLIP": [
     { orderIndex: 0, type: QuestionType.SECTION_DIVIDER, prompt: "Tasks", required: false },
     { orderIndex: 1, type: QuestionType.SINGLE, prompt: "Is this a new lease or an in-house guest?", required: true },
-    { orderIndex: 2, type: QuestionType.PHOTO, prompt: "Unit #", required: true },
+    { orderIndex: 2, type: QuestionType.SHORT_TEXT, prompt: "Unit #", required: true },
     { orderIndex: 3, type: QuestionType.PHOTO, prompt: "Take picture of empty refrigerator", required: true },
     { orderIndex: 4, type: QuestionType.PHOTO, prompt: "Take picture of empty microwave", required: true },
     { orderIndex: 5, type: QuestionType.PHOTO, prompt: "Take picture of outside of refrigerator", required: true },
