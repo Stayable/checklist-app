@@ -1,7 +1,7 @@
 # Template Review — Erika · Fri 04 Sep 2026
 
 You'll see **28 templates** at `/templates`, all drafts. Goal today: review and publish
-**22 of them**. Six are on hold — listed at the bottom, don't publish those.
+**all of them except one** — `Property Task Checklist` is empty and can't be published yet.
 
 ## What you can and can't do
 
@@ -27,26 +27,24 @@ or a **text box**? Type errors are the most likely thing you'll find.
 
 ## Publishing
 
-Publish makes it usable by staff. It does **not** put it on a schedule — there are no
-recurring schedules yet, so checklists are created by hand for now. Nothing you publish
-starts generating work on its own.
+Publish makes a template usable by staff. It does **not** put it on a schedule — there are
+no recurring schedules yet, so checklists are created by hand for now. **Nothing you
+publish starts generating work on its own.** Publish it even if you're unsure whether the
+task is still being done; that's a scheduling decision for later, not a reason to hold.
 
-## Hold these six — do not publish
+## The one exception
 
-| Template | Why |
-|---|---|
-| Monthly Pressure Washing | Last real submission **01 Jun**. Confirm it's still done. |
-| Roof Preventive Maintenance | Last real submission **01 May**. Same. |
-| 44199 Manager Checklist | Last **10 Apr**, off an archived sheet. Confirm with DP. |
-| Due Out Room Walk | Only ever filed on **one day, 07 Apr** — looks like a trial. |
-| 812 PM PA Checklist | JN has no PM PA form; this is a **copy of 8700's**. Needs a JN manager. |
-| Property Task Checklist | **Empty** — no questions yet. Publish will refuse it. |
+**Property Task Checklist** has no questions in it yet. Publish will refuse it — that's
+expected, not an error. Skip it.
 
-## One change made this morning
+## Two things to know
 
-`Unit #` was set up as a **photo** on Arrival, Due Out and Lease Arrival/Flip. It's now a
-**text box** on all of them, and required. Type the room number instead of photographing it.
+- **812 PM PA Checklist** is a copy of 8700's form — JN never had its own PM PA checklist.
+  Publish it, but flag anything in it that doesn't fit how JN actually works.
+- **`Unit #`** was set up as a **photo** on Arrival, Due Out and Lease Arrival/Flip. It's
+  now a **text box** on all of them, and required. Type the room number instead of
+  photographing it.
 
 ## When you're done
 
-Tell Kyle which you published, which you held, and anything you want changed.
+Tell Kyle which you published and anything you want changed.
