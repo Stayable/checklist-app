@@ -140,13 +140,31 @@ on fact."* That is the gap that matters for stayovers below.
 |---|---|---|
 | 1 | "HK Review" → rename "HK Checklist"? | **Config, not code.** Template names are DB fields, editable in `/templates`. ⚠ But `HKR` is scoped **weekly, per-property, HK Lead** — a supervisor review. The per-room HK forms are **Arrival (ARR)** and **DueOut (DEP)**. Confirm which she means before renaming. Change the display name only — the 8-char code is baked into every system ID (`CL-4645-HKR-20260831-001`) |
 | 2 | Room selection on the HK checklist | **This work.** Room is currently set at *create*, not by the filler. Multi-select in progress; see above |
-| 3 | Stayover → enter "Stayover" and close? | **Not built.** `INVALIDATED` exists in the enum and `lib/reports.ts` already excludes it, but **no code path ever sets it**. The ADR-014 invalidation flow is `§A7`, P1, not started. Today: leave it unsubmitted (reads as incomplete/overdue) or submit with a comment (records a fake completed arrival and corrupts completion %). Recommend building it with a **reason picker** — Stayover / OOO / Duplicate / Other + note |
-| 4 | Departure → stayover, same process? | **Same gap, one flow — do not build two.** Cloudbeds is the authoritative signal (a stayover *is* a reservation extension), but per ADR-022 build manual-first: it is needed for OOO/duplicate regardless and works without the vendor |
+| 3 | Stayover → enter "Stayover" and close? | ✅ **BUILT ON `main` — my original "not built" was WRONG**, read off the stale branch. Shipped 2026-08-21 (`848bac0`, migration `20260822120000`): `InvalidationReason` enum (`STAYOVER`, `ROOM_NOT_NEEDED`, `DUPLICATE`, `STAFF_UNAVAILABLE`, `NO_ACCESS`, `OTHER`), `app/checklists/[id]/invalidate.action.ts`, `CloseOutPanel.tsx` (field surface), `app/review/CloseOutRequests.tsx` (manager queue), `lib/invalidation.ts`. Reasons that are facts about the **room** close immediately and audit; reasons that are facts about the **person** file a request a manager decides. Note mandatory in every case. Verified present 2026-08-31 |
+| 4 | Departure → stayover, same process? | ✅ **Same built flow covers it** — one mechanism, as recommended. Correction as per #3 |
 | 5 | "Manager Review" → "Manager Checklist" + list tasks | Rename is config. **"List the manager's tasks" is the P0 content blocker** — all 40 seeded questions across all 9 templates are PLACEHOLDER (`§A6`, owner Karla/Christopher). Authorable in `/templates` today, no code needed |
 | 6 | Review tab filtered/separated by property | **Half there.** `/review` is scoped by the header property picker (`app/review/page.tsx:36-41`) and each row shows its short code. Missing: an **in-page property column + filter** so a portfolio reviewer sees everything at once and groups by property. Small build; mirrors the network ticket-filter pattern |
-| 7 | Downloadable checklist PDFs | **Endpoint exists, no button.** `app/api/checklists/[id]/pdf/route.tsx` renders the full submission (responses, photos w/ ET capture time + geo, signatures, timings), auth + RBAC gated. **Zero UI links to it** — only the *report* PDFs have buttons (`app/reports/ReportFilters.tsx:44`). Reachable only by typing the URL. ~30 min to add. Bulk/zip export is not built (`§A7`, P2) |
+| 7 | Downloadable checklist PDFs | ✅ **BUILT ON `main` — my original "endpoint exists, no button" was WRONG**, read off the stale branch. The download link is live on the review detail page: `app/review/[id]/page.tsx:181` → `/api/checklists/[id]/pdf`. Report PDFs also have buttons (`app/reports/ReportFilters.tsx:44`). Verified 2026-08-31. **Still genuinely missing:** bulk / zip export of many checklists at once (`§A7`, P2) |
 
-**Net:** #1, #5 and the question content are config/content. #2, #3+#4, #6, #7 are four small builds.
+### ⚠ Accuracy audit of this table, 2026-08-31 — 3 of 7 answers were wrong
+
+`checklist-app-4b` caught #3/#4; I then re-verified all seven against `main`. Every error came from the
+same cause: the assessment was made while the tree sat on `claude/rise8-operations-platform-rv9B6`,
+**96 commits behind `main`**. The branch-vs-main diff shows exactly these files as branch-missing
+(`CloseOutPanel.tsx` −140, `invalidate.action.ts` −288, `CloseOutRequests.tsx` −132).
+
+| Item | Verdict |
+|---|---|
+| #1 HK Review naming | ✅ stands — `prisma/templates.ts:84` still `"HK Review"` |
+| #2 room selection | ✅ stands — room set at create, not by filler; zone-grouped single-select on `main` |
+| #3 stayover close-out | ❌ **wrong** — built |
+| #4 departure stayover | ❌ **wrong** — built |
+| #5 placeholder content | ✅ stands — 41 `placeholder` hits in `prisma/templates.ts`; still the P0 blocker |
+| #6 review property filter | ✅ stands — re-verified: `/review` reads only `searchParams.filter` (status tabs) and scopes by the header property cookie. No in-page property column or filter |
+| #7 PDF download | ❌ **wrong** — button exists |
+
+**Net, corrected:** #1, #5 and the question content are config/content. #3, #4 and #7 are **already
+done**. Only **#6** (in-page property filter on `/review`) and **#2** (this work) remain as builds.
 
 ---
 
