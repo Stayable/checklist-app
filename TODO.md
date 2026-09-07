@@ -15,7 +15,69 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-09-03)
+## 🎯 START HERE (updated 2026-09-07)
+
+**Everything is pushed except one docs commit.** `main` is 1 ahead: `9e460cd`.
+
+| commit | what |
+|---|---|
+| `9e460cd` | brief revised — publish ALL except the empty one (Kyle overrode the hold list) |
+| `4b91fdf` | the 08-31 handoff audit, finally committed + Erika's review brief |
+| `1b41587` | **`Unit #` is a text field, not a photo** — repo AND production |
+| `70f4abf` | the 09-03 tracker checkpoint, which had been stranded unpushed since 09-03 |
+
+**🔴 MEASURED IN PRODUCTION 2026-09-07 11:44 ET — THE PUBLISH PASS HAS NOT HAPPENED.**
+- **0 templates are published. `publish`/`unpublish` audit rows, all time: ZERO.** Nobody has ever
+  clicked it. 28 drafts sit at `/templates`; 3 retired placeholder templates (`HKR` 3 q, `PAR` 3 q,
+  `MGR` 4 q) are hidden from the list by `app/templates/page.tsx:27` and are the only survivors of
+  the pre-Connecteam seed.
+- **Erika last signed in 09-03 11:21 a.m. ET and has not been back.** That is 4 days. Kyle said
+  "Ongoing Review for the templates" at 10:55 ET the same morning, so she signed in ~26 min after —
+  and published nothing. **The brief may never have been sent.**
+- ⚠ **`outputs/TemplateReviewBrief_RISE8_090426.md` is dated Fri 04 Sep in its filename and its
+  heading.** If it goes out now it is stale on its face. Re-date before sending.
+- **0 recurring rules · 0 checklist instances · 1 issue** (orphaned: its instance was deleted 09-03,
+  `Issue.sourceQuestion` is optional so it survived with a null source).
+- The Thu/Fri soft launch Kyle targeted on 08-31 did not happen, and nothing in the app blocks it.
+
+**🟢 `Unit #` IS FIXED, IN BOTH PLACES (`1b41587`).** It was `PHOTO` on ARR / DEP / LFLIP — the
+extraction had flagged it uncertain in its own note ("semantically it reads like a text/number
+field. Verify in Connecteam"). Two things settled it: the same prompt read as TEXT on `HKC`, and
+`Bldg and Unit #` on `RIN` is **the only sample anywhere that was ever actually answered** —
+"B#121", "222", "Bldg A unit 210". Free text.
+- The judgement lives in `scripts/build-connecteam-questions.ts` as an `OVERRIDES` table, not as an
+  edit to the generated file, which says "do not hand-edit" at the top.
+- **Requiredness is pinned there deliberately.** `isRequired()` makes every `PHOTO` required, so
+  changing the type alone would have quietly flipped these three to optional. That pin also raised
+  **HKC's `Unit #` from optional to required** — a real change beyond the type fix, harmonising it
+  with RIN. One line to revert.
+- Production got `scripts/fix-unit-number-type.ts`, deliberately narrow: the seed only writes to
+  templates with NO questions, and `reset-template-questions.ts` deletes every question on its six
+  codes *plus their instances*. Both far too wide for one column on four rows. It refuses outright
+  if any matching question has a response. Applied: 4 rows, all draft, 0 responses.
+
+**🔵 KYLE OVERRODE THE HOLD LIST, and the reasoning holds.** The four staleness holds (Pressure
+Washing last filed 01 Jun · Roof PM 01 May · 44199 Manager 10 Apr · Due Out Room Walk 07 Apr) and
+the 812-copies-8700 hold are **dismissed**. Publishing does **not** schedule — with 0 recurring
+rules a published template is *available*, not assigned. **The staleness question moves to the rules
+step**, which is the moment it starts putting work on a real calendar. Pressure Washing and Roof PM
+are the two to answer it for. `PTASK` stays the one exception: 0 questions, and `publishTemplate`
+refuses a template with none.
+
+**🟢 "NOBODY HAS SIGNED IN YET" IS FALSE and has been for weeks — corrected below.** 7 of 22 active
+users have signed in (erika 09-03 · admin 08-31 · gerardo 08-29 · bea 08-26 · randy 08-20 · rb 08-18
+· bianca 08-12). **None of the 7 still carries `mustChangePassword`**, which is direct evidence the
+forced-change redirect works end to end — including for AGENT (bea, randy). The remaining 15 have
+never signed in and still hold derivable starting passwords.
+
+**⚠ STILL TRUE, AND STILL THE BIGGEST GAP: nothing has been opened in a browser.** The wizard, the
+167-room picker, the confirm dialog, the Publish button, the Acknowledge panel, a 38-question PM PA
+form on a phone — none exercised. 961 tests, clean typecheck and lint are the entire evidence base.
+Erika signing in and publishing nothing is consistent with the app working *and* with it not.
+
+---
+
+## (previous) START HERE - 2026-09-03
 
 **Tracker checkpoint only — this block was reconstructed from `git log` and the `CLAUDE.md`
 Current Status block, not from a live session.** `CLAUDE.md` was refreshed 2026-09-03 (`a7ddc02`);
@@ -538,7 +600,7 @@ reminder of it.
 
 | Pri | Status | Item | Owner | Note |
 |---|---|---|---|---|
-| P0 | [!] | **Real checklist question content** for all 9 templates | Karla / Christopher | All 40 seeded questions are **PLACEHOLDER**. Hard blocker for training and cutover. Both owners are now testers, so they are looking at the placeholders directly. Guide: `docs/component-i/ChecklistTeamInterviewGuide_RISE8_060526.md` |
+| P0 | [x] | ~~**Real checklist question content**~~ | — | ✅ **2026-09-03. Not owed by Karla/Christopher after all — extracted, not authored.** 27 templates / 669 questions pulled from the completed-checklist PDFs Connecteam files into Smartsheet, prompts in the operators' own words and already bilingual `English / Español`. **Do not send for translation review.** ⚠ Every question TYPE is INFERRED from PDF rendering; `Unit #` was the first one corrected (`1b41587`). Generated by `scripts/build-connecteam-questions.ts` into `prisma/data/connecteam-questions.ts` |
 | P0 | [x] | **Geofence polygons for 8 properties** | Kyle | ✅ **2026-08-12.** Kyle traced all 8 on satellite imagery with deliberate allowance; loaded via `scripts/set-geofences.ts`. Verified VERIFIED at centre, OFF_PROPERTY ~1 km out, spans 109–243 m, no overlaps. Gerardo to re-check on site; his version wins if he redraws |
 | P0 | [x] | Geofence editor | — | ✅ `/admin/properties/[id]/geofence` — paste GeoJSON or centre+radius, SVG outline preview, live point tester running the real evaluator. Parser rejects [lat,lng] swaps rather than "fixing" them |
 | P0 | [x] | ~~Backfill `UNVERIFIED` photos~~ | — | ✅ **Moot — prod has 0 photos.** Boundaries landed before real capture, so there is nothing to re-evaluate. Do not re-add this |
@@ -553,7 +615,7 @@ reminder of it.
 |---|---|---|
 | P0 | [x] | **15 account changes.** 8 PMs (MANAGER, one property each) · 2 area managers (Shayla JW/SA/JN, Shay KW/KE/OR/DP/LL) · **Ruby, Jeffrey, Erika promoted AGENT → MANAGER and narrowed** from all 8 to DP/KE/OR, JW/SA, LL/KW/JN · **Rob + Crystal as CORPORATE**. Gerardo was already CORPORATE and left alone. The other 6 agents untouched — agents keep Checklist |
 | P0 | [x] | **Per-person starting passwords** — `Ops` + mailbox name (`OpsBea`, `OpsShay`). 21 accounts. Only touches accounts nobody has personalized: `mustChangePassword` going false means a real person chose it, which is why **gerardo@ was skipped, not reset**. Kyle/Kate/admin excluded by policy. ⚠ Seven fall under the app's own 8-char minimum (`OpsRb` is 5) — outside the check, not bypassing it, but they could not re-set the same password on `/profile`. Guessable by design; the forced change + the OTP are what make that safe |
-| P0 | [ ] | ⚠ **Nobody has signed in yet.** The forced-change redirect and the OTP path are unexercised for every one of these accounts, and a mailbox typo produces an account that can never be entered. `scripts/print-roster-credentials.ts` lists who still holds a starting password |
+| P0 | [~] | ⚠ **CORRECTED 2026-09-07: 7 of 22 have signed in, not nobody.** erika 09-03 · admin 08-31 · gerardo 08-29 · bea 08-26 · randy 08-20 · rb 08-18 · bianca 08-12. **None of the 7 still carries `mustChangePassword`, so the forced-change redirect demonstrably works end to end** — for AGENT too (bea, randy). **The remaining 15 have never signed in** and still hold derivable starting passwords; a mailbox typo there still produces an account nobody can enter. `scripts/print-roster-credentials.ts` lists who |
 | P1 | [ ] | Rob's is `OpsRb`, from the mailbox — "Ops + your first name" does not describe it. Tell him directly or rename to `OpsRob` |
 | P1 | [ ] | ⚠ **Nothing from 12–13 Aug has been opened in a browser by me** — including whether a scoped manager's `/network` actually renders their properties only |
 
@@ -566,10 +628,10 @@ Nine RPM/GSA testers live in prod. Guide `docs/ChecklistTesterGuide_RISE8_081226
 
 | Pri | Status | Item |
 |---|---|---|
-| P0 | [~] | **9 AGENT accounts created** (abby · bea · carl · christopher · erika · jeffrey · karla · randy · ruby), all 8 properties each, shared start password, forced change on first login. **Ruby / Jeffrey / Erika since promoted to MANAGER** (A6c), and **carl@ + christopher@ deactivated 2026-08-18** — so the live tester set is **4: abby · bea · karla · randy** |
+| P0 | [~] | **9 AGENT accounts created** (abby · bea · carl · christopher · erika · jeffrey · karla · randy · ruby), all 8 properties each, shared start password, forced change on first login. **Ruby / Jeffrey / Erika since promoted to MANAGER** (A6c), and **carl@ + christopher@ deactivated 2026-08-18** — so the AGENT tester set is **4: abby · bea · karla · randy**. ⚠ **Superseded as a picture of the roster: 22 active users as of 2026-09-07** — 11 MANAGER, 6 CORPORATE, 4 AGENT, 1 ADMIN. This row describes the test round, not who is in the system |
 | P0 | [x] | **Access removed for carl@ and christopher@** (Kyle, 2026-08-18) via `scripts/deactivate-users.ts --apply` against prod. **Deactivated, not deleted** — `active: false` is refused at both login gates (`lib/auth.ts:42`, `app/login/actions.ts:48`), and a hard delete is refused anyway because both carry audit rows from provisioning. Property memberships (all 8 each) **left in place on purpose**: they grant nothing while inactive and are what makes reactivation from `/admin/users` a one-click restore. Both had `lastLoginAt = never`, so no live session outlived the change. Audit rows written under `bke@` |
 | P1 | [ ] | ⚠ **There is no session-revocation path.** Deactivating someone who *is* signed in leaves their 30-day JWT valid until expiry — `lib/auth.ts` re-reads the DB in `authorize()` but the `session()` callback reads only the token. It did not bite here (neither account had ever signed in) and it will the first time someone with a live session is removed. Same class as the `mustChangePassword` fix, which deliberately reads the flag from the DB rather than the JWT |
-| P0 | [ ] | ⚠ **Watch the first sign-in.** Nobody has ever logged in as AGENT: the OTP email path and the forced-password-change redirect are both unexercised end to end. A stuck account looks identical to a lost email |
+| P0 | [x] | ~~⚠ **Watch the first sign-in**~~ — ✅ **answered by measurement 2026-09-07, not by watching.** AGENT sign-in has happened: **bea 08-26, randy 08-20**, and neither still carries `mustChangePassword`, so the forced-change redirect completed for both. The OTP path is still unproven for a *new device* specifically |
 | P1 | [ ] | Christopher still owes real checklist question content (A6) — removing his access does not change that, but he can no longer see the placeholders directly |
 | P0 | [ ] | Collect feedback; triage into A7/A8 |
 | P1 | [ ] | Decide whether AGENT survives the test round or is retired — it exists for this, and it is a permanent role in the enum either way |

@@ -421,7 +421,12 @@ got the way it is. Only the items below are still **open** — everything else t
 
 **Blocking the soft launch (content/config, not code):**
 - **27 templates are `Draft (filled)` and NONE are published.** Nothing is usable by field staff until a
-  Property Manager reviews and publishes each one. Review was ongoing as of 09-03.
+  Property Manager reviews and publishes each one. ⚠ **MEASURED 2026-09-07: still zero, and the
+  `publish`/`unpublish` audit table has ZERO rows all time** — the button has never been clicked.
+  Erika last signed in **09-03 11:21 a.m. ET** and has not returned. Kyle's brief is at
+  `outputs/TemplateReviewBrief_RISE8_090426.md`; **it is dated Fri 04 Sep and needs re-dating before
+  it goes out.** Kyle's call 09-07: **publish everything except the empty `PTASK`** — the four
+  staleness holds and the 812-copies-8700 hold are dismissed, because publishing does not schedule.
 - **0 recurring rules exist**, so the 5 AM cron generates nothing and every checklist must be hand-created
   through the wizard. `/rules` is built and empty. **`checklist_instances = 0`** — the test round's 9 were
   deleted 09-03 along with their 23 responses and 5 photos (the R2 objects are orphaned, deliberately).
@@ -429,15 +434,25 @@ got the way it is. Only the items below are still **open** — everything else t
   (seeded, empty) plus `Lock Installation`, `Stayable Renovation Completion` and `Daily Contractor`
   (parked under D22, not seeded, frequency/scope still Kyle's to set). Zero attachments anywhere for any
   of them. Note the last one cannot be contractor-*filled* — ADR-028 deleted contractor identity.
-- **Four templates are stale or thin and should not be published without asking Ops:** `Monthly Pressure
-  Washing` last filed **01 Jun 2026**, `Roof Preventive Maintenance` **01 May 2026**, `44199 Manager
-  Checklist` **10 Apr 2026** (and on an archived "Copy of" sheet), `Due Out Room Walk` **8 PDFs all from
-  the single day 07 Apr 2026** — an abandoned trial. Publishing a lapsed monthly puts work back on
-  someone's schedule.
-- **`812 PM PA Checklist` is a copy of 8700**, not JN's process. Wants a JN manager's eyes before publish.
-- **`Unit #` extracted as `PHOTO`** on Arrival and Due Out — the PDF format implies photo, the semantics
-  read like a text field. Two lines to change, on the two most-filled checklists in the estate. Unverified.
-- **The 08/17–08/21 contractor week was never loaded** and its 2 files are still uncommitted (`scripts/sync-contractor-schedule-from-smartsheet.ts` + the snapshot). The reworked loader is in **no deploy**. Kyle runs the dry run: `pnpm dotenv -e .env.production.local -- tsx scripts/sync-contractor-schedule-from-smartsheet.ts`
+- **Four templates are stale or thin** — `Monthly Pressure Washing` last filed **01 Jun 2026**,
+  `Roof Preventive Maintenance` **01 May 2026**, `44199 Manager Checklist` **10 Apr 2026** (and on an
+  archived "Copy of" sheet), `Due Out Room Walk` **8 PDFs all from the single day 07 Apr 2026** — an
+  abandoned trial. ⚠ **These were raised as publish-holds and Kyle DISMISSED them 2026-09-07: publish
+  all of them.** The reasoning stands — publishing does not schedule, so with 0 recurring rules a
+  published template is available, not assigned. **The staleness question moves to the rules step**,
+  which is where it starts putting work on a real calendar. Answer it for Pressure Washing and Roof
+  PM before either gets a rule.
+- **`812 PM PA Checklist` is a copy of 8700**, not JN's process. **Publish it anyway** (Kyle,
+  2026-09-07) — but a JN manager should flag anything in it that does not fit how JN works.
+- ~~**`Unit #` extracted as `PHOTO`**~~ ✅ **FIXED 2026-09-07 (`1b41587`), repo and production.** Now
+  `SHORT_TEXT` + required on ARR / DEP / LFLIP / HKC. The extraction had flagged it uncertain itself;
+  `RIN`'s `Bldg and Unit #` — the only sample ever actually answered ("B#121", "222", "Bldg A unit
+  210") — settled it. The judgement lives in the generator's `OVERRIDES` table, which also **pins
+  requiredness**, because `isRequired()` makes every `PHOTO` required and a bare type change would
+  have flipped these to optional. Side effect worth knowing: **HKC's `Unit #` went optional →
+  required.** Prod was updated by `scripts/fix-unit-number-type.ts`, which refuses if any matching
+  question has a response. Still unverified against Connecteam's real field definitions.
+- **The 08/17–08/21 contractor week was never loaded.** ⚠ The "2 files still uncommitted" part is **stale — both are tracked as of 2026-09-07** (`scripts/sync-contractor-schedule-from-smartsheet.ts` + the snapshot). The reworked loader is in **no deploy**. Kyle runs the dry run: `pnpm dotenv -e .env.production.local -- tsx scripts/sync-contractor-schedule-from-smartsheet.ts`
 - **Nobody owns the Monday contractor load and nothing alerts when it is missed** (§Q43).
 
 **Decisions owed (Kyle/Kate):**
