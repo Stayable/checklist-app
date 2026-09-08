@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation";
 import { InstanceMultiplicity, Role, TemplateScope } from "@prisma/client";
 
+import { SelectField } from "@/components/ui/select";
 import { subjectKindFor, type SubjectKind } from "@/lib/manual-create";
 import {
   MAX_INSTANCES_PER_CREATE,
@@ -360,49 +361,48 @@ export function BatchCreateClient({
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-medium text-slate-700">
                 Checklist
-                <select
-                  value={batch.templateId}
-                  onChange={(e) =>
-                    // Subjects belong to the old template's shape; carrying them
-                    // across would submit rooms for a per-person checklist.
-                    patch(batch.uid, {
-                      templateId: e.target.value,
-                      roomIds: [],
-                      assigneeIds: [],
-                      taskText: "",
-                    })
-                  }
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                >
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-1">
+                  <SelectField
+                    ariaLabel="Checklist template"
+                    value={batch.templateId}
+                    options={templates.map((t) => ({ value: t.id, label: t.name }))}
+                    onChange={(next) =>
+                      // Subjects belong to the old template's shape; carrying
+                      // them across would submit rooms for a per-person
+                      // checklist.
+                      patch(batch.uid, {
+                        templateId: next,
+                        roomIds: [],
+                        assigneeIds: [],
+                        taskText: "",
+                      })
+                    }
+                  />
+                </div>
               </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-sm font-medium text-slate-700">
                   Assign to
-                  <select
-                    value={batch.assignedUserId ?? ""}
-                    onChange={(e) =>
-                      patch(batch.uid, { assignedUserId: e.target.value || null })
-                    }
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
-                  >
-                    {/* A per-assignee checklist IS the assignment, so there is
-                        no unassigned case for it. */}
-                    <option value="">
-                      {kind === "ASSIGNEE" ? "Choose a person…" : "Unassigned"}
-                    </option>
-                    {assignees.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mt-1">
+                    <SelectField
+                      ariaLabel="Assign to"
+                      value={batch.assignedUserId ?? ""}
+                      onChange={(next) =>
+                        patch(batch.uid, { assignedUserId: next || null })
+                      }
+                      options={[
+                        // A per-assignee checklist IS the assignment, so there
+                        // is no unassigned case for it.
+                        {
+                          value: "",
+                          label:
+                            kind === "ASSIGNEE" ? "Choose a person…" : "Unassigned",
+                        },
+                        ...assignees.map((u) => ({ value: u.id, label: u.name })),
+                      ]}
+                    />
+                  </div>
                 </label>
                 <label className="text-sm font-medium text-slate-700">
                   Due (ET)
