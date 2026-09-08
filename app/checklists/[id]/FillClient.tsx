@@ -363,7 +363,15 @@ export function FillClient({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 p-5 pb-28">
-      <header className="sticky top-0 -mx-5 -mt-5 border-b border-slate-200 bg-white/90 px-5 py-3 backdrop-blur">
+      {/* z-10 is load-bearing. `position: sticky` with `z-index: auto` does not
+          win the paint order against later POSITIONED siblings: the photo
+          thumbnails below are `relative` (to hang the remove button and the
+          geofence dot off them), come after this header in the DOM, and so
+          painted straight over it — a captured photo sat on top of the title
+          and the Back link instead of scrolling behind them. Reported from a
+          phone 2026-09-08. Stays below the mobile tab bar (z-40) and the
+          sheet/flyout (z-50), which must still cover this. */}
+      <header className="sticky top-0 z-10 -mx-5 -mt-5 border-b border-slate-200 bg-white/90 px-5 py-3 backdrop-blur">
         <Link href="/" className="text-xs font-semibold text-slate-400">← {t("returnHome")}</Link>
         <h1 className="mt-1 text-lg font-bold text-slate-900">{label}</h1>
       </header>
