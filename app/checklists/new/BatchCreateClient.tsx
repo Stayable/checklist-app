@@ -11,7 +11,10 @@ import {
   type BatchInput,
 } from "@/lib/batch-create";
 import { buildInstanceName, type ScopeToken } from "@/lib/instance-name";
-import { etYYYYMMDD } from "@/lib/datetime";
+// etYMD (dashed), NOT etYYYYMMDD — these dates go into <input type="date">,
+// through `new Date(...)` in the preview, and into a server action that
+// validates /^\d{4}-\d{2}-\d{2}$/.
+import { etYMD } from "@/lib/datetime";
 import { createChecklistBatches } from "./batch.actions";
 import {
   deleteBatchDraft,
@@ -58,7 +61,7 @@ function emptyBatch(templateId: string): Batch {
     roomIds: [],
     assigneeIds: [],
     taskText: "",
-    dates: [etYYYYMMDD()],
+    dates: [etYMD()],
     assignedUserId: null,
     dueTime: "",
   };

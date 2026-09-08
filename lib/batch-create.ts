@@ -59,6 +59,21 @@ export type PlanResult =
   | { ok: true; instances: PlannedInstance[] }
   | { ok: false; error: string; batchIndex?: number };
 
+/**
+ * The one date shape this module accepts: an ET calendar day, `yyyy-MM-dd`.
+ *
+ * Mirrors the server action's own zod check. Enforced here as well because the
+ * PREVIEW runs this function in the browser and then feeds each date through
+ * `new Date(...)` to render the instance name — and `new Date("20260908T…")`
+ * is an Invalid Date, which makes date-fns throw `RangeError: Invalid time
+ * value` and takes the whole page down with a client-side exception. That is
+ * exactly what happened on 2026-09-08: the wizard seeded its default date with
+ * `etYYYYMMDD()` (no dashes), so the page died the moment a room or a person
+ * was ticked and the first name had to be built. Rejecting the date here turns
+ * that class of bug into an error message instead of a white screen.
+ */
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+
 /** De-duplicate while preserving the order the user chose. */
 function unique(values: readonly string[]): string[] {
   const seen = new Set<string>();
@@ -148,6 +163,14 @@ export function planBatches(
     const dates = unique(batch.dates);
     if (dates.length === 0) {
       return { ok: false, error: "Pick at least one date.", batchIndex: i };
+    }
+    const malformed = dates.find((d) => !YMD.test(d));
+    if (malformed !== undefined) {
+      return {
+        ok: false,
+        error: `"${malformed}" is not a valid date. Expected YYYY-MM-DD.`,
+        batchIndex: i,
+      };
     }
 
     const subjects = batchSubjects(batch, kind);

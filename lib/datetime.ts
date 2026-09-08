@@ -24,9 +24,32 @@ export function etToday(): Date {
   return toZonedTime(new Date(), DEFAULT_TIMEZONE);
 }
 
+/**
+ * Compact `yyyyMMdd`, with NO separators. This is the `systemId` form
+ * (`CL-4645-ARR-20260901-012`) and nothing else.
+ *
+ * ⚠ Not a date-input value and not parseable by `new Date()`. Reach for
+ * `etYMD` for anything that goes into an `<input type="date">`, into a
+ * `yyyy-MM-dd` API field, or back through `new Date(...)`. Using this one by
+ * mistake crashed the batch-create wizard on 2026-09-08: the seeded date
+ * `"20260908"` became `new Date("20260908T12:00:00Z")` → Invalid Date →
+ * `RangeError: Invalid time value` out of `formatInTimeZone`.
+ */
 export function etYYYYMMDD(value: Date | string | number = new Date()): string {
   const date = value instanceof Date ? value : new Date(value);
   return formatInTimeZone(date, DEFAULT_TIMEZONE, "yyyyMMdd");
+}
+
+/**
+ * ET calendar day as `yyyy-MM-dd` — the ISO form.
+ *
+ * This is what `<input type="date">` reads and writes, what the batch-create
+ * action validates (`/^\d{4}-\d{2}-\d{2}$/`), and what `new Date(...)` can
+ * parse. Sibling of `etYYYYMMDD`; see the warning there.
+ */
+export function etYMD(value: Date | string | number = new Date()): string {
+  const date = value instanceof Date ? value : new Date(value);
+  return formatInTimeZone(date, DEFAULT_TIMEZONE, "yyyy-MM-dd");
 }
 
 /**

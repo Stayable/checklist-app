@@ -206,3 +206,51 @@ describe("describePlan", () => {
     expect(text).not.toContain("templates");
   });
 });
+
+// Regression: the batch-create wizard white-screened on 2026-09-08 with
+// "Application error: a client-side exception has occurred" the moment a room
+// or a person was ticked. Cause: emptyBatch() seeded its date with
+// etYYYYMMDD() -> "20260908" (no dashes). The preview builds each instance
+// name via new Date(`${date}T12:00:00Z`), which is an Invalid Date for that
+// string, and date-fns throws RangeError out of formatInTimeZone. It only fired
+// once a subject existed, because naming does not run until planBatches
+// succeeds -- so the page loaded fine and died on the first click.
+describe("planBatches — date format", () => {
+  it("rejects a compact yyyyMMdd date rather than letting it reach new Date()", () => {
+    const r = planBatches(
+      [{ templateId: "t1", roomIds: ["201"], dates: ["20260908"] }],
+      ["ROOM"],
+    );
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("expected failure");
+    expect(r.error).toContain("20260908");
+    expect(r.error).toContain("YYYY-MM-DD");
+    expect(r.batchIndex).toBe(0);
+  });
+
+  it("every date planBatches accepts survives the preview's Date round-trip", () => {
+    const r = planBatches(
+      [{ templateId: "t1", roomIds: ["201"], dates: ["2026-09-08", "2026-12-31"] }],
+      ["ROOM"],
+    );
+    if (!r.ok) throw new Error("expected ok");
+    for (const inst of r.instances) {
+      // Exactly what BatchCreateClient's preview memo does before naming.
+      const d = new Date(`${inst.date}T12:00:00Z`);
+      expect(Number.isNaN(d.getTime())).toBe(false);
+    }
+  });
+
+  it("names the offending batch when a later batch carries the bad date", () => {
+    const r = planBatches(
+      [
+        { templateId: "t1", roomIds: ["201"], dates: ["2026-09-08"] },
+        { templateId: "t2", roomIds: ["202"], dates: ["09/08/2026"] },
+      ],
+      ["ROOM", "ROOM"],
+    );
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("expected failure");
+    expect(r.batchIndex).toBe(1);
+  });
+});
