@@ -313,6 +313,17 @@ model User {
   // Enforced in requireUser() (lib/rbac.ts), i.e. server-side on every guarded
   // page and action — not merely prompted in the UI.
   mustChangePassword  Boolean   @default(false) @map("must_change_password")
+  // Works remotely rather than at a property. Only meaningful for MANAGER,
+  // which covers BOTH the 8 on-site Property Managers and the 3 Remote
+  // Property Managers (Erika, Ruby, Jeffrey) — nothing else in the schema
+  // tells them apart, and "holds more than one property" is not a safe proxy
+  // because an on-site PM covering a second property would silently flip.
+  //
+  // Defaults false so a newly created MANAGER is treated as on-site: the
+  // failure mode of a wrong default should be "appears in a pick-list they
+  // don't belong in", not "a real employee is invisible and cannot be
+  // assigned work". Field staff are on-site by role and never consult it.
+  remote              Boolean   @default(false)
   mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
   mfaSecret           String?   @map("mfa_secret")
   lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz

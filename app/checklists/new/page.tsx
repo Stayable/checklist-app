@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Role } from "@prisma/client";
 import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { db } from "@/lib/db";
@@ -61,9 +62,18 @@ export default async function NewChecklistPage() {
             active: true,
             // User.properties is UserProperty[]; filter by propertyId FK.
             properties: { some: { propertyId: activePropertyId } },
+            // On-site personnel only (Kyle, 2026-09-09) — the people who
+            // actually work here. Field staff plus the on-site Property
+            // Managers; excludes the 3 remote PMs, CORPORATE, ADMIN and the
+            // AGENT night-audit reviewers. Expressed as the SQL equivalent of
+            // isOnSiteAssignable so the filter runs in the query rather than
+            // fetching the whole roster and discarding most of it.
+            OR: [
+              { role: { in: [Role.HK, Role.PA, Role.MT] } },
+              { role: Role.MANAGER, remote: false },
+            ],
           },
           orderBy: { name: "asc" },
-          // role drives the PER_ASSIGNEE pool: a per-PA checklist offers PAs.
           select: { id: true, name: true, role: true },
         }),
       ])

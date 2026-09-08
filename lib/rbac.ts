@@ -8,6 +8,7 @@ import {
   isAdmin,
   isFieldStaff,
   isManagerOrAbove,
+  isOnSiteAssignable,
   isPortfolioRole,
 } from "./roles";
 
@@ -24,6 +25,7 @@ export {
   isAdmin,
   isFieldStaff,
   isManagerOrAbove,
+  isOnSiteAssignable,
   isPortfolioRole,
 };
 

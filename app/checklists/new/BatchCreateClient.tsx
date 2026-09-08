@@ -122,17 +122,37 @@ export function BatchCreateClient({
     void refreshDrafts();
   }, [refreshDrafts]);
 
-  /** The wizard's state as the shape both the draft and the action take. */
-  function toBatchPayload() {
-    return batches.map((b) => ({
+  /**
+   * The wizard's state as the shape the draft, the preview and the action all
+   * take. One function, because these three used to be three copies of the
+   * same object literal — and the preview being the thing that must agree with
+   * the action is the entire premise of this screen.
+   *
+   * The per-assignee subject is derived from `assignedUserId` rather than held
+   * separately: since the "Who is on shift" multi-select was removed, the
+   * person in "Assign to" IS the subject, and keeping a second source of truth
+   * would let the preview and the created row disagree about who it is for.
+   */
+  // A hoisted function declaration, not a useCallback: it reads `templateById`,
+  // which is declared further down, and a hook's dependency array is evaluated
+  // during render — naming it there would throw on the temporal dead zone.
+  function payloadFor(b: Batch) {
+    const t = templateById.get(b.templateId);
+    const resolved = t ? subjectKindFor(t.scope, t.copies) : null;
+    const isPerAssignee = resolved?.ok === true && resolved.kind === "ASSIGNEE";
+    return {
       templateId: b.templateId,
       roomIds: b.roomIds,
-      assigneeIds: b.assigneeIds,
+      assigneeIds: isPerAssignee && b.assignedUserId ? [b.assignedUserId] : [],
       taskLabels: taskLabelsFrom(b.taskText),
       dates: b.dates,
       assignedUserId: b.assignedUserId,
       dueTime: b.dueTime || null,
-    }));
+    };
+  }
+
+  function toBatchPayload() {
+    return batches.map(payloadFor);
   }
 
   function saveDraft() {
@@ -225,14 +245,9 @@ export function BatchCreateClient({
       const resolved = subjectKindFor(t.scope, t.copies);
       if (!resolved.ok) return { ok: false as const, error: resolved.error };
       const k = resolved.kind;
-      inputs.push({
-        templateId: b.templateId,
-        roomIds: b.roomIds,
-        assigneeIds: b.assigneeIds,
-        taskLabels: taskLabelsFrom(b.taskText),
-        dates: b.dates,
-        assignedUserId: b.assignedUserId,
-      });
+      // Same payload the action receives, so the preview cannot describe
+      // something other than what gets written.
+      inputs.push(payloadFor(b));
       kinds.push(k);
     }
     const plan = planBatches(inputs, kinds);
@@ -260,6 +275,11 @@ export function BatchCreateClient({
       };
     });
     return { ok: true as const, instances: named };
+    // payloadFor is re-created every render, so listing it would defeat the
+    // memo entirely. Its inputs are `templateById` and the batch passed in,
+    // both already named here — the same reasoning as the comment above about
+    // depending on the data actually read rather than on helper identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batches, templateById, roomById, userById, propertyShortCode]);
 
   function submit() {
@@ -268,15 +288,7 @@ export function BatchCreateClient({
       const res = await createChecklistBatches({
         propertyId: activePropertyId,
         allowDuplicates,
-        batches: batches.map((b) => ({
-          templateId: b.templateId,
-          roomIds: b.roomIds,
-          assigneeIds: b.assigneeIds,
-          taskLabels: taskLabelsFrom(b.taskText),
-          dates: b.dates,
-          assignedUserId: b.assignedUserId,
-          dueTime: b.dueTime || null,
-        })),
+        batches: toBatchPayload(),
       });
       if (!res.ok) {
         setConfirming(false);
@@ -313,10 +325,12 @@ export function BatchCreateClient({
     <div className="flex flex-col gap-5">
       {batches.map((batch, i) => {
         const kind = kindOf(batch);
-        const template = templateById.get(batch.templateId);
-        const pool = template
-          ? assignees.filter((u) => u.role === template.defaultRole)
-          : [];
+        // `pool` (assignees narrowed to the template's defaultRole) died with
+        // the "Who is on shift" picker. The single "Assign to" list is already
+        // narrowed at the query — on-site personnel at this property — and is
+        // deliberately NOT filtered by defaultRole as well: with no HK/PA/MT
+        // accounts yet, that second filter is what made every per-assignee
+        // template impossible to create.
         const batchPreview = preview.ok
           ? preview.instances.filter((p) => p.batchIndex === i)
           : [];
@@ -376,10 +390,13 @@ export function BatchCreateClient({
                     onChange={(e) =>
                       patch(batch.uid, { assignedUserId: e.target.value || null })
                     }
-                    disabled={kind === "ASSIGNEE"}
                     className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
                   >
-                    <option value="">Unassigned</option>
+                    {/* A per-assignee checklist IS the assignment, so there is
+                        no unassigned case for it. */}
+                    <option value="">
+                      {kind === "ASSIGNEE" ? "Choose a person…" : "Unassigned"}
+                    </option>
                     {assignees.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name}
@@ -462,44 +479,23 @@ export function BatchCreateClient({
                 </fieldset>
               )}
 
+              {/* PER_ASSIGNEE used to have its own "Who is on shift"
+                  multi-select here. Removed 2026-09-09 (Kyle): the app holds no
+                  shift data, so it was asking the PM to restate something it
+                  could not check, and it filtered the pool to the template's
+                  defaultRole — which with zero HK/PA/MT accounts in the system
+                  meant all eight per-assignee templates showed an empty list
+                  and could not be created at all. The person now comes from
+                  "Assign to" above: one named person, one checklist. For a
+                  second person, add a second batch. */}
               {kind === "ASSIGNEE" && (
-                <fieldset>
-                  <legend className="text-sm font-medium text-slate-700">
-                    Who is on shift ({batch.assigneeIds.length} selected)
-                  </legend>
-                  {pool.length === 0 ? (
-                    <p className="mt-2 text-sm text-slate-500">
-                      Nobody with the {template?.defaultRole} role is assigned to
-                      this property.
-                    </p>
-                  ) : (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {pool.map((u) => {
-                        const on = batch.assigneeIds.includes(u.id);
-                        return (
-                          <button
-                            key={u.id}
-                            type="button"
-                            onClick={() =>
-                              patch(batch.uid, {
-                                assigneeIds: on
-                                  ? batch.assigneeIds.filter((x) => x !== u.id)
-                                  : [...batch.assigneeIds, u.id],
-                              })
-                            }
-                            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                              on
-                                ? "bg-navy text-white"
-                                : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                            }`}
-                          >
-                            {u.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </fieldset>
+                <p className="text-sm text-slate-500">
+                  {assignees.length === 0
+                    ? "Nobody on-site is assigned to this property yet, so there is nobody to give this to."
+                    : batch.assignedUserId
+                      ? "One checklist for the person named in Assign to."
+                      : "Pick who this is for in Assign to above."}
+                </p>
               )}
 
               {kind === "TASK" && (

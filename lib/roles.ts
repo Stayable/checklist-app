@@ -61,8 +61,44 @@ export function canAccessMaintenance(role: Role): boolean {
 }
 
 /** Field staff (HK, PA, MT) — phone-first fill surfaces; the PWA-install audience. */
+/**
+ * ⚠ Defined by NEGATION, so every role not named in isManagerOrAbove counts as
+ * field staff — including NETWORK_TECH, which the schema explicitly calls "NOT
+ * field staff". Harmless at its one call site (a phone-only PWA install nudge
+ * in app/page.tsx) and left alone rather than narrowed unasked, but do not
+ * build an authorization or assignment rule on it: a role added to the enum
+ * silently joins this set. isOnSiteAssignable below enumerates instead.
+ */
 export function isFieldStaff(role: Role): boolean {
   return !isManagerOrAbove(role);
+}
+
+/**
+ * Can real work at a property be handed to this person?
+ *
+ * The "Assign to" pool in the batch-create wizard (Kyle, 2026-09-09). Answers
+ * "does this person physically work here", which is a different question from
+ * every other predicate in this file — those are about what a role may SEE.
+ *
+ * In:  HK / PA / MT (field staff, on-site by definition) and the on-site
+ *      Property Managers.
+ * Out: the 3 Remote Property Managers, CORPORATE, ADMIN, and AGENT. AGENT is
+ *      the night-audit reviewers — they review and flag other people's
+ *      checklists, so assigning them one is a category error.
+ *
+ * `remote` is only consulted for MANAGER, the one role that spans both, and a
+ * field-staff row is on-site whatever the column says — so a forgotten flag on
+ * a new housekeeper cannot make them unassignable.
+ *
+ * The three field roles are listed explicitly rather than via isFieldStaff:
+ * that predicate is a negation of isManagerOrAbove, so it answers true for
+ * NETWORK_TECH and would answer true for any role added to the enum later.
+ * A new role should have to be considered here deliberately — lib/roles.test.ts
+ * asserts the full enum so adding one fails loudly.
+ */
+export function isOnSiteAssignable(role: Role, remote: boolean): boolean {
+  if (role === Role.HK || role === Role.PA || role === Role.MT) return true;
+  return role === Role.MANAGER && !remote;
 }
 
 /**
