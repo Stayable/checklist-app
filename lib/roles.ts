@@ -96,7 +96,16 @@ export function isFieldStaff(role: Role): boolean {
  * A new role should have to be considered here deliberately — lib/roles.test.ts
  * asserts the full enum so adding one fails loudly.
  */
-export function isOnSiteAssignable(role: Role, remote: boolean): boolean {
+export function isOnSiteAssignable(
+  role: Role,
+  remote: boolean,
+  alwaysAssignable = false,
+): boolean {
+  // Explicit per-row escape hatch, checked first because its whole purpose is
+  // to beat the role rule. Set on exactly one account today (Kyle's, so he can
+  // assign himself a checklist and walk it end to end); see the column comment
+  // in schema.prisma before setting it on a second.
+  if (alwaysAssignable) return true;
   if (role === Role.HK || role === Role.PA || role === Role.MT) return true;
   return role === Role.MANAGER && !remote;
 }

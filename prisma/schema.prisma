@@ -324,6 +324,13 @@ model User {
   // don't belong in", not "a real employee is invisible and cannot be
   // assigned work". Field staff are on-site by role and never consult it.
   remote              Boolean   @default(false)
+  // Force this user into assignment pools regardless of role. An escape hatch,
+  // not a category: today it is set on exactly one row, Kyle's CORPORATE
+  // account, so he can assign himself a checklist and walk it end to end
+  // without a second login. If this ever needs to be true for a GROUP of
+  // people, that group is a missing role or a missing flag — widen the rule in
+  // isOnSiteAssignable instead of ticking rows.
+  alwaysAssignable    Boolean   @default(false) @map("always_assignable")
   mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
   mfaSecret           String?   @map("mfa_secret")
   lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz

@@ -71,6 +71,9 @@ export default async function NewChecklistPage() {
             OR: [
               { role: { in: [Role.HK, Role.PA, Role.MT] } },
               { role: Role.MANAGER, remote: false },
+              // Per-row override, one account today. Kept in step with
+              // isOnSiteAssignable — if one grows a clause so must the other.
+              { alwaysAssignable: true },
             ],
           },
           orderBy: { name: "asc" },

@@ -39,6 +39,20 @@ describe("isOnSiteAssignable", () => {
     }
   });
 
+  it("the override beats the role rule, for any role", () => {
+    // Kyle's CORPORATE account, so he can assign himself a checklist and walk
+    // it end to end without a second login.
+    expect(isOnSiteAssignable(Role.CORPORATE, false, true)).toBe(true);
+    for (const role of Object.values(Role)) {
+      expect(isOnSiteAssignable(role, true, true)).toBe(true);
+    }
+  });
+
+  it("defaults to off, so nothing is assignable by accident", () => {
+    expect(isOnSiteAssignable(Role.CORPORATE, false)).toBe(false);
+    expect(isOnSiteAssignable(Role.CORPORATE, false, false)).toBe(false);
+  });
+
   it("covers every role in the enum, so a new one has to be considered here", () => {
     const decided = Object.values(Role).map((r) => [r, isOnSiteAssignable(r, false)] as const);
     expect(decided.length).toBe(Object.values(Role).length);
