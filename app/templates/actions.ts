@@ -76,8 +76,8 @@ async function writeAudit(
 }
 
 // Authorization for the *requested* scope (create/update target state):
-// ADMIN unrestricted; MANAGER/CORPORATE may only target a non-all-properties
-// template fully within their accessible properties.
+// ADMIN unrestricted; MANAGER/CORPORATE may target an all-properties template
+// or one fully within their accessible properties; AGENT only the latter.
 function assertCanTarget(
   role: Role,
   accessible: string[],
@@ -85,8 +85,11 @@ function assertCanTarget(
   propertyIds: string[],
 ): string | null {
   if (canManageTemplate(role, accessible, { allProperties, propertyIds })) return null;
-  // canManageTemplate already grants ADMIN; this error is for scoped managers/corporate.
-  return "Managers can only manage templates scoped to their own properties (not All-properties).";
+  // canManageTemplate already grants ADMIN, and grants MANAGER/CORPORATE the
+  // all-properties templates. What is left to refuse is a scoped template
+  // reaching outside the caller's properties, or an AGENT on an
+  // all-properties one.
+  return "You can only manage templates scoped to your own properties.";
 }
 
 export async function createTemplate(input: unknown): Promise<ActionResult> {

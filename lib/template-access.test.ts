@@ -29,8 +29,15 @@ describe("canManageTemplate", () => {
   it("MANAGER may NOT manage a template touching a property they lack", () => {
     expect(canManageTemplate(Role.MANAGER, ["LL"], llAndOr)).toBe(false);
   });
-  it("MANAGER may NOT manage an All-properties template", () => {
-    expect(canManageTemplate(Role.MANAGER, ["LL"], allProps)).toBe(false);
+  // Changed 2026-09-08 (Kyle): the RPMs review the extracted Connecteam
+  // question sets, and all 31 live templates are all-properties — so refusing
+  // this left them able to publish a set they could not correct.
+  it("MANAGER may manage an All-properties template", () => {
+    expect(canManageTemplate(Role.MANAGER, ["LL"], allProps)).toBe(true);
+  });
+  it("MANAGER's All-properties grant does not depend on how many properties they hold", () => {
+    // Ruby (DP/KE/OR) and Jeffrey (JW/SA) get it the same as Erika (all 8).
+    expect(canManageTemplate(Role.MANAGER, [], allProps)).toBe(true);
   });
   it("MANAGER may NOT manage a template with no property association", () => {
     expect(
@@ -39,7 +46,12 @@ describe("canManageTemplate", () => {
   });
   it("CORPORATE is treated like MANAGER for the property-subset rule", () => {
     expect(canManageTemplate(Role.CORPORATE, ["LL", "OR"], llAndOr)).toBe(true);
-    expect(canManageTemplate(Role.CORPORATE, ["LL"], allProps)).toBe(false);
+    expect(canManageTemplate(Role.CORPORATE, ["LL"], allProps)).toBe(true);
+  });
+  it("a field role is still refused an All-properties template", () => {
+    for (const role of [Role.HK, Role.PA, Role.MT]) {
+      expect(canManageTemplate(role, ["LL"], allProps)).toBe(false);
+    }
   });
 });
 
