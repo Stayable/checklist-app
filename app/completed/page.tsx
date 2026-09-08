@@ -4,7 +4,7 @@ import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
-import { formatDateInET } from "@/lib/datetime";
+import { formatDateInET, formatDateOnly } from "@/lib/datetime";
 import { roomDisplay } from "@/lib/room-label";
 import { hasAnyCheckoutFlag } from "@/lib/checkout-flags";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -157,9 +157,11 @@ export default async function CompletedPage({
                 </td>
                 <td className="px-4 py-2">{i.assignedUser?.name ?? "—"}</td>
                 <td className="px-4 py-2 text-slate-500">
+                  {/* submittedAt is a real instant (ET); scheduledFor is a
+                      date-only column and must not be zone-converted. */}
                   {i.submittedAt
                     ? formatDateInET(i.submittedAt)
-                    : formatDateInET(i.scheduledFor)}
+                    : formatDateOnly(i.scheduledFor)}
                 </td>
                 <td className="px-4 py-2">
                   <span

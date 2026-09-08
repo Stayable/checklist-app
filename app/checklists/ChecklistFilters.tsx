@@ -64,6 +64,50 @@ export function ChecklistFilters() {
           className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
         />
       </label>
+
+      {/* Toggles rather than another dropdown: each is a single yes/no cut, and
+          the Dashboard links straight into them — so arriving from a tile has
+          to SHOW which cut is applied, or the count looks wrong for no visible
+          reason. Clicking an active chip clears it. */}
+      <div className="flex gap-2 pb-0.5">
+        <Toggle
+          label="Overdue"
+          active={params.get("due") === "overdue"}
+          onClick={() => set("due", params.get("due") === "overdue" ? "" : "overdue")}
+        />
+        <Toggle
+          label="Unassigned"
+          active={params.get("assignee") === "unassigned"}
+          onClick={() =>
+            set("assignee", params.get("assignee") === "unassigned" ? "" : "unassigned")
+          }
+        />
+      </div>
     </div>
+  );
+}
+
+function Toggle({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
+        active
+          ? "bg-navy text-white"
+          : "text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

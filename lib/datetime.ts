@@ -41,6 +41,34 @@ export function etYYYYMMDD(value: Date | string | number = new Date()): string {
 }
 
 /**
+ * Format a DATE-ONLY column (Prisma `@db.Date`) for display.
+ *
+ * ⚠ Use this, never `formatDateInET`, for `scheduledFor` and friends. A
+ * `@db.Date` has no time and no zone: Prisma hands it back as UTC midnight, so
+ * converting it to Eastern moves it to 8pm the PREVIOUS day and it renders one
+ * day early. `scheduledFor` 2026-09-08 displayed as "Sep 7, 2026" on four
+ * screens until 2026-09-08, while the instance's own name still said 090826 —
+ * the row disagreed with itself.
+ *
+ * Formatting in UTC is not a fudge here: the stored value IS the calendar day,
+ * so reading it back in the zone it was written in is the only lossless thing
+ * to do. Timestamps that genuinely have an instant (`submittedAt`,
+ * `createdAt`) still belong in `formatInET`/`formatDateInET`.
+ */
+export function formatDateOnly(
+  value: Date | string | number,
+  pattern: string = "MMM d, yyyy",
+): string {
+  const date = value instanceof Date ? value : new Date(value);
+  return formatInTimeZone(date, "UTC", pattern);
+}
+
+/** `yyyy-MM-dd` of a date-only column, for grouping and comparison. */
+export function ymdOfDateOnly(value: Date | string | number): string {
+  return formatDateOnly(value, "yyyy-MM-dd");
+}
+
+/**
  * ET calendar day as `yyyy-MM-dd` — the ISO form.
  *
  * This is what `<input type="date">` reads and writes, what the batch-create

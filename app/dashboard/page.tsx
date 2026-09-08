@@ -8,7 +8,7 @@ import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
-import { etDateOnly } from "@/lib/datetime";
+import { etDateOnly, etYMD } from "@/lib/datetime";
 import { PageHeader } from "@/components/shell/PageHeader";
 
 // Statuses that count as completed for the day
@@ -57,6 +57,8 @@ export default async function DashboardPage() {
   const activeId = await getCurrentPropertyId(accessible);
   const scopeIds = resolveScopedPropertyIds(accessible, activeId);
   const today = etDateOnly();
+  // The same ET day as `today`, as the yyyy-MM-dd the board's date filter takes.
+  const todayYmd = etYMD();
   const now = new Date();
 
   const [
@@ -126,26 +128,32 @@ export default async function DashboardPage() {
         subtitle="Today's status and open work for your properties"
       />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {/* Every tile lands on the set it counted. Incomplete / Overdue /
+            Unassigned used to go to /review, which lists SUBMITTED work — the
+            exact opposite of what those three count — so the destination
+            contradicted the number. They now go to the checklist board with
+            the matching filter. Overdue passes `due=overdue` rather than a
+            date range because the count keys off dueAt, not scheduledFor. */}
         <AlertTile
-          href="/completed"
+          href="/review"
           label={`Complete today (${todayDone}/${todayTotal})`}
           value={`${pct}%`}
           tone="bg-emerald-50 text-emerald-800 ring-emerald-200"
         />
         <AlertTile
-          href="/review"
+          href={`/checklists?from=${todayYmd}&to=${todayYmd}`}
           label="Incomplete today"
           value={todayTotal - todayDone}
           tone="bg-amber-50 text-amber-800 ring-amber-200"
         />
         <AlertTile
-          href="/review"
+          href="/checklists?due=overdue"
           label="Overdue"
           value={overdue}
           tone="bg-red-50 text-red-800 ring-red-200"
         />
         <AlertTile
-          href="/review"
+          href="/checklists?assignee=unassigned"
           label="Unassigned"
           value={unassigned}
           tone="bg-slate-50 text-slate-700 ring-slate-200"

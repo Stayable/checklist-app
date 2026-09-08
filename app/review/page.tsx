@@ -5,7 +5,7 @@ import { accessiblePropertyIds, requireManager } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { CloseOutRequests, type CloseOutRequestRow } from "./CloseOutRequests";
-import { formatDateInET, formatInET } from "@/lib/datetime";
+import { formatDateInET, formatDateOnly, formatInET } from "@/lib/datetime";
 import { timeToCompleteMinutes } from "@/lib/review";
 import { roomDisplay } from "@/lib/room-label";
 import { presignDownload } from "@/lib/r2";
@@ -84,9 +84,10 @@ export default async function ReviewQueuePage({
       template: i.title ?? i.template.name,
       shortCode: i.property.shortCode,
       user: i.assignedUser?.name ?? "—",
+      // submittedAt is an instant (ET); scheduledFor is date-only (UTC).
       date: i.submittedAt
         ? formatDateInET(i.submittedAt)
-        : formatDateInET(i.scheduledFor),
+        : formatDateOnly(i.scheduledFor),
       unit: roomDisplay(i.room, i.roomLabel),
       minutes: timeToCompleteMinutes(i.openedAt, i.submittedAt),
       photoSlots: await Promise.all(

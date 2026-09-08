@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { InstanceStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser, isManagerOrAbove } from "@/lib/rbac";
-import { formatDateInET } from "@/lib/datetime";
+import { formatDateOnly } from "@/lib/datetime";
 import type { AnswerMap, AnswerValue } from "@/lib/checklist-logic";
 import type { CheckoutFlags } from "@/lib/checkout-flags";
 import { roomDisplay } from "@/lib/room-label";
@@ -72,7 +72,7 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
     instance.template.name,
     instance.property.shortCode,
     scope,
-    formatDateInET(instance.scheduledFor),
+    formatDateOnly(instance.scheduledFor),
   ]
     .filter(Boolean)
     .join(" — ");

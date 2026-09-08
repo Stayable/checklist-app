@@ -299,7 +299,13 @@ export function BatchCreateClient({
       // The draft has become real checklists; leaving it would invite creating
       // the same batch twice.
       if (draftId) await deleteBatchDraft(draftId);
-      router.push(res.created === 1 && res.firstId ? `/checklists/${res.firstId}` : "/checklists");
+      // Always the board, never the fill page — even for a single checklist.
+      // Creating work and doing work are different jobs: a manager who just
+      // scheduled something wants to see it land next to everything else, not
+      // be dropped into answering its questions. (It used to open the
+      // checklist whenever a run produced exactly one, which meant the
+      // destination changed depending on how many rooms you happened to tick.)
+      router.push("/checklists");
       router.refresh();
     });
   }

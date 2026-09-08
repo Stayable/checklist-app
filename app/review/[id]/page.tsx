@@ -4,7 +4,7 @@ import { QuestionType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canAccessProperty, isAdmin, requireManager } from "@/lib/rbac";
 import { isLocked } from "@/lib/review-lock";
-import { formatDateInET, formatInET } from "@/lib/datetime";
+import { formatDateOnly, formatInET } from "@/lib/datetime";
 import { formatMinutes, timeToCompleteMinutes } from "@/lib/review";
 import { presignDownload } from "@/lib/r2";
 import { ReviewActions } from "./ReviewActions";
@@ -173,7 +173,7 @@ export default async function ReviewDetailPage({
             {instance.systemId ?? instance.id} · {instance.assignedUser?.name ?? "Unassigned"} ·{" "}
             {instance.submittedAt
               ? `Submitted ${formatInET(instance.submittedAt)}`
-              : `Scheduled ${formatDateInET(instance.scheduledFor)}`}{" "}
+              : `Scheduled ${formatDateOnly(instance.scheduledFor)}`}{" "}
             · Time to complete: {formatMinutes(minutes)}
           </p>
         </div>
