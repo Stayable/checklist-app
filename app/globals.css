@@ -137,4 +137,14 @@
   h1, h2, h3 {
     font-family: var(--font-heading);
   }
+  /* Tailwind's Preflight resets `font: inherit` on
+     button/input/select/optgroup/textarea but says nothing about `option`, so
+     the items inside an OPEN native dropdown keep the UA font and render as
+     Times on Windows Chrome — while the closed control above them is Nunito.
+     Caught in the header property picker 2026-09-08. Applies to every select
+     in the app, not just that one. Set explicitly rather than `inherit`
+     because the popup is drawn outside the normal cascade on some platforms. */
+  option, optgroup {
+    font-family: var(--font-sans);
+  }
 }
