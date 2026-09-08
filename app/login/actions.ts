@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
-import { NotificationChannel, NotificationStatus } from "@prisma/client";
+import { NotificationChannel, NotificationStatus, OtpPurpose } from "@prisma/client";
 import { signIn } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendOtpEmail } from "@/lib/email";
@@ -108,13 +108,15 @@ async function issueOtp(
   const expiresAt = new Date(now.getTime() + OTP_TTL_MS);
 
   // Supersede all prior unconsumed codes for this user in a single transaction.
+  // Scoped to LOGIN so signing in does not silently invalidate a
+  // password-reset code the same person is part-way through using.
   await db.$transaction([
     db.loginOtp.updateMany({
-      where: { userId, consumedAt: null },
+      where: { userId, consumedAt: null, purpose: OtpPurpose.LOGIN },
       data: { consumedAt: now },
     }),
     db.loginOtp.create({
-      data: { userId, codeHash, expiresAt },
+      data: { userId, codeHash, expiresAt, purpose: OtpPurpose.LOGIN },
     }),
   ]);
 

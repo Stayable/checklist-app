@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
@@ -25,6 +26,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
+  /** Set once a password submit has come back rejected. Gates the reset link so
+   *  it appears on the first failure rather than sitting there from the start. */
+  const [attempted, setAttempted] = useState(false);
 
   /** A lockout gets a specific message with the wait time; everything else stays
    *  deliberately generic so a failure can't be attributed to the email or the
@@ -49,7 +53,22 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const res = await requestLogin(email, password);
+    // Read the DOM, not React state. A saved credential filled by the browser
+    // or a password manager does not always fire a React change event — Chrome
+    // and Safari both restore values on load without one — so `email` and
+    // `password` can still be "" while the boxes look filled. The form then
+    // submits empty strings, the server records a failed attempt, and the user
+    // sees "invalid password" against a field showing their correct password.
+    // `required` does not catch it: the DOM input is genuinely non-empty.
+    // Suspected in Erika's 2026-09-08 failures; not reproduced in a browser.
+    const form = new FormData(e.currentTarget);
+    const emailValue = String(form.get("email") ?? "").trim() || email;
+    const passwordValue = String(form.get("password") ?? "") || password;
+    // Keep state in step so the OTP step, which re-sends both, agrees.
+    setEmail(emailValue);
+    setPassword(passwordValue);
+
+    const res = await requestLogin(emailValue, passwordValue);
     setLoading(false);
 
     if (res.ok === true) {
@@ -59,6 +78,9 @@ export default function LoginPage() {
       setStep("otp");
     } else {
       setError(errorText(res));
+      // Includes "locked": a lock is reached by repeated wrong passwords, so a
+      // reset is usually the real fix rather than waiting out the 30 minutes.
+      setAttempted(true);
     }
   }
 
@@ -126,6 +148,7 @@ export default function LoginPage() {
                 {t("email")}
                 <input
                   type="email"
+                  name="email"
                   autoComplete="email"
                   required
                   value={email}
@@ -139,6 +162,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
+                    name="password"
                     autoComplete="current-password"
                     required
                     value={password}
@@ -169,6 +193,25 @@ export default function LoginPage() {
               >
                 {loading ? t("signingIn") : t("signIn")}
               </button>
+
+              {/* Shown from the FIRST failed attempt, not after several (Kyle,
+                  2026-09-08). The case that prompted it was someone whose
+                  password had been changed from the admin side: retrying is
+                  guaranteed to fail, so the only useful thing on the screen is
+                  the way out. Offering it before any failure would push people
+                  into a reset they do not need — hence `attempted`, not
+                  always-on. Carries the typed email so they do not retype it. */}
+              {attempted && (
+                <Link
+                  href={{
+                    pathname: "/forgot-password",
+                    query: email.trim() ? { email: email.trim() } : undefined,
+                  }}
+                  className="text-center text-sm font-semibold text-navy underline hover:opacity-80"
+                >
+                  {t("forgotPassword")}
+                </Link>
+              )}
             </form>
           </>
         ) : (

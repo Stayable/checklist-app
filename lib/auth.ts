@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { type Role, type Locale } from "@prisma/client";
+import { OtpPurpose, type Role, type Locale } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isLocked, registerFailure, registerSuccess } from "@/lib/auth-throttle";
 import { parseTrustedToken, TRUSTED_MAX_AGE_MS } from "@/lib/trusted-device";
@@ -77,8 +77,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // No valid trusted-device token — require a valid OTP.
           const code = typeof parsed.data.otp === "string" ? parsed.data.otp : "";
           if (!code) return null;
+          // `purpose` is load-bearing, not decorative: a PASSWORD_RESET code is
+          // issued to anyone who types this address, so accepting one here
+          // would let an attacker who already knows the password bypass the
+          // new-device gate using a code they requested themselves.
           const otpRow = await db.loginOtp.findFirst({
-            where: { userId: user.id, consumedAt: null },
+            where: { userId: user.id, consumedAt: null, purpose: OtpPurpose.LOGIN },
             orderBy: { createdAt: "desc" },
           });
           if (!otpRow) return null;

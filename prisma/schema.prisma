@@ -391,18 +391,30 @@ model UserProperty {
   @@map("user_properties")
 }
 
+// What a code is allowed to do. A LOGIN code is issued only to someone who
+// already proved the password; a PASSWORD_RESET code is issued to anyone who
+// types the address, so the two must never be interchangeable — otherwise a
+// code obtainable with an email address alone would satisfy the login gate.
+// Every query that verifies a code filters on this column.
+enum OtpPurpose {
+  LOGIN
+  PASSWORD_RESET
+}
+
 model LoginOtp {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  codeHash   String    @map("code_hash")
-  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
-  consumedAt DateTime? @map("consumed_at") @db.Timestamptz
-  attempts   Int       @default(0)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  id         String     @id @default(uuid()) @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  codeHash   String     @map("code_hash")
+  purpose    OtpPurpose @default(LOGIN)
+  expiresAt  DateTime   @map("expires_at") @db.Timestamptz
+  consumedAt DateTime?  @map("consumed_at") @db.Timestamptz
+  attempts   Int        @default(0)
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, purpose])
   @@map("login_otps")
 }
 

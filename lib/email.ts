@@ -30,6 +30,38 @@ export async function sendOtpEmail(
   return sendEmail({ to, subject: copy.subject, text: copy.line(code) });
 }
 
+// Deliberately different wording from the sign-in code. Someone who gets this
+// email without asking for it needs to recognise straight away that it is a
+// reset attempt, not a login — that is the only signal they get that somebody
+// is trying to take the account.
+const RESET_COPY = {
+  en: {
+    subject: "Reset your StayCheck password",
+    line: (code: string) =>
+      `Your password reset code is ${code}. It expires in 10 minutes.\n\n` +
+      `Enter it on the "Forgot password" screen to choose a new password.\n\n` +
+      `If you did not ask to reset your password, ignore this email — your ` +
+      `current password still works — and tell your administrator.`,
+  },
+  es: {
+    subject: "Restablece tu contraseña de StayCheck",
+    line: (code: string) =>
+      `Tu código para restablecer la contraseña es ${code}. Caduca en 10 minutos.\n\n` +
+      `Escríbelo en la pantalla "Olvidé mi contraseña" para elegir una nueva contraseña.\n\n` +
+      `Si no pediste restablecer tu contraseña, ignora este correo — tu ` +
+      `contraseña actual sigue funcionando — y avisa a tu administrador.`,
+  },
+} as const;
+
+export async function sendPasswordResetEmail(
+  to: string,
+  code: string,
+  locale: "en" | "es",
+): Promise<{ ok: boolean; error?: string }> {
+  const copy = RESET_COPY[locale] ?? RESET_COPY.en;
+  return sendEmail({ to, subject: copy.subject, text: copy.line(code) });
+}
+
 /**
  * Generic transactional send. Returns `{ ok:false, error:"email_not_configured" }`
  * when RESEND_API_KEY is unset (build/test/CI) — callers treat that as SKIPPED,
