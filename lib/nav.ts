@@ -219,8 +219,15 @@ export const SHELL_HIDE_PREFIXES = [
   "/checklists",
 ];
 
-// Routes under /checklists that render with the shell (management surfaces).
-const SHELL_SHOW_EXACT = new Set(["/checklists/new"]);
+// Routes under /checklists that render WITH the shell (management surfaces).
+//
+// The `/checklists` prefix above is there for the fill runtime — `/checklists/[id]`
+// is phone-first and deliberately bare. But the prefix also matches the segment
+// itself, so the index added 2026-09-08 rendered with no navigation at all:
+// a manager who opened it had no way back to anything. Both entries here are
+// desktop management screens that happen to live under the same segment as the
+// runtime.
+const SHELL_SHOW_EXACT = new Set(["/checklists", "/checklists/new"]);
 
 export function shouldHideShell(pathname: string): boolean {
   if (SHELL_SHOW_EXACT.has(pathname)) return false;

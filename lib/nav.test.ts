@@ -228,4 +228,22 @@ describe("shouldHideShell", () => {
   it("SHOWS shell on manual create", () => {
     expect(shouldHideShell("/checklists/new")).toBe(false);
   });
+
+  it("SHOWS shell on the checklist index, but not the fill runtime", () => {
+    // The /checklists prefix exists for the phone-first fill page. It also
+    // matched the segment itself, so the index shipped 2026-09-08 with no
+    // navigation — a manager could open it and had no way back out.
+    expect(shouldHideShell("/checklists")).toBe(false);
+    // The runtime below it must stay bare.
+    expect(shouldHideShell("/checklists/abc-123")).toBe(true);
+  });
+
+  it("a query string does not change the decision", () => {
+    // Dashboard tiles link in with filters (?due=overdue). shouldHideShell is
+    // given a pathname, so this holds only as long as callers pass usePathname()
+    // and not the full URL — pinning it here so a future caller cannot regress
+    // the index back to bare by passing a search string.
+    expect(shouldHideShell("/checklists")).toBe(false);
+    expect(shouldHideShell("/checklists?due=overdue")).toBe(false);
+  });
 });
