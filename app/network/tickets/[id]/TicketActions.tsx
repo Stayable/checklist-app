@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { TicketStatus } from "@prisma/client";
@@ -98,18 +100,18 @@ export function TicketActions({
         {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
         <label className="mb-3 block text-sm text-slate-700">
           Status
-          <select
-            disabled={pending}
-            value={statusValue}
-            onChange={(e) => setStatusValue(e.target.value as TicketStatus)}
-            className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
-          >
-            {Object.values(TicketStatus).map((s) => (
-              <option key={s} value={s}>
-                {s.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <SelectField
+              ariaLabel="Ticket status"
+              disabled={pending}
+              value={statusValue}
+              onChange={(next) => setStatusValue(next as TicketStatus)}
+              options={Object.values(TicketStatus).map((s) => ({
+                value: s,
+                label: s.replace(/_/g, " "),
+              }))}
+            />
+          </div>
         </label>
         {/* Free text, and deliberately labelled as such. `Ticket.assignedTo` is
             a String with no relation to `User`, and no code path reads it to

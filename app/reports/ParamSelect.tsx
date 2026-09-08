@@ -1,5 +1,6 @@
 "use client";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { SelectField } from "@/components/ui/select";
 
 /**
  * A small client island that renders a <select> and pushes the chosen value
@@ -28,18 +29,16 @@ export function ParamSelect({
   return (
     <label className="text-sm text-slate-600">
       {label}
-      <select
-        defaultValue={params.get(paramKey) ?? ""}
-        onChange={(e) => handleChange(e.target.value)}
-        className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-      >
-        <option value="">All</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      {/* `value`, not `defaultValue`: the URL is the source of truth and an
+          uncontrolled input drifts from it on Back. */}
+      <div className="mt-1">
+        <SelectField
+          ariaLabel={label}
+          value={params.get(paramKey) ?? ""}
+          onChange={handleChange}
+          options={[{ value: "", label: "All" }, ...options]}
+        />
+      </div>
     </label>
   );
 }

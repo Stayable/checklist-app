@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ContractorJobStatus } from "@prisma/client";
@@ -71,17 +73,12 @@ export function JobControls({
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Status</h2>
-        <select
+        <SelectField
+          ariaLabel="Job status"
           value={nextStatus}
-          onChange={(e) => setNextStatus(e.target.value as ContractorJobStatus)}
-          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          {JOB_STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {jobStatusLabel(s)}
-            </option>
-          ))}
-        </select>
+          onChange={(next) => setNextStatus(next as ContractorJobStatus)}
+          options={JOB_STATUS_ORDER.map((s) => ({ value: s, label: jobStatusLabel(s) }))}
+        />
         {requiresCloseNote(nextStatus) && (
           <label className="mt-2 flex flex-col gap-1 text-sm">
             <span className="font-medium text-slate-700">Closing note (required)</span>
@@ -118,19 +115,18 @@ export function JobControls({
         <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
           Contractor
         </h2>
-        <select
+        <SelectField
+          ariaLabel="Contractor"
           value={nextContractorId}
-          onChange={(e) => setNextContractorId(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          <option value="">Unassigned</option>
-          {eligible.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-              {c.company ? ` (${c.company})` : ""}
-            </option>
-          ))}
-        </select>
+          onChange={setNextContractorId}
+          options={[
+            { value: "", label: "Unassigned" },
+            ...eligible.map((c) => ({
+              value: c.id,
+              label: c.company ? `${c.name} (${c.company})` : c.name,
+            })),
+          ]}
+        />
         {eligible.length === 0 && (
           <p className="mt-1 text-xs text-slate-500">
             No active contractor covers this trade at this property yet.

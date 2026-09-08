@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -93,18 +95,19 @@ export function CloseOutPanel({
 
       <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
         {t("closeOutReason")}
-        <select
+        <SelectField
+          ariaLabel={t("closeOutReason")}
           value={reason}
-          onChange={(e) => setReason(e.target.value as InvalidationReason | "")}
-          className="rounded-lg border border-slate-300 px-3 py-2.5 text-base text-slate-900"
-        >
-          <option value="">—</option>
-          {REASON_ORDER.map((r) => (
-            <option key={r} value={r}>
-              {t(REASON_MESSAGE_KEY[r])}
-            </option>
-          ))}
-        </select>
+          onChange={(next) => setReason(next as InvalidationReason | "")}
+          options={[
+            { value: "", label: "—" },
+            ...REASON_ORDER.map((r) => ({ value: r, label: t(REASON_MESSAGE_KEY[r]) })),
+          ]}
+          // Field-staff surface: keep the larger touch target the native
+          // control had (px-3 py-2.5, 16px text) rather than the desktop
+          // default, so this stays thumb-sized on a phone.
+          triggerClassName="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 hover:bg-slate-50 focus:border-slate-900 focus:outline-none"
+        />
       </label>
 
       <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">

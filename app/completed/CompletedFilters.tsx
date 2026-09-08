@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { SelectField } from "@/components/ui/select";
 
 export type AssigneeOpt = { id: string; name: string };
 
@@ -37,18 +38,20 @@ export function CompletedFilters({ assignees }: { assignees: AssigneeOpt[] }) {
       </label>
       <label className="text-sm text-slate-600">
         Assignee
-        <select
-          defaultValue={params.get("assignee") ?? ""}
-          onChange={(e) => set("assignee", e.target.value)}
-          className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          <option value="">All</option>
-          {assignees.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
+        {/* `value`, not `defaultValue`: navigation re-renders this with the new
+            params, so the URL is the source of truth and an uncontrolled input
+            would drift from it on Back. */}
+        <div className="mt-1">
+          <SelectField
+            ariaLabel="Assignee"
+            value={params.get("assignee") ?? ""}
+            onChange={(next) => set("assignee", next)}
+            options={[
+              { value: "", label: "All" },
+              ...assignees.map((a) => ({ value: a.id, label: a.name })),
+            ]}
+          />
+        </div>
       </label>
     </div>
   );

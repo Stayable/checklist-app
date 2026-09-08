@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -163,35 +165,51 @@ export function TemplateBuilder({
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm font-medium text-slate-700">Default role
-            <select value={defaultRole} onChange={(e) => setDefaultRole(e.target.value as Role)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-              {Object.values(Role).map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="Default role"
+                value={defaultRole}
+                onChange={(next) => setDefaultRole(next as Role)}
+                options={Object.values(Role).map((r) => ({ value: r, label: r }))}
+              />
+            </div>
           </label>
           <label className="text-sm font-medium text-slate-700">What it covers
-            <select value={scope} onChange={(e) => changeScope(e.target.value as TemplateScope)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-              {Object.values(TemplateScope).map((s) => (
-                <option key={s} value={s}>{SCOPE_LABEL[s]}</option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="What it covers"
+                value={scope}
+                onChange={(next) => changeScope(next as TemplateScope)}
+                options={Object.values(TemplateScope).map((s) => ({
+                  value: s,
+                  label: SCOPE_LABEL[s],
+                }))}
+              />
+            </div>
           </label>
           <label className="text-sm font-medium text-slate-700">How many per day
-            <select
-              value={copies}
-              onChange={(e) => setCopies(e.target.value as InstanceMultiplicity)}
-              disabled={scope === TemplateScope.PER_ROOM}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400">
-              {Object.values(InstanceMultiplicity).map((c) => (
-                <option key={c} value={c}>{COPIES_LABEL[c]}</option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="How many per day"
+                value={copies}
+                onChange={(next) => setCopies(next as InstanceMultiplicity)}
+                disabled={scope === TemplateScope.PER_ROOM}
+                options={Object.values(InstanceMultiplicity).map((c) => ({
+                  value: c,
+                  label: COPIES_LABEL[c],
+                }))}
+              />
+            </div>
           </label>
           <label className="text-sm font-medium text-slate-700">Review level
-            <select value={reviewLevel} onChange={(e) => setReviewLevel(e.target.value as ReviewLevel)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-              {Object.values(ReviewLevel).map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="Review level"
+                value={reviewLevel}
+                onChange={(next) => setReviewLevel(next as ReviewLevel)}
+                options={Object.values(ReviewLevel).map((r) => ({ value: r, label: r }))}
+              />
+            </div>
           </label>
         </div>
       </section>
@@ -225,10 +243,15 @@ export function TemplateBuilder({
           <div key={q._uid} className="flex flex-col gap-2 rounded-md border border-slate-200 p-3">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">{i + 1}</span>
-              <select value={q.type} onChange={(e) => updateQuestion(i, { type: e.target.value as QuestionType })}
-                className="rounded-md border border-slate-300 px-2 py-1 text-sm">
-                {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              {/* Inline in a question row, so it sizes to its content rather
+                  than filling the row like the settings selects above. */}
+              <SelectField
+                ariaLabel={`Question ${i + 1} type`}
+                value={q.type}
+                onChange={(next) => updateQuestion(i, { type: next as QuestionType })}
+                options={QUESTION_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                triggerClassName="flex items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 hover:bg-slate-50 focus:border-slate-900 focus:outline-none"
+              />
               <div className="ml-auto flex items-center gap-1">
                 <button onClick={() => move(i, -1)} className="rounded px-2 py-1 text-sm text-slate-500 hover:bg-slate-100">&#8593;</button>
                 <button onClick={() => move(i, 1)} className="rounded px-2 py-1 text-sm text-slate-500 hover:bg-slate-100">&#8595;</button>

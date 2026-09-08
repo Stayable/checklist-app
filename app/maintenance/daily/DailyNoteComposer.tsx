@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { NOTE_BODY_MAX } from "@/lib/contractors";
@@ -64,18 +66,17 @@ export function DailyNoteComposer({
 
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-slate-700">Applies to</span>
-        <select
+        <SelectField
+          ariaLabel="Post to"
           value={target}
-          onChange={(e) => setTarget(e.target.value)}
-          className="rounded-md border border-slate-300 px-2 py-1.5"
-        >
-          {canPostPortfolioWide && <option value={PORTFOLIO}>All properties (portfolio)</option>}
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.shortCode} — {p.name}
-            </option>
-          ))}
-        </select>
+          onChange={setTarget}
+          options={[
+            ...(canPostPortfolioWide
+              ? [{ value: PORTFOLIO, label: "All properties (portfolio)" }]
+              : []),
+            ...properties.map((p) => ({ value: p.id, label: `${p.shortCode} — ${p.name}` })),
+          ]}
+        />
       </label>
 
       <label className="mt-2 flex flex-col gap-1 text-sm">

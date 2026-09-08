@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trade } from "@prisma/client";
@@ -56,32 +58,25 @@ export function NewJobForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-slate-700">Property</span>
-          <select
+          <SelectField
+            ariaLabel="Property"
             value={propertyId}
-            onChange={(e) => setPropertyId(e.target.value)}
-            className="rounded-md border border-slate-300 px-2 py-1.5"
-          >
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.shortCode} — {p.name}
-              </option>
-            ))}
-          </select>
+            onChange={setPropertyId}
+            options={properties.map((p) => ({
+              value: p.id,
+              label: `${p.shortCode} — ${p.name}`,
+            }))}
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-slate-700">Trade</span>
-          <select
+          <SelectField
+            ariaLabel="Trade"
             value={trade}
-            onChange={(e) => setTrade(e.target.value as Trade)}
-            className="rounded-md border border-slate-300 px-2 py-1.5"
-          >
-            {TRADES_ORDERED.map((t) => (
-              <option key={t} value={t}>
-                {tradeLabel(t)}
-              </option>
-            ))}
-          </select>
+            onChange={(next) => setTrade(next as Trade)}
+            options={TRADES_ORDERED.map((t) => ({ value: t, label: tradeLabel(t) }))}
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">

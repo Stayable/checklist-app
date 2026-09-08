@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { TicketType } from "@prisma/client";
 import { DEVICE_TYPE_OPTIONS } from "@/lib/network/device-type";
@@ -35,50 +37,38 @@ export function TicketFilters({ properties }: { properties: PropertyOption[] }) 
     <div className="flex flex-wrap items-end gap-4">
       <label className="text-sm text-slate-600">
         Type
-        <select
-          defaultValue={params.get("type") ?? ""}
-          onChange={(e) => setParam("type", e.target.value)}
-          className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          <option value="">All types</option>
-          {TICKET_TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1">
+          <SelectField
+            ariaLabel="Type"
+            value={params.get("type") ?? ""}
+            onChange={(next) => setParam("type", next)}
+            options={[{ value: "", label: "All types" }, ...TICKET_TYPE_OPTIONS]}
+          />
+        </div>
       </label>
 
       <label className="text-sm text-slate-600">
         Property
-        <select
-          defaultValue={params.get("property") ?? ""}
-          onChange={(e) => setParam("property", e.target.value)}
-          className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          <option value="">All properties</option>
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.shortCode}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1">
+          <SelectField
+            ariaLabel="Property"
+            value={params.get("property") ?? ""}
+            onChange={(next) => setParam("property", next)}
+            options={[{ value: "", label: "All properties" }, ...properties.map((p) => ({ value: p.id, label: p.shortCode }))]}
+          />
+        </div>
       </label>
 
       <label className="text-sm text-slate-600">
         Device type
-        <select
-          defaultValue={params.get("deviceType") ?? ""}
-          onChange={(e) => setParam("deviceType", e.target.value)}
-          className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          <option value="">All devices</option>
-          {DEVICE_TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1">
+          <SelectField
+            ariaLabel="Device type"
+            value={params.get("deviceType") ?? ""}
+            onChange={(next) => setParam("deviceType", next)}
+            options={[{ value: "", label: "All devices" }, ...DEVICE_TYPE_OPTIONS]}
+          />
+        </div>
       </label>
 
       <label className="text-sm text-slate-600">

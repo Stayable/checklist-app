@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { Role, TemplateScope } from "@prisma/client";
@@ -283,38 +285,40 @@ function CreateForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           <span className={label}>Property</span>
-          <select value={propertyId} onChange={(e) => setPropertyId(e.target.value)} className={field}>
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.shortCode} — {p.name}
-              </option>
-            ))}
-          </select>
+          <SelectField
+            ariaLabel="Property"
+            value={propertyId}
+            onChange={setPropertyId}
+            options={properties.map((p) => ({
+              value: p.id,
+              label: `${p.shortCode} — ${p.name}`,
+            }))}
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className={label}>Template</span>
-          <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className={field}>
-            {templates.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.code})
-              </option>
-            ))}
-          </select>
+          <SelectField
+            ariaLabel="Template"
+            value={templateId}
+            onChange={setTemplateId}
+            options={templates.map((t) => ({ value: t.id, label: `${t.name} (${t.code})` }))}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className={label}>Pattern</span>
-          <select
+          <SelectField
+            ariaLabel="Pattern"
             value={patternType}
-            onChange={(e) => setPatternType(e.target.value as RecurrencePattern["type"])}
-            className={field}
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="on-demand">On-demand</option>
-          </select>
+            onChange={(next) => setPatternType(next as RecurrencePattern["type"])}
+            options={[
+              { value: "daily", label: "Daily" },
+              { value: "weekly", label: "Weekly" },
+              { value: "monthly", label: "Monthly" },
+              { value: "quarterly", label: "Quarterly" },
+              { value: "on-demand", label: "On-demand" },
+            ]}
+          />
         </label>
 
         {patternType === "weekly" && (
@@ -361,17 +365,18 @@ function CreateForm({
         {isPerRoom && (
           <label className="flex flex-col gap-1">
             <span className={label}>Room scope</span>
-            <select
+            <SelectField
+              ariaLabel="Room scope"
               value={scopeKind}
-              onChange={(e) => setScopeKind(e.target.value as RoomFilter["kind"])}
-              className={field}
-            >
-              <option value="all">All rooms</option>
-              <option value="occupied">Occupied only</option>
-              <option value="vacant">Vacant only</option>
-              <option value="list">Specific rooms</option>
-              <option value="range">Room range</option>
-            </select>
+              onChange={(next) => setScopeKind(next as RoomFilter["kind"])}
+              options={[
+                { value: "all", label: "All rooms" },
+                { value: "occupied", label: "Occupied only" },
+                { value: "vacant", label: "Vacant only" },
+                { value: "list", label: "Specific rooms" },
+                { value: "range", label: "Room range" },
+              ]}
+            />
           </label>
         )}
 
@@ -402,45 +407,42 @@ function CreateForm({
 
         <label className="flex flex-col gap-1">
           <span className={label}>Assignment</span>
-          <select
+          <SelectField
+            ariaLabel="Assignment"
             value={assignType}
-            onChange={(e) => setAssignType(e.target.value as Assignment["type"])}
-            className={field}
-          >
-            <option value="unassigned">Unassigned queue</option>
-            <option value="role">Role pool</option>
-            <option value="user">Specific user</option>
-          </select>
+            onChange={(next) => setAssignType(next as Assignment["type"])}
+            options={[
+              { value: "unassigned", label: "Unassigned queue" },
+              { value: "role", label: "Role pool" },
+              { value: "user", label: "Specific user" },
+            ]}
+          />
         </label>
 
         {assignType === "role" && (
           <label className="flex flex-col gap-1">
             <span className={label}>Role</span>
-            <select
+            <SelectField
+              ariaLabel="Role"
               value={assignRole}
-              onChange={(e) => setAssignRole(e.target.value as Role)}
-              className={field}
-            >
-              {ASSIGNABLE_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => setAssignRole(next as Role)}
+              options={ASSIGNABLE_ROLES.map((r) => ({ value: r, label: r }))}
+            />
           </label>
         )}
 
         {assignType === "user" && (
           <label className="flex flex-col gap-1">
             <span className={label}>User</span>
-            <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} className={field}>
-              <option value="">Select a user…</option>
-              {propertyUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role})
-                </option>
-              ))}
-            </select>
+            <SelectField
+              ariaLabel="User"
+              value={assignUserId}
+              onChange={setAssignUserId}
+              options={[
+                { value: "", label: "Select a user…" },
+                ...propertyUsers.map((u) => ({ value: u.id, label: `${u.name} (${u.role})` })),
+              ]}
+            />
           </label>
         )}
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import Link from "next/link";
@@ -224,17 +226,14 @@ export function NoteDialog({
         {showPriority && (
           <label className="mt-3 block text-sm text-slate-700">
             Issue priority
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as IssuePriority)}
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
-            >
-              {Object.values(IssuePriority).map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="Issue priority"
+                value={priority}
+                onChange={(next) => setPriority(next as IssuePriority)}
+                options={Object.values(IssuePriority).map((p) => ({ value: p, label: p }))}
+              />
+            </div>
           </label>
         )}
         {showNotify && (

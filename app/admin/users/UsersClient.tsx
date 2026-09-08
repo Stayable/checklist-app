@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Locale, Role } from "@prisma/client";
@@ -205,15 +207,21 @@ function CreateUserForm({
       <div className="grid grid-cols-2 gap-3">
         <input className={input} placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
         <input className={input} type="email" placeholder="work@rentstayable.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <select className={input} value={role} onChange={(e) => setRole(e.target.value as Role)}>
-          {ROLES.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-        <select className={input} value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
-          <option value={Locale.en}>English</option>
-          <option value={Locale.es}>Spanish</option>
-        </select>
+        <SelectField
+          ariaLabel="Role"
+          value={role}
+          onChange={(next) => setRole(next as Role)}
+          options={ROLES.map((r) => ({ value: r, label: r }))}
+        />
+        <SelectField
+          ariaLabel="Language"
+          value={locale}
+          onChange={(next) => setLocale(next as Locale)}
+          options={[
+            { value: Locale.en, label: "English" },
+            { value: Locale.es, label: "Spanish" },
+          ]}
+        />
       </div>
 
       {portfolio ? (

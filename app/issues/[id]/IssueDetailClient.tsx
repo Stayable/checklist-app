@@ -1,5 +1,7 @@
 "use client";
 
+import { SelectField } from "@/components/ui/select";
+
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { IssuePriority, IssueStatus, Role } from "@prisma/client";
@@ -150,51 +152,44 @@ export function IssueDetailClient({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="text-sm text-slate-700">
             Assignee
-            <select
-              disabled={pending}
-              value={assignedUserId ?? ""}
-              onChange={(e) =>
-                run(() => updateIssue(issueId, { assignedUserId: e.target.value || null }))
-              }
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
-            >
-              <option value="">Unassigned</option>
-              {assignees.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} ({a.role})
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="Assigned to"
+                disabled={pending}
+                value={assignedUserId ?? ""}
+                onChange={(next) =>
+                  run(() => updateIssue(issueId, { assignedUserId: next || null }))
+                }
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...assignees.map((a) => ({ value: a.id, label: `${a.name} (${a.role})` })),
+                ]}
+              />
+            </div>
           </label>
           <label className="text-sm text-slate-700">
             Status
-            <select
-              disabled={pending}
-              value={status}
-              onChange={(e) => run(() => updateIssue(issueId, { status: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
-            >
-              {OPEN_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="Status"
+                disabled={pending}
+                value={status}
+                onChange={(next) => run(() => updateIssue(issueId, { status: next }))}
+                options={OPEN_STATUSES.map((s) => ({ value: s, label: s.replace(/_/g, " ") }))}
+              />
+            </div>
           </label>
           <label className="text-sm text-slate-700">
             Priority
-            <select
-              disabled={pending}
-              value={priority}
-              onChange={(e) => run(() => updateIssue(issueId, { priority: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
-            >
-              {Object.values(IssuePriority).map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <SelectField
+                ariaLabel="Priority"
+                disabled={pending}
+                value={priority}
+                onChange={(next) => run(() => updateIssue(issueId, { priority: next }))}
+                options={Object.values(IssuePriority).map((p) => ({ value: p, label: p }))}
+              />
+            </div>
           </label>
         </div>
         <p className="mt-2 text-xs text-slate-400">

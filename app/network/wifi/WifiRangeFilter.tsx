@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { DEFAULT_RANGE, RANGE_OPTIONS } from "@/lib/network/wifi-range";
+import { SelectField } from "@/components/ui/select";
 
 // Date-range selector for the WiFi page (Kate's request, 2026-07-29).
 //
@@ -28,17 +29,14 @@ export function WifiRangeFilter() {
     <div className="flex flex-wrap items-end gap-4">
       <label className="text-sm text-slate-600">
         Revenue period
-        <select
-          value={current}
-          onChange={(e) => pick(e.target.value)}
-          className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-        >
-          {RANGE_OPTIONS.map((o) => (
-            <option key={o.key} value={o.key}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1">
+          <SelectField
+            ariaLabel="Revenue period"
+            value={current}
+            onChange={pick}
+            options={RANGE_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+          />
+        </div>
       </label>
       <p className="pb-1.5 text-xs text-slate-400">
         Applies to revenue only — Spotipo ignores date filters, so guest counts stay lifetime

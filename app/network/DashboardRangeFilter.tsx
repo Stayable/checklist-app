@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { DEFAULT_RANGE, RANGE_OPTIONS } from "@/lib/network/wifi-range";
+import { SelectField } from "@/components/ui/select";
 
 // Date range for the network dashboard (Kyle 2026-08-01).
 //
@@ -30,17 +31,14 @@ export function DashboardRangeFilter() {
   return (
     <label className="text-sm text-slate-600">
       Resolved-work period
-      <select
-        value={current}
-        onChange={(e) => pick(e.target.value)}
-        className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-      >
-        {RANGE_OPTIONS.map((o) => (
-          <option key={o.key} value={o.key}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <div className="mt-1">
+        <SelectField
+          ariaLabel="Resolved-work period"
+          value={current}
+          onChange={pick}
+          options={RANGE_OPTIONS.map((o) => ({ value: o.key, label: o.label }))}
+        />
+      </div>
     </label>
   );
 }

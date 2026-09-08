@@ -7,9 +7,20 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-nunito);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-nunito);
+  /* Each token carries a real fallback stack after the next/font variable.
+     Without one, `font-family: var(--font-sans)` becomes an INVALID value the
+     moment `--font-nunito` does not resolve — and an invalid font-family falls
+     back to the browser initial, which is Times. So any context where the
+     variable is missing (a boundary that renders its own <html> without the
+     next/font class, next/font failing to load, a portalled subtree outside
+     the class) degrades to a system sans instead of a serif. Cheap insurance
+     against exactly the failure this app kept hitting in dropdowns. */
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    Consolas, "Liberation Mono", monospace;
+  --font-heading: var(--font-nunito), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   /* Stayable brand palette (rentstayable.com). Nunito (rounded-geometric, free)
      stands in for the brand's Adobe "Urbane Rounded", which is domain-locked
      and can't load on ops.rentstayable.com. */
