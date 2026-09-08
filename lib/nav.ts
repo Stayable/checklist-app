@@ -57,6 +57,10 @@ const CHECKLIST_CHILDREN: NavItem[] = [
   // Manual create was reachable only by typing the URL until 2026-08-12. With no
   // recurring rules configured yet, nothing generates on its own — so with no
   // link there was no way to get a checklist into the app at all.
+  // The index. Added 2026-09-08 with the route itself — the batch wizard has
+  // always redirected to /checklists after creating more than one, and until
+  // the page existed that was a 404 at the end of the create flow.
+  { href: "/checklists", label: "Checklists", section: "checklist" },
   { href: "/checklists/new", label: "New checklist", section: "checklist" },
   { href: "/review", label: "Review", section: "checklist" },
   { href: "/issues", label: "Issues", section: "checklist" },
