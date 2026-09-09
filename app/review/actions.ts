@@ -15,10 +15,34 @@ import {
   type NotifyRecipient,
 } from "@/lib/notify.server";
 
-// Manager review actions (Phase 4, ADR-011): Approve / Flag / Request Re-do.
+// Manager review actions (Phase 4, ADR-011): Closed / Flag.
 // All write audit_log; recipient notifications write an IN_APP row (PENDING,
 // Phase-6 center) + an EMAIL row delivered post-commit via Resend (bilingual
 // per ADR-013). Delivery failure never fails the review action.
+//
+// REVIEW STATE MACHINE (Kyle, 2026-09-10). The manager first sets the
+// completion check (Pass/Fail), THEN takes an outcome (Closed/Flag). Four rows,
+// and every one of them is enforced here rather than only in the UI — a
+// disabled button is a hint, the server action is a live HTTP endpoint:
+//
+//   PASS + Closed → REVIEWED, completionCheck=PASS, note OPTIONAL,
+//                   silent unless the manager opts in (`notifyStaff`)
+//   FAIL + Closed → REVIEWED, completionCheck=FAIL, note REQUIRED,
+//                   ALWAYS notifies (`review_failed`), no Issue
+//   PASS + Flag   → FLAGGED,  completionCheck=PASS, note REQUIRED,
+//                   ALWAYS notifies (`review_flagged`), Issue created
+//   FAIL + Flag   → FLAGGED,  completionCheck=FAIL, note REQUIRED,
+//                   ALWAYS notifies (`review_flagged`), Issue created
+//
+// The completion check is REQUIRED on both outcomes — a review that never said
+// pass or fail is the thing this change exists to stop. The note is
+// submission-level (`managerNote`), not per-question: Kyle asked for "the note
+// as a whole for the Submission".
+//
+// Naming: `approveSubmission` and `InstanceStatus.REVIEWED` and the
+// `review_approved` notify event keep their old names on purpose. The rename to
+// "Closed" is a UI label only; historic `notification_log` and `audit_log` rows
+// carry the old values and renaming them breaks reading history back.
 
 export type ReviewResult = { ok: true } | { ok: false; error: string };
 
@@ -67,23 +91,63 @@ function recipientOf(instance: {
   return u ? { id: u.id, email: u.email, locale: u.locale } : null;
 }
 
+const closeSchema = z
+  .object({
+    // Required, and with no default: a review that never said pass or fail is
+    // exactly what the gate exists to refuse. A `.default(PASS)` here would let
+    // a caller that simply omitted the field record a pass nobody chose.
+    completionCheck: z.nativeEnum(CompletionCheck, {
+      // One `error` covers both missing and not-a-CompletionCheck in Zod 4,
+      // and both mean the same thing to the manager: you have not chosen yet.
+      error: "Set the completion check (Pass or Fail) before closing this submission.",
+    }),
+    note: z.string().trim().max(2000).optional(),
+    // Only consulted on PASS. A FAIL always notifies (see below), so this flag
+    // cannot silence one.
+    notifyStaff: z.boolean().default(false),
+  })
+  .superRefine((v, ctx) => {
+    if (v.completionCheck === CompletionCheck.FAIL && !v.note?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["note"],
+        message: "A reason is required when the completion check is Fail.",
+      });
+    }
+  });
+
+/**
+ * "Closed" in the UI — the terminal review outcome that does NOT open an Issue.
+ * Carries the manager's completion check (PASS or FAIL) with it, so the check
+ * and the outcome are recorded in one audited transaction rather than as two
+ * independent writes that can disagree if the second one fails.
+ *
+ * PASS is silent unless the manager opts in; FAIL always notifies the assignee
+ * with the reason, because a fail nobody is told about teaches nobody anything.
+ */
 export async function approveSubmission(
   instanceId: string,
-  note?: string,
-  // S1 internal/staff note toggle: approve is internal by default — a note is
-  // stored but the submitter is NOT notified unless the manager opts in.
-  notifyStaff = false,
+  input: unknown,
 ): Promise<ReviewResult> {
   if (!idSchema.safeParse(instanceId).success) return { ok: false, error: "Invalid id." };
+  const parsed = closeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
   const loaded = await loadGuarded(instanceId);
   if (!loaded.ok) return { ok: false, error: loaded.error };
   const { user, instance } = loaded;
   if (isLocked(instance)) return { ok: false, error: LOCKED_ERROR };
 
   if (!REVIEWABLE.includes(instance.status)) {
-    return { ok: false, error: "Only submitted or flagged checklists can be approved." };
+    return { ok: false, error: "Only submitted or flagged checklists can be closed." };
   }
-  const trimmed = note?.trim() || null;
+  const { completionCheck, notifyStaff } = parsed.data;
+  const failed = completionCheck === CompletionCheck.FAIL;
+  const trimmed = parsed.data.note?.trim() || null;
+  // A fail is never silent — the toggle only governs the pass case.
+  const notify = failed || notifyStaff;
+  const event = failed ? "review_failed" : "review_approved";
   const now = new Date();
   const recipient = recipientOf(instance);
   const lbl = label(instance);
@@ -96,6 +160,7 @@ export async function approveSubmission(
         reviewedAt: now,
         reviewedByUserId: user.id,
         managerNote: trimmed,
+        completionCheck,
       },
     });
     await tx.auditLog.create({
@@ -103,20 +168,27 @@ export async function approveSubmission(
         actorUserId: user.id,
         entityType: "checklist_instance",
         entityId: instanceId,
+        // Kept as "approve" so the existing timeline rows and this one read as
+        // the same action — the button was relabelled, the event was not.
         action: "approve",
-        before: { status: instance.status },
-        after: { status: InstanceStatus.REVIEWED, note: trimmed, notifyStaff },
+        before: { status: instance.status, completionCheck: instance.completionCheck },
+        after: {
+          status: InstanceStatus.REVIEWED,
+          completionCheck,
+          note: trimmed,
+          notifyStaff: notify,
+        },
       },
     });
-    return notifyStaff
-      ? logNotification(tx, recipient, "review_approved", lbl, trimmed, {
+    return notify
+      ? logNotification(tx, recipient, event, lbl, trimmed, {
           type: "checklist_instance",
           id: instanceId,
         })
       : null;
   });
 
-  await deliverNotificationEmail(emailLogId, recipient, "review_approved", lbl, trimmed);
+  await deliverNotificationEmail(emailLogId, recipient, event, lbl, trimmed);
 
   revalidatePath("/review");
   revalidatePath(`/review/${instanceId}`);
@@ -124,13 +196,22 @@ export async function approveSubmission(
 }
 
 const flagSchema = z.object({
+  // Same gate as Closed: the manager states pass or fail before an outcome is
+  // available. A flagged submission can still be a PASS — the work was done,
+  // something about it needs following up.
+  completionCheck: z.nativeEnum(CompletionCheck, {
+    error: "Set the completion check (Pass or Fail) before flagging this submission.",
+  }),
   note: noteSchema,
   priority: z.nativeEnum(IssuePriority).default(IssuePriority.MEDIUM),
-  // Flag notifies the submitter by default (its purpose is to tell them to
-  // follow up); manager may make it internal.
-  notifyStaff: z.boolean().default(true),
 });
 
+/**
+ * "Flag" — the outcome that opens an Issue with a priority and an SLA and hands
+ * the submission back to the pipeline. Note is required and the assignee is
+ * ALWAYS notified: telling someone their work raised an issue is the entire
+ * point, so there is deliberately no opt-out toggle here any more.
+ */
 export async function flagSubmission(
   instanceId: string,
   input: unknown,
@@ -148,7 +229,7 @@ export async function flagSubmission(
   if (instance.status !== InstanceStatus.SUBMITTED) {
     return { ok: false, error: "Only submitted checklists can be flagged." };
   }
-  const { note, priority, notifyStaff } = parsed.data;
+  const { note, priority, completionCheck } = parsed.data;
   const hours = await slaHoursByPriority();
   const recipient = recipientOf(instance);
   const lbl = label(instance);
@@ -156,7 +237,7 @@ export async function flagSubmission(
   const emailLogId = await db.$transaction(async (tx) => {
     await tx.checklistInstance.update({
       where: { id: instanceId },
-      data: { status: InstanceStatus.FLAGGED, managerNote: note },
+      data: { status: InstanceStatus.FLAGGED, managerNote: note, completionCheck },
     });
     const issueId = await createIssue(
       tx,
@@ -176,16 +257,20 @@ export async function flagSubmission(
         entityType: "checklist_instance",
         entityId: instanceId,
         action: "flag",
-        before: { status: instance.status },
-        after: { status: InstanceStatus.FLAGGED, note, issueId, notifyStaff },
+        before: { status: instance.status, completionCheck: instance.completionCheck },
+        after: {
+          status: InstanceStatus.FLAGGED,
+          completionCheck,
+          note,
+          issueId,
+          notifyStaff: true,
+        },
       },
     });
-    return notifyStaff
-      ? logNotification(tx, recipient, "review_flagged", lbl, note, {
-          type: "checklist_instance",
-          id: instanceId,
-        })
-      : null;
+    return logNotification(tx, recipient, "review_flagged", lbl, note, {
+      type: "checklist_instance",
+      id: instanceId,
+    });
   });
 
   await deliverNotificationEmail(emailLogId, recipient, "review_flagged", lbl, note);
@@ -196,61 +281,21 @@ export async function flagSubmission(
   return { ok: true };
 }
 
-export async function requestRedo(
-  instanceId: string,
-  note: string,
-): Promise<ReviewResult> {
-  if (!idSchema.safeParse(instanceId).success) return { ok: false, error: "Invalid id." };
-  const parsedNote = noteSchema.safeParse(note);
-  if (!parsedNote.success) {
-    return { ok: false, error: parsedNote.error.issues[0]?.message ?? "A note is required." };
-  }
-  const loaded = await loadGuarded(instanceId);
-  if (!loaded.ok) return { ok: false, error: loaded.error };
-  const { user, instance } = loaded;
-  if (isLocked(instance)) return { ok: false, error: LOCKED_ERROR };
-
-  if (!REVIEWABLE.includes(instance.status)) {
-    return { ok: false, error: "Only submitted or flagged checklists can be sent back." };
-  }
-
-  const recipient = recipientOf(instance);
-  const lbl = label(instance);
-
-  const emailLogId = await db.$transaction(async (tx) => {
-    await tx.checklistInstance.update({
-      where: { id: instanceId },
-      data: {
-        status: InstanceStatus.ASSIGNED,
-        managerNote: parsedNote.data,
-        // Reset run timestamps so time-to-complete reflects the redo run.
-        // Prior responses stay until resubmit replaces them.
-        openedAt: null,
-        submittedAt: null,
-      },
-    });
-    await tx.auditLog.create({
-      data: {
-        actorUserId: user.id,
-        entityType: "checklist_instance",
-        entityId: instanceId,
-        action: "request_redo",
-        before: { status: instance.status },
-        after: { status: InstanceStatus.ASSIGNED, note: parsedNote.data },
-      },
-    });
-    return logNotification(tx, recipient, "review_redo", lbl, parsedNote.data, {
-      type: "checklist_instance",
-      id: instanceId,
-    });
-  });
-
-  await deliverNotificationEmail(emailLogId, recipient, "review_redo", lbl, parsedNote.data);
-
-  revalidatePath("/review");
-  revalidatePath(`/review/${instanceId}`);
-  return { ok: true };
-}
+// REMOVED 2026-09-09: `requestRedo` — the manager "Request Re-do" review
+// action, which sent a SUBMITTED/FLAGGED instance back to ASSIGNED with a
+// required note and always notified the submitter. Its two buttons went with it
+// (`ReviewActions.tsx`, `ReviewQueueClient.tsx`).
+//
+// Deleted rather than commented out or left unreferenced: in a "use server"
+// file every exported function is a live, publicly-callable HTTP endpoint, so
+// an unused one is attack surface, not dead code — the same reasoning that
+// removed `createInstanceManually`. Re-do may come back; the restore path is
+// `git revert` / `git show` against this commit, not a copy kept here.
+//
+// Deliberately left in place: the `review_redo` bilingual copy in
+// `lib/notify-copy.ts` (historic `notification_log` rows still reference that
+// event and would fail to render without it), and `InstanceStatus.ASSIGNED`,
+// which the normal assignment flow still uses.
 
 const verifySchema = z.object({
   note: z.string().trim().max(2000).optional(),
@@ -260,7 +305,7 @@ const verifySchema = z.object({
 });
 
 /**
- * S1: PM verify + lock. Requires a REVIEWED (approved) instance; stamps the
+ * S1: PM verify + lock. Requires a REVIEWED (Closed) instance; stamps the
  * verify fields and lockedAt=now, making the instance immutable except an
  * admin unlock. Notifies the submitter only when notifyStaff is set.
  */
@@ -279,7 +324,7 @@ export async function verifySubmission(
   if (isLocked(instance)) return { ok: false, error: "This checklist is already verified." };
 
   if (instance.status !== InstanceStatus.REVIEWED) {
-    return { ok: false, error: "Only reviewed (approved) checklists can be verified." };
+    return { ok: false, error: "Only closed checklists can be verified." };
   }
   const { note, notifyStaff } = parsed.data;
   const trimmed = note?.trim() || null;
@@ -296,7 +341,7 @@ export async function verifySubmission(
         verifiedByUserId: user.id,
         lockedAt: now,
         // Persist a verify note so it's visible in the Manager-note card; when
-        // no note is entered, leave the prior (approve) note intact.
+        // no note is entered, leave the prior (Closed) note intact.
         ...(trimmed ? { managerNote: trimmed } : {}),
       },
     });

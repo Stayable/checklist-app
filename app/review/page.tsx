@@ -9,6 +9,7 @@ import { formatDateInET, formatDateOnly, formatInET } from "@/lib/datetime";
 import { timeToCompleteMinutes } from "@/lib/review";
 import { roomDisplay } from "@/lib/room-label";
 import { presignDownload } from "@/lib/r2";
+import { questionsForInstances, questionSetKey } from "@/lib/template-version.server";
 import { ReviewQueueClient, type QueueRow } from "./ReviewQueueClient";
 
 // Manager review queue (ADR-011): table view, one row per submission.
@@ -49,16 +50,9 @@ export default async function ReviewQueuePage({
       submittedAt: true,
       openedAt: true,
       scheduledFor: true,
-      template: {
-        select: {
-          name: true,
-          questions: {
-            where: { type: QuestionType.PHOTO, required: true },
-            orderBy: { orderIndex: "asc" },
-            select: { id: true, prompt: true },
-          },
-        },
-      },
+      templateId: true,
+      templateVersion: true,
+      template: { select: { name: true } },
       property: { select: { shortCode: true } },
       room: { select: { roomNumber: true } },
       roomLabel: true,
@@ -73,6 +67,11 @@ export default async function ReviewQueuePage({
       },
     },
   });
+
+  // ADR-036: each row's thumbnail slots come from the question set ITS
+  // instance was created against, so a template edit does not retroactively
+  // add or drop a slot on an already-reviewed row. Batched to one query.
+  const questionsBySet = await questionsForInstances(instances);
 
   // One thumbnail slot per required PHOTO question (ADR-011): real presigned
   // thumbnail when a Photo row exists (ADR-015); count-only badge for legacy
@@ -91,7 +90,9 @@ export default async function ReviewQueuePage({
       unit: roomDisplay(i.room, i.roomLabel),
       minutes: timeToCompleteMinutes(i.openedAt, i.submittedAt),
       photoSlots: await Promise.all(
-        i.template.questions.map(async (q) => {
+        (questionsBySet.get(questionSetKey(i)) ?? [])
+          .filter((q) => q.type === QuestionType.PHOTO && q.required)
+          .map(async (q) => {
           const resp = i.responses.find((r) => r.questionId === q.id);
           const answer = resp?.answer as { count?: number } | null;
           const firstKey = resp?.photos[0]?.r2Key;

@@ -478,6 +478,12 @@ model ChecklistTemplate {
   // ADR-009 templateCode used in the CL-{prop}-{code}-{date}-{seq} system ID.
   code                  String               @unique @db.VarChar(8)
   name                  String
+  // ADR-036 template versioning: the question-set version a NEW instance gets.
+  // Editing the question set bumps this and INSERTS a fresh set of Question
+  // rows at the new number; the old rows are never deleted, so a checklist
+  // created before the edit still renders exactly the questions it was filled
+  // against. Column predates the feature (dead since Phase 2) and is reused
+  // rather than duplicated.
   version               Int                  @default(1)
   defaultRole           Role                 @map("default_role")
   scope                 TemplateScope
@@ -513,6 +519,12 @@ model ChecklistTemplate {
 model Question {
   id             String       @id @default(uuid()) @db.Uuid
   templateId     String       @map("template_id") @db.Uuid
+  // ADR-036: which question-set version this row belongs to. An instance reads
+  // `version = instance.templateVersion`, NOT the template's current version.
+  // Rows are append-only — an edit adds a new version and leaves prior ones in
+  // place, which is also what keeps `responses_question_id_fkey ON DELETE
+  // RESTRICT` from ever firing.
+  version        Int          @default(1)
   orderIndex     Int          @map("order_index")
   type           QuestionType
   prompt         String
@@ -535,6 +547,8 @@ model Question {
   sourcedIssues Issue[]           @relation("IssueSourceQuestion")
 
   @@index([templateId])
+  // Every instance-scoped question read is (templateId, version) — ADR-036.
+  @@index([templateId, version])
   @@map("questions")
 }
 
@@ -565,6 +579,12 @@ model RecurringRule {
   // { kind: 'all'|'occupied'|'vacant'|'list'|'range', roomNumbers?, from?, to? }.
   // Null = 'all' for PER_ROOM; ignored for PER_PROPERTY / AD_HOC.
   scope           Json?
+  // ET wall-clock `HH:mm` the generated instances are due, or null for no
+  // deadline. Added 2026-09-09 (ADR-037): rules previously had NO way to
+  // express a due time at all, so every checklist the 5 AM cron generated had
+  // `dueAt = null` and could never be overdue or reminded about. New rules
+  // default to 18:00 in the UI; null here stays legal and means "no deadline".
+  dueTime         String?   @map("due_time")
   // ADR-009 effective window (inclusive ET dates) + skip-day list (yyyyMMdd[]).
   effectiveFrom   DateTime? @map("effective_from") @db.Date
   effectiveTo     DateTime? @map("effective_to") @db.Date
@@ -596,6 +616,12 @@ model ChecklistInstance {
   systemId   String? @unique @map("system_id")
   title      String?
   templateId String  @map("template_id") @db.Uuid
+  // ADR-036: the question-set version this instance was created against,
+  // stamped once at creation and never changed (Kyle's call 2026-09-09: an
+  // in-flight checklist keeps its version, so questions cannot move under
+  // someone mid-fill). Read questions with
+  // `where: { templateId, version: templateVersion }`.
+  templateVersion Int @default(1) @map("template_version")
   propertyId String  @map("property_id") @db.Uuid
   roomId     String? @map("room_id") @db.Uuid
 
@@ -626,6 +652,14 @@ model ChecklistInstance {
 
   openedAt         DateTime? @map("opened_at") @db.Timestamptz
   submittedAt      DateTime? @map("submitted_at") @db.Timestamptz
+  // ADR-037 due-time reminders. Two stamps rather than one flag because the
+  // two reminders are distinct events and either can be the one that failed:
+  // "1 hour before the deadline" and "at the deadline". Set when the reminder
+  // is SENT, so they double as the idempotency guard — the cron re-runs every
+  // 15 minutes and must never re-notify. Null on an instance with no `dueAt`,
+  // which is legal and simply means nobody is reminded.
+  remindedBeforeAt DateTime? @map("reminded_before_at") @db.Timestamptz
+  remindedDueAt    DateTime? @map("reminded_due_at") @db.Timestamptz
   reviewedAt       DateTime? @map("reviewed_at") @db.Timestamptz
   reviewedByUserId String?   @map("reviewed_by_user_id") @db.Uuid
   // Manager note from the review left rail (ADR-011); set on approve/flag/redo.

@@ -53,6 +53,7 @@ export default async function RulesPage() {
     pattern: r.pattern as RecurrencePattern,
     scope: (r.scope as RoomFilter | null) ?? null,
     assignment: r.assignment as RuleRow["assignment"],
+    dueTime: r.dueTime,
     active: r.active,
     effectiveFrom: r.effectiveFrom ? r.effectiveFrom.toISOString().slice(0, 10) : null,
     effectiveTo: r.effectiveTo ? r.effectiveTo.toISOString().slice(0, 10) : null,

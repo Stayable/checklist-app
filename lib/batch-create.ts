@@ -43,6 +43,16 @@ export type BatchInput = {
   dueTime?: string | null;
 };
 
+/**
+ * ET wall-clock default deadline for a checklist (Kyle, 2026-09-09).
+ *
+ * The time stays OPTIONAL — clearing the field means no deadline, and no
+ * deadline means no reminders. This is only what the wizard and a new
+ * recurring rule start at, so the common case needs no thought and the
+ * reminder pipeline has something to fire against from day one.
+ */
+export const DEFAULT_DUE_TIME = "18:00";
+
 export type PlannedInstance = {
   /** Which batch produced this row — the preview groups by it. */
   batchIndex: number;

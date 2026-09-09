@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { QuestionType } from "@prisma/client";
+import { CompletionCheck, QuestionType } from "@prisma/client";
 import {
   isVisible,
   validateAll,
@@ -21,6 +21,20 @@ import { CloseOutPanel } from "./CloseOutPanel";
 import { markOpened } from "./mark-opened.action";
 
 export type FillQuestion = QuestionLike & { prompt: string; hint?: string | null };
+
+/** What the reviewer decided, as the person who filled the checklist sees it.
+ *  Built on the server (page.tsx) so `reviewedAt` arrives already formatted in
+ *  ET — this component must never format a date itself (ADR-013).
+ *
+ *  `kind` is the instance status collapsed to the only two that carry a
+ *  verdict: `closed` = REVIEWED, `flagged` = sent back for another pass. */
+export type ReviewOutcome = {
+  kind: "closed" | "flagged";
+  completionCheck: CompletionCheck | null;
+  note: string | null;
+  reviewerName: string | null;
+  reviewedAt: string | null;
+};
 
 // One captured photo: compressed bytes, preview URL, GPS fix taken with its
 // batch, and the client-side capture timestamp (ADR-015 + ADR-021 photo metadata).
@@ -50,6 +64,11 @@ type GpsState =
  *  their photo and pressed Submit must not be held for half a minute. Whatever
  *  has not landed by then is simply absent, exactly as before. */
 const GPS_SUBMIT_GRACE_MS = 6_000;
+
+/** Mirror of NOTE_MAX in ./actions.ts. Enforced here as a `maxLength` so the
+ *  limit stops a thumb before it stops a submit — the server rejects beyond it,
+ *  and losing a long note at the submit bar would be the worst way to learn. */
+const NOTE_MAX = 2000;
 
 /** Worst state across a question's photos, for the one status line under the
  *  grid. Ordered by how much it should worry the user: something they can fix
@@ -97,6 +116,8 @@ export function FillClient({
   initialFlags,
   canCloseOut,
   closeOutPending,
+  reviewOutcome,
+  canExport,
 }: {
   instanceId: string;
   label: string;
@@ -107,11 +128,17 @@ export function FillClient({
   initialFlags: CheckoutFlags;
   canCloseOut: boolean;
   closeOutPending: boolean;
+  reviewOutcome: ReviewOutcome | null;
+  canExport: boolean;
 }) {
   const t = useTranslations("Checklist");
   const [answers, setAnswers] = useState<AnswerMap>(initialAnswers);
   const [photos, setPhotos] = useState<PhotoState>({});
   const [flags, setFlags] = useState<CheckoutFlags>(initialFlags);
+  /** Free text the submitter writes for the reviewer, per PHOTO question. Kept
+   *  OUT of `answers` on purpose: a note is not an answer — it never validates,
+   *  never satisfies `required`, and lands in its own Response.notes column. */
+  const [photoNotes, setPhotoNotes] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -149,6 +176,7 @@ export function FillClient({
           }));
         }
         setPhotos(restored);
+        if (draft.photoNotes) setPhotoNotes(draft.photoNotes);
         if (draft.flags) setFlags(draft.flags);
       }
       hydrated.current = true;
@@ -182,9 +210,10 @@ export function FillClient({
       photoPositions,
       photoTimestamps,
       signatures,
+      photoNotes,
       flags: collectsCheckoutFlags ? flags : undefined,
     });
-  }, [answers, photos, questions, instanceId, submitted, collectsCheckoutFlags, flags]);
+  }, [answers, photos, questions, instanceId, submitted, collectsCheckoutFlags, flags, photoNotes]);
 
   // Stamp openedAt + flip to IN_PROGRESS on first open. Fire-and-forget; the
   // server action is a no-op for non-assignees (managers, wrong user, already opened).
@@ -194,6 +223,10 @@ export function FillClient({
 
   const setAnswer = useCallback((qid: string, value: AnswerValue) => {
     setAnswers((prev) => ({ ...prev, [qid]: value }));
+  }, []);
+
+  const setPhotoNote = useCallback((qid: string, text: string) => {
+    setPhotoNotes((prev) => ({ ...prev, [qid]: text }));
   }, []);
 
   useEffect(() => {
@@ -338,6 +371,7 @@ export function FillClient({
         instanceId,
         finalAnswers,
         collectsCheckoutFlags ? flags : undefined,
+        photoNotes,
       );
       if (res.ok) {
         await clearDraft(instanceId);
@@ -348,15 +382,28 @@ export function FillClient({
     });
   }
 
+  // A submitted or closed checklist stays openable as reference, so this is
+  // not only the "thanks, sent" screen any more: it is where the person reads
+  // what the reviewer said and takes the PDF away. `done` is the just-submitted
+  // case — no verdict exists yet, but the row is submitted, so the export works.
   if (submitted || done) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
         <div className="text-5xl">✓</div>
         <h1 className="text-xl font-bold text-slate-900">{t("submitted")}</h1>
         <p className="text-sm text-slate-500">{label}</p>
-        <Link href="/" className="mt-2 rounded-lg bg-navy px-5 py-3 text-base font-semibold text-white">
-          {t("returnHome")}
-        </Link>
+        {/* Not when `done`: a flagged checklist that was just RESUBMITTED still
+            carries the old verdict on the row, and showing "sent back for
+            another look" one second after they sent it back would read as a
+            rejection of the work they just did. It returns on the next load,
+            once a reviewer has actually looked again. */}
+        {!done && reviewOutcome && <ReviewOutcomeCard outcome={reviewOutcome} />}
+        <div className="mt-2 flex w-full flex-col gap-2">
+          <Link href="/" className="rounded-lg bg-navy px-5 py-3 text-base font-semibold text-white">
+            {t("returnHome")}
+          </Link>
+          {(canExport || done) && <ExportPdfLink instanceId={instanceId} />}
+        </div>
       </main>
     );
   }
@@ -376,6 +423,16 @@ export function FillClient({
         <h1 className="mt-1 text-lg font-bold text-slate-900">{label}</h1>
       </header>
 
+      {/* A FLAGGED checklist is editable again (see `submitted`, which excludes
+          FLAGGED on purpose), so the reason it came back belongs at the TOP of
+          the form — it is the instruction for this pass, not a footnote. */}
+      {reviewOutcome && (
+        <div className="flex flex-col gap-2">
+          <ReviewOutcomeCard outcome={reviewOutcome} />
+          {canExport && <ExportPdfLink instanceId={instanceId} />}
+        </div>
+      )}
+
       {questions.filter((q) => isVisible(q, answers)).map((q) => (
         <QuestionField
           key={q.id}
@@ -384,7 +441,9 @@ export function FillClient({
           error={errors[q.id]}
           photos={(photos[q.id] ?? []).map((it) => ({ url: it.url, gps: it.gps }))}
           gpsStatus={worstGps(photos[q.id] ?? [])}
+          note={photoNotes[q.id] ?? ""}
           onChange={(v) => setAnswer(q.id, v)}
+          onNoteChange={(text) => setPhotoNote(q.id, text)}
           onAddPhotos={(files) => void addPhotos(q, files)}
           onRemovePhoto={(i) => removePhoto(q, i)}
         />
@@ -413,13 +472,90 @@ export function FillClient({
   );
 }
 
+/** Download the filled checklist as a PDF. Same endpoint the reviewer uses;
+ *  the route now checks that a non-manager is the assignee before it renders
+ *  anything, so this button hands nobody a checklist that is not theirs. */
+function ExportPdfLink({ instanceId }: { instanceId: string }) {
+  const t = useTranslations("Checklist");
+  return (
+    <a
+      href={`/api/checklists/${instanceId}/pdf`}
+      className="rounded-lg border border-slate-300 bg-white px-5 py-3 text-center text-base font-semibold text-slate-700"
+    >
+      {t("exportPdf")}
+    </a>
+  );
+}
+
+/** The reviewer's verdict, read-only, for the person who filled the checklist.
+ *
+ *  Three deliberate choices:
+ *   • "Reviewer", never "manager". CORPORATE, ADMIN and the night-audit AGENT
+ *     accounts all review; the DB column is `manager_note` and stays that way,
+ *     but the label on a housekeeper's phone should name what actually happened.
+ *   • Amber, not red. A fail or a flag is the start of a fix, and the note is
+ *     the whole content — so the note gets the body type and the verdict is a
+ *     quiet line above it. Red reads as a reprimand and buries the instruction.
+ *   • Nothing empty ever renders. A clean pass with no note is a single line,
+ *     not a card with a blank note box in it.
+ */
+function ReviewOutcomeCard({ outcome }: { outcome: ReviewOutcome }) {
+  const t = useTranslations("Checklist");
+  const flagged = outcome.kind === "flagged";
+  const needsWork = flagged || outcome.completionCheck === CompletionCheck.FAIL;
+
+  const verdict = flagged
+    ? t("reviewFlagged")
+    : outcome.completionCheck === CompletionCheck.PASS
+      ? t("reviewPass")
+      : outcome.completionCheck === CompletionCheck.FAIL
+        ? t("reviewFail")
+        : // Closed with no completion check: pre-gate rows, and anything an
+          // admin closed out of band. Say only what is known.
+          t("reviewClosed");
+
+  const attribution =
+    outcome.reviewerName && outcome.reviewedAt
+      ? t("reviewedByAt", { name: outcome.reviewerName, when: outcome.reviewedAt })
+      : outcome.reviewedAt
+        ? t("reviewedAtOnly", { when: outcome.reviewedAt })
+        : null;
+
+  return (
+    <section
+      className={`w-full rounded-xl border p-4 text-left ${
+        needsWork ? "border-amber-300 bg-amber-50" : "border-emerald-200 bg-emerald-50"
+      }`}
+    >
+      <h2
+        className={`text-xs font-bold uppercase tracking-wide ${
+          needsWork ? "text-amber-800" : "text-emerald-800"
+        }`}
+      >
+        {t("reviewHeading")}
+      </h2>
+      <p className="mt-1 text-base font-bold text-slate-900">{verdict}</p>
+      {attribution && <p className="mt-0.5 text-xs text-slate-600">{attribution}</p>}
+      {outcome.note && (
+        <div className="mt-3 border-t border-black/10 pt-3">
+          <p className="text-xs font-semibold text-slate-600">{t("reviewNoteHeading")}</p>
+          <p className="mt-1 whitespace-pre-wrap text-base text-slate-900">{outcome.note}</p>
+        </div>
+      )}
+      {flagged && <p className="mt-3 text-sm text-amber-900">{t("reviewFlaggedHelp")}</p>}
+    </section>
+  );
+}
+
 function QuestionField({
   q,
   value,
   error,
   photos,
   gpsStatus,
+  note,
   onChange,
+  onNoteChange,
   onAddPhotos,
   onRemovePhoto,
 }: {
@@ -428,7 +564,9 @@ function QuestionField({
   error?: string;
   photos: { url: string; gps: GpsState }[];
   gpsStatus: GpsState | null;
+  note: string;
   onChange: (v: AnswerValue) => void;
+  onNoteChange: (text: string) => void;
   onAddPhotos: (files: FileList) => void;
   onRemovePhoto: (index: number) => void;
 }) {
@@ -579,6 +717,21 @@ function QuestionField({
             onChange={(e) => e.target.files && onAddPhotos(e.target.files)}
           />
           <p className="text-xs text-amber-600">{t("photoPending")}</p>
+          {/* Below the upload caption, not above it: that caption is a footnote
+              about the photos, and the note is NOT stored on this device with
+              them — it lives only in this form until submit. Keeping it outside
+              the caption's scope avoids implying otherwise. */}
+          <label className="mt-1 flex flex-col gap-1 border-t border-slate-100 pt-2">
+            <span className="text-xs font-medium text-slate-500">{t("photoNotesLabel")}</span>
+            <textarea
+              className={input}
+              rows={2}
+              maxLength={NOTE_MAX}
+              placeholder={t("photoNotesPlaceholder")}
+              value={note}
+              onChange={(e) => onNoteChange(e.target.value)}
+            />
+          </label>
         </div>
       )}
 

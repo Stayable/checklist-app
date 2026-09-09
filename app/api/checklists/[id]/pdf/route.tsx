@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { GeofenceStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { canAccessProperty } from "@/lib/rbac";
+import { canAccessProperty, isManagerOrAbove } from "@/lib/rbac";
 import { presignDownload } from "@/lib/r2";
 import { formatInET } from "@/lib/datetime";
 import { roomDisplay } from "@/lib/room-label";
 import { renderPdfToBuffer } from "@/lib/pdf/render";
 import { ChecklistPdf, type PdfResponse } from "@/lib/pdf/ChecklistPdf";
 import { answerToText } from "@/lib/pdf/answer-text";
+import { formatMinutes, timeToCompleteMinutes } from "@/lib/review";
+import { questionsForInstance } from "@/lib/template-version.server";
 
 // Node runtime required — react-pdf uses Node APIs.
 export const runtime = "nodejs";
@@ -36,12 +38,7 @@ export async function GET(
   const instance = await db.checklistInstance.findUnique({
     where: { id },
     include: {
-      template: {
-        select: {
-          name: true,
-          questions: { orderBy: { orderIndex: "asc" } },
-        },
-      },
+      template: { select: { name: true } },
       property: {
         select: { id: true, shortCode: true, name: true, propertyId: true },
       },
@@ -73,18 +70,36 @@ export async function GET(
     role: session.user.role as never,
   };
 
-  if (!(await canAccessProperty(user, instance.property.id))) {
+  // TIGHTENED 2026-09-10. This used to be `canAccessProperty` alone, which is
+  // true for ANY user with a user_properties row at that property — so a
+  // housekeeper at KE could export any KE checklist by guessing an id,
+  // including the Manager Checklist that rates their own work. It was reachable
+  // before; adding a visible Download PDF button to the fill page makes it
+  // discoverable, which is not a change worth shipping over a hole.
+  //
+  // The rule, in the order the roles read:
+  //   • manager-or-above (MANAGER / AGENT / CORPORATE / ADMIN) — as before,
+  //     property-scoped, with canAccessProperty waving portfolio roles through;
+  //   • everyone else — their own assigned instance and nothing else.
+  const canExport = isManagerOrAbove(user.role)
+    ? await canAccessProperty(user, instance.property.id)
+    : instance.assignedUserId === user.id;
+  if (!canExport) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
+
+  // ADR-036: the exported PDF must show the questions the checklist was
+  // actually filled against, not a later edit of the template.
+  const templateQuestions = await questionsForInstance(instance);
 
   // Map responses by questionId for fast lookup.
   const byQ = new Map(instance.responses.map((r) => [r.questionId, r]));
 
   const responses: PdfResponse[] = [];
-  for (const q of instance.template.questions) {
+  for (const q of templateQuestions) {
     // SECTION_DIVIDER questions have no answer — render as a prompt-only block.
     if (q.type === "SECTION_DIVIDER") {
-      responses.push({ prompt: q.prompt, type: q.type, answerText: "", signatureUrl: null, photos: [] });
+      responses.push({ prompt: q.prompt, type: q.type, answerText: "", note: null, signatureUrl: null, photos: [] });
       continue;
     }
 
@@ -115,6 +130,9 @@ export async function GET(
       prompt: q.prompt,
       type: q.type,
       answerText: isSignature ? "" : answerToText(q.type, r?.answer ?? null),
+      // Reviewers work from the PDF as often as the screen, so a note the
+      // submitter left for them has to travel with the export.
+      note: r?.notes ?? null,
       signatureUrl: sigUrl,
       photos,
     });
@@ -131,6 +149,12 @@ export async function GET(
     assignee: instance.assignedUser?.name ?? "Unassigned",
     startedAt: instance.openedAt ? formatInET(instance.openedAt) : null,
     completedAt: instance.submittedAt ? formatInET(instance.submittedAt) : null,
+    // The same number the review screens show, formatted by the same function.
+    // "—" when either end of the interval is missing — an unopened or
+    // unsubmitted checklist took an unknown amount of time, never zero.
+    timeToComplete: formatMinutes(
+      timeToCompleteMinutes(instance.openedAt, instance.submittedAt),
+    ),
     responses,
   };
 

@@ -7,6 +7,10 @@ export const styles = StyleSheet.create({
   qBlock: { marginBottom: 10, borderBottom: "1pt solid #e2e8f0", paddingBottom: 8 },
   prompt: { fontFamily: "Helvetica-Bold", marginBottom: 2 },
   answer: { color: "#334155" },
+  // ADR-037: the submitter's note to the reviewer. Indented and greyed so it
+  // reads as commentary ON the answer rather than as part of it — the answer is
+  // the checklist's record, the note is a person adding context to it.
+  submitterNote: { color: "#78350f", fontSize: 9, marginTop: 3, paddingLeft: 8 },
   photoRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
   photo: { width: 120, height: 120, objectFit: "cover", border: "1pt solid #e2e8f0" },
   photoCap: { fontSize: 7, color: "#64748b", width: 120 },

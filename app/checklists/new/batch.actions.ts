@@ -107,6 +107,9 @@ export async function createChecklistBatches(
       id: true,
       name: true,
       code: true,
+      // ADR-036: stamped onto every instance created here, so a later template
+      // edit cannot change the questions this checklist was created against.
+      version: true,
       scope: true,
       copies: true,
       active: true,
@@ -283,6 +286,7 @@ export async function createChecklistBatches(
             date: scheduledFor,
           }),
           templateId: p.templateId,
+          templateVersion: template.version,
           propertyId,
           roomId: p.roomId,
           taskLabel: p.taskLabel,

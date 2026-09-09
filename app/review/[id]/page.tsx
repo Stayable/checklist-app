@@ -14,10 +14,15 @@ import { deriveCompletionCheck } from "@/lib/completion-check";
 import { roomDisplay } from "@/lib/room-label";
 import { PhotoFigure } from "@/components/review/PhotoFigure";
 import type { PhotoFigureProps } from "@/components/review/PhotoFigure";
+import { questionsForInstance } from "@/lib/template-version.server";
 
 // Single-submission review (ADR-011): three-column layout.
-//   left   — status + manager note + Approve / Flag / Re-do
-//   center — responses + photos + signatures, time-to-complete in the header
+//   left   — status + manager note + the Pass/Fail completion check, which
+//            GATES the two outcomes below it: Closed / Flag (Kyle 2026-09-10;
+//            Re-do removed, ADR-037). "Closed" is a label — the status stays
+//            REVIEWED and the server action stays `approveSubmission`.
+//   center — responses + photos + signatures + the submitter's per-question
+//            notes (Response.notes), time-to-complete in the header
 //   right  — activity timeline (audit_log) with actor + timestamp
 // English-only manager surface (ADR-013). Photos render from R2 via 1-hour
 // presigned GETs with a per-photo geofence badge + capture time + coords (ADR-015).
@@ -53,6 +58,14 @@ function AnswerView({
       return <span>{Array.isArray(answer) ? answer.join(", ") : String(answer)}</span>;
     case QuestionType.PHOTO: {
       const count = (answer as { count?: number })?.count ?? 0;
+      if (count === 0 && (!photos || photos.length === 0)) {
+        // No photos and none claimed. Distinct from the legacy case below —
+        // a submitter can now record a note on a photo question WITHOUT taking
+        // one ("door blocked"), which writes a {count: 0} answer; badging that
+        // "no upload (legacy)" would accuse the app of losing a photo that
+        // never existed.
+        return <span className="text-slate-400">No photos</span>;
+      }
       if (!photos || photos.length === 0) {
         // Legacy pre-ADR-015 answer: count recorded but bytes never uploaded.
         return (
@@ -95,9 +108,7 @@ export default async function ReviewDetailPage({
   const instance = await db.checklistInstance.findUnique({
     where: { id },
     include: {
-      template: {
-        include: { questions: { orderBy: { orderIndex: "asc" } } },
-      },
+      template: true,
       property: { select: { shortCode: true, name: true } },
       room: { select: { roomNumber: true } },
       assignedUser: { select: { name: true } },
@@ -118,6 +129,13 @@ export default async function ReviewDetailPage({
   if (!(await canAccessProperty(user, instance.propertyId))) redirect("/review");
 
   const answers = new Map(instance.responses.map((r) => [r.questionId, r.answer]));
+
+  // Response.notes — free text the SUBMITTER left for whoever reviews this.
+  // Only photo questions collect one today, but the map is built over every
+  // response so an older or future note is never silently hidden here.
+  const submitterNotes = new Map<string, string>(
+    instance.responses.flatMap((r) => (r.notes ? ([[r.questionId, r.notes]] as const) : [])),
+  );
 
   // Presigned GET per stored photo (1h TTL), keyed by question (ADR-015).
   const photosByQuestion = new Map<string, PhotoView[]>();
@@ -145,10 +163,15 @@ export default async function ReviewDetailPage({
     select: { id: true, action: true, createdAt: true, actor: { select: { name: true } } },
   });
 
+  // ADR-036: review the questions this checklist was FILLED against, not the
+  // template's current set. A later edit must not rewrite the prompts a
+  // manager is signing off on.
+  const templateQuestions = await questionsForInstance(instance);
+
   const locked = isLocked(instance);
   const completionHint = deriveCompletionCheck(
     instance.responses.map((r) => ({ questionId: r.questionId, answer: r.answer })),
-    instance.template.questions.map((q) => ({ id: q.id, type: q.type })),
+    templateQuestions.map((q) => ({ id: q.id, type: q.type })),
   );
 
   return (
@@ -235,6 +258,11 @@ export default async function ReviewDetailPage({
             status={instance.status}
             locked={locked}
             isAdmin={isAdmin(user.role)}
+            // Drives the gate: Closed / Flag stay disabled until this is set.
+            // Read from the row, not from `completionHint` — the hint is a
+            // suggestion and auto-applying it would answer the question the
+            // manager is supposed to answer.
+            completionCheck={instance.completionCheck}
           />
           {instance.sourcedIssues.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -256,7 +284,7 @@ export default async function ReviewDetailPage({
 
         {/* Center — responses */}
         <section className="flex flex-col gap-3">
-          {instance.template.questions.map((q) =>
+          {templateQuestions.map((q) =>
             q.type === QuestionType.SECTION_DIVIDER ? (
               <h3
                 key={q.id}
@@ -279,6 +307,20 @@ export default async function ReviewDetailPage({
                     photos={photosByQuestion.get(q.id)}
                   />
                 </div>
+                {/* The submitter speaking to the reviewer — deliberately not
+                    styled like the answer above it. An answer is the checklist's
+                    record; this is a person adding context to it, so it gets an
+                    attributed, tinted block a reviewer can't mistake for data. */}
+                {submitterNotes.has(q.id) && (
+                  <div className="mt-3 rounded-lg border-l-4 border-amber-300 bg-amber-50 px-3 py-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-amber-800">
+                      Note from {instance.assignedUser?.name ?? "submitter"}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+                      {submitterNotes.get(q.id)}
+                    </p>
+                  </div>
+                )}
               </div>
             ),
           )}

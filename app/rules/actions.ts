@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { canAccessProperty, requireManager } from "@/lib/rbac";
 import { autoGenerateBlockedReason } from "@/lib/recurrence";
 import { generateForDate } from "@/lib/recurrence.server";
+import { DUE_TIME_PATTERN } from "@/lib/due-time";
 
 // Recurring-rule mutations (ADR-009). Manager can manage rules at their own
 // property; CORPORATE/ADMIN across all. Every mutation writes to audit_log.
@@ -42,12 +43,22 @@ const assignmentSchema = z.discriminatedUnion("type", [
 
 const ymd = /^\d{8}$/;
 
+/**
+ * ET wall-clock `HH:mm`, or null for no deadline.
+ *
+ * Same regex the batch wizard validates against (lib/due-time.ts says why they
+ * are shared): both paths write `checklist_instances.due_at`, and the reminder
+ * cron reads that one column without knowing which of them produced the row.
+ */
+const dueTimeSchema = z.string().regex(DUE_TIME_PATTERN, "Use HH:mm, 24-hour").nullable();
+
 const createSchema = z.object({
   templateId: z.string().uuid(),
   propertyId: z.string().uuid(),
   pattern: patternSchema,
   scope: scopeSchema.optional(),
   assignment: assignmentSchema,
+  dueTime: dueTimeSchema.optional(),
   effectiveFrom: z.string().regex(ymd).optional().nullable(),
   effectiveTo: z.string().regex(ymd).optional().nullable(),
   active: z.boolean().default(true),
@@ -93,6 +104,7 @@ export async function createRule(input: unknown): Promise<RuleResult> {
         pattern: data.pattern,
         assignment: data.assignment,
         scope: scope ?? undefined,
+        dueTime: data.dueTime ?? null,
         effectiveFrom: data.effectiveFrom ? ymdToDate(data.effectiveFrom) : null,
         effectiveTo: data.effectiveTo ? ymdToDate(data.effectiveTo) : null,
         active: data.active,
@@ -111,6 +123,10 @@ export async function createRule(input: unknown): Promise<RuleResult> {
           pattern: data.pattern,
           assignment: data.assignment,
           scope,
+          // Recorded like every other rule field: the due time decides when a
+          // checklist starts counting as late and who gets reminded, so "who
+          // set 6 AM on this rule" is a question that will get asked.
+          dueTime: data.dueTime ?? null,
         },
       },
     });
@@ -123,7 +139,10 @@ export async function createRule(input: unknown): Promise<RuleResult> {
 
 type LoadedRule =
   | { ok: false; error: string }
-  | { ok: true; rule: { id: string; propertyId: string; active: boolean } };
+  | {
+      ok: true;
+      rule: { id: string; propertyId: string; active: boolean; dueTime: string | null };
+    };
 
 async function loadRuleForMutation(
   ruleId: string,
@@ -131,7 +150,7 @@ async function loadRuleForMutation(
 ): Promise<LoadedRule> {
   const rule = await db.recurringRule.findUnique({
     where: { id: ruleId },
-    select: { id: true, propertyId: true, active: true },
+    select: { id: true, propertyId: true, active: true, dueTime: true },
   });
   if (!rule) return { ok: false, error: "Rule not found." };
   if (!(await canAccessProperty(user, rule.propertyId))) {
@@ -161,6 +180,56 @@ export async function setRuleActive(ruleId: string, active: boolean): Promise<Ru
 
   revalidatePath("/rules");
   return { ok: true, message: active ? "Rule activated." : "Rule paused." };
+}
+
+/**
+ * Change (or clear) a live rule's due time.
+ *
+ * The only rule field that is editable in place. Everything else — template,
+ * property, pattern, scope — changes what the rule MEANS, and /rules has always
+ * answered that with delete-and-recreate. A deadline is different: it is the
+ * one field a manager gets wrong and needs to fix without throwing away the
+ * schedule, and before it existed there was nothing to get wrong.
+ *
+ * Only instances generated AFTER this lands are affected. Rewriting `due_at` on
+ * checklists that already exist would move a deadline out from under someone
+ * mid-shift, and would silently un-remind rows the reminder cron has already
+ * stamped.
+ */
+export async function setRuleDueTime(
+  ruleId: string,
+  dueTime: string | null,
+): Promise<RuleResult> {
+  const user = await requireManager();
+  const parsed = dueTimeSchema.safeParse(dueTime);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid due time" };
+  }
+  const loaded = await loadRuleForMutation(ruleId, user);
+  if (!loaded.ok) return { ok: false, error: loaded.error };
+
+  const next = parsed.data;
+  await db.$transaction(async (tx) => {
+    await tx.recurringRule.update({ where: { id: ruleId }, data: { dueTime: next } });
+    await tx.auditLog.create({
+      data: {
+        actorUserId: user.id,
+        entityType: "recurring_rule",
+        entityId: ruleId,
+        action: "set_due_time",
+        before: { dueTime: loaded.rule.dueTime },
+        after: { dueTime: next },
+      },
+    });
+  });
+
+  revalidatePath("/rules");
+  return {
+    ok: true,
+    message: next
+      ? `Due time set to ${next} ET for checklists created from now on.`
+      : "Due time cleared — no deadline, no reminders.",
+  };
 }
 
 export async function deleteRule(ruleId: string): Promise<RuleResult> {

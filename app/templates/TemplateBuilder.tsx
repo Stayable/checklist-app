@@ -2,7 +2,7 @@
 
 import { SelectField } from "@/components/ui/select";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   InstanceMultiplicity,
@@ -15,8 +15,15 @@ import { createTemplate, updateTemplate } from "./actions";
 
 export type BuilderProperty = { id: string; shortCode: string; name: string };
 export type BuilderQuestion = {
+  // ADR-036: the existing Question row, when this entry came from one. Carried
+  // through the editor untouched and echoed back on save — that is how a
+  // question keeps its `hint` (and options/conditional/photoMin, which have no
+  // editor here) across an edit, correctly even after a reorder.
+  id?: string | null;
   type: QuestionType;
   prompt: string;
+  /** Sub-label under the prompt. Editable, and round-tripped so it survives a save. */
+  hint?: string | null;
   required: boolean;
   photoMax?: number | null;
   failFlagsIssue?: boolean;
@@ -78,6 +85,7 @@ export function TemplateBuilder({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState(initial.name);
   const [defaultRole, setDefaultRole] = useState(initial.defaultRole);
@@ -132,10 +140,14 @@ export function TemplateBuilder({
       reviewLevel,
       allProperties,
       propertyIds: allProperties ? [] : propertyIds,
-      // Strip the client-only _uid before sending to the action.
+      // Strip the client-only _uid before sending to the action. `id` and
+      // `hint` ARE sent: the action needs them to carry a question's
+      // hint/options/conditional onto the next version (ADR-036).
       questions: questions.map((q) => ({
+        id: q.id ?? null,
         type: q.type,
         prompt: q.prompt,
+        hint: q.hint ?? null,
         required: q.required,
         photoMax: q.photoMax,
         failFlagsIssue: q.failFlagsIssue,
@@ -150,13 +162,20 @@ export function TemplateBuilder({
         router.refresh();
       } else {
         setError(res.error);
+        // The banner renders at the top of the form and Save sits at the
+        // bottom. On a 38-question template the error was off-screen, so a
+        // rejected save looked like the button did nothing — which is exactly
+        // how the frozen-template bug went unnoticed. Bring it into view.
+        errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     });
   }
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      {error && <div className="rounded-md bg-red-50 p-2 text-sm text-red-800">{error}</div>}
+      <div ref={errorRef} aria-live="polite">
+        {error && <div className="rounded-md bg-red-50 p-2 text-sm text-red-800">{error}</div>}
+      </div>
 
       <section className="flex flex-col gap-3 rounded-lg bg-white p-4 ring-1 ring-slate-200">
         <label className="text-sm font-medium text-slate-700">Title
@@ -260,6 +279,13 @@ export function TemplateBuilder({
             </div>
             <input value={q.prompt} onChange={(e) => updateQuestion(i, { prompt: e.target.value })}
               placeholder="Question prompt" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            {/* The sub-label. Editable because it is often the ONLY thing that
+                tells two rows apart — a PM PA checkpoint repeats the same
+                prompt three times and only "7:00pm" / "10:00pm" / "End of
+                shift" distinguishes them. Blank for most questions. */}
+            <input value={q.hint ?? ""} onChange={(e) => updateQuestion(i, { hint: e.target.value })}
+              placeholder="Sub-label (optional) — e.g. 7:00pm, or which section this belongs to"
+              className="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600" />
             <div className="flex items-center gap-4">
               {q.type !== QuestionType.SECTION_DIVIDER && (
                 <label className="flex items-center gap-1.5 text-sm text-slate-600">

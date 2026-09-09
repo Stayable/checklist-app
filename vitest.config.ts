@@ -9,6 +9,13 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./", import.meta.url)) },
   },
+  // Transform JSX in .tsx modules under test. Vite 8 runs on rolldown/oxc, and
+  // oxc follows tsconfig's `"jsx": "preserve"` — correct for `next build`,
+  // which does its own JSX transform, but it means a test that imports any
+  // .tsx module dies at parse time on the first `<Tag />`. No test needed one
+  // until the PDF route's authorization rule had to be pinned, and that rule
+  // lives in a route.tsx. Automatic runtime, matching what Next compiles to.
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     // Agent worktrees live at .claude/worktrees/<id>/ and are complete copies of
     // the repo on their own branches. Without this exclude a root `vitest run`

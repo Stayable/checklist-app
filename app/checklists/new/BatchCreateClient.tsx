@@ -7,6 +7,7 @@ import { InstanceMultiplicity, Role, TemplateScope } from "@prisma/client";
 import { SelectField } from "@/components/ui/select";
 import { subjectKindFor, type SubjectKind } from "@/lib/manual-create";
 import {
+  DEFAULT_DUE_TIME,
   MAX_INSTANCES_PER_CREATE,
   planBatches,
   type BatchInput,
@@ -64,7 +65,7 @@ function emptyBatch(templateId: string): Batch {
     taskText: "",
     dates: [etYMD()],
     assignedUserId: null,
-    dueTime: "",
+    dueTime: DEFAULT_DUE_TIME,
   };
 }
 
@@ -418,6 +419,13 @@ export function BatchCreateClient({
                     onChange={(e) => patch(batch.uid, { dueTime: e.target.value })}
                     className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
                   />
+                  {/* Optional, but defaulted — clearing the field means "no
+                      deadline", which also means no reminders for this batch. */}
+                  <span className="mt-1 block text-xs font-normal text-slate-500">
+                    {batch.dueTime
+                      ? "Reminder 1 hour before, and again at the deadline."
+                      : "No deadline — no reminders will be sent."}
+                  </span>
                 </label>
               </div>
             </div>

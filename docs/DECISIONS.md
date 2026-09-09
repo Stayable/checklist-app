@@ -1196,8 +1196,134 @@ ADR-014 settled that a field user may *request* invalidation with a required not
 | **031** | this one — checklist close-out / stayover | **shipped to prod** `848bac0`, migration applied |
 | **032** | HPE Instant On uplink flapping as its own event class | written as "ADR-031" on the unmerged, unpushed branch `feat/instant-on-uplink-flaps` (`a17b0ed`) — **renumber to 032 at merge** |
 | **033** | contractor update fan-out receiver + wire contract | not written; owed when the pipeline half is built |
+| **034** | template multiplicity (W1 second scope axis) | not written; owed. Referenced by `prisma/schema.prisma:63` and the 2026-08-31 batch-create spec |
+| **035** | note-driven flagging | not written; owed. Referenced by the 2026-08-31 batch-create spec |
+| **036** | template question-set versioning | **shipped** — see below |
+| **037** | due times, due-time reminders, 9 AM ET checklist digest | **shipped** — see below |
 
 The log is append-only, so the number goes to the change that is live. The Instant On ADR is branch-local and unpushed, which makes it the cheap one to move.
+
+**Before claiming a number, run `git grep -oh "ADR-0[0-9][0-9]" | sort -u`** and take the one after the highest. Four of the five numbers above were reserved in code comments and spec front-matter rather than in this file, so reading only the `## ADR-` headings here understates the high-water mark by four — 2026-09-09 burned two renumbers finding that out.
+
+---
+
+## ADR-036: Template question sets are versioned; editing never touches an existing checklist
+
+**Date:** 2026-09-09 (ET, derived — the harness clock on this machine runs ahead)
+**Status:** Accepted
+**Supersedes:** the "already has checklists created from it" edit guard introduced with the template builder.
+**Decided by:** Kyle (option (a), 2026-09-09). Kate co-owns.
+
+### Context
+
+Kyle edited the Maintenance Checklist (`MNT`), saved, created a new checklist from it, and got the **old** questions. The edit had never reached the database.
+
+`updateTemplate` refused it:
+
+```ts
+if (current._count.instances > 0 && questionsChanged) {
+  return { ok: false, error: "This template already has checklists created from it — questions can't be changed. Duplicate the template instead." };
+}
+```
+
+`MNT` had **6 instances**, so every question edit was rejected. The rejection was invisible in practice: the error banner renders at the top of the form and Save sits at the bottom, so on a 13-question template — let alone a 38-question PM PA one — the message was off-screen and the button looked inert.
+
+**The guard was never a policy. It was a crash shim.** The old edit path replaced questions with `DELETE` + `INSERT`, and `responses_question_id_fkey` is `ON DELETE RESTRICT`, so the delete throws the moment one response exists. The guard existed to avoid that throw, and the cost was that a template froze permanently the first time it was used. Four were already stuck: `ARR` (2 instances), `HKC` (6), `MNT` (6), `PPA2295` (3).
+
+Two further defects lived in the same function:
+
+- **The `INSERT` never wrote `hint`, `options`, `conditional` or `photoMin`**, and the change comparison never read them. Any successful save on a zero-instance template silently erased all four. Measured against production: **105 checkpoint labels across 7 PM PA templates** (`7:00pm` / `10:00pm` / `End of shift`) would have been destroyed by a single rename. Those labels are the only thing distinguishing three otherwise identical photo questions. Nobody had triggered it yet.
+- Because `hint` was not compared, a hint-only edit reported **"Saved"** and wrote nothing.
+
+Underneath all of it, instances were never snapshotted: the fill page, review, and PDF all read the template's live question set. Had the guard been simply removed, an edit would have retroactively rewritten **every existing checklist**, including approved ones — a response answered under "Before" would silently re-render under a different prompt.
+
+### Alternatives Considered
+
+1. **Loosen the guard to allow "safe" edits** (prompt wording yes, delete/reorder no). Rejected: it still rewrites history, because reads are live. A reworded prompt would change what an approved checklist appears to have asked.
+2. **Snapshot the full question set onto each instance.** Rejected: it duplicates ~38 rows per instance per day across 1,172 rooms, and `Response.questionId` would have no row left to point at.
+3. **Make each version a separate `ChecklistTemplate` row** linked by a family id, so existing `template.questions` includes keep working untouched. Rejected: `code` is unique per template, recurring rules and publish state would need to follow the family, and "all MNT checklists" stops being one query. It moves the complexity somewhere worse.
+4. **Keep "Duplicate the template instead" as the intended workflow.** Rejected: a duplicate is a new id, so it loses history, needs re-publishing, and orphans any recurring rule pointing at the original.
+
+### Decision
+
+1. **Question rows are append-only and carry a `version`.** An edit bumps `checklist_templates.version` and `INSERT`s a fresh set at the new number. Nothing is ever deleted, so `ON DELETE RESTRICT` can never fire.
+2. **`checklist_instances.template_version` is stamped once at creation and never changes.** An instance reads `questions WHERE template_id = ? AND version = ?`.
+3. **An in-flight checklist keeps its version** (Kyle's option (a)) — not just submitted ones. Questions must never move under someone mid-fill.
+4. **The instance guard is deleted.** Every template is editable again, `MNT` included.
+5. **The version bumps only when the set actually moved**, compared by position and including `hint`. A reorder counts as a change; the order is part of what a filled checklist recorded.
+6. **The builder round-trips each question's `id`.** That is what carries `hint` / `options` / `conditional` / `photoMin` — none of which it can edit — onto the next version, correctly across a reorder. Matching by position would hand a moved question its neighbour's hint; matching by prompt fails on exactly the templates that need it most, since a PM PA checkpoint repeats one prompt three times.
+7. **`hint` is now editable in the builder**, because it is frequently the only thing telling two rows apart.
+8. **`ChecklistTemplate.version` is reused, not duplicated.** The column has existed since Phase 2 and was never read or written.
+9. **The version rule lives in `lib/template-version.server.ts`, not at each call site.** Prisma cannot filter a nested relation by a parent column, so all six instance-scoped reads fetch questions separately; putting that in one helper stops the rule being re-derived and eventually forgotten.
+
+### Consequences
+
+**Easier.** Templates can be corrected after they are in use — which the estate needs, since every extracted question type is inferred and several are known wrong. The `MNT` duplicate Before/After and the dropped section dividers can now be fixed through the UI instead of a hand-written production script. An approved checklist keeps showing the questions it was really filled against, which matters if one is ever disputed.
+
+**Harder / watch for.**
+- `Question` rows accumulate per version (38 × versions). Negligible, but `_count.questions` on a template now totals **every** version — `/templates` was corrected to count per `(template, version)`, and any new count must do the same.
+- Reporting that groups responses by question id will see one id per version of the "same" question. No such report exists today. If one is built, group by `(prompt, version)` or add a stable question lineage id.
+- Six read sites now issue one extra query. The review queue batches by distinct `(template, version)` pair rather than per row.
+- **Nothing here is verified in a browser.** 1,017 tests, clean typecheck, lint and build are the whole evidence base. The first real signal is editing `MNT` in production and confirming the 6 existing instances still render 13 questions while a new one renders the edit.
+- The migration is additive with defaults, so rollback is code-only.
+
+---
+
+## ADR-037: Due times, due-time reminders, and a 9 AM ET checklist digest
+
+**Date:** 2026-09-09 (ET, derived)
+**Status:** Accepted
+**Amends:** ADR-010 (digest at 7:00 AM ET → **9:00 AM ET**, and the checklist digest posts to its own channel, not the per-property network ones).
+**Decided by:** Kyle 2026-09-09. Kate co-owns.
+
+### Context
+
+Three gaps, closed together because each is useless without the others.
+
+**Nothing had a deadline that could be acted on.** `ChecklistInstance.dueAt` existed and the batch wizard could set a due time, but it defaulted to empty, so in practice every instance carried `dueAt = null`. Worse, **`RecurringRule` had no due-time column at all** — and rules are the thing that will generate the daily work once they exist. A checklist generated by the 5 AM cron could therefore never be overdue, never be reminded about, and never be counted late.
+
+**There was no reminder infrastructure of any kind.** Not a scheduled job, not a table, nothing. The dashboard could show an overdue count; nobody was ever told.
+
+**The digest was specified but never built.** ADR-010 put it at 7:00 AM ET. Kyle moved it to 9:00 AM and supplied two Power Automate Workflows webhooks — a real channel the PMs sit in, and a test channel.
+
+Underneath all three sat a scheduling defect nobody had been bitten by yet: Vercel Cron is fixed UTC, and `generate-checklists` was registered as a **single** `0 9 * * *` entry. That is 5 AM ET today and **4 AM ET from 1 November**. The route's own comment called the winter shift "acceptable". For a generator running before anyone starts work it arguably was; for a digest that greets the morning it is not.
+
+### Alternatives Considered
+
+1. **Put the checklist channels under the existing `TEAMS_WEBHOOK_URL_*` prefix.** Rejected — see decision 1; this is the load-bearing rejection.
+2. **Make the due time mandatory.** Rejected: some checklists genuinely have no deadline, and forcing one manufactures overdue rows that mean nothing. Optional-with-a-default gets the common case right without lying about the rest.
+3. **One Teams message per due checklist.** Rejected: on a 167-room property that is a flood, and a flooded channel is a muted channel. One grouped card per run instead.
+4. **A single reminder at the deadline.** Rejected: a reminder arriving when the work is already late cannot prevent the miss, only record it.
+5. **A live countdown timer on the fill screen.** Rejected on its merits — it puts a stopwatch over housekeepers. Elapsed time is surfaced *after* submission, where it informs review rather than pressuring the person working.
+6. **Accept the DST drift, as the generator already did.** Rejected once a 9 AM digest existed: arriving at 8 AM for four months of the year is the kind of wrongness nobody reports and everybody quietly stops trusting.
+
+### Decision
+
+1. **Checklist Teams channels get their own env prefix — `CHECKLIST_TEAMS_WEBHOOK_URL[_TEST]` — and must never be renamed into `TEAMS_WEBHOOK_URL_*`.** Two concrete failures if they shared it: `isAnyTeamsWebhookConfigured()` globs that prefix, so a checklist channel would make the **network** side report itself configured when it is not, queueing TEAMS rows that can never be delivered; and `resolveTeamsWebhook()` reroutes an unrecognised target to the network GENERAL channel, so a checklist reminder would land in the network tickets channel and **look like it worked**. Routing is separate; the transport is deliberately shared, because it is the same Power Automate endpoint and card shape.
+2. **No fallback between the main and test channels.** If the test var is unset, a dry run fails loudly. A dry run that silently posts to the real channel is the exact accident this indirection exists to prevent.
+3. **The due time is optional and defaults to 18:00 ET** (`DEFAULT_DUE_TIME` in `lib/batch-create.ts`, imported everywhere, never re-typed). Clearing it means no deadline, which means no reminders, and the UI says so rather than leaving the user to infer it.
+4. **`recurring_rules.due_time` is added** so a rule can express a deadline. Without it the reminder pipeline would have had nothing to fire against the moment rules start generating the real daily load.
+5. **Two reminders: one hour before, and at the deadline.** Recipients are BOTH the assignee (in-app + bilingual email per ADR-013) and the PM group chat (one grouped Teams card per run, by property short code). Kyle's call: the PMs need the overview, the person doing the work needs the nudge.
+6. **Idempotency lives on the instance as two timestamps** — `reminded_before_at` and `reminded_due_at` — set only on a successful send. Two columns rather than one flag because the two reminders are distinct events and either can be the one that failed. The cron re-runs every 15 minutes and must never double-notify.
+7. **A 12-hour backlog cutoff on the deadline reminder.** Without it the first deploy blasts every historically-overdue instance at once.
+8. **Reminders select on an explicit ALLOW-list of open statuses** (`SCHEDULED`, `ASSIGNED`, `IN_PROGRESS`). Prisma `in:` lists silently EXCLUDE a new enum value and `notIn:` lists silently INCLUDE it — this repo pins that with a test — so a deny-list would quietly start reminding on any status added later.
+9. **The digest runs at 9:00 AM ET and reports yesterday's outcome plus today's load.** Checklists are due at 6 PM, so at 9 AM the previous day is the finished story and today is the forecast. Terse and factual per ADR-010; property **short codes**, never long names.
+10. **Fixed-Eastern crons register TWO UTC entries an hour apart, and a wall-clock guard admits exactly one** (`lib/cron-guard.ts`, `isEtHour`). Never a hardcoded `EST`/`-05:00` offset — wrong for roughly eight months a year, and silently. **The guard was retrofitted to `generate-checklists`**, which now holds 5 AM ET year-round instead of slipping to 4 AM every winter. The guard runs BEFORE any database work, so the rejected half of each pair costs nothing and does not wake Neon — this project is actively cost-tuning Neon compute, and a cron that wakes the database to do nothing is precisely the pattern being removed elsewhere.
+11. **A manual POST bypasses the hour guard.** "Force-create today" and "send the digest now" are wanted when asked for, not at 5 AM.
+12. **"Request Re-do" is removed from the review UI and its server action DELETED**, not commented out. An export in a `"use server"` file is a live HTTP endpoint, so a dead one is attack surface — the same reasoning that deleted `createInstanceManually`. Restore path is `git revert`, recorded in a comment where the function stood. `review_redo` bilingual copy is deliberately KEPT: historic `notification_log` rows reference the event and removing the copy would break rendering them.
+13. **Photo questions accept a note from the filler**, stored in the long-dead `Response.notes` column and shown to the manager at review. No migration — the column has existed since Phase 2 and was never written or read.
+14. **Elapsed completion time is surfaced, not newly computed.** `timeToCompleteMinutes()` already existed and already rendered on the review screens; it now also appears on the checklists board and the exported PDF. It renders as a dash, never "0m", when a checklist was never opened or never submitted.
+
+### Consequences
+
+**Easier.** A checklist can now be late, and lateness reaches somebody — which is the point of replacing Connecteam's manual chase. The digest replaces the 30–60 min/day Karla and Christopher spend typing into Teams by hand (ADR-010's original justification). Any future fixed-Eastern job has a tested guard to reuse instead of re-deciding the DST question.
+
+**Harder / watch for.**
+- **Two more crons.** The 15-minute reminder sweep wakes Neon 96 times a day — far below the existing 2-minute `unifi-poll` / `network-timers` pair, so it changes nothing today. But it does mean the reminder cadence is NOT the thing to tune if the Neon bill is attacked; those 2-minute pollers are.
+- **The 12-hour backlog cutoff is a silent skip.** An instance more than 12 hours overdue is never reminded and its `reminded_due_at` stays null. Deliberate — and it means the column cannot be read as "every overdue instance was chased".
+- **The digest reports counts, not correctness.** It says a checklist was completed, not that it was completed well. That distinction is the review queue's job.
+- **The webhook URLs carry an HMAC in the query string**, so possession is authorisation. Stored as Vercel sensitive env vars; never logged, echoed or committed — ops output prints the env var NAME only. They were pasted into a chat transcript on 2026-09-09 and should be regenerated in Power Automate.
+- **Almost none of this has run for real.** No reminder has ever fired in production and there are still no recurring rules, so the pipeline's first real run will be the first time it is seen end to end. The only live exercise is a deliberate send to the test channel.
 
 ---
 

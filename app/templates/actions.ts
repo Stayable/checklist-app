@@ -15,6 +15,11 @@ import { subjectKindFor } from "@/lib/manual-create";
 import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
 import { deriveTemplateCode } from "@/lib/template-code";
 import { canManageTemplate } from "@/lib/template-access";
+import {
+  buildNextVersionRows,
+  questionSetChanged,
+  type ExistingQuestion,
+} from "@/lib/template-version";
 
 export type ActionResult =
   | { ok: true; id?: string; message?: string }
@@ -22,11 +27,17 @@ export type ActionResult =
 
 const questionSchema = z
   .object({
+    // ADR-036: the existing Question row this entry came from, echoed back by
+    // the builder. It is what carries `hint` / `options` / `conditional` /
+    // `photoMin` — none of which the builder can edit — onto the next version,
+    // correctly across a reorder. Absent means a genuinely new question.
+    id: z.string().uuid().nullable().optional(),
     type: z.nativeEnum(QuestionType),
     prompt: z.string().trim(),
     required: z.boolean().default(true),
     photoMax: z.number().int().min(1).max(10).nullable().optional(),
     failFlagsIssue: z.boolean().default(false),
+    hint: z.string().nullable().optional(),
   })
   .superRefine((q, ctx) => {
     if (q.type !== QuestionType.SECTION_DIVIDER && q.prompt.length < 1) {
@@ -125,10 +136,13 @@ export async function createTemplate(input: unknown): Promise<ActionResult> {
           ? undefined
           : { create: propertyIds.map((propertyId) => ({ propertyId })) },
         questions: {
+          // A new template starts at version 1 (the column default), matching
+          // `checklist_templates.version`.
           create: questions.map((q, i) => ({
             orderIndex: i,
             type: q.type,
             prompt: q.prompt,
+            hint: q.hint || null,
             required: q.required,
             photoMax: q.type === QuestionType.PHOTO ? q.photoMax ?? 1 : null,
             failFlagsIssue: q.type === QuestionType.PASSFAIL ? q.failFlagsIssue : false,
@@ -160,16 +174,32 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
   const current = await db.checklistTemplate.findUnique({
     where: { id },
     select: {
+      version: true,
       allProperties: true,
       properties: { select: { propertyId: true } },
-      _count: { select: { instances: true, questions: true } },
-      questions: {
-        orderBy: { orderIndex: "asc" },
-        select: { type: true, prompt: true, required: true, photoMax: true, failFlagsIssue: true },
-      },
     },
   });
   if (!current) return { ok: false, error: "Template not found." };
+
+  // ADR-036: compare against the CURRENT version's questions only. Prior
+  // versions are history and are never read here.
+  const currentQuestions: ExistingQuestion[] = await db.question.findMany({
+    where: { templateId: id, version: current.version },
+    orderBy: { orderIndex: "asc" },
+    select: {
+      id: true,
+      orderIndex: true,
+      type: true,
+      prompt: true,
+      hint: true,
+      required: true,
+      options: true,
+      photoMin: true,
+      photoMax: true,
+      failFlagsIssue: true,
+      conditional: true,
+    },
+  });
 
   const accessible = await accessiblePropertyIds(user);
   // Must be allowed to manage BOTH the current state and the requested state.
@@ -184,40 +214,13 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
     return { ok: false, error: deniedCurrent ?? deniedNext! };
   }
 
-  // Normalize a question to a comparable signature (apples-to-apples with createMany logic).
-  type QSig = { type: QuestionType; prompt: string; required: boolean; photoMax: number | null; failFlagsIssue: boolean };
-  function normalizeQ(q: { type: QuestionType; prompt: string; required: boolean; photoMax?: number | null; failFlagsIssue?: boolean | null }): QSig {
-    return {
-      type: q.type,
-      prompt: q.prompt,
-      required: q.required,
-      photoMax: q.type === QuestionType.PHOTO ? (q.photoMax ?? 1) : null,
-      failFlagsIssue: q.type === QuestionType.PASSFAIL ? (q.failFlagsIssue ?? false) : false,
-    };
-  }
-
-  const existingNorm = current.questions.map(normalizeQ);
-  const incomingNorm = questions.map((q) => normalizeQ({ ...q, photoMax: q.photoMax ?? null, failFlagsIssue: q.failFlagsIssue }));
-  const questionsChanged =
-    existingNorm.length !== incomingNorm.length ||
-    existingNorm.some((eq, i) => {
-      const iq = incomingNorm[i]!;
-      return (
-        eq.type !== iq.type ||
-        eq.prompt !== iq.prompt ||
-        eq.required !== iq.required ||
-        eq.photoMax !== iq.photoMax ||
-        eq.failFlagsIssue !== iq.failFlagsIssue
-      );
-    });
-
-  if (current._count.instances > 0 && questionsChanged) {
-    return {
-      ok: false,
-      error:
-        "This template already has checklists created from it — questions can't be changed. Duplicate the template instead.",
-    };
-  }
+  // ADR-036. There is no longer an "already has checklists" guard: an edit
+  // never deletes a question row, so `responses_question_id_fkey ON DELETE
+  // RESTRICT` cannot fire and no existing checklist is disturbed. The old
+  // guard existed only because DELETE + INSERT would have thrown, and it
+  // permanently froze every template the moment it was used once.
+  const changed = questionSetChanged(currentQuestions, questions);
+  const nextVersion = changed ? current.version + 1 : current.version;
 
   await db.$transaction(async (tx) => {
     await tx.checklistTemplate.update({
@@ -229,6 +232,9 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
         copies,
         reviewLevel,
         allProperties,
+        // Bumped only when the question set actually moved. Instances created
+        // from here on stamp this number; ones created before keep theirs.
+        version: nextVersion,
         // NOTE: filling a template does NOT publish it. An earlier version
         // flipped `active` on the 0-questions -> some-questions transition, to
         // stop a half-authored draft looking retired. `publishedAt` now carries
@@ -244,25 +250,41 @@ export async function updateTemplate(id: string, input: unknown): Promise<Action
         data: propertyIds.map((propertyId) => ({ templateId: id, propertyId })),
       });
     }
-    // Replace questions only when the template has no instances yet.
-    // If instances exist, questionsChanged is false (guarded above), so skip.
-    if (current._count.instances === 0) {
-      await tx.question.deleteMany({ where: { templateId: id } });
+    // APPEND the new version. Nothing is deleted — prior versions stay so the
+    // checklists filled against them keep resolving, and `hint` / `options` /
+    // `conditional` / `photoMin` ride along from the row each entry's `id`
+    // points at rather than being dropped (which is what silently erased 105
+    // checkpoint labels before ADR-036).
+    if (changed) {
       await tx.question.createMany({
-        data: questions.map((q, i) => ({
+        data: buildNextVersionRows(currentQuestions, questions, nextVersion).map((r) => ({
           templateId: id,
-          orderIndex: i,
-          type: q.type,
-          prompt: q.prompt,
-          required: q.required,
-          photoMax: q.type === QuestionType.PHOTO ? q.photoMax ?? 1 : null,
-          failFlagsIssue: q.type === QuestionType.PASSFAIL ? q.failFlagsIssue : false,
+          version: r.version,
+          orderIndex: r.orderIndex,
+          type: r.type,
+          prompt: r.prompt,
+          hint: r.hint,
+          required: r.required,
+          options: (r.options ?? undefined) as Prisma.InputJsonValue | undefined,
+          photoMin: r.photoMin,
+          photoMax: r.photoMax,
+          failFlagsIssue: r.failFlagsIssue,
+          conditional: (r.conditional ?? undefined) as Prisma.InputJsonValue | undefined,
         })),
       });
     }
   });
 
-  await writeAudit(user.id, id, "update", { name, allProperties, propertyIds, scope });
+  await writeAudit(user.id, id, "update", {
+    name,
+    allProperties,
+    propertyIds,
+    scope,
+    // Which version this save produced, so the audit trail explains why an old
+    // checklist still shows different questions.
+    version: nextVersion,
+    questionsChanged: changed,
+  });
   revalidatePath("/templates");
   revalidatePath(`/templates/${id}`);
   return { ok: true, id, message: `Saved "${name}".` };

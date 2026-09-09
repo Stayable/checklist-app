@@ -17,6 +17,7 @@ import {
 import { geofenceStatusFor } from "@/lib/geofence";
 import { createIssue, slaHoursByPriority } from "@/lib/issues.server";
 import { isLocked } from "@/lib/review-lock";
+import { questionsForInstance } from "@/lib/template-version.server";
 
 // Submit pipeline (Phase 3 + Phase 4 auto-Issue + ADR-015 photos): validate →
 // persist responses + Photo rows → mark SUBMITTED → open an Issue for each
@@ -26,6 +27,10 @@ import { isLocked } from "@/lib/review-lock";
 // action validates each key's prefix and writes photos rows with a
 // server-computed geofence status. Legacy {count, pendingUpload} answers (old
 // on-device drafts) are still accepted and simply produce no Photo rows.
+//
+// Photo questions also carry an optional free-text note from the submitter to
+// the reviewer, persisted to the long-dormant Response.notes column and shown
+// on /review/[id]. It is never required and never fails validation.
 
 export type SubmitResult = { ok: true } | { ok: false; error: string };
 
@@ -52,17 +57,31 @@ const checkoutFlagsSchema = z.object({
   placeOOO: z.boolean(),
 });
 
+/** Same ceiling as the manager note and itemsToReplaceList — one convention for
+ *  free text on a checklist, so nothing here needs its own justification. The
+ *  fill UI already caps the textarea, so exceeding this means a client that
+ *  bypassed it; reject rather than silently truncate someone's words. */
+const NOTE_MAX = 2000;
+
+/** Per-question free text the SUBMITTER wrote for the reviewer, keyed by
+ *  question id. Keys are not checked here — a note whose question turned
+ *  invisible mid-fill is dropped below, not treated as an error, because
+ *  conditional logic changing under a typed note is normal and must never
+ *  block a submit. */
+const responseNotesSchema = z.record(z.string(), z.string().max(NOTE_MAX));
+
 export async function submitChecklist(
   instanceId: string,
   answers: AnswerMap,
   flags?: CheckoutFlags,
+  notes?: Record<string, string>,
 ): Promise<SubmitResult> {
   const user = await requireUser();
 
   const instance = await db.checklistInstance.findUnique({
     where: { id: instanceId },
     include: {
-      template: { include: { questions: { orderBy: { orderIndex: "asc" } } } },
+      template: true,
       property: { select: { shortCode: true, geofence: true } },
       room: { select: { roomNumber: true } },
     },
@@ -90,8 +109,12 @@ export async function submitChecklist(
     return { ok: false, error: "This checklist has been verified and locked and can no longer be changed." };
   }
 
+  // ADR-036: validate against the version this instance was created against,
+  // so a template edit mid-fill cannot invalidate an answer already given.
+  const templateQuestions = await questionsForInstance(instance);
+
   // Server-side validation mirrors the client (defense in depth).
-  const questions: QuestionLike[] = instance.template.questions.map((q) => ({
+  const questions: QuestionLike[] = templateQuestions.map((q) => ({
     id: q.id,
     type: q.type,
     required: q.required,
@@ -144,7 +167,7 @@ export async function submitChecklist(
     capturedAt: Date | null;
   };
   const photoRows: PhotoRow[] = [];
-  for (const q of instance.template.questions) {
+  for (const q of templateQuestions) {
     if (q.type !== QuestionType.PHOTO) continue;
     const ql = questionById.get(q.id);
     if (!ql || !isVisible(ql, answers)) continue;
@@ -179,9 +202,39 @@ export async function submitChecklist(
     }
   }
 
+  // Reviewer notes on photo questions → Response.notes. Only PHOTO questions
+  // collect one (that is the only place the fill UI offers the field), and only
+  // visible ones survive: a note typed before a conditional hid its question is
+  // about work that is no longer being reported on.
+  let parsedNotes: Record<string, string> = {};
+  if (notes !== undefined) {
+    const result = responseNotesSchema.safeParse(notes);
+    if (!result.success) {
+      return { ok: false, error: `A note is too long. Keep notes under ${NOTE_MAX} characters.` };
+    }
+    parsedNotes = result.data;
+  }
+  const notesByQuestion = new Map<string, string>();
+  for (const q of templateQuestions) {
+    if (q.type !== QuestionType.PHOTO) continue;
+    const ql = questionById.get(q.id);
+    if (!ql || !isVisible(ql, answers)) continue;
+    // Whitespace-only is nothing said — stored as null (column default), not "".
+    const trimmed = (parsedNotes[q.id] ?? "").trim();
+    if (trimmed.length > 0) notesByQuestion.set(q.id, trimmed);
+  }
+
+  // A note can be the ONLY thing recorded on an optional photo question — "door
+  // was blocked, could not photograph" is exactly the case worth hearing about.
+  // Nothing in `answers` creates a row for an untouched question, so the note
+  // would be dropped on the floor; seed a truthful zero-photo answer to carry it.
+  const noteOnlyQuestionIds = [...notesByQuestion.keys()].filter(
+    (qid) => answers[qid] === undefined,
+  );
+
   // Auto-Issue (Phase 4): visible PASSFAIL=FAIL answers on fail_flags_issue
   // questions open an Issue. SLA hours read outside the transaction.
-  const failedFlagged = instance.template.questions.filter((q) => {
+  const failedFlagged = templateQuestions.filter((q) => {
     if (q.type !== QuestionType.PASSFAIL || !q.failFlagsIssue) return false;
     if (answers[q.id] !== "FAIL") return false;
     const ql = questionById.get(q.id);
@@ -195,13 +248,22 @@ export async function submitChecklist(
     // R2 objects stay put (keep-forever, ADR-013 — orphan cleanup is a P2 cron).
     await tx.response.deleteMany({ where: { instanceId } });
     await tx.response.createMany({
-      data: Object.entries(answers)
-        .filter(([qid, v]) => answerableIds.has(qid) && v !== undefined)
-        .map(([questionId, value]) => ({
+      data: [
+        ...Object.entries(answers)
+          .filter(([qid, v]) => answerableIds.has(qid) && v !== undefined)
+          .map(([questionId, value]) => ({
+            instanceId,
+            questionId,
+            answer: (value ?? null) as Prisma.InputJsonValue,
+            notes: notesByQuestion.get(questionId) ?? null,
+          })),
+        ...noteOnlyQuestionIds.map((questionId) => ({
           instanceId,
           questionId,
-          answer: (value ?? null) as Prisma.InputJsonValue,
+          answer: { count: 0 } as Prisma.InputJsonValue,
+          notes: notesByQuestion.get(questionId) ?? null,
         })),
+      ],
     });
 
     // Photo rows hang off the just-created responses (ADR-015).

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { InstanceStatus } from "@prisma/client";
+import { CompletionCheck, InstanceStatus } from "@prisma/client";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { LocalePrompt } from "@/components/LocalePrompt";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -10,7 +10,7 @@ import {
   requireUser,
 } from "@/lib/rbac";
 import { db } from "@/lib/db";
-import { etDateOnly, formatDateInET } from "@/lib/datetime";
+import { etDateOnly, formatDateInET, formatDateOnly } from "@/lib/datetime";
 import { roomDisplay } from "@/lib/room-label";
 
 // Today-list room suffix: " · Rm 312" for a real room, " · Suite" for a
@@ -31,11 +31,24 @@ export default async function Home() {
 
   // Today's assignments (ET-anchored, ADR-013) for whoever is assigned.
   const today = etDateOnly();
-  const [assignments, recentlyCompleted] = await Promise.all([
+
+  // How far back "recently closed" reaches. A count alone bounds the query but
+  // not the meaning: without a window, someone who has not worked in months
+  // opens the app to a checklist from June presented as recent. Thirty days is
+  // the span a field user might still be asked about one.
+  const CLOSED_WINDOW_DAYS = 30;
+  const closedSince = new Date(Date.now() - CLOSED_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  const [assignments, sentBack, recentlyCompleted] = await Promise.all([
     db.checklistInstance.findMany({
       where: {
         assignedUserId: user.id,
         scheduledFor: today,
+        // REVIEWED belongs here. It was absent, so a checklist closed the same
+        // day it was filled vanished from Today the moment the reviewer touched
+        // it — and took the denominator with it, so 4 of 5 done read "4/4".
+        // isDone(), pill() and the status_REVIEWED string already handled it;
+        // only the query did not.
         status: {
           in: [
             InstanceStatus.SCHEDULED,
@@ -43,6 +56,7 @@ export default async function Home() {
             InstanceStatus.IN_PROGRESS,
             InstanceStatus.SUBMITTED,
             InstanceStatus.FLAGGED,
+            InstanceStatus.REVIEWED,
           ],
         },
       },
@@ -52,16 +66,47 @@ export default async function Home() {
         title: true,
         status: true,
         openedAt: true,
+        completionCheck: true,
         template: { select: { name: true } },
         property: { select: { shortCode: true } },
         room: { select: { roomNumber: true } },
         roomLabel: true,
       },
     }),
+    // Flagged on an EARLIER day. Flag is now the only send-back path (Re-do was
+    // deleted), and a flagged instance keeps the day it was scheduled for — so
+    // without this query it drops off Today at midnight and the person has no
+    // route back to the work they were asked to redo. Capped at 10: this is a
+    // short list of things to fix, not an archive.
+    db.checklistInstance.findMany({
+      where: {
+        assignedUserId: user.id,
+        status: InstanceStatus.FLAGGED,
+        scheduledFor: { lt: today },
+      },
+      orderBy: { scheduledFor: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        scheduledFor: true,
+        template: { select: { name: true } },
+        property: { select: { shortCode: true } },
+        room: { select: { roomNumber: true } },
+        roomLabel: true,
+      },
+    }),
+    // Closed work kept as reference, and bounded twice over: last 5, and only
+    // inside the 30-day window above. `scheduledFor: { lt: today }` is what
+    // keeps it from duplicating "Done today" — the same checklist appeared in
+    // both sections before, and adding REVIEWED to the Today query above would
+    // have made that worse.
     db.checklistInstance.findMany({
       where: {
         assignedUserId: user.id,
         status: { in: [InstanceStatus.SUBMITTED, InstanceStatus.REVIEWED] },
+        scheduledFor: { lt: today },
+        submittedAt: { gte: closedSince },
       },
       orderBy: { submittedAt: "desc" },
       take: 5,
@@ -69,6 +114,7 @@ export default async function Home() {
         id: true,
         title: true,
         submittedAt: true,
+        completionCheck: true,
         template: { select: { name: true } },
         property: { select: { shortCode: true } },
         room: { select: { roomNumber: true } },
@@ -95,6 +141,18 @@ export default async function Home() {
     if (s === InstanceStatus.IN_PROGRESS) return "bg-blue-50 text-blue-700";
     return "bg-slate-100 text-slate-600";
   };
+
+  // A closed checklist the reviewer marked FAIL is still not a task — no CTA,
+  // no red — but it must not read identically to a clean one, or the person
+  // never learns that the reviewer wanted something different. Amber chip,
+  // and the reason itself waits on the checklist page.
+  const outcomeChip = (i: {
+    status: InstanceStatus;
+    completionCheck: CompletionCheck | null;
+  }) =>
+    i.completionCheck === CompletionCheck.FAIL
+      ? { cls: "bg-amber-50 text-amber-800", label: t("outcomeNeedsAttention") }
+      : { cls: pill(i.status), label: t(`status_${i.status}` as never) };
 
   // CTA label for to-do items: Resume if already opened, Open otherwise.
   const ctaLabel = (s: InstanceStatus) =>
@@ -150,6 +208,42 @@ export default async function Home() {
             Admin console →
           </Link>
         </div>
+      )}
+
+      {/* ── Sent back (flagged on an earlier day) ──
+          Above "To do today" on purpose: this is work that was already done
+          once and came back, so it is later than anything scheduled today. */}
+      {sentBack.length > 0 && (
+        <section className="pt-5">
+          <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+            {t("sentBackHeading")}
+          </h2>
+          <ul className="flex flex-col gap-2.5">
+            {sentBack.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={`/checklists/${a.id}`}
+                  className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-amber-200 transition active:scale-[0.99] hover:bg-amber-50/40"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold text-slate-900">
+                      {a.title ?? a.template.name}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {a.property.shortCode}
+                      {roomSuffix(a.room, a.roomLabel)}
+                      {` · ${formatDateOnly(a.scheduledFor)}`}
+                    </span>
+                  </span>
+                  <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                    {t("status_FLAGGED")}
+                  </span>
+                  {chevron}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {/* ── To do today ── */}
@@ -216,9 +310,9 @@ export default async function Home() {
                     </span>
                   </span>
                   <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${pill(a.status)}`}
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${outcomeChip(a).cls}`}
                   >
-                    {t(`status_${a.status}` as never)}
+                    {outcomeChip(a).label}
                   </span>
                   {chevron}
                 </Link>
@@ -253,6 +347,11 @@ export default async function Home() {
                         : ""}
                     </span>
                   </span>
+                  {r.completionCheck === CompletionCheck.FAIL && (
+                    <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                      {t("outcomeNeedsAttention")}
+                    </span>
+                  )}
                   {chevron}
                 </Link>
               </li>

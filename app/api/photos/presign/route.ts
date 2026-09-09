@@ -105,14 +105,8 @@ export async function POST(req: Request) {
       status: true,
       assignedUserId: true,
       propertyId: true,
-      template: {
-        select: {
-          questions: {
-            where: { id: body.questionId },
-            select: { type: true, photoMax: true },
-          },
-        },
-      },
+      templateId: true,
+      templateVersion: true,
     },
   });
   if (!instance) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -141,7 +135,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "already submitted" }, { status: 409 });
   }
 
-  const question = instance.template.questions[0];
+  // ADR-036: the question must belong to the version THIS instance was created
+  // against. Matching on `id` alone would presign against a question from a
+  // different version of the same template.
+  const question = await db.question.findFirst({
+    where: {
+      id: body.questionId,
+      templateId: instance.templateId,
+      version: instance.templateVersion,
+    },
+    select: { type: true, photoMax: true },
+  });
   if (!question || question.type !== QuestionType.PHOTO) {
     return NextResponse.json({ error: "not a photo question" }, { status: 400 });
   }

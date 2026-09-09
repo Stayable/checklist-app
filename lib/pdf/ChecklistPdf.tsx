@@ -12,6 +12,8 @@ export type PdfResponse = {
   prompt: string;
   type: string;
   answerText: string;
+  /** ADR-037: the submitter's note to the reviewer, if they left one. */
+  note: string | null;
   signatureUrl: string | null;
   photos: PdfPhoto[];
 };
@@ -23,6 +25,15 @@ export type ChecklistPdfData = {
   assignee: string;
   startedAt: string | null;
   completedAt: string | null;
+  /**
+   * Elapsed fill time, already formatted ("1h 05m", or "—" when the checklist
+   * was never opened or never submitted). Pre-formatted rather than a number so
+   * the PDF, the review queue and the checklist board all print the string that
+   * `lib/review.formatMinutes` produced — an exported PDF that rounded
+   * differently from the screen it was exported from would be worse than
+   * useless in a dispute.
+   */
+  timeToComplete: string;
   responses: PdfResponse[];
 };
 
@@ -35,11 +46,15 @@ export function ChecklistPdf({ data }: { data: ChecklistPdfData }) {
           {data.propertyLabel}
           {data.unit ? ` · Unit ${data.unit}` : ""} · Assignee: {data.assignee}
           {"\n"}Started: {data.startedAt ?? "—"}{"   "}Completed: {data.completedAt ?? "—"}
+          {"   "}Time to complete: {data.timeToComplete}
         </Text>
         {data.responses.map((r, i) => (
           <View key={i} style={styles.qBlock} wrap={false}>
             <Text style={styles.prompt}>{r.prompt}</Text>
             {r.answerText ? <Text style={styles.answer}>{r.answerText}</Text> : null}
+            {r.note ? (
+              <Text style={styles.submitterNote}>Note from submitter: {r.note}</Text>
+            ) : null}
             {r.signatureUrl ? (
               // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt prop
               <Image style={{ width: 160, height: 60, marginTop: 4 }} src={r.signatureUrl} />

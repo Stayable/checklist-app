@@ -58,10 +58,22 @@ export async function deliverNotificationEmail(
   event: NotifyEvent,
   label: string,
   note: string | null,
+  /**
+   * Absolute URL the email's button opens. Optional so existing callers keep
+   * working; when omitted the template falls back to the app root, which is
+   * still somewhere useful rather than a dead button.
+   */
+  url?: string,
 ): Promise<void> {
   if (!emailLogId || !recipient) return;
-  const { subject, text } = notifyEmailCopy(event, recipient.locale, { label, note });
-  const res = await sendEmail({ to: recipient.email, subject, text });
+  const { subject, text, html } = notifyEmailCopy(event, recipient.locale, {
+    label,
+    note,
+    url,
+  });
+  // `text` is still sent as the text/plain part alongside the HTML — some
+  // clients and most notification mirrors show only that one.
+  const res = await sendEmail({ to: recipient.email, subject, text, html });
   const status = res.ok
     ? NotificationStatus.SENT
     : res.error === "email_not_configured"

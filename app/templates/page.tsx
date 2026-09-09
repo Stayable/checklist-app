@@ -30,6 +30,7 @@ export default async function TemplatesPage() {
       id: true,
       code: true,
       name: true,
+      version: true,
       scope: true,
       active: true,
       publishedAt: true,
@@ -37,9 +38,21 @@ export default async function TemplatesPage() {
       reviewLevel: true,
       allProperties: true,
       properties: { select: { propertyId: true } },
-      _count: { select: { questions: true, instances: true } },
+      _count: { select: { instances: true } },
     },
   });
+
+  // ADR-036: `_count.questions` would total EVERY version, so a template that
+  // has been edited once would report double its real length. Count per
+  // (template, version) and read off the current one.
+  const questionCounts = await db.question.groupBy({
+    by: ["templateId", "version"],
+    where: { templateId: { in: templates.map((t) => t.id) } },
+    _count: { _all: true },
+  });
+  const countByVersion = new Map(
+    questionCounts.map((c) => [`${c.templateId}:${c.version}`, c._count._all]),
+  );
 
   const scopedSet = new Set(scopedIds);
   const rows = templates
@@ -52,7 +65,7 @@ export default async function TemplatesPage() {
         scope: t.scope,
         allProperties: t.allProperties,
         propertyIds,
-        questionCount: t._count.questions,
+        questionCount: countByVersion.get(`${t.id}:${t.version}`) ?? 0,
         instanceCount: t._count.instances,
         active: t.active,
         // Serialised for the client component; lifecycleOf accepts the string.

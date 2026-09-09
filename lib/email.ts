@@ -71,6 +71,16 @@ export async function sendEmail(opts: {
   to: string;
   subject: string;
   text: string;
+  /**
+   * Optional HTML alternative (lib/email-template.ts).
+   *
+   * `text` stays REQUIRED and is always sent alongside it as the text/plain
+   * part — not as a formality. Some clients and most notification mirrors show
+   * only the plain part, and a work instruction that renders blank there is
+   * worse than one that was never styled. Anything the HTML says with colour
+   * alone has to survive in `text`.
+   */
+  html?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const c = client();
   if (!c) return { ok: false, error: "email_not_configured" };
@@ -80,6 +90,7 @@ export async function sendEmail(opts: {
       to: opts.to,
       subject: opts.subject,
       text: opts.text,
+      ...(opts.html ? { html: opts.html } : {}),
     });
     if (res.error) return { ok: false, error: res.error.message };
     return { ok: true };

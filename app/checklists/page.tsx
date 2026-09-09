@@ -7,6 +7,7 @@ import { getCurrentPropertyId } from "@/lib/current-property";
 import { resolveScopedPropertyIds } from "@/lib/property-scope";
 import { db } from "@/lib/db";
 import { etYMD, formatDateOnly, ymdOfDateOnly } from "@/lib/datetime";
+import { formatMinutes, timeToCompleteMinutes } from "@/lib/review";
 import { roomDisplay } from "@/lib/room-label";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { ChecklistFilters } from "./ChecklistFilters";
@@ -168,6 +169,11 @@ export default async function ChecklistsPage({
       id: true,
       status: true,
       scheduledFor: true,
+      // Elapsed fill time, for rows that have been submitted. Same pair the
+      // review screens read; the arithmetic stays in lib/review so the board
+      // and the review queue can never disagree about what a checklist took.
+      openedAt: true,
+      submittedAt: true,
       template: { select: { name: true } },
       property: { select: { shortCode: true } },
       room: { select: { roomNumber: true } },
@@ -309,6 +315,17 @@ export default async function ChecklistsPage({
                               </span>
                               <span className="mt-0.5 block truncate text-sm text-slate-500">
                                 {i.assignedUser?.name ?? "Nobody assigned yet"}
+                                {/* Only once there is something to report.
+                                    Before submission there is no elapsed time,
+                                    and a dash on every open row would be noise
+                                    rather than information. A submitted row
+                                    that was never opened DOES show the dash —
+                                    that is a real gap in the data, not a zero. */}
+                                {i.submittedAt && (
+                                  <> · Took {formatMinutes(
+                                    timeToCompleteMinutes(i.openedAt, i.submittedAt),
+                                  )}</>
+                                )}
                               </span>
                             </span>
                             <span

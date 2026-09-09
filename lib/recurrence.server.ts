@@ -1,6 +1,7 @@
 import { InstanceStatus, TemplateScope } from "@prisma/client";
 import { db } from "@/lib/db";
-import { etDateOnly, etYYYYMMDD } from "@/lib/datetime";
+import { etDateOnly, etYYYYMMDD, ymdOfDateOnly } from "@/lib/datetime";
+import { dueAtFor } from "@/lib/due-time";
 import {
   buildSystemId,
   canAutoGenerate,
@@ -49,6 +50,12 @@ export async function generateForDate(
   opts: GenerateOptions = {},
 ): Promise<GenerateResult> {
   const ymd = etYYYYMMDD(target);
+  // The ISO form of the SAME day, for `dueAtFor`. `target` is a `@db.Date`-
+  // shaped UTC-midnight Date, so it is read back in UTC — running it through
+  // `etYMD` would convert 00:00Z to 8pm the previous day and put every deadline
+  // 24 hours early. `etYYYYMMDD` above is the compact systemId form and
+  // `new Date()` cannot parse it, so it cannot be reused here either.
+  const isoYmd = ymdOfDateOnly(target);
   const result: GenerateResult = {
     date: ymd,
     rulesEvaluated: 0,
@@ -118,6 +125,13 @@ export async function generateForDate(
       const assignedUserId =
         assignment?.type === "user" && assignment.userId ? assignment.userId : null;
 
+      // The rule's deadline, resolved against the day being generated. Before
+      // this existed a rule had no way to express one at all, so every
+      // generated instance carried `dueAt = null` and could never be overdue on
+      // the board or reminded about. Null stays legal and still means exactly
+      // that — no deadline, no reminders.
+      const dueAt = dueAtFor(isoYmd, rule.dueTime);
+
       // Idempotency + ADR-009 seq: seq is per (property, template, ET day),
       // restarting at 001 daily and continuing past any pre-existing instances.
       const existing = await db.checklistInstance.findMany({
@@ -138,9 +152,12 @@ export async function generateForDate(
           data: {
             systemId: buildSystemId(rule.property.propertyId, rule.template.code, ymd, seq),
             templateId: rule.templateId,
+            // ADR-036: freeze the question set at generation time.
+            templateVersion: rule.template.version,
             propertyId: rule.propertyId,
             roomId: t.roomId,
             scheduledFor: target,
+            dueAt,
             assignedUserId,
             status: assignedUserId ? InstanceStatus.ASSIGNED : InstanceStatus.SCHEDULED,
           },

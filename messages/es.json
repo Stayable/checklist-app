@@ -74,7 +74,9 @@
     "status_FLAGGED": "Marcada",
     "status_REVIEWED": "Revisada",
     "status_INVALIDATED": "Cancelada",
-    "status_EXPIRED": "Vencida"
+    "status_EXPIRED": "Vencida",
+    "sentBackHeading": "Devueltas",
+    "outcomeNeedsAttention": "Necesita atención"
   },
   "Checklist": {
     "submit": "Enviar lista",
@@ -88,6 +90,8 @@
     "fail": "Reprobado",
     "clearSignature": "Borrar firma",
     "photoPending": "Las fotos se guardan en este dispositivo y se suben al enviar.",
+    "photoNotesLabel": "Notas para el revisor (opcional)",
+    "photoNotesPlaceholder": "Algo que tu revisor deba saber sobre estas fotos",
     "photoUploadFailed": "Falló la subida de fotos. Verifica tu conexión e inténtalo de nuevo — tu trabajo está guardado en este dispositivo.",
     "gpsOk": "Ubicación capturada.",
     "gpsPending": "Obteniendo ubicación…",
@@ -121,7 +125,17 @@
     "reasonDuplicate": "Lista duplicada",
     "reasonStaffUnavailable": "Personal no disponible",
     "reasonNoAccess": "No se pudo entrar a la habitación",
-    "reasonOther": "Otro"
+    "reasonOther": "Otro",
+    "exportPdf": "Descargar PDF",
+    "reviewHeading": "Comentarios del revisor",
+    "reviewPass": "Aprobada",
+    "reviewFail": "Necesita atención",
+    "reviewClosed": "Revisada",
+    "reviewFlagged": "Devuelta para revisarla otra vez",
+    "reviewFlaggedHelp": "Corrige lo que indica la nota y envíala otra vez.",
+    "reviewNoteHeading": "Nota de tu revisor",
+    "reviewedByAt": "Revisada por {name} · {when}",
+    "reviewedAtOnly": "Revisada el {when}"
   },
   "Checkout": {
     "heading": "Notas de salida",

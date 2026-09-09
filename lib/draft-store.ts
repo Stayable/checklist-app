@@ -22,6 +22,12 @@ export type ChecklistDraft = {
   photoTimestamps?: Record<string, (number | null)[]>;
   // Signature data URLs, per signature question.
   signatures: Record<string, string>;
+  // ADR-037: the submitter's note to the reviewer, per PHOTO question. Kept
+  // here for the same reason the photos are — a note typed on a phone that a
+  // reload silently discards is worse than no note field at all, because the
+  // person believes the reviewer was told. Optional: drafts saved before this
+  // field existed have none.
+  photoNotes?: Record<string, string>;
   // S1 structured checkout flags (only for templates that collect them).
   // Optional because most drafts (and pre-S1 drafts) have none.
   flags?: CheckoutFlags;

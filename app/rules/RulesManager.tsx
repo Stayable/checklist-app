@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { Role, TemplateScope } from "@prisma/client";
 import { describePattern, describeScope, type RecurrencePattern, type RoomFilter } from "@/lib/recurrence";
-import { createRule, deleteRule, forceCreateToday, setRuleActive } from "./actions";
+import { DEFAULT_DUE_TIME } from "@/lib/batch-create";
+import { formatDueTime } from "@/lib/due-time";
+import {
+  createRule,
+  deleteRule,
+  forceCreateToday,
+  setRuleActive,
+  setRuleDueTime,
+} from "./actions";
 
 type Property = { id: string; shortCode: string; name: string };
 type Template = { id: string; code: string; name: string; scope: TemplateScope; defaultRole: Role };
@@ -24,6 +32,8 @@ export type RuleRow = {
   pattern: RecurrencePattern;
   scope: RoomFilter | null;
   assignment: Assignment;
+  /** ET wall-clock `HH:mm` the generated checklists are due, or null for none. */
+  dueTime: string | null;
   active: boolean;
   effectiveFrom: string | null;
   effectiveTo: string | null;
@@ -101,6 +111,12 @@ function RuleCard({
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // Due time is editable in place — see setRuleDueTime in ./actions for why it
+  // is the one rule field that does not need delete-and-recreate. Empty string
+  // is what an <input type="time"> gives when cleared; null is what that means.
+  const [dueTime, setDueTime] = useState(rule.dueTime ?? "");
+  const dueDirty = (dueTime || null) !== rule.dueTime;
+  const dueLabel = formatDueTime(rule.dueTime);
 
   const act = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) => {
     setMsg(null);
@@ -138,6 +154,10 @@ function RuleCard({
             {describePattern(rule.pattern)}
             {rule.isPerRoom && ` · ${describeScope(rule.scope)}`}
             {` · ${assignmentLabel(rule.assignment, allUsers)}`}
+            {/* Stated either way. A rule with no deadline generates checklists
+                that can never go overdue, which is a legitimate choice but not
+                one anyone should have to infer from a missing word. */}
+            {` · ${dueLabel ? `Due ${dueLabel}` : "No deadline"}`}
           </p>
           {(rule.effectiveFrom || rule.effectiveTo) && (
             <p className="mt-0.5 text-xs text-slate-400">
@@ -174,9 +194,36 @@ function RuleCard({
         >
           Delete
         </button>
+
+        <label className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+          Due (ET)
+          <input
+            type="time"
+            value={dueTime}
+            onChange={(e) => setDueTime(e.target.value)}
+            className="rounded-md border border-slate-300 px-2 py-1 text-xs font-normal text-slate-800"
+          />
+        </label>
+        {dueDirty && (
+          <button
+            disabled={pending}
+            onClick={() => act(() => setRuleDueTime(rule.id, dueTime || null))}
+            className="rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          >
+            Save due time
+          </button>
+        )}
+
         {msg && <span className="text-xs text-emerald-600">{msg}</span>}
         {err && <span className="text-xs text-red-600">{err}</span>}
       </div>
+      {dueDirty && (
+        <p className="mt-2 text-xs text-slate-500">
+          {dueTime
+            ? "Applies to checklists created from now on. Ones already generated keep the deadline they were given."
+            : "Clearing the due time means no deadline — and no reminders — on checklists created from now on."}
+        </p>
+      )}
     </li>
   );
 }
@@ -208,6 +255,11 @@ function CreateForm({
   const [assignType, setAssignType] = useState<Assignment["type"]>("unassigned");
   const [assignRole, setAssignRole] = useState<Role>(Role.HK);
   const [assignUserId, setAssignUserId] = useState("");
+  // Defaulted, not required. Every rule created before 2026-09-09 had no way to
+  // carry a deadline at all, so its checklists could never be overdue or
+  // reminded about; starting new rules at the shared default means the common
+  // case needs no thought, and clearing the field is still a real answer.
+  const [dueTime, setDueTime] = useState<string>(DEFAULT_DUE_TIME);
   const [effectiveFrom, setEffectiveFrom] = useState("");
   const [effectiveTo, setEffectiveTo] = useState("");
 
@@ -264,6 +316,7 @@ function CreateForm({
         pattern: buildPattern(),
         scope: buildScope(),
         assignment: buildAssignment(),
+        dueTime: dueTime || null,
         effectiveFrom: effectiveFrom ? effectiveFrom.replaceAll("-", "") : null,
         effectiveTo: effectiveTo ? effectiveTo.replaceAll("-", "") : null,
         active: true,
@@ -445,6 +498,24 @@ function CreateForm({
             />
           </label>
         )}
+
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className={label}>Due (ET)</span>
+          <input
+            type="time"
+            value={dueTime}
+            onChange={(e) => setDueTime(e.target.value)}
+            className={field}
+          />
+          {/* Same wording as the batch wizard, because it is the same promise:
+              optional, but defaulted — clearing it means "no deadline", which
+              also means nobody is reminded. */}
+          <span className="text-xs text-slate-500">
+            {dueTime
+              ? "Every checklist this rule generates is due at this time. Reminder 1 hour before, and again at the deadline."
+              : "No deadline — no reminders will be sent."}
+          </span>
+        </label>
 
         <label className="flex flex-col gap-1">
           <span className={label}>Effective from (optional)</span>

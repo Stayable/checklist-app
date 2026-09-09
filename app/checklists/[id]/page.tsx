@@ -2,12 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { InstanceStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser, isManagerOrAbove } from "@/lib/rbac";
-import { formatDateOnly } from "@/lib/datetime";
+import { formatDateOnly, formatInET } from "@/lib/datetime";
 import type { AnswerMap, AnswerValue } from "@/lib/checklist-logic";
 import type { CheckoutFlags } from "@/lib/checkout-flags";
 import { roomDisplay } from "@/lib/room-label";
 import { INVALIDATABLE_STATUSES, isInvalidationPending } from "@/lib/invalidation";
-import { FillClient, type FillQuestion } from "./FillClient";
+import { questionsForInstance } from "@/lib/template-version.server";
+import { FillClient, type FillQuestion, type ReviewOutcome } from "./FillClient";
 
 // Checklist filling page (Phase 3). Loads the instance + ordered questions,
 // gates access to the assignee or a property manager/admin, and hands a
@@ -23,11 +24,15 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
         select: {
           name: true,
           collectsCheckoutFlags: true,
-          questions: { orderBy: { orderIndex: "asc" } },
         },
       },
       property: { select: { id: true, shortCode: true } },
       room: { select: { roomNumber: true } },
+      // The reviewer, for the outcome block below. Named `reviewedBy` in the
+      // schema and shown as "reviewer" on screen: CORPORATE, ADMIN and the
+      // night-audit AGENT accounts all review, so "manager" would be wrong for
+      // most of them. The column stays `managerNote`.
+      reviewedBy: { select: { name: true } },
       responses: { select: { questionId: true, answer: true } },
     },
   });
@@ -47,7 +52,10 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
   }
   if (!isAssignee && !canManage) redirect("/");
 
-  const questions: FillQuestion[] = instance.template.questions.map((q) => ({
+  // ADR-036: the version this instance was created against, not the current one.
+  const templateQuestions = await questionsForInstance(instance);
+
+  const questions: FillQuestion[] = templateQuestions.map((q) => ({
     id: q.id,
     type: q.type,
     prompt: q.prompt,
@@ -81,6 +89,30 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
   const submitted =
     instance.status === InstanceStatus.SUBMITTED || instance.status === InstanceStatus.REVIEWED;
 
+  // What the reviewer decided, for the person who filled it in. Two states
+  // carry a verdict: REVIEWED (closed) and FLAGGED (sent back). SUBMITTED has
+  // no verdict yet, so it renders nothing rather than an empty shell.
+  //
+  // The timestamp is formatted HERE, on the server, so the client component
+  // never touches a date library or a timezone (ADR-013 — everything renders
+  // in ET, through lib/datetime.ts).
+  const reviewOutcome: ReviewOutcome | null =
+    instance.status === InstanceStatus.REVIEWED || instance.status === InstanceStatus.FLAGGED
+      ? {
+          kind: instance.status === InstanceStatus.FLAGGED ? "flagged" : "closed",
+          completionCheck: instance.completionCheck,
+          note: instance.managerNote,
+          reviewerName: instance.reviewedBy?.name ?? null,
+          reviewedAt: instance.reviewedAt ? formatInET(instance.reviewedAt) : null,
+        }
+      : null;
+
+  // There is something to export iff the checklist was submitted at least once.
+  // Status is the wrong test: a FLAGGED instance is editable again but its
+  // previous answers and photos are still on the row, and its PDF is exactly
+  // what the reviewer was looking at.
+  const canExport = instance.submittedAt !== null;
+
   // Close-out is offered only while the work is still open. Hiding it on a
   // submitted checklist is not cosmetic: the action refuses those statuses, so
   // showing the control would be an invitation to an error message.
@@ -108,6 +140,8 @@ export default async function FillPage({ params }: { params: Promise<{ id: strin
       initialFlags={initialFlags}
       canCloseOut={canCloseOut}
       closeOutPending={isInvalidationPending(instance)}
+      reviewOutcome={reviewOutcome}
+      canExport={canExport}
     />
   );
 }

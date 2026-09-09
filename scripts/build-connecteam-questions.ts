@@ -145,13 +145,91 @@ type SeedQ = {
   required: boolean;
 };
 
+/**
+ * Resolve the section each extracted question sits under.
+ *
+ * The three extraction passes recorded sections TWO different ways, and only
+ * one of them was ever handled:
+ *
+ *   * PA / MgrArrival tagged every question with a `section` field.
+ *   * Ops emitted the headers as ordinary rows with `inferredType`
+ *     `SECTION_DIVIDER` and left `section` empty on every question.
+ *
+ * The old code read `section` only, then skipped inline SECTION_DIVIDER rows on
+ * the grounds that the metadata path had already emitted them. For the six Ops
+ * templates neither path fired, so all 16 section headers vanished -- which is
+ * how the Maintenance Checklist ended up with two indistinguishable
+ * `Before` / `After` photo pairs.
+ *
+ * Fallback rule: a template with NO `section` metadata anywhere takes its
+ * sections from the inline divider rows instead. Deciding per TEMPLATE, not per
+ * question, matters -- `Due Out Checklist` has one question with a null
+ * `section` among sixteen that have one, and that single row must keep
+ * inheriting its predecessor's section rather than switching the whole
+ * template onto the fallback.
+ */
+function resolveSections(sorted: ExtractedQuestion[]): { q: ExtractedQuestion; section: string | null }[] {
+  const hasSectionMeta = sorted.some((q) => (q.section?.trim() ?? "") !== "");
+  let current: string | null = null;
+  return sorted.map((q) => {
+    if (hasSectionMeta) {
+      const s = q.section?.trim() || null;
+      if (s) current = s;
+    } else if (q.inferredType === "SECTION_DIVIDER") {
+      current = q.prompt.trim() || null;
+    }
+    return { q, section: current };
+  });
+}
+
+/**
+ * Prompts that appear more than once in a template AND land in more than one
+ * section. Those get their section as a `hint`, so the repeat is still
+ * distinguishable in a flat list -- the same job `hint` already does for the PM
+ * PA checkpoint rounds ("7:00pm" / "10:00pm" / "End of shift").
+ *
+ * Restoring the dividers alone is not enough. A reviewer scrolling the question
+ * list sees the headers, but a submission summary, a PDF row or an Issue title
+ * carries the prompt with no surrounding structure, and `Before` on its own
+ * says nothing about which of the Maintenance Checklist's two photo pairs it is.
+ *
+ * Only affects the Maintenance Checklist (`Before` / `After`) and the Room
+ * Inspection Checklist (`Please provide additional notes:`, x4). No template in
+ * the PA or MgrArrival passes repeats a prompt at all, so their output is
+ * untouched.
+ *
+ * ⚠ Partial on Room Inspection: its four notes questions fall 2-and-2 across
+ * two sections, so the hint narrows each to a pair but does not single it out.
+ * Telling those apart needs the YES/NO each one follows, which is a
+ * `conditional` the extraction never captured.
+ */
+function sectionHintPrompts(resolved: { q: ExtractedQuestion; section: string | null }[]): Set<string> {
+  const seen = new Map<string, Set<string | null>>();
+  const counts = new Map<string, number>();
+  for (const { q, section } of resolved) {
+    if (mapType(q) === QuestionType.SECTION_DIVIDER) continue;
+    const p = q.prompt;
+    counts.set(p, (counts.get(p) ?? 0) + 1);
+    const set = seen.get(p) ?? new Set<string | null>();
+    set.add(section);
+    seen.set(p, set);
+  }
+  return new Set(
+    [...counts.entries()]
+      .filter(([p, n]) => n > 1 && (seen.get(p)?.size ?? 0) > 1)
+      .map(([p]) => p),
+  );
+}
+
 function buildQuestions(t: ExtractedTemplate): SeedQ[] {
   const out: SeedQ[] = [];
   let lastSection: string | null = null;
   let order = 0;
 
-  for (const q of [...t.questions].sort((a, b) => a.order - b.order)) {
-    const section = q.section?.trim() || null;
+  const resolved = resolveSections([...t.questions].sort((a, b) => a.order - b.order));
+  const hintedPrompts = sectionHintPrompts(resolved);
+
+  for (const { q, section } of resolved) {
     if (section && section !== lastSection) {
       out.push({
         orderIndex: order++,
@@ -163,7 +241,9 @@ function buildQuestions(t: ExtractedTemplate): SeedQ[] {
     }
 
     const type = mapType(q);
-    if (type === QuestionType.SECTION_DIVIDER) continue; // already emitted above
+    // Either the metadata path emitted this header above, or -- on a fallback
+    // template -- the line right above did, from this very row.
+    if (type === QuestionType.SECTION_DIVIDER) continue;
 
     const repeats = q.repeatedTimesInPdf ?? 1;
     if (repeats === CHECKPOINT_SLOTS.length && /checkpoint/i.test(q.prompt)) {
@@ -179,10 +259,12 @@ function buildQuestions(t: ExtractedTemplate): SeedQ[] {
       continue;
     }
 
+    const sectionHint = hintedPrompts.has(q.prompt) && section ? section : undefined;
     out.push({
       orderIndex: order++,
       type,
       prompt: q.prompt,
+      ...(sectionHint ? { hint: sectionHint } : {}),
       required: isRequired(q, type),
     });
   }

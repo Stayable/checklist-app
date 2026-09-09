@@ -74,7 +74,9 @@
     "status_FLAGGED": "Flagged",
     "status_REVIEWED": "Reviewed",
     "status_INVALIDATED": "Cancelled",
-    "status_EXPIRED": "Expired"
+    "status_EXPIRED": "Expired",
+    "sentBackHeading": "Sent back",
+    "outcomeNeedsAttention": "Needs attention"
   },
   "Checklist": {
     "submit": "Submit checklist",
@@ -88,6 +90,8 @@
     "fail": "Fail",
     "clearSignature": "Clear signature",
     "photoPending": "Photos are saved on this device and upload when you submit.",
+    "photoNotesLabel": "Notes for reviewer (optional)",
+    "photoNotesPlaceholder": "Anything your reviewer should know about these photos",
     "photoUploadFailed": "Photo upload failed. Check your connection and try again — your work is saved on this device.",
     "gpsOk": "Location captured.",
     "gpsPending": "Getting location…",
@@ -121,7 +125,17 @@
     "reasonDuplicate": "Duplicate checklist",
     "reasonStaffUnavailable": "Staff unavailable",
     "reasonNoAccess": "Could not get into the room",
-    "reasonOther": "Other"
+    "reasonOther": "Other",
+    "exportPdf": "Download PDF",
+    "reviewHeading": "Reviewer feedback",
+    "reviewPass": "Passed",
+    "reviewFail": "Needs attention",
+    "reviewClosed": "Reviewed",
+    "reviewFlagged": "Sent back for another look",
+    "reviewFlaggedHelp": "Fix what the note describes, then submit it again.",
+    "reviewNoteHeading": "Note from your reviewer",
+    "reviewedByAt": "Reviewed by {name} · {when}",
+    "reviewedAtOnly": "Reviewed {when}"
   },
   "Checkout": {
     "heading": "Checkout notes",
