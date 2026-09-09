@@ -1,0 +1,5 @@
+{
+  "//": "For `tsx` one-off scripts that import .tsx modules (e.g. the PDF components). The root tsconfig sets \"jsx\": \"preserve\" because Next compiles JSX itself with the automatic runtime; tsx honours that setting and then emits classic React.createElement calls into files that never import React. Overriding to react-jsx here fixes those scripts without touching how the app builds.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "jsx": "react-jsx" }
+}

@@ -15,7 +15,8 @@
  * no instance touched. This previews the TEMPLATE, it does not rehearse the
  * notification pipeline.
  */
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { NOTIFY_EVENTS, notifyEmailCopy, type NotifyEvent } from "../lib/notify-copy";
 import { sendEmail } from "../lib/email";
 
@@ -78,6 +79,7 @@ async function main() {
 
   if (dry) {
     const out = `outputs/email-previews/sample-${event}-${lang}.html`;
+    mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, html, "utf8");
     console.log(`dry run — nothing sent. HTML written to ${out}`);
     return;

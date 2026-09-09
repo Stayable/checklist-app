@@ -44,6 +44,9 @@ export async function GET(
       },
       room: { select: { roomNumber: true } },
       assignedUser: { select: { name: true } },
+      // Named on the export so a paper copy says who signed it off, not just
+      // that somebody did.
+      reviewedBy: { select: { name: true } },
       responses: {
         include: {
           photos: {
@@ -129,6 +132,10 @@ export async function GET(
     responses.push({
       prompt: q.prompt,
       type: q.type,
+      // Load-bearing on the export too: a PM PA checkpoint repeats the same
+      // prompt three times and only the hint ("7:00pm" / "10:00pm" / "End of
+      // shift") tells the three apart. Without it a printed round is unreadable.
+      hint: q.hint,
       answerText: isSignature ? "" : answerToText(q.type, r?.answer ?? null),
       // Reviewers work from the PDF as often as the screen, so a note the
       // submitter left for them has to travel with the export.
@@ -155,6 +162,15 @@ export async function GET(
     timeToComplete: formatMinutes(
       timeToCompleteMinutes(instance.openedAt, instance.submittedAt),
     ),
+    // Stamped once here and used by BOTH the repeating footer and the header's
+    // "As of" line, so the two can never disagree across a multi-page export.
+    generatedAt: formatInET(new Date()),
+    systemId: instance.systemId,
+    completionCheck: instance.completionCheck,
+    reviewedBy: instance.reviewedBy?.name ?? null,
+    // The reviewer's reason travels with the export: a flagged checklist
+    // printed without the reason is the half that cannot be acted on.
+    reviewerNote: instance.managerNote,
     responses,
   };
 
