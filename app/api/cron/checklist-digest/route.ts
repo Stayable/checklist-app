@@ -6,6 +6,10 @@ import { isEtHour } from "@/lib/cron-guard";
 import { postTeamsCard } from "@/lib/network/teams-webhook";
 import { resolveChecklistWebhook } from "@/lib/checklist-teams";
 import {
+  checklistNotificationsEnabled,
+  DISABLED_RESPONSE,
+} from "@/lib/checklist-notifications-enabled";
+import {
   buildChecklistDigest,
   checklistDigestDays,
   dateOnlyUtc,
@@ -112,6 +116,19 @@ async function handle(req: Request, enforceHour: boolean) {
   // Preview the exact post without sending or recording anything. The only
   // override offered — a "force send" flag would just be a way to double-post.
   const dryRun = url.searchParams.get("dry") === "1";
+
+  // Built but NOT activated (Kyle, 2026-09-09 — still in the testing phase).
+  // The cron entries are also removed from vercel.json; this is the second
+  // layer, so a manual trigger or a restored schedule cannot put a card in
+  // front of the Property Managers by accident.
+  //
+  // `?dry=1` is deliberately EXEMPT: it renders and returns without sending or
+  // writing anything, and it is how the thing gets exercised while switched
+  // off. Gating it too would leave no way to see the output at all.
+  if (!dryRun && !checklistNotificationsEnabled()) {
+    return NextResponse.json(DISABLED_RESPONSE);
+  }
+
 
   const { todayYMD, yesterdayYMD } = checklistDigestDays(now);
   const [properties, yesterday, today] = await Promise.all([

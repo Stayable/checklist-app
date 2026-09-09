@@ -17,6 +17,10 @@ import {
   type ReminderKind,
 } from "@/lib/checklist-reminders";
 import type { NotifyEvent } from "@/lib/notify-copy";
+import {
+  checklistNotificationsEnabled,
+  DISABLED_RESPONSE,
+} from "@/lib/checklist-notifications-enabled";
 
 // ADR-037 due-time reminders — the DELIVERY half. Runs every 15 minutes
 // (`*/15 * * * *` in vercel.json).
@@ -410,6 +414,19 @@ async function handle(req: Request) {
 
   const now = new Date();
   const dryRun = new URL(req.url).searchParams.get("dry") === "1";
+
+  // Built but NOT activated (Kyle, 2026-09-09 — still in the testing phase).
+  // The cron entries are also removed from vercel.json; this is the second
+  // layer, so a manual trigger or a restored schedule cannot put a card in
+  // front of the Property Managers by accident.
+  //
+  // `?dry=1` is deliberately EXEMPT: it renders and returns without sending or
+  // writing anything, and it is how the thing gets exercised while switched
+  // off. Gating it too would leave no way to see the output at all.
+  if (!dryRun && !checklistNotificationsEnabled()) {
+    return NextResponse.json(DISABLED_RESPONSE);
+  }
+
 
   const candidates = await loadCandidates(now);
   const selection = selectReminders(candidates, now);
