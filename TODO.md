@@ -15,7 +15,141 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-09-07)
+## 🎯 START HERE (updated 2026-09-09 morning ET)
+
+**🟢 THE PUBLISH PASS HAPPENED — the tracker was wrong about this for a day.** Measured from the
+`publish` audit rows: **Jeffrey did the whole thing on 2026-09-07, 5:28–5:30 PM ET**, ~90 minutes
+after the brief went out. 21 publishes, and he **immediately un-published 4** in the same minute.
+Erika and Ruby published nothing.
+- **17 templates are live** (published + active): ARR · DEP · DOWALK · HKC · LFLIP · MNT · PAAM ·
+  PINSP · PWR · RIN · RPM · MGR44199 · MGR6802 · PPA2295 · PPA2535 · PPA44199 · PPA6802
+- **4 published then retracted within 60 seconds:** MGR2295 · MGR2535 · MGR4645 · PPA4645.
+  ⚠ **Nobody has asked Jeffrey why.** Misclicks or real problems — that answer changes whether
+  they can just be re-published.
+- **6 never touched:** MGR5399 · MGR812 · MGR8700 · PPA5399 · PPA812 · PPA8700. Plus PTASK, which
+  is empty and deliberately skipped. So **13 short of Kyle's "everything except PTASK"**.
+
+**🔴 ERIKA WAS NEVER LOCKED OUT.** She reported a lockout; production said `failed_login_attempts=2`,
+`locked_until=null`, `active=true`. The audit log has the real story: she set her own password
+**09-03 2:12 PM**, and an admin **overwrote it 09-07 4:11 PM** — so she was typing a credential
+that no longer existed, and `mustChangePassword` was false so nothing told her. Cleared her 2
+attempts with `scripts/unlock-user.ts` (a no-op for her actual problem). **The lesson is a process
+one: the roster-password scripts and `/admin/users` → Set PW will silently clobber a password a
+real person already chose.**
+
+**🚀 13 COMMITS SHIPPED AND DEPLOYED (`182cadd..a0dd798`), 3 MIGRATIONS APPLIED TO PROD.**
+999 tests, clean typecheck/lint/build on every one.
+
+| what | commit |
+|---|---|
+| Managers can EDIT all-properties templates, not just publish (AGENT still cannot) | `d68f96f` |
+| **Self-service password reset by email OTP** — `/forgot-password`, `OtpPurpose` split | `778ae1f` |
+| Wizard crashed on ticking the first room/person — `etYYYYMMDD` seeded an unparseable date | `aeddf84` |
+| "Who is on shift" removed; **Assign to = on-site personnel** (`users.remote`) | `7deb099` |
+| `users.always_assignable`, set for bke@ (renamed **Test User (Kyle)**) | `99e9106` |
+| Every native `<select>` in the app → shared Base UI `SelectField` (32 across 12 files) | `fe4b4c8` |
+| **`/checklists` did not exist** — creating a batch always 404'd | `76dd909` |
+| Board redesign + **`scheduledFor` rendered a day early on 4 screens** + tile links | `e04d416` |
+| Photo thumbnails painted over the sticky header on a phone | `84136e7` |
+| The new index rendered with **no navigation** (shell-hide prefix) | `a0dd798` |
+
+**⚠ THE FONT SAGA — three attempts, and only the third worked. Do not repeat the first two.**
+A native `<select>` popup on Windows Chrome is drawn by the OS widget: **`font-family` on
+`<option>` never reaches it**, so it rendered in Times while its own trigger was Nunito. CSS was
+shipped, verified live in production CSS, and ignored by the browser. The fix is to not use a
+native select. Root cause of the *serif* specifically: `--font-sans: var(--font-nunito)` had **no
+fallback**, and an unresolved custom property makes `font-family` invalid → browser initial →
+Times. All three font tokens now carry real stacks.
+
+**⏭ NEXT, IN ORDER:**
+1. **Ask Jeffrey about the 4 retractions**, then finish the remaining 6 templates.
+2. **Recurring rules** — still **0**. Templates are published now, so `/rules` finally has a
+   dropdown with content. This is the last thing between "deployed" and "generates work".
+3. **Field-staff accounts** — still **0 real HK/PA/MT**. ⚠ Create them by SCRIPT: `/admin/users`
+   does not set `mustChangePassword` (bug still open, see Security).
+4. **Kyle's theme feedback on `/checklists` is UNRESOLVED** — the screenshot could not be read
+   (Read denied, outside working dirs) and the one that was readable turned out to be a stale
+   build. Ask for it again before redesigning anything else.
+
+---
+
+## (previous) START HERE - 2026-09-07 evening
+
+**🟢 THE BRIEFS WENT OUT. Kyle messaged the RPMs and night audit on 2026-09-07 (~4 PM ET).**
+Deadline he set: **templates published before tomorrow's shift, or issues found to fix.**
+This is the first time anyone has been given login instructions since Erika's unsent 09-04 brief.
+
+**🔵 THE ORG STRUCTURE WAS CORRECTED BY KYLE — it changes who does what:**
+- **RPMs = Remote Property Managers = the multi-property MANAGERs: Erika (all 8) · Ruby (DP KE OR)
+  · Jeffrey (JW SA).** They **create checklists and schedule them**, and per Kyle **they are the
+  ones who publish.**
+- **Property Managers = the 8 single-property MANAGERs, on site:** Bianca KW · Christy LL ·
+  Dayana JN · Jason OR · Katherine DP · Rafael KE · Sage JW · Shayla SA.
+- **Night audit = the AGENT role** — Abby · Bea · Karla · Randy. They **review and flag, do not
+  publish**. ⚠ `isManagerOrAbove` includes AGENT (`lib/roles.ts:34`) and `setTemplatePublished`
+  uses `requireManager()`, **so agents CAN publish** — "flag only" is a policy told to them in the
+  message, not a guard in the code.
+- **Only RPMs + night audit were messaged.** The 8 on-site PMs and all field staff were told
+  nothing, deliberately (Kyle: "the instruction (initial) will only be given to the RPM").
+
+**🔴 THE FINDING THAT REORDERS THE ROLLOUT: `active: true` (= published) gates EVERY path to a
+checklist.** Publishing is not one blocker among several, it is the gate in front of all of them:
+- `app/rules/page.tsx:21` — the Rules **template dropdown** lists published templates only
+- `app/checklists/new/page.tsx:21` — the **batch-create wizard**, same filter
+- `lib/recurrence.server.ts:67` — the **5 AM cron** skips rules whose template is unpublished
+
+With 0 published, **nobody can create a checklist at all** — not on a schedule, not by hand. Strict
+order: **publish → schedule → field accounts → team**. No parallelising.
+
+**⚠ PUBLISHING ALONE DOES NOT MAKE TOMORROW'S SHIFT WORK, and Kyle was told so.** Two gaps sit
+behind it: **0 recurring rules** (the 5 AM cron evaluates nothing) and **0 field-staff accounts**.
+Tomorrow is realistically RPMs + night audit exercising the app, not the team going live.
+
+**📋 MEASURED IN PRODUCTION 2026-09-07 ~3 PM ET — the real roster, 37 rows / 22 active:**
+- **11 MANAGER** (8 on-site + 3 RPM) · **6 CORPORATE** · **4 AGENT** · **1 ADMIN**
+- **7 have signed in, 15 never have.** erika 09-03 · admin 08-31 · gerardo 08-29 · bea 08-26 ·
+  randy 08-20 · rb 08-18 · bianca 08-12. **Kate has never signed in to production.**
+- **The only HK/PA/MT rows in the DB are 13 INACTIVE `@contractors.invalid` MT stubs**, left over
+  from the deleted contractor track. **Zero real field-staff accounts exist.**
+- ⚠ **Scheduling coverage gap: JN, KW and LL are reachable only by Erika.** Ruby has DP/KE/OR,
+  Jeffrey has JW/SA. One `user_properties` row each would widen it.
+- Dumped by **`scripts/roster-annotate.ts`** (new, untracked, read-only — `list-users.ts` omits
+  name, `lastLoginAt` and property scope, which are the three columns that matter here).
+- ⚠ **The prod query was ALLOWED once and BLOCKED twice** by the permission classifier, same
+  command shape. Not deterministic — expect to retry.
+
+**🆕 NEW BUG FOUND (not fixed): the admin UI never arms the forced password change.**
+`createUser` and `resetPassword` (`app/admin/users/actions.ts`) do **not** set
+`mustChangePassword`, and the schema default is `false` (`prisma/schema.prisma:315`). Only the
+provisioning **scripts** set it true. So **every account created through `/admin/users` from now
+on gets a random temp password and is never forced to change it.** The redirect
+(`lib/rbac.ts:69`) works — the UI path just doesn't arm it. One field on two actions. **This bites
+the moment field-staff accounts get made, which is the very next step.**
+
+**📄 FOUR SHEETS WRITTEN (all untracked). Two sent, two parked:**
+
+| file | audience | state |
+|---|---|---|
+| `outputs/RPMPublishNow_RISE8_090726.md` | Erika · Ruby · Jeffrey | **SENT 09-07** — short: passwords, publish now, night audit reviews tonight, all three test |
+| `outputs/NightAuditReview_RISE8_090726.md` | Abby · Bea · Karla · Randy | **SENT 09-07** — review + flag, explicitly do NOT publish |
+| `outputs/RemotePMScheduling_RISE8_090726.md` | RPMs | long-form: publish pass **+ how to build the recurring rules**. Not sent — the short note went instead. **This is the reference for the scheduling step.** |
+| `outputs/draft/OnSitePMReview_RISE8_090726.md` | the 8 on-site PMs | parked — Kyle scoped the initial send to RPMs only |
+| `outputs/draft/FirstLoginTeam_RISE8_090726.md` | field staff | parked, marked DO NOT SEND — lands on an empty Home screen and they have no accounts. **No Spanish version written**; ADR-013 makes field surfaces bilingual, so an EN-only sheet undercuts it |
+| `outputs/draft/TemplateReviewBrief_RISE8_090426.md` | Erika | superseded, moved out of `outputs/` (shows as a delete + re-add in git) |
+
+**Starting passwords for the send** (derived from *never signed in*, not read from the flag — the
+confirming query was blocked): Ruby `OpsRuby` · Jeffrey `OpsJeffrey` · Abby `OpsAbby` ·
+Karla `OpsKarla`. Erika/Bea/Randy already set their own. `scripts/print-roster-credentials.ts`
+prints the authoritative list.
+
+**⏭ WHAT KYLE ASKED FOR NEXT AND DID NOT ANSWER:** an early-morning production check on 2026-09-08
+reporting which templates went live, who published, and when — the `publish` audit rows carry actor
+and timestamp, so it is measurable rather than a status update. **He never named the hour.** Offer
+it again at session start.
+
+---
+
+## (previous) START HERE - 2026-09-07 midday
 
 **Everything is pushed except one docs commit.** `main` is 1 ahead: `9e460cd`.
 
@@ -605,7 +739,8 @@ reminder of it.
 | P0 | [x] | Geofence editor | — | ✅ `/admin/properties/[id]/geofence` — paste GeoJSON or centre+radius, SVG outline preview, live point tester running the real evaluator. Parser rejects [lat,lng] swaps rather than "fixing" them |
 | P0 | [x] | ~~Backfill `UNVERIFIED` photos~~ | — | ✅ **Moot — prod has 0 photos.** Boundaries landed before real capture, so there is nothing to re-evaluate. Do not re-add this |
 | P0 | [x] | **Room inventory** | Kyle | ✅ **2026-08-12.** 1,172 rooms from a Cloudbeds export, with zone + room type: DP 153 · JN 127 · JW 133 · KE 167 · KW 160 · LL 157 · OR 135 · SA 140. Unblocked the 3 per-room templates, which could not be created at all before |
-| P0 | [!] | **Recurring-rules matrix** — which template recurs how often at which property | Property Managers | `/rules` is built and empty. The 5 AM cron runs and generates nothing until rules exist. **Now the single biggest gap** — testers must create everything by hand |
+| P0 | [!] | **Recurring-rules matrix** — which template recurs how often at which property | **RPMs: Erika · Ruby · Jeffrey** (owner named 2026-09-07 — creating and scheduling checklists is their job) | `/rules` is built and empty. The 5 AM cron runs and generates nothing until rules exist. ✅ **UNBLOCKED 2026-09-09 — 17 templates are published, so the Rules dropdown now has content.** This is the last thing between 'deployed' and 'generates work'. Reference sheet: `outputs/RemotePMScheduling_RISE8_090726.md`. ⚠ Coverage gap — **JN, KW, LL are Erika-only** |
+| P0 | [!] | ⚠ **STILL 0 as of 2026-09-09.** **Field-staff accounts do not exist** — zero HK/PA/MT rows in prod (the 13 `@contractors.invalid` MT stubs are inactive leftovers). Nothing can be assigned to the people who fill checklists | Kyle | Falls due immediately after scheduling. ⚠ **Create them via script, or fix the `mustChangePassword` bug first** — the admin UI will not force a password change (see Security) |
 | P1 | [!] | **Room occupancy is a placeholder** | — | All 1,172 rooms are `VACANT` because the export deliberately excludes occupancy. A recurring rule filtered on occupied/vacant filters a default, not a fact. Needs either PMS sync (S3, blocked §Q12) or manual upkeep — **and there is no room-management UI**, so today it is script-only |
 | P1 | [ ] | Confirm SLA hours per priority (placeholders 4/24/72/168h live) | Christopher | Admin-editable, so non-blocking |
 
@@ -915,7 +1050,11 @@ unverified. Hand-off, in order: (1) apply the migration to prod `ep-summer-cloud
 | P1 | [x] | **Admin can release a lockout without changing the password** — ✅ 2026-08-21, `4923d5d`. `unlockUser()` + Unlock button + `Locked until` badge in `/admin/users`; `scripts/unlock-user.ts` is the CLI equivalent (dry-run by default) for when nobody is at a browser. Audit action `unlock_account` records **what** was cleared, so an account that keeps reappearing there identifies a person who does not know their password |
 | P1 | [x] | **Login names the lockout and the wait** — ✅ 2026-08-21, `01de2f1`. Bilingual EN+ES. ⚠ **New disclosure:** 5 failed attempts now confirm the address is an account. Judged acceptable (see START HERE); revisit if this app is ever exposed beyond staff |
 | P2 | [ ] | Login discloses `locked` but not `deactivated` — a deactivated user gets the generic text forever and no path forward. Cheap fix once someone actually hits it; leaving it generic is the safer default until then |
-| P1 | [ ] | **Starting passwords are derivable from committed code.** `rosterPassword()` (`scripts/set-roster-passwords.ts:46`) is `"Ops"` + the mailbox local part's letters, first capitalised — so repo read access yields every account's password until that person changes it. Mitigations already in place: `mustChangePassword` blocks the app until a new one is set, and a new device needs an emailed OTP. Options if this matters: generate per-person random starting passwords (then the print script becomes the only source and must be treated as secret), or keep the scheme and accept it as a first-login-only credential. ⚠ **Who still holds one is UNVERIFIED** — the 08-19 check was interrupted before the query ran |
+| P1 | [ ] | **Starting passwords are derivable from committed code.** `rosterPassword()` (`scripts/set-roster-passwords.ts:46`) is `"Ops"` + the mailbox local part's letters, first capitalised — so repo read access yields every account's password until that person changes it. Mitigations already in place: `mustChangePassword` blocks the app until a new one is set, and a new device needs an emailed OTP. Options if this matters: generate per-person random starting passwords (then the print script becomes the only source and must be treated as secret), or keep the scheme and accept it as a first-login-only credential. ✅ **Who holds one is now KNOWN (2026-09-07): the 15 who have never signed in.** 7 of 22 active users have signed in and none still carries `mustChangePassword`. Four of those 15 were handed their password in the 09-07 messages (Ruby, Jeffrey, Abby, Karla) |
+| **P0** | [ ] | 🆕 **The admin UI never arms the forced password change** (found 2026-09-07). `createUser` and `resetPassword` (`app/admin/users/actions.ts:57,89`) do **not** set `mustChangePassword`, and the schema default is `false` (`prisma/schema.prisma:315`). Only the provisioning **scripts** (`create-agent-testers.ts`, `create-manager-accounts.ts`, `set-roster-passwords.ts`, `unlock-user.ts`) set it true. So an account created or reset through the admin screen gets a random 12-char temp password from `generateTempPassword()` and **is never made to change it** — the admin-issued credential stays valid indefinitely. The redirect itself works (`lib/rbac.ts:69`, proven by 7 real sign-ins). **One field on two actions.** ⚠ **Raised to P0 because field-staff account creation is the next step** and it is the first time the admin UI, rather than a script, would be the provisioning path |
+| **P0** | [ ] | 🆕 **A password reset does NOT revoke existing sessions** (noted while building it, 2026-09-09). `confirmPasswordReset` clears the lockout and `mustChangePassword`, but `session()` reads only the JWT — so a 30-day cookie held by whoever knew the OLD password stays valid until it expires. Same root cause as the long-standing "no session-revocation path" row; a reset is the strongest argument for fixing it, because it is the one moment a user actively expects the old credential to stop working everywhere |
+| P1 | [ ] | 🆕 **An admin Set PW silently clobbers a password the person already chose** (2026-09-09, this is what happened to Erika: own password 09-03, overwritten 09-07, five days of being unable to sign in and no signal why). `setUserPassword` and the roster scripts do not check `mustChangePassword === false`, which is precisely the marker that a real person personalised the account — `set-roster-passwords.ts` already honours it, `/admin/users` does not. Either warn in the UI, or set `mustChangePassword` on an admin overwrite so the person is at least told to set a new one |
+| P2 | [ ] | 🆕 **`isFieldStaff()` is a negation and answers TRUE for `NETWORK_TECH`** (`lib/roles.ts`), which the schema explicitly calls "NOT field staff" — and it will answer true for any role added to the enum later. Harmless at its single call site (a phone-only PWA install nudge), and deliberately **not** narrowed unasked. `isOnSiteAssignable` enumerates HK/PA/MT instead and is covered across the whole enum by `lib/roles.test.ts`. Fix `isFieldStaff` properly before anything authorization-shaped is ever built on it |
 | P1 | [ ] | **`AUTH_SECRET` is triple-purpose** (NextAuth secret + OTP pepper + trusted-device HMAC). Splitting rotates live secrets → coordinated change, deferred to A11 |
 | P2 | [ ] | Nightly `pg_dump` → R2 backup bucket |
 | P2 | [ ] | Sentry alerts wired per RUNBOOK §Monitoring |
