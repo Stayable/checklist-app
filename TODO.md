@@ -15,7 +15,41 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-09-09 morning ET)
+## 🎯 START HERE (updated 2026-09-10 ~9 AM ET)
+
+**🟢 SHIPPED OVERNIGHT — `84eed1a..617ecae`, 3 commits, 2 migrations applied, 1,150 tests, clean
+typecheck / lint / build.** Two ADRs written (**036** template versioning, **037** due times / reminders /
+digest) and every item on Kyle's 09-09 list is in production. Full narrative in `CLAUDE.md` §Current Status.
+
+**⚠️ THE DIGEST AND REMINDERS ARE BUILT AND DEACTIVATED, ON PURPOSE.** Kyle: "build it but not activate.
+Still on testing phase." Two layers — cron entries removed from `vercel.json`, **and**
+`CHECKLIST_NOTIFICATIONS_ENABLED` default-OFF in both routes. Re-activating needs BOTH, including *both*
+digest UTC rows (13:00 + 14:00) so `isEtHour(9)` admits one across DST. **Flag/fail emails are NOT gated
+and are live.**
+
+**⏭ NEXT, IN ORDER:**
+1. **Randy's end-to-end run** (`randy@rentstayable.com`, AGENT, all 8 properties, deliberately **0
+   assigned** so he starts from the wizard). Template → create → fill → submit → review → export. This is
+   the **first real send of the flagged email** and the first time any of this session's UI is opened in a
+   browser. Every gate was verified open for AGENT; he cannot edit/publish templates, only create from them.
+2. **Recurring rules — still 0.** The last thing between "deployed" and "generates work". Rules can now
+   carry a due time (defaults 6 PM ET), so a rule finally produces work that can be late and reminded about.
+3. **Field-staff accounts — still 0 real HK/PA/MT.** Create by SCRIPT: `/admin/users` still does not set
+   `mustChangePassword`.
+4. **Run `scripts/fix-missing-section-dividers.ts`** (dry-run by default) to put the 16 restored section
+   dividers and the MNT Before/After hints into prod. Safe now that ADR-036 makes it a version bump rather
+   than a mutation.
+
+**⚠️ NOTHING WAS OPENED IN A BROWSER THIS SESSION.** The only rendered artefacts anyone looked at are the
+sample PDF and three Teams posts to the **test** channel. Tests, types and lint are the entire evidence
+base for the review gate, the outcome card, the "Sent back" section, the export button and the digest card.
+
+**Small and unblocked:** `CompletenessPdf` / `IssuesPdf` still use the old plain layout (~10 min to match
+the new one) · regenerate the two Power Automate webhook URLs (they were pasted into a transcript).
+
+---
+
+## (previous) START HERE - 2026-09-09 morning
 
 **🟢 THE PUBLISH PASS HAPPENED — the tracker was wrong about this for a day.** Measured from the
 `publish` audit rows: **Jeffrey did the whole thing on 2026-09-07, 5:28–5:30 PM ET**, ~90 minutes
@@ -739,8 +773,8 @@ reminder of it.
 | P0 | [x] | Geofence editor | — | ✅ `/admin/properties/[id]/geofence` — paste GeoJSON or centre+radius, SVG outline preview, live point tester running the real evaluator. Parser rejects [lat,lng] swaps rather than "fixing" them |
 | P0 | [x] | ~~Backfill `UNVERIFIED` photos~~ | — | ✅ **Moot — prod has 0 photos.** Boundaries landed before real capture, so there is nothing to re-evaluate. Do not re-add this |
 | P0 | [x] | **Room inventory** | Kyle | ✅ **2026-08-12.** 1,172 rooms from a Cloudbeds export, with zone + room type: DP 153 · JN 127 · JW 133 · KE 167 · KW 160 · LL 157 · OR 135 · SA 140. Unblocked the 3 per-room templates, which could not be created at all before |
-| P0 | [!] | **Recurring-rules matrix** — which template recurs how often at which property | **RPMs: Erika · Ruby · Jeffrey** (owner named 2026-09-07 — creating and scheduling checklists is their job) | `/rules` is built and empty. The 5 AM cron runs and generates nothing until rules exist. ✅ **UNBLOCKED 2026-09-09 — 17 templates are published, so the Rules dropdown now has content.** This is the last thing between 'deployed' and 'generates work'. Reference sheet: `outputs/RemotePMScheduling_RISE8_090726.md`. ⚠ Coverage gap — **JN, KW, LL are Erika-only** |
-| P0 | [!] | ⚠ **STILL 0 as of 2026-09-09.** **Field-staff accounts do not exist** — zero HK/PA/MT rows in prod (the 13 `@contractors.invalid` MT stubs are inactive leftovers). Nothing can be assigned to the people who fill checklists | Kyle | Falls due immediately after scheduling. ⚠ **Create them via script, or fix the `mustChangePassword` bug first** — the admin UI will not force a password change (see Security) |
+| P0 | [!] | **Recurring-rules matrix** — which template recurs how often at which property | **RPMs: Erika · Ruby · Jeffrey** (owner named 2026-09-07 — creating and scheduling checklists is their job) | `/rules` is built and empty. The 5 AM cron runs and generates nothing until rules exist. ✅ **UNBLOCKED 2026-09-09 — 17 templates published.** ✅ **2026-09-10 — a rule can now carry a DUE TIME** (`recurring_rules.due_time`, defaults 6 PM ET); before ADR-037 it could not express a deadline at all, so generated work could never be late or reminded about. This is the last thing between 'deployed' and 'generates work'. Reference sheet: `outputs/RemotePMScheduling_RISE8_090726.md`. ⚠ Coverage gap — **JN, KW, LL are Erika-only** |
+| P0 | [!] | ⚠ **STILL 0 as of 2026-09-10.** **Field-staff accounts do not exist** — zero HK/PA/MT rows in prod (the 13 `@contractors.invalid` MT stubs are inactive leftovers). Nothing can be assigned to the people who fill checklists | Kyle | Falls due immediately after scheduling. ⚠ **Create them via script, or fix the `mustChangePassword` bug first** — the admin UI will not force a password change (see Security) |
 | P1 | [!] | **Room occupancy is a placeholder** | — | All 1,172 rooms are `VACANT` because the export deliberately excludes occupancy. A recurring rule filtered on occupied/vacant filters a default, not a fact. Needs either PMS sync (S3, blocked §Q12) or manual upkeep — **and there is no room-management UI**, so today it is script-only |
 | P1 | [ ] | Confirm SLA hours per priority (placeholders 4/24/72/168h live) | Christopher | Admin-editable, so non-blocking |
 

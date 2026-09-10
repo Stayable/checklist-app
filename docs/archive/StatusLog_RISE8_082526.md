@@ -1,6 +1,74 @@
 # Status Log Archive — RISE8 Operations Platform
 
-**As of:** August 25, 2026 (latest)
+**As of:** September 3, 2026 (latest)
+
+**As of:** September 3, 2026 (Eastern, derived — the harness clock runs ~12h ahead on this machine)
+
+**🟢 DEPLOYED TO PRODUCTION. 33 commits pushed `0362798..bf8c564`, five migrations applied, the template
+library filled from the real Connecteam forms, test data cleared.** 956 tests, clean typecheck + lint.
+The single largest shipping day this project has had.
+
+**📋 THE TEMPLATE LIBRARY IS REAL CONTENT NOW — 27 templates, 669 questions, extracted not typed.**
+Every completed Connecteam checklist is auto-filed into Smartsheet as a PDF row attachment, and those PDFs
+carry the full ordered question list. Three agents pulled 2–3 samples per template across different days and
+submitters, unioned them, and the result was generated into `prisma/data/connecteam-questions.ts` by
+`scripts/build-connecteam-questions.ts`. **Prompts are the operators' own wording and already bilingual
+`English / Español`** — that is ADR-013 field-staff Spanish satisfied for free and better than machine
+translation. **Do not send it for translation review.**
+- **All 27 are `Draft (filled)`, none published.** Filling a template deliberately does NOT publish it: a
+  Property Manager reviews the question set and publishes it themselves. That flow is the reason
+  `publishedAt` exists (see below).
+- ⚠ **Every question TYPE is INFERRED** from PDF rendering — Connecteam's real field definitions were never
+  visible. 56 bare task lines became `PASSFAIL` (Kyle's call — it unlocks `failFlagsIssue`, so a missed task
+  raises an Issue instead of sitting invisible). A question no sample ever answered seeded `required: false`;
+  photos and signatures are exempt.
+- **Checkpoints are THREE questions, not one three-photo question** — confirmed against a live Connecteam
+  screenshot. Same prompt three times, separated only by a time sub-label, so each round carries its own
+  `capturedAt` and geofence stamp. That sub-label needed somewhere to live → `Question.hint`.
+
+**🔴 FOUR CORRECTIONS THAT OVERTURNED THINGS THIS FILE USED TO SAY:**
+1. **"HK Review" and "Maintenance Report" are Smartsheet SHEET names, not Connecteam templates.** Global
+   attachment search returns ZERO for both. The real forms are `Housekeeping Checklist` and
+   `Maintenance Checklist`. Kyle said this on day one and was argued with using `prisma/templates.ts` seed
+   data — which was itself a guess. **The seed was never evidence about Connecteam.**
+2. **`812 PM PA Checklist` does not exist.** 110 attachments enumerated, zero Smartsheet-wide. Jacksonville
+   North files the shared `AM PA Checklist` and has no PM PA form. Seeded as a **copy of 8700** on Kyle's
+   instruction — so every question in it is a guess about what JN should do. **4645 was deliberately NOT the
+   source: it genuinely omits the whole "Transforming Spaces" section (19 questions vs 22), which is the
+   proof that keeping 28 separate templates was right rather than one template scoped to 8 properties.**
+3. **`MAX_ROOMS_PER_CREATE` was 60 with a comment claiming that exceeded the biggest property.** False —
+   measured: `KE 167 · KW 160 · LL 157 · DP 153 · SA 140 · OR 135 · JW 133 · JN 127`, 1,172 rooms, largest
+   single zone **80**. At 60 it blocked a whole-property create *and* a single building. Now 200.
+4. **The `n/NN` markers in those PDFs are PAGE numbers, not question numbers.** Anything sized from them is
+   wrong; a template renders a different NN each day because photo questions accept multiple images.
+
+**🏗 WHAT SHIPPED (all on `main`, all live):**
+- **Two-axis template scope** — `TemplateScope` (what it is about) × new `InstanceMultiplicity`
+  (`ONE`/`PER_ASSIGNEE`/`PER_TASK`). `subjectKindFor()` collapses them and **REJECTS** per-room + per-person
+  rather than picking an axis. `PER_ZONE` was considered and **dropped** on Kyle's call, which removed a
+  34-site audit. The old `perRoom` boolean is gone.
+- **Batch create wizard** (`/checklists/new`) — N batches, subjects × dates, live name preview, confirm
+  dialog, Save as Draft. The preview runs the **same** `planBatches`/`buildInstanceName` the server action
+  runs, so what is approved is what is written. **`createInstanceManually` was DELETED** — an exported server
+  action is a live HTTP endpoint, so a dead one is attack surface.
+- **Naming (amends ADR-009)** — `{Template} {ShortCode} {ScopeToken} {MMDDYY}`, six digits so a checklist and
+  its exported PDF agree. `systemId` untouched.
+- **Publish state** — `publishedAt` null = draft (empty or filled), set + active = published, set + inactive
+  = retired. Managers may **publish**, editing questions stays ADMIN-only.
+- **Property picker** gained `All properties` / `All my properties`; **Issues** lost its duplicate "Open" chip
+  and `WONT_FIX` as a settable status (enum value kept).
+- **Network:** a re-arm sweep for OFFLINE devices with no ticket and no pending timer (creates timer *jobs*,
+  not tickets, so the cron stays the only ticketing authority), an "offline with no open ticket" dashboard
+  figure, and **device suppression** with an Acknowledge button on the ticket page.
+
+**⚠ THE THING THAT MATTERS MOST: NOTHING HAS BEEN OPENED IN A BROWSER.** Not the wizard, not the 167-room
+picker, not the confirm dialog, not the Publish button, not the Acknowledge panel, not a 38-question PM PA
+form on a phone. 956 tests, clean types and lint are the **entire** evidence base for a day of UI work.
+**The next real signal is somebody filling one checklist end to end on a real device.**
+
+---
+
+**As of:** August 25, 2026
 
 **🟢 NO APP CODE. Three commits of housekeeping, one owed ADR, one finding that changes what the contractor load is for. `82b062d..42ebc53`. NOTHING PUSHED — local `main` is 4 ahead of `origin/main`, and a push deploys to production, so that is Kyle's call.** 778 tests, clean typecheck + lint, tree clean.
 

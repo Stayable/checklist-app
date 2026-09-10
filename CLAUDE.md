@@ -347,69 +347,88 @@ When changing scope or architecture: update the relevant doc and add an entry to
 carry-forward of what is still open.** When you add a block, move the one it supersedes into
 `docs/archive/StatusLog_RISE8_082526.md` (newest first) and fold anything still live into the carry-forward.
 
-**As of:** September 3, 2026 (Eastern, derived — the harness clock runs ~12h ahead on this machine)
+**As of:** September 10, 2026, ~9 AM (Eastern, derived — the harness clock runs ~12h ahead on this machine)
 
-**🟢 DEPLOYED TO PRODUCTION. 33 commits pushed `0362798..bf8c564`, five migrations applied, the template
-library filled from the real Connecteam forms, test data cleared.** 956 tests, clean typecheck + lint.
-The single largest shipping day this project has had.
+**🟢 DEPLOYED. Three commits `84eed1a..617ecae`, two migrations applied, 1,150 tests, clean typecheck /
+lint / build.** Two ADRs written (**036** and **037**) and every item on Kyle's 09-09 list is in production.
+Six subagents ran in parallel on disjoint file sets, then one more each for the review rework and the
+assignee-visibility work.
 
-**📋 THE TEMPLATE LIBRARY IS REAL CONTENT NOW — 27 templates, 669 questions, extracted not typed.**
-Every completed Connecteam checklist is auto-filed into Smartsheet as a PDF row attachment, and those PDFs
-carry the full ordered question list. Three agents pulled 2–3 samples per template across different days and
-submitters, unioned them, and the result was generated into `prisma/data/connecteam-questions.ts` by
-`scripts/build-connecteam-questions.ts`. **Prompts are the operators' own wording and already bilingual
-`English / Español`** — that is ADR-013 field-staff Spanish satisfied for free and better than machine
-translation. **Do not send it for translation review.**
-- **All 27 are `Draft (filled)`, none published.** Filling a template deliberately does NOT publish it: a
-  Property Manager reviews the question set and publishes it themselves. That flow is the reason
-  `publishedAt` exists (see below).
-- ⚠ **Every question TYPE is INFERRED** from PDF rendering — Connecteam's real field definitions were never
-  visible. 56 bare task lines became `PASSFAIL` (Kyle's call — it unlocks `failFlagsIssue`, so a missed task
-  raises an Issue instead of sitting invisible). A question no sample ever answered seeded `required: false`;
-  photos and signatures are exempt.
-- **Checkpoints are THREE questions, not one three-photo question** — confirmed against a live Connecteam
-  screenshot. Same prompt three times, separated only by a time sub-label, so each round carries its own
-  `capturedAt` and geofence stamp. That sub-label needed somewhere to live → `Question.hint`.
+**⚠️ THE DIGEST AND THE REMINDERS ARE BUILT BUT DEACTIVATED** (Kyle, 09-09: "I just need you to build it
+but not activate. Still on testing phase"). **Two layers**, because removing a schedule does not stop a
+manual POST or a restored `vercel.json`:
+1. the three cron entries are **out of `vercel.json`**;
+2. `CHECKLIST_NOTIFICATIONS_ENABLED` guards both routes, **default OFF** — only the exact string `"true"`
+   arms it, so an env typo fails safe (12 tests pin that). `?dry=1` and the two test-channel scripts are
+   exempt, which is how they get exercised while off.
+**Re-activating needs BOTH halves**, including *both* digest UTC rows (13:00 and 14:00) so `isEtHour(9)`
+admits exactly one across DST. They were live for ~10 min after `a0d75b4`; the reminder sweep ran 4× and
+posted nothing (nothing carried a `dueAt`), the digest never fired. **Nothing reached the PM channel.**
+Flag/fail **emails are NOT gated** by this switch and are live.
 
-**🔴 FOUR CORRECTIONS THAT OVERTURNED THINGS THIS FILE USED TO SAY:**
-1. **"HK Review" and "Maintenance Report" are Smartsheet SHEET names, not Connecteam templates.** Global
-   attachment search returns ZERO for both. The real forms are `Housekeeping Checklist` and
-   `Maintenance Checklist`. Kyle said this on day one and was argued with using `prisma/templates.ts` seed
-   data — which was itself a guess. **The seed was never evidence about Connecteam.**
-2. **`812 PM PA Checklist` does not exist.** 110 attachments enumerated, zero Smartsheet-wide. Jacksonville
-   North files the shared `AM PA Checklist` and has no PM PA form. Seeded as a **copy of 8700** on Kyle's
-   instruction — so every question in it is a guess about what JN should do. **4645 was deliberately NOT the
-   source: it genuinely omits the whole "Transforming Spaces" section (19 questions vs 22), which is the
-   proof that keeping 28 separate templates was right rather than one template scoped to 8 properties.**
-3. **`MAX_ROOMS_PER_CREATE` was 60 with a comment claiming that exceeded the biggest property.** False —
-   measured: `KE 167 · KW 160 · LL 157 · DP 153 · SA 140 · OR 135 · JW 133 · JN 127`, 1,172 rooms, largest
-   single zone **80**. At 60 it blocked a whole-property create *and* a single building. Now 200.
-4. **The `n/NN` markers in those PDFs are PAGE numbers, not question numbers.** Anything sized from them is
-   wrong; a template renders a different NN each day because photo questions accept multiple images.
+**🔴 ADR-036 — TEMPLATE QUESTION SETS ARE VERSIONED.** Kyle edited MNT, saved, created a checklist and got
+the old questions. Root cause: `updateTemplate` refused the edit because MNT had 6 instances, and the error
+banner rendered above the fold while Save sat at the bottom, so the rejection was invisible. **That guard
+was a crash shim, not a policy** — the old path did `DELETE`+`INSERT` and `responses_question_id_fkey` is
+`ON DELETE RESTRICT`. Edits are now append-only: bump `checklist_templates.version`, insert a new set,
+never delete. `checklist_instances.template_version` pins what an instance renders, so work created before
+an edit is untouched — **in-flight too** (Kyle's option (a)). Questions load via
+`lib/template-version.server.ts` at 6 read sites; Prisma cannot filter a nested relation by a parent column,
+which is why they are separate queries.
 
-**🏗 WHAT SHIPPED (all on `main`, all live):**
-- **Two-axis template scope** — `TemplateScope` (what it is about) × new `InstanceMultiplicity`
-  (`ONE`/`PER_ASSIGNEE`/`PER_TASK`). `subjectKindFor()` collapses them and **REJECTS** per-room + per-person
-  rather than picking an axis. `PER_ZONE` was considered and **dropped** on Kyle's call, which removed a
-  34-site audit. The old `perRoom` boolean is gone.
-- **Batch create wizard** (`/checklists/new`) — N batches, subjects × dates, live name preview, confirm
-  dialog, Save as Draft. The preview runs the **same** `planBatches`/`buildInstanceName` the server action
-  runs, so what is approved is what is written. **`createInstanceManually` was DELETED** — an exported server
-  action is a live HTTP endpoint, so a dead one is attack surface.
-- **Naming (amends ADR-009)** — `{Template} {ShortCode} {ScopeToken} {MMDDYY}`, six digits so a checklist and
-  its exported PDF agree. `systemId` untouched.
-- **Publish state** — `publishedAt` null = draft (empty or filled), set + active = published, set + inactive
-  = retired. Managers may **publish**, editing questions stays ADMIN-only.
-- **Property picker** gained `All properties` / `All my properties`; **Issues** lost its duplicate "Open" chip
-  and `WONT_FIX` as a settable status (enum value kept).
-- **Network:** a re-arm sweep for OFFLINE devices with no ticket and no pending timer (creates timer *jobs*,
-  not tickets, so the cron stays the only ticketing authority), an "offline with no open ticket" dashboard
-  figure, and **device suppression** with an Acknowledge button on the ticket page.
+**🔴 SILENT DATA LOSS FIXED IN THE SAME FUNCTION.** The old `INSERT` never wrote `hint`, `options`,
+`conditional` or `photoMin`. **105 checkpoint labels across 7 PM PA templates were one rename away from
+deletion** — that is the `7:00pm / 10:00pm / End of shift` text that is the only thing separating three
+identical CHECKPOINT prompts. The builder now round-trips each question's `id` (not position — a reorder
+would hand a moved question its neighbour's hint; not prompt — checkpoints repeat theirs), and `hint` is
+editable.
 
-**⚠ THE THING THAT MATTERS MOST: NOTHING HAS BEEN OPENED IN A BROWSER.** Not the wizard, not the 167-room
-picker, not the confirm dialog, not the Publish button, not the Acknowledge panel, not a 38-question PM PA
-form on a phone. 956 tests, clean types and lint are the **entire** evidence base for a day of UI work.
-**The next real signal is somebody filling one checklist end to end on a real device.**
+**ADR-037 — due times, reminders, digest, and the review rework:**
+- `DEFAULT_DUE_TIME = "18:00"` ET in the wizard **and** rules. **`recurring_rules.due_time` did not exist** —
+  rules could not express a deadline at all, so every cron-generated checklist had `dueAt = null` and could
+  never be late.
+- Reminders 1h before + at the deadline → assignee (email/in-app) **and** a grouped PM Teams card. Two
+  timestamps double as the idempotency guard; 12h backlog cutoff; explicit allow-list of open statuses.
+- 9 AM ET digest, **per property, counts only** (`Site · Done · Flag · Missed · Today · Rev'd`), plus a
+  `--sample` mode that fabricates all eight properties and is stamped `[SAMPLE — NOT REAL DATA]`.
+  **Reviewed is a SUBSET of Done**, not an addition — legend says so.
+- **Fixed-Eastern crons now use two UTC entries + `isEtHour()`.** Retrofitted to `generate-checklists`,
+  which would have slipped 5 AM → **4 AM ET on 1 Nov**.
+- **Approve → "Closed"** (label only; `REVIEWED`, `approveSubmission` and `review_approved` keep their
+  names — historic `notification_log` rows depend on them). Pass/Fail now **gates** the action; a reason is
+  **mandatory** on Fail or Flag and **always notifies**; new `review_failed` event (EN+ES). Flag can no
+  longer be silenced.
+- **Request Re-do DELETED**, not hidden — an export in a `"use server"` file is a live endpoint.
+  `review_redo` copy deliberately kept for historic rows.
+- Photo questions take a **note from the filler** → shown at review and in the PDF, persisted in the
+  offline draft. Uses `Response.notes`, dead since Phase 2, no migration.
+
+**🎨 PDF EXPORT REDESIGNED**, matched to `cloudbeds_dashboard/lib/ops-pdf-kit.ts` (Kyle: "match it
+please"). jsPDF there vs `@react-pdf/renderer` here, so only tokens and grammar port — navy `#0F1E33`,
+ink `#1E1E1E`, muted `#646973`, panel `#F4F5F7`, 24pt margins. **Fixed header + page-numbered footer repeat
+on every page — verified against a rendered 3-page sample.** Section dividers render as navy headings,
+`hint` prints, and the reviewer's verdict + note travel with the export.
+
+**📧 EMAIL NOW HAS AN HTML TEMPLATE**, adopted from `rewards/server/services/email-templates.js` (Stayable
+Elevate Design System) rather than designed fresh. `sendEmail` gained an optional `html`; `text` is still
+always sent. A `PRESENTATION` table maps event → severity/eyebrow beside the copy, so **a new NotifyEvent
+with no entry is a type error**. ⚠ Two inherited brand divergences, Kyle's to settle: navy `#0B1F3A` (email)
+vs `#041e42` (app), and **Poppins** vs Nunito.
+
+**🐛 THREE BUGS FOUND WHILE BUILDING, ALL PRE-EXISTING:**
+1. **`REVIEWED` was missing from the field-staff home query** — a checklist closed the same day left the
+   list *and the denominator*: 4 of 5 done rendered **"4/4"**.
+2. **A flagged checklist fell off "Today" at midnight with no route back to it.** `/checklists` is
+   manager-only, so the person who had to fix it had nothing but the email. Mattered more once Re-do was
+   deleted and Flag became the only send-back. New **"Sent back"** section on the home.
+3. **The PDF route gated on `canAccessProperty` alone** — any field-staff user could export any checklist at
+   their property, the Manager Checklist rating their own work included. Now manager+ keeps property scope,
+   everyone else gets their own instance only. The new test was verified to **fail against the old rule**.
+
+**⚠️ NOTHING HAS BEEN OPENED IN A BROWSER.** Again. 1,150 tests, clean types/lint/build are the entire
+evidence base for the outcome card, the "Sent back" section, the export button, the review gate and the
+digest card. The **only** rendered artefacts anyone has looked at are the sample PDF and the three Teams
+posts sent to the **test** channel. **The flagged email has never been sent** — Randy's run is the first.
 
 
 ### Carry-forward — still live from earlier sessions (full history: `docs/archive/StatusLog_RISE8_082526.md`)
@@ -420,13 +439,11 @@ The dated session blocks for **2026-07-13 → 2026-08-21** were moved to
 got the way it is. Only the items below are still **open** — everything else there is history.
 
 **Blocking the soft launch (content/config, not code):**
-- **27 templates are `Draft (filled)` and NONE are published.** Nothing is usable by field staff until a
-  Property Manager reviews and publishes each one. ⚠ **MEASURED 2026-09-07: still zero, and the
-  `publish`/`unpublish` audit table has ZERO rows all time** — the button has never been clicked.
-  Erika last signed in **09-03 11:21 a.m. ET** and has not returned. Kyle's brief is at
-  `outputs/TemplateReviewBrief_RISE8_090426.md`; **it is dated Fri 04 Sep and needs re-dating before
-  it goes out.** Kyle's call 09-07: **publish everything except the empty `PTASK`** — the four
-  staleness holds and the 812-copies-8700 hold are dismissed, because publishing does not schedule.
+- ✅ **RESOLVED — 17 templates are published + active.** Jeffrey published on 09-07; the 7 remaining
+  drafts are `active: false`, so **the create wizard offers exactly the 17** (measured 09-10 —
+  `scripts/check-wizard-template-leak.ts` reports 0 leak). ⚠ **All 17 are `allProperties: true`**,
+  including the eight property-specific ones — so `2295 PM PA Checklist` can be created at Jacksonville.
+  Pre-existing; worth fixing before rules generate work off them.
 - **0 recurring rules exist**, so the 5 AM cron generates nothing and every checklist must be hand-created
   through the wizard. `/rules` is built and empty. **`checklist_instances = 0`** — the test round's 9 were
   deleted 09-03 along with their 23 responses and 5 photos (the R2 objects are orphaned, deliberately).
@@ -442,6 +459,10 @@ got the way it is. Only the items below are still **open** — everything else t
   published template is available, not assigned. **The staleness question moves to the rules step**,
   which is where it starts putting work on a real calendar. Answer it for Pressure Washing and Roof
   PM before either gets a rule.
+- ✅ **RESOLVED — templates are no longer frozen once used.** ADR-036 made edits append-only, so MNT,
+  ARR, HKC and PPA2295 are editable again. The MNT duplicate Before/After and the 16 dropped section
+  dividers are now ordinary edits; `scripts/fix-missing-section-dividers.ts` applies them to prod
+  (dry-run by default, appends a version, **not yet run**).
 - **`812 PM PA Checklist` is a copy of 8700**, not JN's process. **Publish it anyway** (Kyle,
   2026-09-07) — but a JN manager should flag anything in it that does not fit how JN works.
 - ~~**`Unit #` extracted as `PHOTO`**~~ ✅ **FIXED 2026-09-07 (`1b41587`), repo and production.** Now
@@ -456,7 +477,12 @@ got the way it is. Only the items below are still **open** — everything else t
 - **Nobody owns the Monday contractor load and nothing alerts when it is missed** (§Q43).
 
 **Decisions owed (Kyle/Kate):**
-- **ADR-031 is double-claimed** — the close-out/stayover work and the Instant On uplink-flap branch both took the number. Settle it before either ADR is written.
+- ✅ **ADR numbering settled and documented.** 031 close-out (shipped) · 032 Instant On (branch, renumber
+  at merge) · 033 contractor fan-out (owed) · 034 template multiplicity (owed) · 035 note-driven flagging
+  (owed) · **036 template versioning** · **037 due times/reminders/digest**. ⚠ **034 and 035 were claimed
+  in `prisma/schema.prisma:63` and a spec's front-matter, NOT in `DECISIONS.md`** — reading only the
+  headings understated the high-water mark by four and cost two renumbers on 09-09. **Run
+  `git grep -oh "ADR-0[0-9][0-9]" | sort -u` before claiming a number.**
 - **Lockout disclosure** — five failures now confirms an address is a real account. My read is that it is acceptable here; reversible if Kyle disagrees.
 - **Offshore reviewers can never read `VERIFIED`** — geofencing assumes on-property Florida staff, so this tester group cannot validate photo verification at all. No code fixes that.
 - **Backfill the 92 null-duration MASS_OUTAGE tickets?** Deliberately not done — it moves the dashboard's average-downtime tile, which is a data decision.
@@ -465,6 +491,18 @@ got the way it is. Only the items below are still **open** — everything else t
 - **Managers can PUBLISH but not EDIT templates** — the narrow reading of "PMs check the template and publish it themselves". If they should also edit the questions they review, it is a one-line change in `lib/template-access.ts`.
 - **W7 contradicts CLAUDE.md's own ADR-013 line** — "hidden for CORPORATE/ADMIN (portfolio default)" is no longer true; portfolio roles now see the picker. Kyle asked for it; **the ADR-013 line above needs updating or the change reverting.**
 - **`WONT_FIX` issues are unreachable from the list** — the chip is gone, so nothing surfaces them. Folding them into `Resolved` is one line.
+- **RIN's four identical `Please provide additional notes:` prompts** (orderIndex 4, 6, 18, 26). Section
+  dividers halve the ambiguity — two pairs, not four singletons. Each is a conditional follow-up to a
+  different Yes/No, and RIN's *other* notes fields spell the trigger into the prompt. Needs wording from
+  someone who knows the form (`If vacant` / `If OOO` / `If not clean` / `If unregistered people or pets`).
+  Proper fix is populating `conditional`, which the extraction never captured.
+- **Should an INACTIVE assignee still get a reminder email?** Currently no — the Teams card still names
+  the checklist so it can be reassigned. Reasonable, but it is a policy choice.
+- **Digest `Reviewed` is a SUBSET of `Done`**, kept that way because `bucketOf` and `lib/reports.ts` both
+  count done as SUBMITTED+REVIEWED. A disjoint `Awaiting`/`Reviewed` split would need no legend and would
+  surface the review backlog directly — bigger change, three places must agree.
+- **Email brand divergence** — navy `#0B1F3A` + Poppins (adopted Elevate template) vs `#041e42` + Nunito
+  (this app). The Rewards values come from a formal design system and may be the more authoritative source.
 - **§Q32–34 (UniFi reconciliation)** — devices that vanish from UniFi stay `OFFLINE` forever holding a ticket · Lakeland's console UI and API disagree · ONLINE-WINS hides 44 Orlando cameras a retired recorder calls offline. **None were "fixed"** on purpose.
 
 **Security / ops debt:**
@@ -474,6 +512,13 @@ got the way it is. Only the items below are still **open** — everything else t
 - **Neon: autosuspend 5 min → 1 min and autoscale max → 0.25 CU are STILL not set** on `stayable-ops-prod`. The deployed cron change saves nothing until autosuspend is shorter than the poll gap ($19.35/mo → ~$10.15/mo). Plan changes happen at console.neon.tech under the **"Stayable"** org, not through Vercel.
 - **Dev DB `ep-falling-moon` has been down since early August** — 0 users, 0 properties, no `contractor_update*` tables — so Preview is unusable and migrations are hand-authored.
 - **`feat/instant-on-uplink-flaps` is not pushed** (~1,776 lines, 17 files, one machine) and its migration is unapplied. Zero flap tickets have ever been created; guest WiFi at JW/OR/KE/KW is unmonitored.
+- **The two Power Automate webhook URLs were pasted into a chat transcript on 2026-09-09.** They carry an
+  HMAC `sig=` in the query string, so possession is authorisation. Stored as Vercel *sensitive* vars
+  (`CHECKLIST_TEAMS_WEBHOOK_URL[_TEST]`) and never logged — ops output prints the env var NAME only.
+  **Regenerate both flows when convenient**, then update Vercel.
+- **`RESEND_API_KEY` cannot be pulled locally** — it is a Vercel *Secret*, so `vercel env pull` writes
+  `[SENSITIVE]`. Resend shows a key's value only at creation. Local email sends therefore need a second
+  key; the existing one works in prod (last used 09-08) and proves the from-domain is verified.
 - **Write-amplification guard (B3)** — an unsigned probe still writes a row on both webhook receivers.
 
 **Facts worth not re-deriving:**
@@ -487,13 +532,13 @@ got the way it is. Only the items below are still **open** — everything else t
 - **An exported server action is a live HTTP endpoint.** A dead one is attack surface, not clutter — which is why `createInstanceManually` was deleted rather than left.
 
 ### Open questions awaiting answer
-1. **Final list of recurring rules per template per property** — Owner: Property Managers. **Now the single biggest gap between "deployed" and "usable":** the templates exist and are filled, but nothing generates a checklist without rules, so every one has to be hand-created. The cadence per template IS known (Kyle's list: daily / monthly, and the per-property families are per-PA / per-PM), so this is mostly a matter of deciding which properties and confirming after publish — not a discovery exercise
+1. **Final list of recurring rules per template per property** — Owner: Property Managers. **Still the single biggest gap between "deployed" and "usable" — 0 rules exist.** Rules can now carry a due time (ADR-037, defaults 6 PM ET), so a rule finally produces work that can be late and reminded about. the templates exist and are filled, but nothing generates a checklist without rules, so every one has to be hand-created. The cadence per template IS known (Kyle's list: daily / monthly, and the per-property families are per-PA / per-PM), so this is mostly a matter of deciding which properties and confirming after publish — not a discovery exercise
 2. SLA defaults per issue priority — Owner: Christopher — Needed by Week 4
 3. ~~**Spanish translation reviewer**~~ — **largely moot for checklist content as of 2026-09-03.** Every extracted prompt is already bilingual in the operators' own wording (`English / Español`), so the 27 templates need no translation pass. Still open for UI strings the app itself renders
 4. **Teams workspace inventory** — 1 corporate + 8 property channels w/ Incoming Webhook URLs — Owner: Kate — Needed by Week 7
-5. **Stayable branding kit** — logo, palette, wordmark "Stayable Operations" — Owner: Kate — Needed by Week 7
+5. **Stayable branding kit** — logo, palette, wordmark "Stayable Operations" — Owner: Kate. **Partly answered in practice:** the PDF now uses the ops-kit tokens and email uses the Elevate template, both real Stayable sources. What is still missing is a LOGO ASSET — the email header carries a wordmark placeholder, and the PDF header is type-only.
 6. ~~**Final CONTRACTOR-audience template list**~~ — Owner: Kate — **on hold**: contractor checklists themselves are in question (§Q31, ADR-028)
-7. **Final geofence polygons per property** — Owner: Kate — Needed by Week 6
+7. **Final geofence polygons per property** — Owner: Kate — Needed by Week 6. **Now also blocks the digest's photo-verification figure** (ADR-010's 4th bullet, deliberately not built): with no polygons almost every photo is `UNVERIFIED`, so the count would measure missing polygons rather than anything real.
 
 ### Recently resolved decisions
 - **Photo pipeline design locked** (ADR-015, decided 2026-06-05) — upload-at-submit via presigned PUTs (not at capture); GPS captured per photo batch at capture time; `GeofenceStatus.UNVERIFIED` for GPS-present/polygon-absent (Phase-6 backfill); **R2 has no object versioning** — keep-forever + scoped tokens are the deletion protection, Bucket Lock eval at Phase 8
