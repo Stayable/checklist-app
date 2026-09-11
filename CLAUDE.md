@@ -346,90 +346,50 @@ When changing scope or architecture: update the relevant doc and add an entry to
 — it blew past it on 2026-08-25 at 171 KB and stopped loading. Rule: **the newest block in full, plus the
 carry-forward of what is still open.** When you add a block, move the one it supersedes into
 `docs/archive/StatusLog_RISE8_082526.md` (newest first) and fold anything still live into the carry-forward.
+**As of:** September 11, 2026, ~11:45 AM (Eastern, derived — the harness clock runs ~12h ahead on this machine)
 
-**As of:** September 10, 2026, ~9 AM (Eastern, derived — the harness clock runs ~12h ahead on this machine)
+**🟢 DEPLOYED. `af29316`, no migration, 1,158 tests, clean typecheck / lint / build.** Small session, three
+things Kyle asked for, one of them a data change already live in production.
 
-**🟢 DEPLOYED. Three commits `84eed1a..617ecae`, two migrations applied, 1,150 tests, clean typecheck /
-lint / build.** Two ADRs written (**036** and **037**) and every item on Kyle's 09-09 list is in production.
-Six subagents ran in parallel on disjoint file sets, then one more each for the review rework and the
-assignee-visibility work.
+**👥 BEA AND ERIKA ARE CORPORATE.** Applied to prod via `scripts/promote-to-corporate.ts --apply` (dry-run
+by default), both with `set_role` audit rows naming Kyle as actor. **Bea came from AGENT**, the role that
+exists to be checklist-ONLY, so hers is the larger jump: both now hold **Maintenance** — every contractor's
+name and phone, and reassign/close on any property's jobs, portfolio-wide because the calendar has no
+per-property scoping — and **Network** across the whole estate. That is the real widening, not the checklist
+part. `user_properties` rows were KEPT (inert at a portfolio role, and exactly what a demotion back needs);
+Erika's `remote: true` was KEPT (still true, just no longer read). CORPORATE is now 8 accounts.
 
-**⚠️ THE DIGEST AND THE REMINDERS ARE BUILT BUT DEACTIVATED** (Kyle, 09-09: "I just need you to build it
-but not activate. Still on testing phase"). **Two layers**, because removing a schedule does not stop a
-manual POST or a restored `vercel.json`:
-1. the three cron entries are **out of `vercel.json`**;
-2. `CHECKLIST_NOTIFICATIONS_ENABLED` guards both routes, **default OFF** — only the exact string `"true"`
-   arms it, so an env typo fails safe (12 tests pin that). `?dry=1` and the two test-channel scripts are
-   exempt, which is how they get exercised while off.
-**Re-activating needs BOTH halves**, including *both* digest UTC rows (13:00 and 14:00) so `isEtHour(9)`
-admits exactly one across DST. They were live for ~10 min after `a0d75b4`; the reminder sweep ran 4× and
-posted nothing (nothing carried a `dueAt`), the digest never fired. **Nothing reached the PM channel.**
-Flag/fail **emails are NOT gated** by this switch and are live.
+**🔑 CORPORATE CAN NOW ADMINISTER USERS — with two limits that are the only thing between a corporate
+account and ADMIN.** Both enforced server-side against the target's role read fresh from the DB:
+1. **`canAdministerUser`** — CORPORATE may not act on an ADMIN row at all. Without it they could reset
+   `admin@`'s password and sign in as ADMIN.
+2. **`assignableRolesFor`** — CORPORATE may not GRANT ADMIN, or they reach (1) the long way round.
+Nobody may change their own role — an ADMIN demoting themselves with no second admin account is
+unrecoverable, and `admin@` is the only other one. The nav gives CORPORATE an Admin section holding
+**Users alone**; SLA and Properties stay ADMIN-only.
 
-**🔴 ADR-036 — TEMPLATE QUESTION SETS ARE VERSIONED.** Kyle edited MNT, saved, created a checklist and got
-the old questions. Root cause: `updateTemplate` refused the edit because MNT had 6 instances, and the error
-banner rendered above the fold while Save sat at the bottom, so the rejection was invisible. **That guard
-was a crash shim, not a policy** — the old path did `DELETE`+`INSERT` and `responses_question_id_fkey` is
-`ON DELETE RESTRICT`. Edits are now append-only: bump `checklist_templates.version`, insert a new set,
-never delete. `checklist_instances.template_version` pins what an instance renders, so work created before
-an edit is untouched — **in-flight too** (Kyle's option (a)). Questions load via
-`lib/template-version.server.ts` at 6 read sites; Prisma cannot filter a nested relation by a parent column,
-which is why they are separate queries.
+**⚠️ THE `/admin` LAYOUT GUARD IS NO LONGER THE ONLY GUARD.** It widened to ADMIN+CORPORATE, and
+**`app/admin/sla/page.tsx` had been relying on it entirely** — it now calls `requireAdmin()` itself.
+Properties and its geofence editor already did; its actions already did. The hole was read-only and never
+shipped open, but the pattern is the thing to remember: a layout guard that gets widened silently widens
+everything under it.
 
-**🔴 SILENT DATA LOSS FIXED IN THE SAME FUNCTION.** The old `INSERT` never wrote `hint`, `options`,
-`conditional` or `photoMin`. **105 checkpoint labels across 7 PM PA templates were one rename away from
-deletion** — that is the `7:00pm / 10:00pm / End of shift` text that is the only thing separating three
-identical CHECKPOINT prompts. The builder now round-trips each question's `id` (not position — a reorder
-would hand a moved question its neighbour's hint; not prompt — checkpoints repeat theirs), and `hint` is
-editable.
+**🆕 ROLE CHANGES EXIST AT ALL.** There was no path — a wrong role meant deleting and recreating the
+account, which `deleteUser`'s activity-history guard makes impossible once the person has worked. New
+`setUserRole` + a per-row picker. It does **not** touch `user_properties`, and **refuses** a demotion to a
+scoped role with zero properties rather than creating an account that can see nothing. The picker's role
+list moved to `lib/roles.ts` (`ROLE_ORDER`): the hard-coded one in `UsersClient` held **six of the eight
+roles**, so an AGENT or NETWORK_TECH row had no option matching its own value.
 
-**ADR-037 — due times, reminders, digest, and the review rework:**
-- `DEFAULT_DUE_TIME = "18:00"` ET in the wizard **and** rules. **`recurring_rules.due_time` did not exist** —
-  rules could not express a deadline at all, so every cron-generated checklist had `dueAt = null` and could
-  never be late.
-- Reminders 1h before + at the deadline → assignee (email/in-app) **and** a grouped PM Teams card. Two
-  timestamps double as the idempotency guard; 12h backlog cutoff; explicit allow-list of open statuses.
-- 9 AM ET digest, **per property, counts only** (`Site · Done · Flag · Missed · Today · Rev'd`), plus a
-  `--sample` mode that fabricates all eight properties and is stamped `[SAMPLE — NOT REAL DATA]`.
-  **Reviewed is a SUBSET of Done**, not an addition — legend says so.
-- **Fixed-Eastern crons now use two UTC entries + `isEtHour()`.** Retrofitted to `generate-checklists`,
-  which would have slipped 5 AM → **4 AM ET on 1 Nov**.
-- **Approve → "Closed"** (label only; `REVIEWED`, `approveSubmission` and `review_approved` keep their
-  names — historic `notification_log` rows depend on them). Pass/Fail now **gates** the action; a reason is
-  **mandatory** on Fail or Flag and **always notifies**; new `review_failed` event (EN+ES). Flag can no
-  longer be silenced.
-- **Request Re-do DELETED**, not hidden — an export in a `"use server"` file is a live endpoint.
-  `review_redo` copy deliberately kept for historic rows.
-- Photo questions take a **note from the filler** → shown at review and in the PDF, persisted in the
-  offline draft. Uses `Response.notes`, dead since Phase 2, no migration.
+**📍 LOCATION (Remote / On-site) IS VISIBLE.** `users.remote` existed since 09-09 but was invisible and
+settable only by a one-off script. Now a column and a control on every row and on create. Shown for **every**
+role because it is a fact about the person, captioned **"reference only"** where it changes nothing — it
+feeds a decision for MANAGER alone, where `isOnSiteAssignable` reads it to keep the Remote PMs out of the
+batch wizard's "Assign to" pool. Hiding it would make it a fact nobody can correct.
 
-**🎨 PDF EXPORT REDESIGNED**, matched to `cloudbeds_dashboard/lib/ops-pdf-kit.ts` (Kyle: "match it
-please"). jsPDF there vs `@react-pdf/renderer` here, so only tokens and grammar port — navy `#0F1E33`,
-ink `#1E1E1E`, muted `#646973`, panel `#F4F5F7`, 24pt margins. **Fixed header + page-numbered footer repeat
-on every page — verified against a rendered 3-page sample.** Section dividers render as navy headings,
-`hint` prints, and the reviewer's verdict + note travel with the export.
-
-**📧 EMAIL NOW HAS AN HTML TEMPLATE**, adopted from `rewards/server/services/email-templates.js` (Stayable
-Elevate Design System) rather than designed fresh. `sendEmail` gained an optional `html`; `text` is still
-always sent. A `PRESENTATION` table maps event → severity/eyebrow beside the copy, so **a new NotifyEvent
-with no entry is a type error**. ⚠ Two inherited brand divergences, Kyle's to settle: navy `#0B1F3A` (email)
-vs `#041e42` (app), and **Poppins** vs Nunito.
-
-**🐛 THREE BUGS FOUND WHILE BUILDING, ALL PRE-EXISTING:**
-1. **`REVIEWED` was missing from the field-staff home query** — a checklist closed the same day left the
-   list *and the denominator*: 4 of 5 done rendered **"4/4"**.
-2. **A flagged checklist fell off "Today" at midnight with no route back to it.** `/checklists` is
-   manager-only, so the person who had to fix it had nothing but the email. Mattered more once Re-do was
-   deleted and Flag became the only send-back. New **"Sent back"** section on the home.
-3. **The PDF route gated on `canAccessProperty` alone** — any field-staff user could export any checklist at
-   their property, the Manager Checklist rating their own work included. Now manager+ keeps property scope,
-   everyone else gets their own instance only. The new test was verified to **fail against the old rule**.
-
-**⚠️ NOTHING HAS BEEN OPENED IN A BROWSER.** Again. 1,150 tests, clean types/lint/build are the entire
-evidence base for the outcome card, the "Sent back" section, the export button, the review gate and the
-digest card. The **only** rendered artefacts anyone has looked at are the sample PDF and the three Teams
-posts sent to the **test** channel. **The flagged email has never been sent** — Randy's run is the first.
-
+**⚠️ NOTHING WAS OPENED IN A BROWSER.** Again. 1,158 tests, clean types/lint/build and a Ready Vercel deploy
+are the entire evidence base for the role picker, the Location column, the "Admin only" row state and the
+CORPORATE nav entry. **Nobody has signed in as Bea or Erika to confirm what they now see.**
 
 ### Carry-forward — still live from earlier sessions (full history: `docs/archive/StatusLog_RISE8_082526.md`)
 
@@ -482,7 +442,11 @@ got the way it is. Only the items below are still **open** — everything else t
   (owed) · **036 template versioning** · **037 due times/reminders/digest**. ⚠ **034 and 035 were claimed
   in `prisma/schema.prisma:63` and a spec's front-matter, NOT in `DECISIONS.md`** — reading only the
   headings understated the high-water mark by four and cost two renumbers on 09-09. **Run
-  `git grep -oh "ADR-0[0-9][0-9]" | sort -u` before claiming a number.**
+  `git grep -oh "ADR-0[0-9][0-9]" | sort -u` before claiming a number.** High-water is now **038**
+  (CORPORATE user administration).
+- **Bea and Erika now see Maintenance and Network portfolio-wide** — a side effect of CORPORATE, not
+  something Kyle asked for. If they should have Admin → Users WITHOUT the contractor calendar, that is a
+  new predicate (`canAccessMaintenance` currently equals "is portfolio role"), not a settings change.
 - **Lockout disclosure** — five failures now confirms an address is a real account. My read is that it is acceptable here; reversible if Kyle disagrees.
 - **Offshore reviewers can never read `VERIFIED`** — geofencing assumes on-property Florida staff, so this tester group cannot validate photo verification at all. No code fixes that.
 - **Backfill the 92 null-duration MASS_OUTAGE tickets?** Deliberately not done — it moves the dashboard's average-downtime tile, which is a data decision.

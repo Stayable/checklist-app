@@ -1,6 +1,94 @@
 # Status Log Archive — RISE8 Operations Platform
 
-**As of:** September 3, 2026 (latest)
+**As of:** September 10, 2026 (latest)
+
+---
+
+**As of:** September 10, 2026, ~9 AM (Eastern, derived — the harness clock runs ~12h ahead on this machine)
+
+**🟢 DEPLOYED. Three commits `84eed1a..617ecae`, two migrations applied, 1,150 tests, clean typecheck /
+lint / build.** Two ADRs written (**036** and **037**) and every item on Kyle's 09-09 list is in production.
+Six subagents ran in parallel on disjoint file sets, then one more each for the review rework and the
+assignee-visibility work.
+
+**⚠️ THE DIGEST AND THE REMINDERS ARE BUILT BUT DEACTIVATED** (Kyle, 09-09: "I just need you to build it
+but not activate. Still on testing phase"). **Two layers**, because removing a schedule does not stop a
+manual POST or a restored `vercel.json`:
+1. the three cron entries are **out of `vercel.json`**;
+2. `CHECKLIST_NOTIFICATIONS_ENABLED` guards both routes, **default OFF** — only the exact string `"true"`
+   arms it, so an env typo fails safe (12 tests pin that). `?dry=1` and the two test-channel scripts are
+   exempt, which is how they get exercised while off.
+**Re-activating needs BOTH halves**, including *both* digest UTC rows (13:00 and 14:00) so `isEtHour(9)`
+admits exactly one across DST. They were live for ~10 min after `a0d75b4`; the reminder sweep ran 4× and
+posted nothing (nothing carried a `dueAt`), the digest never fired. **Nothing reached the PM channel.**
+Flag/fail **emails are NOT gated** by this switch and are live.
+
+**🔴 ADR-036 — TEMPLATE QUESTION SETS ARE VERSIONED.** Kyle edited MNT, saved, created a checklist and got
+the old questions. Root cause: `updateTemplate` refused the edit because MNT had 6 instances, and the error
+banner rendered above the fold while Save sat at the bottom, so the rejection was invisible. **That guard
+was a crash shim, not a policy** — the old path did `DELETE`+`INSERT` and `responses_question_id_fkey` is
+`ON DELETE RESTRICT`. Edits are now append-only: bump `checklist_templates.version`, insert a new set,
+never delete. `checklist_instances.template_version` pins what an instance renders, so work created before
+an edit is untouched — **in-flight too** (Kyle's option (a)). Questions load via
+`lib/template-version.server.ts` at 6 read sites; Prisma cannot filter a nested relation by a parent column,
+which is why they are separate queries.
+
+**🔴 SILENT DATA LOSS FIXED IN THE SAME FUNCTION.** The old `INSERT` never wrote `hint`, `options`,
+`conditional` or `photoMin`. **105 checkpoint labels across 7 PM PA templates were one rename away from
+deletion** — that is the `7:00pm / 10:00pm / End of shift` text that is the only thing separating three
+identical CHECKPOINT prompts. The builder now round-trips each question's `id` (not position — a reorder
+would hand a moved question its neighbour's hint; not prompt — checkpoints repeat theirs), and `hint` is
+editable.
+
+**ADR-037 — due times, reminders, digest, and the review rework:**
+- `DEFAULT_DUE_TIME = "18:00"` ET in the wizard **and** rules. **`recurring_rules.due_time` did not exist** —
+  rules could not express a deadline at all, so every cron-generated checklist had `dueAt = null` and could
+  never be late.
+- Reminders 1h before + at the deadline → assignee (email/in-app) **and** a grouped PM Teams card. Two
+  timestamps double as the idempotency guard; 12h backlog cutoff; explicit allow-list of open statuses.
+- 9 AM ET digest, **per property, counts only** (`Site · Done · Flag · Missed · Today · Rev'd`), plus a
+  `--sample` mode that fabricates all eight properties and is stamped `[SAMPLE — NOT REAL DATA]`.
+  **Reviewed is a SUBSET of Done**, not an addition — legend says so.
+- **Fixed-Eastern crons now use two UTC entries + `isEtHour()`.** Retrofitted to `generate-checklists`,
+  which would have slipped 5 AM → **4 AM ET on 1 Nov**.
+- **Approve → "Closed"** (label only; `REVIEWED`, `approveSubmission` and `review_approved` keep their
+  names — historic `notification_log` rows depend on them). Pass/Fail now **gates** the action; a reason is
+  **mandatory** on Fail or Flag and **always notifies**; new `review_failed` event (EN+ES). Flag can no
+  longer be silenced.
+- **Request Re-do DELETED**, not hidden — an export in a `"use server"` file is a live endpoint.
+  `review_redo` copy deliberately kept for historic rows.
+- Photo questions take a **note from the filler** → shown at review and in the PDF, persisted in the
+  offline draft. Uses `Response.notes`, dead since Phase 2, no migration.
+
+**🎨 PDF EXPORT REDESIGNED**, matched to `cloudbeds_dashboard/lib/ops-pdf-kit.ts` (Kyle: "match it
+please"). jsPDF there vs `@react-pdf/renderer` here, so only tokens and grammar port — navy `#0F1E33`,
+ink `#1E1E1E`, muted `#646973`, panel `#F4F5F7`, 24pt margins. **Fixed header + page-numbered footer repeat
+on every page — verified against a rendered 3-page sample.** Section dividers render as navy headings,
+`hint` prints, and the reviewer's verdict + note travel with the export.
+
+**📧 EMAIL NOW HAS AN HTML TEMPLATE**, adopted from `rewards/server/services/email-templates.js` (Stayable
+Elevate Design System) rather than designed fresh. `sendEmail` gained an optional `html`; `text` is still
+always sent. A `PRESENTATION` table maps event → severity/eyebrow beside the copy, so **a new NotifyEvent
+with no entry is a type error**. ⚠ Two inherited brand divergences, Kyle's to settle: navy `#0B1F3A` (email)
+vs `#041e42` (app), and **Poppins** vs Nunito.
+
+**🐛 THREE BUGS FOUND WHILE BUILDING, ALL PRE-EXISTING:**
+1. **`REVIEWED` was missing from the field-staff home query** — a checklist closed the same day left the
+   list *and the denominator*: 4 of 5 done rendered **"4/4"**.
+2. **A flagged checklist fell off "Today" at midnight with no route back to it.** `/checklists` is
+   manager-only, so the person who had to fix it had nothing but the email. Mattered more once Re-do was
+   deleted and Flag became the only send-back. New **"Sent back"** section on the home.
+3. **The PDF route gated on `canAccessProperty` alone** — any field-staff user could export any checklist at
+   their property, the Manager Checklist rating their own work included. Now manager+ keeps property scope,
+   everyone else gets their own instance only. The new test was verified to **fail against the old rule**.
+
+**⚠️ NOTHING HAS BEEN OPENED IN A BROWSER.** Again. 1,150 tests, clean types/lint/build are the entire
+evidence base for the outcome card, the "Sent back" section, the export button, the review gate and the
+digest card. The **only** rendered artefacts anyone has looked at are the sample PDF and the three Teams
+posts sent to the **test** channel. **The flagged email has never been sent** — Randy's run is the first.
+
+---
+
 
 **As of:** September 3, 2026 (Eastern, derived — the harness clock runs ~12h ahead on this machine)
 

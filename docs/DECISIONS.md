@@ -1349,3 +1349,102 @@ Underneath all three sat a scheduling defect nobody had been bitten by yet: Verc
 ### Consequences
 [What are the trade-offs? What becomes easier? What becomes harder?]
 ```
+
+---
+
+## ADR-038: CORPORATE administers users; role changes exist; Location is visible
+
+**Date:** 2026-09-11
+**Status:** Accepted — shipped in `af29316`
+**Deciders:** Kyle (directed), Claude (implementation)
+**Supersedes:** nothing. **Amends** ADR-013's role model by adding a second
+administrative tier; the one-global-role rule is unchanged.
+
+### Context
+
+Three problems arrived together.
+
+1. **There was no way to change a user's role.** Not in the UI, not in an
+   action — only ad-hoc scripts. Because `deleteUser` refuses any account with
+   activity history, a person given the wrong role on day one could not be
+   corrected at all once they had filled a checklist.
+2. **`admin@rentstayable.com` was the only account that could administer users**,
+   and it is a shared login with a password that the seed file re-writes on
+   every run. Every provisioning change had to go through it.
+3. **`users.remote` (Location) was invisible.** It shipped on 09-09 to separate
+   the 3 Remote Property Managers from the 8 on-site ones, and drives the batch
+   wizard's "Assign to" pool — but the only way to set it was
+   `scripts/set-remote-managers.ts`, which hard-codes three email addresses.
+
+Kyle asked for all three, and for Bea and Erika to become CORPORATE.
+
+### Decision
+
+**CORPORATE gets the full Admin → Users surface, minus anything ADMIN.**
+Kyle chose this over "role changes only" and over "everything ADMIN has".
+Concretely, a CORPORATE user may create, deactivate, delete, reset or set a
+password, assign properties, change a role, and set Location — on any account
+that is not an ADMIN — and may grant any role except ADMIN.
+
+Two predicates carry the whole distinction, in `lib/roles.ts`:
+
+- `canAdministerUser(actorRole, targetRole)` — CORPORATE may not act on an ADMIN
+  row.
+- `assignableRolesFor(actorRole)` — CORPORATE may not grant ADMIN.
+
+They are a **pair**: the first alone would let a corporate user promote
+themselves to ADMIN and then do anything; the second alone would leave `admin@`'s
+password resettable by anyone corporate. Both are checked in the server actions
+against the target's role read fresh from the database, never from client input
+— an exported server action is a live HTTP endpoint, and a hidden button is not
+a guard.
+
+**Nobody may change their own role**, ADMIN included. This is not a privilege
+rule but a lockout one: `admin@` is the only other ADMIN account, so an admin
+who demotes themselves leaves nobody who can undo it.
+
+**Role changes never touch `user_properties`.** A MANAGER promoted to CORPORATE
+keeps their rows; portfolio roles ignore them (`isPortfolioRole` short-circuits
+`canAccessProperty`), so they are inert, and they are precisely what a demotion
+back would otherwise have destroyed. The inverse case is refused outright:
+demoting to a scoped role with zero properties would create an account that can
+see nothing, so the action says which step is missing instead.
+
+**Location is shown for every role, and captioned where it is inert.** It is a
+fact about the person, so it is recorded and correctable everywhere; it only
+feeds a decision for MANAGER (`locationAffectsAssignment`), where
+`isOnSiteAssignable` reads it. The alternative — hide the control for roles that
+ignore it — makes a wrong value permanent, which is worse than an honest
+"reference only" caption.
+
+### Consequences
+
+- **The `/admin` layout guard stopped being sufficient on its own.** It widened
+  to ADMIN+CORPORATE, so `app/admin/sla/page.tsx`, which had no guard of its
+  own, gained `requireAdmin()`. Properties, its geofence editor, and every
+  `/admin` action already guarded themselves. Anything added under `/admin` from
+  now on must state its own tier.
+- **CORPORATE's nav gains an Admin section holding Users alone.** Same section
+  id and label as ADMIN's, narrower children, so `sectionForPathname` and
+  active-state logic are untouched.
+- **Promoting to CORPORATE grants Maintenance and Network, portfolio-wide.**
+  `canAccessMaintenance` is portfolio-roles-only, and the contractor calendar
+  has no per-property scoping — so a new CORPORATE account sees every
+  contractor's name and phone and can reassign or close any property's jobs.
+  This is the largest practical effect of the promotion and is easy to miss,
+  because the request is phrased in terms of user administration.
+- **AGENT → CORPORATE is a big jump.** AGENT exists to be checklist-only; Bea
+  crossed the whole boundary at once.
+- The audit action string is `set_role` whether the change came from the UI or
+  from `scripts/promote-to-corporate.ts`, so the trail reads the same.
+
+### Rejected
+
+- **Role changes only, everything else ADMIN.** Smallest blast radius, and the
+  literal reading of the ask. Rejected by Kyle: a page where one control works
+  and eight are greyed out is worse to use than one with a clear "you may not
+  touch an ADMIN" rule.
+- **Full parity with ADMIN.** Simplest code, but any CORPORATE account could
+  promote itself to ADMIN, which makes the two roles the same role.
+- **Clearing `user_properties` on promotion to a portfolio role.** Tidier data,
+  unrecoverable scope.
