@@ -1,10 +1,10 @@
 "use client";
 
-import { SelectField } from "@/components/ui/select";
-
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Locale, Role } from "@prisma/client";
+import { ChevronDown } from "lucide-react";
+import { SelectField } from "@/components/ui/select";
 import { formatInET } from "@/lib/datetime";
 import { canAdministerUser, locationAffectsAssignment } from "@/lib/roles";
 
@@ -44,11 +44,25 @@ type Prop = { id: string; shortCode: string; name: string };
 
 const isPortfolio = (r: Role) => r === Role.CORPORATE || r === Role.ADMIN;
 
-// The role list is NOT hard-coded here any more: it arrives as `assignableRoles`
-// from the server, already filtered by what the signed-in actor may grant (a
-// CORPORATE actor never sees ADMIN). The old local list also omitted AGENT and
-// NETWORK_TECH, so those rows had no option matching their own value.
-const LOCATION_LABEL = (remote: boolean) => (remote ? "Remote" : "On-site");
+// LAYOUT (rebuilt 2026-09-11). The previous table put SIX text buttons in a
+// right-hand Actions cell and grew a seventh column when Location arrived; the
+// result ran past its container, which was `overflow-hidden`, so "Delete"
+// rendered as "D" and the header as "ACTI". Three changes fixed it, and each
+// buys width rather than hiding information:
+//
+//   • Row actions collapse to ONE "Manage" toggle. The panel it opens already
+//     existed for Properties and Set PW — this merges all three into a single
+//     expansion, which also drops the component from three open-row states to
+//     one. Deliberately NOT a floating menu: the table scrolls horizontally,
+//     and an absolutely-positioned popup inside a scroll container is clipped
+//     by it (SelectField escapes that only because Base UI portals to <body>).
+//   • Status moved INTO the user cell. It describes the person, and Inactive /
+//     Locked are short chips that cost no column of their own.
+//   • Properties collapse to "All 8" once a user holds every active property,
+//     instead of wrapping "DP, JN, JW, KE, KW, LL, OR, SA" onto three lines.
+//
+// The container is `overflow-x-auto` now, so a future column scrolls into view
+// rather than being silently cut off.
 
 /**
  * Options for a row's role picker.
@@ -64,6 +78,16 @@ function roleOptions(current: Role, assignable: Role[]) {
   const values = assignable.includes(current) ? assignable : [current, ...assignable];
   return values.map((r) => ({ value: r, label: r }));
 }
+
+const LOCATION_OPTIONS = [
+  { value: "onsite", label: "On-site" },
+  { value: "remote", label: "Remote" },
+];
+
+const LOCATION_LIVE_HINT =
+  "Drives the Assign to pool — a Remote manager is not offered room-level work.";
+const LOCATION_INERT_HINT =
+  "Recorded for reference. Only a MANAGER's assignment pool reads this.";
 
 export function UsersClient({
   initialUsers,
@@ -84,8 +108,9 @@ export function UsersClient({
   const [pending, startTransition] = useTransition();
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string; secret?: string } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [pwFor, setPwFor] = useState<string | null>(null);
+  // One open row at a time. Replaced the separate `editing` and `pwFor` states
+  // when the row actions collapsed into a single panel.
+  const [openRow, setOpenRow] = useState<string | null>(null);
 
   const shortCode = (id: string) => properties.find((p) => p.id === id)?.shortCode ?? "?";
 
@@ -149,17 +174,16 @@ export function UsersClient({
         />
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <table className="w-full min-w-[880px] text-sm">
+          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Location</th>
-              <th className="px-4 py-3">Properties</th>
-              <th className="px-4 py-3">Last login</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3 font-semibold">User</th>
+              <th className="w-44 px-3 py-3 font-semibold">Role</th>
+              <th className="w-40 px-3 py-3 font-semibold">Location</th>
+              <th className="w-28 px-3 py-3 font-semibold">Properties</th>
+              <th className="w-28 px-3 py-3 font-semibold">Last login</th>
+              <th className="w-36 px-4 py-3 text-right font-semibold">Manage</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -172,18 +196,16 @@ export function UsersClient({
                 pending={pending}
                 assignableRoles={assignableRoles}
                 // Server-side truth is canAdministerUser in actions.ts; this is
-                // the same predicate used to avoid offering a button that would
-                // only come back refused.
+                // the same predicate, used to avoid offering a control that
+                // would only come back refused.
                 manageable={canAdministerUser(actorRole, u.role)}
-                editing={editing === u.id}
-                settingPw={pwFor === u.id}
+                open={openRow === u.id}
                 isSelf={u.id === currentUserId}
-                onToggleEdit={() => setEditing(editing === u.id ? null : u.id)}
-                onToggleSetPw={() => setPwFor(pwFor === u.id ? null : u.id)}
+                onToggleOpen={() => setOpenRow(openRow === u.id ? null : u.id)}
                 onSetPw={(pw) =>
                   run(async () => {
                     const res = await setUserPassword(u.id, pw);
-                    if (res.ok) setPwFor(null);
+                    if (res.ok) setOpenRow(null);
                     return res;
                   })
                 }
@@ -199,7 +221,7 @@ export function UsersClient({
                 onSaveProps={(ids) =>
                   run(async () => {
                     const res = await setUserProperties({ userId: u.id, propertyIds: ids });
-                    if (res.ok) setEditing(null);
+                    if (res.ok) setOpenRow(null);
                     return res;
                   })
                 }
@@ -208,6 +230,16 @@ export function UsersClient({
           </tbody>
         </table>
       </div>
+
+      {/* One footnote instead of a "reference only" caption repeated under most
+          rows — it cost a line of height on every non-manager row to say the
+          same thing each time. The greyed control still carries it as a
+          tooltip, so the per-row answer is still one hover away. */}
+      <p className="text-xs text-slate-500">
+        Location is recorded for everyone, but only changes the &ldquo;Assign to&rdquo; pool for{" "}
+        <span className="font-semibold">MANAGER</span>, where a Remote manager is not offered
+        room-level work. Greyed controls are recorded for reference only.
+      </p>
     </div>
   );
 }
@@ -241,7 +273,8 @@ function CreateUserForm({
   const [propertyIds, setPropertyIds] = useState<string[]>([]);
 
   const portfolio = isPortfolio(role);
-  const input = "rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none";
+  const input =
+    "rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none";
 
   return (
     <form
@@ -251,39 +284,56 @@ function CreateUserForm({
       }}
       className="rounded-xl border border-slate-200 bg-white p-4"
     >
-      <div className="grid grid-cols-2 gap-3">
-        <input className={input} placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <input className={input} type="email" placeholder="work@rentstayable.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <SelectField
-          ariaLabel="Role"
-          value={role}
-          onChange={(next) => setRole(next as Role)}
-          options={assignableRoles.map((r) => ({ value: r, label: r }))}
-        />
-        <SelectField
-          ariaLabel="Language"
-          value={locale}
-          onChange={(next) => setLocale(next as Locale)}
-          options={[
-            { value: Locale.en, label: "English" },
-            { value: Locale.es, label: "Spanish" },
-          ]}
-        />
-        <SelectField
-          ariaLabel="Location"
-          value={remote ? "remote" : "onsite"}
-          onChange={(next) => setRemote(next === "remote")}
-          options={[
-            { value: "onsite", label: "On-site" },
-            { value: "remote", label: "Remote" },
-          ]}
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-500">Full name</span>
+          <input className={input} value={name} onChange={(e) => setName(e.target.value)} required />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-500">Email</span>
+          <input
+            className={input}
+            type="email"
+            placeholder="work@rentstayable.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-500">Role</span>
+          <SelectField
+            ariaLabel="Role"
+            value={role}
+            onChange={(next) => setRole(next as Role)}
+            options={assignableRoles.map((r) => ({ value: r, label: r }))}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-500">Language</span>
+          <SelectField
+            ariaLabel="Language"
+            value={locale}
+            onChange={(next) => setLocale(next as Locale)}
+            options={[
+              { value: Locale.en, label: "English" },
+              { value: Locale.es, label: "Spanish" },
+            ]}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-500">Location</span>
+          <SelectField
+            ariaLabel="Location"
+            value={remote ? "remote" : "onsite"}
+            onChange={(next) => setRemote(next === "remote")}
+            options={LOCATION_OPTIONS}
+          />
+          <span className="text-xs text-slate-400">
+            {locationAffectsAssignment(role) ? LOCATION_LIVE_HINT : LOCATION_INERT_HINT}
+          </span>
+        </label>
       </div>
-      <p className="mt-2 text-xs text-slate-500">
-        {locationAffectsAssignment(role)
-          ? "Location drives the “Assign to” pool — a Remote manager is not offered room-level work."
-          : "Location is recorded for reference. It only changes the “Assign to” pool for MANAGER."}
-      </p>
 
       {portfolio ? (
         <p className="mt-3 text-xs text-slate-500">
@@ -307,6 +357,36 @@ function CreateUserForm({
   );
 }
 
+/**
+ * Properties cell. Collapses a full portfolio to "All N" rather than wrapping
+ * eight short codes onto three lines — the single widest thing in the old
+ * table. The full list stays available as a tooltip.
+ */
+function PropertyCell({
+  user,
+  total,
+  shortCode,
+}: {
+  user: AdminUser;
+  total: number;
+  shortCode: (id: string) => string;
+}) {
+  if (isPortfolio(user.role)) {
+    return (
+      <span
+        className="text-slate-400"
+        title="Portfolio roles reach every property. Any rows on this account are kept but ignored."
+      >
+        Portfolio
+      </span>
+    );
+  }
+  const codes = user.propertyIds.map(shortCode).sort();
+  if (codes.length === 0) return <span className="text-slate-400">—</span>;
+  if (codes.length === total) return <span title={codes.join(", ")}>All {total}</span>;
+  return <span title={codes.join(", ")}>{codes.join(", ")}</span>;
+}
+
 function UserRow({
   user,
   properties,
@@ -314,11 +394,9 @@ function UserRow({
   pending,
   assignableRoles,
   manageable,
-  editing,
-  settingPw,
+  open,
   isSelf,
-  onToggleEdit,
-  onToggleSetPw,
+  onToggleOpen,
   onSetPw,
   onSetRole,
   onSetRemote,
@@ -335,11 +413,9 @@ function UserRow({
   assignableRoles: Role[];
   /** False when the actor may not act on this row (CORPORATE vs an ADMIN). */
   manageable: boolean;
-  editing: boolean;
-  settingPw: boolean;
+  open: boolean;
   isSelf: boolean;
-  onToggleEdit: () => void;
-  onToggleSetPw: () => void;
+  onToggleOpen: () => void;
   onSetPw: (password: string) => void;
   onSetRole: (role: Role) => void;
   onSetRemote: (remote: boolean) => void;
@@ -352,19 +428,43 @@ function UserRow({
   const [draft, setDraft] = useState<string[]>(user.propertyIds);
   const [pw, setPw] = useState("");
   const portfolio = isPortfolio(user.role);
-  const action = "text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40";
   // Changing your OWN role is refused server-side (an admin demoting themselves
   // with no second admin account is unrecoverable), so don't offer it either.
   const roleEditable = manageable && !isSelf;
+  const locationLive = locationAffectsAssignment(user.role);
 
   return (
     <>
-      <tr className={user.active ? "" : "opacity-50"}>
+      <tr className={user.active ? "align-top" : "align-top opacity-60"}>
         <td className="px-4 py-3">
           <div className="font-medium text-slate-900">{user.name}</div>
           <div className="text-xs text-slate-500">{user.email}</div>
+          {/* Active and locked are independent: a locked account is still an
+              active one, temporarily unable to sign in. Only the exceptions get
+              a chip — an "Active" badge on 35 of 37 rows is noise, and its
+              absence is what the greyed row already says. */}
+          {(!user.active || user.locked || isSelf) && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {!user.active && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                  Inactive
+                </span>
+              )}
+              {user.locked && (
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                  Locked{user.lockedUntil ? ` until ${formatInET(user.lockedUntil, "h:mm a")}` : ""}
+                </span>
+              )}
+              {isSelf && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                  You
+                </span>
+              )}
+            </div>
+          )}
         </td>
-        <td className="px-4 py-3">
+
+        <td className="px-3 py-3">
           {roleEditable ? (
             <SelectField
               ariaLabel={`Role for ${user.email}`}
@@ -377,127 +477,166 @@ function UserRow({
               options={roleOptions(user.role, assignableRoles)}
             />
           ) : (
-            <span title={isSelf ? "You can't change your own role." : "Only an ADMIN can manage an ADMIN account."}>
+            <span
+              className="inline-block py-2 text-slate-600"
+              title={
+                isSelf
+                  ? "You can't change your own role."
+                  : "Only an ADMIN can manage an ADMIN account."
+              }
+            >
               {user.role}
             </span>
           )}
         </td>
-        <td className="px-4 py-3">
+
+        <td className="px-3 py-3">
           {manageable ? (
-            <SelectField
-              ariaLabel={`Location for ${user.email}`}
-              value={user.remote ? "remote" : "onsite"}
-              onChange={(next) => onSetRemote(next === "remote")}
-              options={[
-                { value: "onsite", label: "On-site" },
-                { value: "remote", label: "Remote" },
-              ]}
-            />
+            <div
+              className={locationLive ? undefined : "opacity-60"}
+              title={locationLive ? LOCATION_LIVE_HINT : LOCATION_INERT_HINT}
+            >
+              <SelectField
+                ariaLabel={`Location for ${user.email}`}
+                value={user.remote ? "remote" : "onsite"}
+                onChange={(next) => onSetRemote(next === "remote")}
+                options={LOCATION_OPTIONS}
+              />
+            </div>
           ) : (
-            <span className="text-xs text-slate-600">{LOCATION_LABEL(user.remote)}</span>
-          )}
-          {!locationAffectsAssignment(user.role) && (
-            // Say so rather than hiding the control: a hidden field is a fact
-            // you cannot correct, but a silently inert one is worse.
-            <div className="mt-0.5 text-[11px] text-slate-400">reference only</div>
-          )}
-        </td>
-        <td className="px-4 py-3 text-xs text-slate-600">
-          {portfolio ? <span className="text-slate-400">Portfolio</span> : user.propertyIds.map(shortCode).join(", ") || "—"}
-        </td>
-        <td className="px-4 py-3 text-xs text-slate-500">
-          {user.lastLoginAt ? formatInET(user.lastLoginAt) : "Never"}
-        </td>
-        <td className="px-4 py-3">
-          {/* Active and locked are independent: a locked account is still an
-              active one, temporarily unable to sign in. Show both. */}
-          <div className="flex flex-col items-start gap-1">
-            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${user.active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-              {user.active ? "Active" : "Inactive"}
+            <span className="inline-block py-2 text-slate-600">
+              {user.remote ? "Remote" : "On-site"}
             </span>
-            {user.locked && (
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                Locked{user.lockedUntil ? ` until ${formatInET(user.lockedUntil, "h:mm a")}` : ""}
-              </span>
-            )}
-          </div>
+          )}
         </td>
+
+        <td className="px-3 py-3 text-xs text-slate-600">
+          <PropertyCell user={user} total={properties.length} shortCode={shortCode} />
+        </td>
+
+        <td className="px-3 py-3 text-xs text-slate-500">
+          {user.lastLoginAt ? (
+            // Date only, full timestamp on hover. The old cell rendered
+            // "Aug 26, 2026 3:35 PM ET" and wrapped it onto four lines.
+            <span title={formatInET(user.lastLoginAt)}>
+              {formatInET(user.lastLoginAt, "MMM d, yyyy").replace(/ ET$/, "")}
+            </span>
+          ) : (
+            "Never"
+          )}
+        </td>
+
         <td className="px-4 py-3 text-right">
-          <div className="flex justify-end gap-3">
-            {!manageable && (
-              <span className="text-xs text-slate-400">Admin only</span>
-            )}
-            {manageable && user.locked && (
+          {manageable ? (
+            <div className="flex items-center justify-end gap-2">
+              {/* Unlock stays on the row rather than inside the panel: it is the
+                  one action someone hunts for under time pressure, and it only
+                  renders on the handful of rows that need it. */}
+              {user.locked && (
+                <button
+                  className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-40"
+                  disabled={pending}
+                  onClick={onUnlock}
+                >
+                  Unlock
+                </button>
+              )}
               <button
-                className="text-xs font-semibold text-amber-700 hover:text-amber-900 disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                 disabled={pending}
-                onClick={onUnlock}
+                aria-expanded={open}
+                onClick={onToggleOpen}
               >
-                Unlock
+                {open ? "Close" : "Manage"}
+                <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
               </button>
-            )}
-            {manageable && (
-              <button className={action} disabled={pending} onClick={onReset}>Reset PW</button>
-            )}
-            {manageable && (
-              <button className={action} disabled={pending} onClick={onToggleSetPw}>
-                {settingPw ? "Close" : "Set PW"}
-              </button>
-            )}
-            {manageable && !portfolio && (
-              <button className={action} disabled={pending} onClick={onToggleEdit}>
-                {editing ? "Close" : "Properties"}
-              </button>
-            )}
-            {manageable && (
-              <button className={action} disabled={pending} onClick={onToggleActive}>
-                {user.active ? "Deactivate" : "Reactivate"}
-              </button>
-            )}
-            {manageable && !isSelf && (
-              <button
-                className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-40"
-                disabled={pending}
-                onClick={onDelete}
-              >
-                Delete
-              </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <span
+              className="text-xs text-slate-400"
+              title="Only an ADMIN can manage an ADMIN account."
+            >
+              Admin only
+            </span>
+          )}
         </td>
       </tr>
-      {editing && !portfolio && (
+
+      {open && manageable && (
         <tr>
-          <td colSpan={7} className="bg-slate-50 px-4 py-3">
-            <PropertyCheckboxes properties={properties} selected={draft} onChange={setDraft} />
-            <button
-              className="mt-2 rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
-              disabled={pending}
-              onClick={() => onSaveProps(draft)}
-            >
-              Save assignments
-            </button>
-          </td>
-        </tr>
-      )}
-      {settingPw && (
-        <tr>
-          <td colSpan={7} className="bg-slate-50 px-4 py-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                value={pw}
-                onChange={(e) => setPw(e.target.value)}
-                placeholder={`New password (min ${MIN_PASSWORD_LENGTH} chars)`}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-              />
-              <button
-                className="rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
-                disabled={pending || pw.length < MIN_PASSWORD_LENGTH}
-                onClick={() => onSetPw(pw)}
-              >
-                Set password
-              </button>
+          <td colSpan={6} className="border-l-2 border-navy bg-slate-50 px-4 py-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  disabled={pending}
+                  onClick={onReset}
+                >
+                  Reset password
+                </button>
+                <button
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  disabled={pending}
+                  onClick={onToggleActive}
+                >
+                  {user.active ? "Deactivate" : "Reactivate"}
+                </button>
+                {!isSelf && (
+                  <button
+                    className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
+                    disabled={pending}
+                    onClick={onDelete}
+                  >
+                    Delete
+                  </button>
+                )}
+                {/* Says what the button does before it is pressed. "Reset PW"
+                    alone did not convey that it replaces the password
+                    immediately and shows the new one on screen rather than
+                    emailing a link. */}
+                <span className="text-xs text-slate-500">
+                  Reset replaces the password now with a random one and shows it once above — nothing
+                  is emailed.
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-slate-500">Set a specific password</span>
+                  <input
+                    type="text"
+                    value={pw}
+                    onChange={(e) => setPw(e.target.value)}
+                    placeholder={`min ${MIN_PASSWORD_LENGTH} characters`}
+                    className="w-64 rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+                  />
+                </label>
+                <button
+                  className="rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
+                  disabled={pending || pw.length < MIN_PASSWORD_LENGTH}
+                  onClick={() => onSetPw(pw)}
+                >
+                  Set password
+                </button>
+              </div>
+
+              {portfolio ? (
+                <p className="text-xs text-slate-500">
+                  {user.role} reaches every property — no assignment needed.
+                </p>
+              ) : (
+                <div>
+                  <div className="text-xs font-medium text-slate-500">Assigned properties</div>
+                  <PropertyCheckboxes properties={properties} selected={draft} onChange={setDraft} />
+                  <button
+                    className="mt-2 rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
+                    disabled={pending}
+                    onClick={() => onSaveProps(draft)}
+                  >
+                    Save assignments
+                  </button>
+                </div>
+              )}
             </div>
           </td>
         </tr>
