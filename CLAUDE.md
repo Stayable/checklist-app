@@ -487,8 +487,9 @@ got the way it is. Only the items below are still **open** — everything else t
   `rewards/stayable-elevate-design-system/` — coral was retired 2026-04-25 and `--se-sunshine-text`
   added there, so read the live file, not the canvas). Four palettes were in play: app `#041e42`/Nunito,
   PDF `#0F1E33`/Helvetica, email `#0B1F3A`/Poppins, Elevate `#0B1F3A`/Poppins. **Nothing is ported yet** —
-  two Claude Design prompts are written and unrun: `docs/DesignPrompt_Portal_RISE8_091126.md` and
-  `docs/DesignPrompt_PDF_RISE8_091126.md`.
+  **one** Claude Design prompt is written and unrun, covering screens and paper together:
+  `docs/DesignPrompt_StayableOps_RISE8_091126.md` (it replaced a split Portal/PDF pair on Kyle's call —
+  the two halves must share one token file, which was the whole reason for the exercise).
   ⚠ **The port is NOT a token swap.** Most components hard-code `slate-*`/`emerald-*`/`amber-*` Tailwind
   utilities directly rather than going through `--color-navy`, so redefining tokens changes almost
   nothing. Expect a token pass AND a utility sweep, screen by screen.
