@@ -8,7 +8,6 @@ import { CloseOutRequests, type CloseOutRequestRow } from "./CloseOutRequests";
 import { formatDateInET, formatDateOnly, formatInET } from "@/lib/datetime";
 import { timeToCompleteMinutes } from "@/lib/review";
 import { roomDisplay } from "@/lib/room-label";
-import { presignDownload } from "@/lib/r2";
 import { questionsForInstances, questionSetKey } from "@/lib/template-version.server";
 import { ReviewQueueClient, type QueueRow } from "./ReviewQueueClient";
 
@@ -73,9 +72,20 @@ export default async function ReviewQueuePage({
   // add or drop a slot on an already-reviewed row. Batched to one query.
   const questionsBySet = await questionsForInstances(instances);
 
-  // One thumbnail slot per required PHOTO question (ADR-011): real presigned
-  // thumbnail when a Photo row exists (ADR-015); count-only badge for legacy
-  // pre-R2 submissions that recorded counts without bytes.
+  // PHOTOS AS A COUNT, NOT THUMBNAILS (Kyle, 2026-09-11 — "leave the photos out
+  // from the row ... the image will be seen when opening the to review").
+  //
+  // ADR-011 specified "inline photo thumbnails, one per required photo
+  // question", and that held while templates had two or three. The Arrival
+  // Checklist has ELEVEN, so the strip grew past the table and pushed the
+  // Actions column off the right edge — Closed and Flag rendered on top of the
+  // thumbnails. The row's job is to say whether this submission needs opening;
+  // the photos themselves are on the detail page, one click away.
+  //
+  // Kept as captured/required because that IS a queue-level signal: a required
+  // photo question with nothing against it is a gap worth seeing before you
+  // open the row. Also drops one presigned R2 URL per photo question per row —
+  // 33 signatures on the three-row page in the screenshot.
   const rows: QueueRow[] = await Promise.all(
     instances.map(async (i) => ({
       id: i.id,
@@ -89,20 +99,19 @@ export default async function ReviewQueuePage({
         : formatDateOnly(i.scheduledFor),
       unit: roomDisplay(i.room, i.roomLabel),
       minutes: timeToCompleteMinutes(i.openedAt, i.submittedAt),
-      photoSlots: await Promise.all(
-        (questionsBySet.get(questionSetKey(i)) ?? [])
-          .filter((q) => q.type === QuestionType.PHOTO && q.required)
-          .map(async (q) => {
+      photos: (() => {
+        const slots = (questionsBySet.get(questionSetKey(i)) ?? []).filter(
+          (q) => q.type === QuestionType.PHOTO && q.required,
+        );
+        let captured = 0;
+        for (const q of slots) {
           const resp = i.responses.find((r) => r.questionId === q.id);
-          const answer = resp?.answer as { count?: number } | null;
-          const firstKey = resp?.photos[0]?.r2Key;
-          return {
-            prompt: q.prompt,
-            count: answer?.count ?? 0,
-            thumbUrl: firstKey ? await presignDownload(firstKey) : null,
-          };
-        }),
-      ),
+          // `answer.count` rather than photos.length: legacy pre-R2 submissions
+          // recorded a count without bytes, and they still count as answered.
+          if (((resp?.answer as { count?: number } | null)?.count ?? 0) > 0) captured += 1;
+        }
+        return { required: slots.length, captured };
+      })(),
     })),
   );
 

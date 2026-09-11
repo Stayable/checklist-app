@@ -5,6 +5,7 @@ import { SelectField } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { Camera } from "lucide-react";
 import { CompletionCheck, InstanceStatus, IssuePriority } from "@prisma/client";
 import { formatMinutes } from "@/lib/review";
 import { approveSubmission, flagSubmission } from "./actions";
@@ -28,7 +29,14 @@ export type QueueRow = {
   date: string;
   unit: string | null;
   minutes: number | null;
-  photoSlots: { prompt: string; count: number; thumbUrl: string | null }[];
+  /**
+   * Photo completeness, not the photos themselves (Kyle, 2026-09-11). ADR-011
+   * put a thumbnail per required photo question in the row; the Arrival
+   * Checklist has eleven, so the strip pushed Actions off the edge of the
+   * table. The pictures live on the detail page — this only has to say whether
+   * the row is worth opening.
+   */
+  photos: { required: number; captured: number };
 };
 
 type DialogState = { kind: "close" | "flag"; row: QueueRow } | null;
@@ -38,6 +46,35 @@ const STATUS_BADGE: Record<string, string> = {
   FLAGGED: "bg-red-50 text-red-700",
   REVIEWED: "bg-emerald-50 text-emerald-700",
 };
+
+/**
+ * Photo completeness in one cell.
+ *
+ * A short count when every required photo question was answered, and
+ * `captured/required` in amber when one was not — a missing required photo is
+ * the reason to open a row early, and it was the one thing the old thumbnail
+ * strip made HARDER to see, since a gap looked like a slightly shorter row of
+ * pictures.
+ */
+function PhotoCount({ photos }: { photos: { required: number; captured: number } }) {
+  if (photos.required === 0) return <span className="text-xs text-slate-400">—</span>;
+  const complete = photos.captured >= photos.required;
+  return (
+    <span
+      title={
+        complete
+          ? `All ${photos.required} required photo questions answered`
+          : `${photos.required - photos.captured} of ${photos.required} required photo questions have no photo`
+      }
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold ${
+        complete ? "text-slate-600" : "bg-amber-50 text-amber-700"
+      }`}
+    >
+      <Camera aria-hidden className="size-3.5" />
+      {complete ? photos.required : `${photos.captured}/${photos.required}`}
+    </span>
+  );
+}
 
 export function ReviewQueueClient({ rows, filter }: { rows: QueueRow[]; filter: string }) {
   const router = useRouter();
@@ -106,36 +143,7 @@ export function ReviewQueueClient({ rows, filter }: { rows: QueueRow[]; filter: 
               <td className="px-4 py-3 text-slate-700">{row.unit ?? "—"}</td>
               <td className="px-4 py-3 text-slate-700">{formatMinutes(row.minutes)}</td>
               <td className="px-4 py-3">
-                <div className="flex gap-1">
-                  {row.photoSlots.length === 0 ? (
-                    <span className="text-xs text-slate-400">—</span>
-                  ) : (
-                    row.photoSlots.map((slot, i) =>
-                      slot.thumbUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- presigned R2 URL, not an optimizable asset
-                        <img
-                          key={i}
-                          src={slot.thumbUrl}
-                          alt={slot.prompt}
-                          title={`${slot.prompt} — ${slot.count} photo${slot.count === 1 ? "" : "s"}`}
-                          className="h-9 w-9 rounded border border-slate-200 object-cover"
-                        />
-                      ) : (
-                        <span
-                          key={i}
-                          title={`${slot.prompt} — ${slot.count} captured${slot.count > 0 ? " (no upload — legacy)" : ""}`}
-                          className={`flex h-9 w-9 items-center justify-center rounded border text-[10px] font-semibold ${
-                            slot.count > 0
-                              ? "border-slate-300 bg-slate-100 text-slate-600"
-                              : "border-dashed border-slate-300 text-slate-300"
-                          }`}
-                        >
-                          {slot.count > 0 ? `📷${slot.count}` : "—"}
-                        </span>
-                      ),
-                    )
-                  )}
-                </div>
+                <PhotoCount photos={row.photos} />
               </td>
               <td className="px-4 py-3">
                 {row.status === InstanceStatus.REVIEWED ? (

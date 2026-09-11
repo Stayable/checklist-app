@@ -174,9 +174,9 @@ These were settled during scoping. If a request seems to conflict with these, as
 - Corporate dashboard shows portfolio rollup of open / overdue Quick Tasks per property.
 - **Not integrated with Issues pipeline** — Issues come from failed checklist questions or manager flags; Quick Tasks are manually-created.
 
-### Manager Review UI (ADR-011)
+### Manager Review UI (ADR-011, photo clause superseded by ADR-039)
 - **Single-submission review** — three-column layout (left: status + manager note; center: responses + photos + signatures + time-to-complete; right: activity timeline w/ actor + timestamp). Ships in Phase 4, refined in Phase 7 redesign.
-- **Submission queue** — table view, one row per submission. Columns: Status · User · Date · Unit# · Time-to-complete · inline photo thumbnails (one per required photo question) · row-level actions (Approve / Flag / Request Re-do). Ships in Phase 4, refined in Phase 7.
+- **Submission queue** — table view, one row per submission. Columns: Status · User · Date · Unit# · Time-to-complete · **photo COUNT** · row-level actions (Closed / Flag). Ships in Phase 4, refined in Phase 7. ⚠ **Thumbnails were removed 2026-09-11 (ADR-039)** — the Arrival Checklist has 11 required photo questions, so the strip overflowed its cell and pushed Actions off the table. Request Re-do was deleted 2026-09-09; Approve reads "Closed".
 
 ### Branding & Product Name (ADR-010)
 - **Internal / dev / repo name:** "RISE8 Operations Platform"

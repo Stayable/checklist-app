@@ -1448,3 +1448,61 @@ ignore it — makes a wrong value permanent, which is worse than an honest
   promote itself to ADMIN, which makes the two roles the same role.
 - **Clearing `user_properties` on promotion to a portfolio role.** Tidier data,
   unrecoverable scope.
+
+---
+
+## ADR-039: The review queue shows a photo count, not thumbnails
+
+**Date:** 2026-09-11
+**Status:** Accepted — shipped
+**Deciders:** Kyle (directed), Claude (implementation)
+**Amends:** ADR-011, whose submission-queue spec called for "inline photo
+thumbnails (one per required photo question)". That clause is withdrawn; the
+rest of ADR-011 stands.
+
+### Context
+
+ADR-011 was written when a template had two or three photo questions, and a
+strip of thumbnails in the row was a cheap way to see the evidence without
+opening anything. The real templates are not that shape. The **Arrival
+Checklist has eleven required photo questions**, so the row rendered eleven
+36px tiles in an unwrapped flex container. It overflowed its own cell and ran
+under the Actions column — a production screenshot on 2026-09-11 shows Closed
+and Flag drawn on top of the thumbnails, with a thumbnail still visible to the
+right of them.
+
+Two further costs that were not obvious when ADR-011 was written:
+
+- Every tile needed a **presigned R2 URL**, generated server-side per row. The
+  three-row page in the screenshot signed 33 of them to render a strip nobody
+  could read at 36px.
+- A **missing** required photo was harder to spot, not easier. A gap looked
+  like a slightly shorter row of pictures, which is exactly the thing a
+  reviewer most needs to catch before opening a submission.
+
+### Decision
+
+The Photos column shows **completeness, not content**: a count when every
+required photo question was answered, and `captured/required` in amber when one
+was not. The photographs themselves are on `/review/[id]`, one click away —
+Kyle's framing was "the image will be seen when opening the to review".
+
+`answer.count` is the source rather than `photos.length`, so legacy pre-R2
+submissions that recorded a count without bytes still read as answered.
+
+### Consequences
+
+- The queue row no longer overflows, and Actions stays on screen.
+- No presigned URLs are generated for the queue at all.
+- **A reviewer can no longer triage from the thumbnail.** This is the real cost
+  and it is accepted: at 36px, with eleven tiles, nobody was triaging from them
+  anyway — the screenshot shows one row's tiles rendering as solid black.
+- The amber `captured/required` is new information the thumbnail strip did not
+  convey.
+
+### Rejected
+
+- **Dropping the column outright.** The literal ask, but it throws away the
+  "did they photograph anything" signal along with the width.
+- **Capping the strip at three tiles plus "+8".** Keeps a preview, keeps the
+  presigning cost, and still shows an arbitrary three of eleven.
