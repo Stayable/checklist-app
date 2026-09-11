@@ -15,7 +15,65 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked (b
 
 ---
 
-## 🎯 START HERE (updated 2026-09-10 ~9 AM ET · housekeeping 2026-09-11)
+## 🎯 START HERE (updated 2026-09-11 ~5:45 PM ET)
+
+**🟢 BIG SESSION, ALL DEPLOYED. 15 commits `4b9301a..f9d45b0`, no migrations, 1,168 tests, clean
+typecheck / lint / build.** Two ADRs (**038** corporate user administration, **039** review-queue photo
+count) and the **Stayable Elevate re-skin is live in production**. Full narrative in `CLAUDE.md`
+§Current Status.
+
+**⚠️ TWO PRODUCTION DATA CHANGES WERE APPLIED**, both with audit rows naming Kyle:
+- **Bea and Erika are CORPORATE** (`scripts/promote-to-corporate.ts --apply`). Bea came from AGENT, the
+  role that exists to be checklist-ONLY, so both now hold **Maintenance portfolio-wide** — every
+  contractor's name and phone, reassign/close on any property's jobs — and **Network** across the estate.
+  That is a side effect of the role, not something anyone asked for. CORPORATE is now 8 accounts.
+- **Erika is `alwaysAssignable`** (`scripts/set-test-assignee.ts erika@… --apply`), and **she has already
+  submitted a real Arrival Checklist (LL 216, 4m)** — visible in the review queue. First genuine
+  end-to-end use by anyone.
+
+**⏭ NEXT, IN ORDER — unchanged from 09-10 except where noted:**
+1. **Randy's end-to-end run** (`randy@rentstayable.com`, AGENT, 0 assigned so he starts from the wizard).
+   Template → create → fill → submit → review → export. Still the **first real send of the flagged
+   email**. ⚠ Erika's submission means the queue is no longer empty, so this is now a *second* run, not
+   the first — but the flagged-email path is still unexercised.
+2. **Recurring rules — STILL 0.** The last thing between "deployed" and "generates work". Rules carry a
+   due time now (defaults 6 PM ET).
+3. **Field-staff accounts — STILL 0 real HK/PA/MT.** Create by SCRIPT: `/admin/users` deliberately does
+   not set `mustChangePassword` (Kyle dismissed that gap 2026-09-11 — **do not re-raise**).
+   ⚠ Because of this the "Assign to" pool is **3 people per property**, all managers/corporate.
+4. **Run `scripts/fix-missing-section-dividers.ts`** (dry-run by default) for the 16 restored section
+   dividers + MNT Before/After hints. Safe since ADR-036 makes it a version bump.
+
+**🎨 THE ELEVATE RE-SKIN IS LIVE AND THE SCOPE IS CLOSED.** Kyle: *"Just the looks is ok. No need the
+completion etc."* — **no layout ports.** Applied as a TOKEN LAYER only: Tailwind v4 `@theme` redefines
+the built-in `slate-*` ramp and `white`, so ~1,200 hard-coded utilities re-skinned with **zero component
+edits**. Nunito → **Poppins**. The PDF was repointed separately (`f9d45b0`) because `@react-pdf` never
+reads `globals.css` — an export looked identical until its nine hard-coded constants moved. Verified by
+decompressing the PDF content streams: 8 new colours painted, 0 old ones left.
+⚠ `docs/design/stayable-ops-redesign/_ds/` is a **different** Stayable MARKETING system (cyan `#00e5ff`,
+Montserrat) that arrived in the same drop. **Deliberately not applied.** See `docs/design/README.md`.
+
+**🐛 FOUND THIS SESSION, NOT FIXED:**
+- **The PDF is A4, not US Letter** (MediaBox 595.28 × 841.89). Every property is in Florida, where trays
+  hold Letter — so exports scale or clip at print time. Pre-existing, one-line fix, nobody has decided.
+- **`scripts/render-sample-checklist-pdf.ts` never worked as documented** — needs
+  `--tsconfig tsconfig.scripts.json`. ✅ Fixed in `f9d45b0`.
+- **Preview deployments may be unusable** — Preview has its own `DATABASE_URL` (the dev branch down since
+  early August). Unverified: Vercel SSO blocks curl. If a preview shows a login you cannot pass, that is
+  the dead dev DB, not the code.
+
+**⚠️ STILL ALMOST NOTHING HAS BEEN OPENED IN A BROWSER.** The exceptions are real but narrow: Kyle's two
+screenshots (which found **both** defects fixed this session — the cut-off users table and the overflowing
+photo thumbnails) and the rendered sample PDF. Tests and a clean build remain the evidence base for the
+role picker, the Assignable switch, the delete flow and the re-skin itself.
+
+**Small and unblocked:** `CompletenessPdf` / `IssuesPdf` still use the old plain layout · regenerate the
+two Power Automate webhook URLs (pasted into a transcript) · nobody has asked Jeffrey why he un-published
+4 templates within 60 seconds on 09-07.
+
+---
+
+## (previous) START HERE - 2026-09-10 ~9 AM ET
 
 **2026-09-11 — housekeeping only, no build work.** Two commits, `a2920ea` (outputs) and `e6568f0`
 (`scripts/roster-annotate.ts`), tracking files that had been sitting untracked — including
@@ -52,6 +110,8 @@ base for the review gate, the outcome card, the "Sent back" section, the export 
 
 **Small and unblocked:** `CompletenessPdf` / `IssuesPdf` still use the old plain layout (~10 min to match
 the new one) · regenerate the two Power Automate webhook URLs (they were pasted into a transcript).
+
+---
 
 ---
 

@@ -1,6 +1,71 @@
 # Status Log Archive — RISE8 Operations Platform
 
-**As of:** September 11, 2026 — morning block (latest)
+**As of:** September 11, 2026 — midday block (latest)
+
+---
+
+**As of:** September 11, 2026, ~1:35 PM (Eastern, derived — the harness clock runs ~12h ahead and
+said 09-12; six code comments were written with the wrong date before it was caught and corrected)
+
+**🟢 DEPLOYED. Five commits `af29316..f6c00ef`, no migrations, 1,168 tests, clean typecheck / lint /
+build.** One long session, everything Kyle asked for in it, plus two prod data changes already live.
+
+**👥 BEA AND ERIKA ARE CORPORATE, AND ERIKA IS ASSIGNABLE.** Applied via
+`scripts/promote-to-corporate.ts --apply` and `scripts/set-test-assignee.ts erika@… --apply`, both
+dry-run by default, both with audit rows naming Kyle. **Bea came from AGENT**, the role that exists to
+be checklist-ONLY, so hers is the larger jump: both now hold **Maintenance** — every contractor's name
+and phone, reassign/close on any property's jobs, portfolio-wide because that calendar has no
+per-property scoping — and **Network** across the estate. `user_properties` rows were KEPT (inert at a
+portfolio role, and what a demotion back needs), which is also why Erika needed only the
+`alwaysAssignable` flag and no new property rows. CORPORATE is now 8 accounts.
+⚠ **The assignee pool is 3 people per property**: there are **zero HK, zero PA**, and every MT is an
+inactive contractor placeholder. Fine for Erika's test, a hard blocker for real use.
+
+**🔑 CORPORATE CAN ADMINISTER USERS (ADR-038) — two limits are the only thing between a corporate
+account and ADMIN**, both enforced server-side against the target's role read fresh from the DB:
+`canAdministerUser` (may not act on an ADMIN row — else reset `admin@`'s password and become ADMIN)
+and `assignableRolesFor` (may not GRANT ADMIN — else reach the first hole the long way round). Nobody
+changes their own role; `admin@` is the only other ADMIN, so a self-demotion is unrecoverable. Nav
+gives CORPORATE an Admin section holding **Users alone**.
+⚠ **The `/admin` layout guard stopped being sufficient** — `app/admin/sla/page.tsx` had been relying on
+it entirely and now calls `requireAdmin()` itself. Anything added under `/admin` must state its own tier.
+
+**🆕 ROLE CHANGES EXIST AT ALL.** There was no path — a wrong role meant deleting the account, which
+`deleteUser`'s activity-history guard blocks once the person has worked. `setUserRole` does not touch
+`user_properties`, and refuses a demotion to a scoped role with zero properties. The picker's list
+moved to `ROLE_ORDER` in `lib/roles.ts`: the hard-coded one held **six of the eight roles**, so an
+AGENT or NETWORK_TECH row had no option matching its own value.
+
+**📍 LOCATION + ASSIGNABLE ARE BOTH EDITABLE.** `users.remote` and `users.always_assignable` existed
+but were script-only. Location shows for every role (it is a fact about the person) and is captioned
+where it is inert — it feeds a decision for MANAGER alone. The Assignable switch states the CURRENT
+answer first via `explainAssignability`, built on the same predicate the pool query mirrors, and names
+the half people miss: **a portfolio account with the override on but no property rows is invisible
+everywhere**, because the pool requires both.
+
+**🗑 CHECKLIST DELETE, SINGLE AND BULK.** "Select to delete" on `/checklists`. Deliberately NOT ADR-031's
+close-out — INVALIDATED means it happened and was cancelled; this is for one that should never have
+existed. **The refusal rule is the whole safety model** and is the line
+`scripts/delete-test-checklist.ts` drew: any response, any submission, or **any issue raised from it**
+(refused rather than cascaded because `Issue.sourceInstance` is optional, so Prisma would `SetNull` and
+leave the issue with no idea where it came from). Refusals do not fail the batch and the banner names
+what was kept and why. Scope is applied IN the query, so another property's ids can never reach the
+delete. Every deletion writes an audit row carrying enough to recreate the checklist.
+
+**📐 THE USERS TABLE WAS CUT OFF IN PRODUCTION** — Kyle's screenshot showed the header as `ACTI` and
+Delete as `D`. Six text buttons in an Actions cell plus a seventh column, inside `overflow-hidden`.
+Rebuilt: actions collapse to one **Manage** panel (not a floating menu — the table now scrolls and a
+popup inside a scroll container is clipped by it), status became chips in the User cell, Properties
+collapse to "All 8" and last login to a date. Container is `overflow-x-auto`, so a future column
+scrolls rather than being silently cut.
+
+**⚠️ NOTHING HAS BEEN OPENED IN A BROWSER.** The one thing anyone actually looked at this session was
+the screenshot that proved the table was broken — which is also the only defect found. 1,168 tests and
+a Ready deploy are the entire evidence base for the rebuilt table, the role picker, the Assignable
+switch and the whole delete flow. **Nobody has signed in as Bea or Erika to confirm what they now see.**
+
+---
+
 
 ---
 

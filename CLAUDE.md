@@ -346,66 +346,65 @@ When changing scope or architecture: update the relevant doc and add an entry to
 — it blew past it on 2026-08-25 at 171 KB and stopped loading. Rule: **the newest block in full, plus the
 carry-forward of what is still open.** When you add a block, move the one it supersedes into
 `docs/archive/StatusLog_RISE8_082526.md` (newest first) and fold anything still live into the carry-forward.
+**As of:** September 11, 2026, ~5:45 PM (Eastern, derived — the harness clock runs ~12h ahead and flipped
+to 09-12 mid-session; six code comments were written with the wrong date before it was caught)
 
-**As of:** September 11, 2026, ~1:35 PM (Eastern, derived — the harness clock runs ~12h ahead and
-said 09-12; six code comments were written with the wrong date before it was caught and corrected)
+**🟢 DEPLOYED. 15 commits `4b9301a..f9d45b0`, no migrations, 1,168 tests, clean typecheck / lint / build.**
+Two ADRs (**038**, **039**), two production data changes, and the **Elevate re-skin live**.
 
-**🟢 DEPLOYED. Five commits `af29316..f6c00ef`, no migrations, 1,168 tests, clean typecheck / lint /
-build.** One long session, everything Kyle asked for in it, plus two prod data changes already live.
+**👥 BEA AND ERIKA ARE CORPORATE; ERIKA IS ASSIGNABLE AND HAS SUBMITTED REAL WORK.** Applied by
+`scripts/promote-to-corporate.ts` and `scripts/set-test-assignee.ts`, both dry-run by default, both with
+audit rows naming Kyle. **Bea came from AGENT**, the role that exists to be checklist-ONLY, so both now
+hold **Maintenance portfolio-wide** — every contractor's name and phone, reassign/close on any property's
+jobs — plus **Network** across the estate. That is a consequence of CORPORATE, not something anyone asked
+for. `user_properties` rows were KEPT (inert at a portfolio role, and what a demotion back needs), which
+is also why Erika needed only the `alwaysAssignable` flag. **She has since submitted an Arrival Checklist
+(LL 216, 4m)** — the first genuine end-to-end use by anybody.
+⚠ **The assignee pool is 3 people per property**: zero HK, zero PA, every MT an inactive contractor
+placeholder. Fine for a test, a hard blocker for real use.
 
-**👥 BEA AND ERIKA ARE CORPORATE, AND ERIKA IS ASSIGNABLE.** Applied via
-`scripts/promote-to-corporate.ts --apply` and `scripts/set-test-assignee.ts erika@… --apply`, both
-dry-run by default, both with audit rows naming Kyle. **Bea came from AGENT**, the role that exists to
-be checklist-ONLY, so hers is the larger jump: both now hold **Maintenance** — every contractor's name
-and phone, reassign/close on any property's jobs, portfolio-wide because that calendar has no
-per-property scoping — and **Network** across the estate. `user_properties` rows were KEPT (inert at a
-portfolio role, and what a demotion back needs), which is also why Erika needed only the
-`alwaysAssignable` flag and no new property rows. CORPORATE is now 8 accounts.
-⚠ **The assignee pool is 3 people per property**: there are **zero HK, zero PA**, and every MT is an
-inactive contractor placeholder. Fine for Erika's test, a hard blocker for real use.
+**🔑 CORPORATE CAN ADMINISTER USERS (ADR-038) — two limits are the only thing between a corporate account
+and ADMIN**, both enforced server-side against the target's role read fresh from the DB: `canAdministerUser`
+(may not act on an ADMIN row — else reset `admin@`'s password and become ADMIN) and `assignableRolesFor`
+(may not GRANT ADMIN). Nobody changes their own role. Nav gives CORPORATE an Admin section holding **Users
+alone**. ⚠ **The `/admin` layout guard stopped being sufficient** — `app/admin/sla/page.tsx` had relied on
+it entirely and now calls `requireAdmin()` itself.
 
-**🔑 CORPORATE CAN ADMINISTER USERS (ADR-038) — two limits are the only thing between a corporate
-account and ADMIN**, both enforced server-side against the target's role read fresh from the DB:
-`canAdministerUser` (may not act on an ADMIN row — else reset `admin@`'s password and become ADMIN)
-and `assignableRolesFor` (may not GRANT ADMIN — else reach the first hole the long way round). Nobody
-changes their own role; `admin@` is the only other ADMIN, so a self-demotion is unrecoverable. Nav
-gives CORPORATE an Admin section holding **Users alone**.
-⚠ **The `/admin` layout guard stopped being sufficient** — `app/admin/sla/page.tsx` had been relying on
-it entirely and now calls `requireAdmin()` itself. Anything added under `/admin` must state its own tier.
+**🆕 ROLE CHANGES, LOCATION AND AN ASSIGNABLE SWITCH ALL EXIST NOW.** There was no role-change path at all.
+`setUserRole` leaves `user_properties` alone and refuses a demotion to a scoped role with zero properties.
+`users.remote` and `users.always_assignable` were script-only; both are now editable, and the Assignable
+switch states the CURRENT answer first via `explainAssignability` — including the half people miss, that a
+portfolio account with the override on but no property rows is invisible everywhere. The role picker's
+list moved to `ROLE_ORDER`: the hard-coded one held **six of the eight roles**.
 
-**🆕 ROLE CHANGES EXIST AT ALL.** There was no path — a wrong role meant deleting the account, which
-`deleteUser`'s activity-history guard blocks once the person has worked. `setUserRole` does not touch
-`user_properties`, and refuses a demotion to a scoped role with zero properties. The picker's list
-moved to `ROLE_ORDER` in `lib/roles.ts`: the hard-coded one held **six of the eight roles**, so an
-AGENT or NETWORK_TECH row had no option matching its own value.
+**🗑 CHECKLIST DELETE, SINGLE AND BULK.** Not ADR-031's close-out — INVALIDATED means it happened and was
+cancelled; this is for one that should never have existed. **The refusal rule is the whole safety model**:
+any response, any submission, or **any issue raised from it** (refused rather than cascaded because
+`Issue.sourceInstance` is optional, so Prisma would `SetNull`). Refusals do not fail the batch; scope is
+applied IN the query; every deletion writes an audit row carrying enough to recreate the checklist.
 
-**📍 LOCATION + ASSIGNABLE ARE BOTH EDITABLE.** `users.remote` and `users.always_assignable` existed
-but were script-only. Location shows for every role (it is a fact about the person) and is captioned
-where it is inert — it feeds a decision for MANAGER alone. The Assignable switch states the CURRENT
-answer first via `explainAssignability`, built on the same predicate the pool query mirrors, and names
-the half people miss: **a portfolio account with the override on but no property rows is invisible
-everywhere**, because the pool requires both.
+**📐 BOTH DEFECTS THIS SESSION CAME FROM KYLE'S SCREENSHOTS, NOT FROM TESTS.** The users table overflowed
+`overflow-hidden` and rendered its header as `ACTI` and Delete as `D` — rebuilt so actions collapse to one
+Manage panel. The review queue painted **eleven** 36px photo thumbnails per row, which overflowed the cell
+and drew Actions on top of them — now a photo COUNT, amber `9/11` when a required photo is missing
+(**ADR-039**, which withdraws that clause of ADR-011).
 
-**🗑 CHECKLIST DELETE, SINGLE AND BULK.** "Select to delete" on `/checklists`. Deliberately NOT ADR-031's
-close-out — INVALIDATED means it happened and was cancelled; this is for one that should never have
-existed. **The refusal rule is the whole safety model** and is the line
-`scripts/delete-test-checklist.ts` drew: any response, any submission, or **any issue raised from it**
-(refused rather than cascaded because `Issue.sourceInstance` is optional, so Prisma would `SetNull` and
-leave the issue with no idea where it came from). Refusals do not fail the batch and the banner names
-what was kept and why. Scope is applied IN the query, so another property's ids can never reach the
-delete. Every deletion writes an audit row carrying enough to recreate the checklist.
+**🎨 THE ELEVATE RE-SKIN IS LIVE, AND THE SCOPE IS CLOSED.** Kyle: *"Just the looks is ok. No need the
+completion etc."* — **no layout ports; do not re-propose them.** Applied as a TOKEN LAYER: Tailwind v4
+`@theme` redefines the built-in `slate-*` ramp and `white`, so ~1,200 hard-coded utilities re-skinned with
+**zero component edits**. Nunito → **Poppins**. **The PDF needed a separate commit** (`f9d45b0`) because
+`@react-pdf/renderer` never reads `globals.css` — Kyle exported a checklist, got an identical file, and
+the cause was nine hard-coded constants in `lib/pdf/pdf-styles.ts`. Verified by decompressing the PDF's
+content streams (colour is `scn` against `/DeviceRGB`, not `rg`): 8 new colours painted, 0 old ones left.
+⚠ `docs/design/stayable-ops-redesign/_ds/` is a **different** Stayable MARKETING system (navy `#0a1020`,
+cyan `#00e5ff`, Montserrat) that arrived in the same drop and is **deliberately not applied**.
 
-**📐 THE USERS TABLE WAS CUT OFF IN PRODUCTION** — Kyle's screenshot showed the header as `ACTI` and
-Delete as `D`. Six text buttons in an Actions cell plus a seventh column, inside `overflow-hidden`.
-Rebuilt: actions collapse to one **Manage** panel (not a floating menu — the table now scrolls and a
-popup inside a scroll container is clipped by it), status became chips in the User cell, Properties
-collapse to "All 8" and last login to a date. Container is `overflow-x-auto`, so a future column
-scrolls rather than being silently cut.
+**🐛 FOUND, NOT FIXED: the PDF is A4** (MediaBox 595.28 × 841.89), not US Letter. Every property is in
+Florida, where trays hold Letter — exports scale or clip at print time. Pre-existing, one line, undecided.
 
-**⚠️ NOTHING HAS BEEN OPENED IN A BROWSER.** The one thing anyone actually looked at this session was
-the screenshot that proved the table was broken — which is also the only defect found. 1,168 tests and
-a Ready deploy are the entire evidence base for the rebuilt table, the role picker, the Assignable
-switch and the whole delete flow. **Nobody has signed in as Bea or Erika to confirm what they now see.**
+**⚠️ ALMOST NOTHING HAS BEEN OPENED IN A BROWSER.** Two screenshots and one sample PDF are the only
+rendered artefacts anyone looked at — and they found **both** defects. Tests and a clean build remain the
+entire evidence base for the role picker, the Assignable switch, the delete flow and the re-skin.
 
 ### Carry-forward — still live from earlier sessions (full history: `docs/archive/StatusLog_RISE8_082526.md`)
 
