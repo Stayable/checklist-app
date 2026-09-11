@@ -490,9 +490,16 @@ got the way it is. Only the items below are still **open** — everything else t
   **one** Claude Design prompt is written and unrun, covering screens and paper together:
   `docs/DesignPrompt_StayableOps_RISE8_091126.md` (it replaced a split Portal/PDF pair on Kyle's call —
   the two halves must share one token file, which was the whole reason for the exercise).
-  ⚠ **The port is NOT a token swap.** Most components hard-code `slate-*`/`emerald-*`/`amber-*` Tailwind
-  utilities directly rather than going through `--color-navy`, so redefining tokens changes almost
-  nothing. Expect a token pass AND a utility sweep, screen by screen.
+  ✅ **APPLIED as a token layer on branch `feat/elevate-redesign`** (preview only, not merged). The
+  ~1,200 hard-coded `slate-*`/`white` utilities were handled by REDEFINING Tailwind v4's built-in
+  palette in `@theme` rather than by sweeping components — so every screen re-skinned with zero
+  component edits. Nunito → **Poppins**.
+  **Kyle stopped the scope there** (2026-09-11: *"Just the looks is ok. No need the completion etc."*):
+  **no layout ports, no PDF redesign.** Do not re-propose them.
+  ⚠ **Consequence: the PDF no longer matches the app** — screens are warm Elevate, exports are still
+  the cool ops-kit palette (`lib/pdf/pdf-styles.ts`, navy `#0F1E33`/Helvetica). Accepted, not a bug.
+  ⚠ The design drop contained **two conflicting systems**; `docs/design/_ds/` is a Stayable MARKETING
+  brand system (navy `#0a1020`, cyan `#00e5ff`, Montserrat) and is deliberately NOT applied.
 - **§Q32–34 (UniFi reconciliation)** — devices that vanish from UniFi stay `OFFLINE` forever holding a ticket · Lakeland's console UI and API disagree · ONLINE-WINS hides 44 Orlando cameras a retired recorder calls offline. **None were "fixed"** on purpose.
 
 **Security / ops debt:**

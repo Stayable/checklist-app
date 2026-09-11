@@ -1,0 +1,7 @@
+/* Stayable webfonts.
+   SUBSTITUTION NOTE: no font binaries were supplied with the brand artwork.
+   Montserrat is the closest widely-available match to the Stayable wordmark
+   (geometric grotesque, tall x-height, double-storey 'a', flat-cut 't').
+   Source Sans 3 is the paired text face. Replace with the licensed originals
+   when available — swap the @import below for local @font-face rules. */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");

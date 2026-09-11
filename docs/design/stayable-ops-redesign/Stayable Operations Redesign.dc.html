@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="_ds/stayable-new-design-system-11a9a889-b318-432e-b18c-acee5a36366a/tokens/colors.css">
+<link rel="stylesheet" href="_ds/stayable-new-design-system-11a9a889-b318-432e-b18c-acee5a36366a/tokens/radius.css">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { margin: 0; background: #DED8CC; }
+  a { color: var(--se-sky-2); text-decoration: none; }
+  a:hover { color: var(--se-navy); text-decoration: underline; }
+</style>
+</helmet>
+
+<section style="display:flex;flex-direction:column;gap:40px;padding:48px;background:#DED8CC;font-family:'Poppins',system-ui,sans-serif;color:var(--se-ink);">
+
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1100px;">
+    <div style="font:700 12px/1.2 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-3);">Stayable Operations · StayCheck · redesign pass 01</div>
+    <div style="font:700 48px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-navy);">stayable-operations-redesign</div>
+    <div style="font:400 18px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Seven portal artboards, a component system sheet, and four PDF artboards at true Letter proportion — all drawing on one <code style="font-family:var(--se-font-mono);font-size:16px;background:var(--se-linen);padding:1px 6px;border-radius:4px;">tokens.css</code>. Jump to: <a href="#1a">1a</a> notes · <a href="#1b">1b</a> Today · <a href="#1c">1c</a> Runtime · <a href="#1d">1d</a> Nav · <a href="#1e">1e</a> Login · <a href="#1f">1f</a> Review queue · <a href="#1g">1g</a> Dashboard · <a href="#1h">1h</a> Users · <a href="#1i">1i</a> Components · <a href="#1j">1j</a>–<a href="#1m">1m</a> PDFs.</div>
+  </div>
+
+  <div id="1a" style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1a</span>
+      <span style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-ink-2);">Deviations from Elevate · decisions · token map</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+
+      <div style="width:640px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-md);padding:28px;display:flex;flex-direction:column;gap:20px;">
+        <div style="font:700 22px/1.25 'Poppins',sans-serif;color:var(--se-navy);">Three deliberate deviations</div>
+
+        <div style="display:flex;gap:14px;">
+          <div style="width:4px;flex:0 0 4px;background:var(--se-sky);border-radius:2px;"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">1 · Field phone surfaces raise contrast two stops</div>
+            <div style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Elevate's <code style="font-family:var(--se-font-mono);">--se-ink-3</code> on <code style="font-family:var(--se-font-mono);">--se-cream</code> is 4.0:1 — under AA and invisible in Florida sun. On 1b/1c/1d all body and meta text is <code style="font-family:var(--se-font-mono);">--se-ink</code> (15.2:1) or <code style="font-family:var(--se-font-mono);">--se-ink-2</code> (9.4:1); ink-3 appears only as a non-text hairline label colour on desk surfaces. New tokens: <code style="font-family:var(--se-font-mono);">--se-field-text</code>, <code style="font-family:var(--se-font-mono);">--se-field-control</code> (#8A8478 — control borders hold up at low screen brightness), <code style="font-family:var(--se-font-mono);">--se-field-ground</code> (#F6F1E6, one stop deeper than cream so a paper card still separates from the page), <code style="font-family:var(--se-font-mono);">--se-tap-min: 44px</code>. Warmth kept; low contrast dropped.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;">
+          <div style="width:4px;flex:0 0 4px;background:var(--se-sky);border-radius:2px;"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">2 · Manager tables sit on paper, not cream</div>
+            <div style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Cream ground + oat hairlines at 30 rows turns to mush. So: the table is a <code style="font-family:var(--se-font-mono);">--se-paper</code> plate on a cream page, zebra at 1.2% (<code style="font-family:var(--se-font-mono);">--se-zebra #FCF9F2</code>) rather than linen, one <code style="font-family:var(--se-font-mono);">--se-border-strong</code> outer edge, vertical column rules at <code style="font-family:var(--se-font-mono);">--se-col-rule</code> only between number columns where misreading costs something. Hover is sky-derived (<code style="font-family:var(--se-font-mono);">--se-row-hover</code>) so it can never be mistaken for a status wash. Column rhythm is fixed-width for every bounded value (status, code, counts, time) and fluid for the two text columns — that is what stops the overflow in 1f.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;">
+          <div style="width:4px;flex:0 0 4px;background:var(--se-sky);border-radius:2px;"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">3 · Print keeps a white page; warmth lives in panels</div>
+            <div style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Cream flooded across Letter bands on a worn laser drum and muddies photocopies. The PDFs print on <code style="font-family:var(--se-font-mono);">--se-print-page #FFFFFF</code>; the warm note appears only in the meta panel, table headers and flag washes at <code style="font-family:var(--se-font-mono);">--se-print-panel #F4F1E9</code> (≈3% ink — below the banding threshold, survives a fax). The legacy cool <code style="font-family:var(--se-font-mono);">#F4F5F7</code> is kept as <code style="font-family:var(--se-font-mono);">--se-print-panel-cool</code> for any future full-bleed fill. Greyscale: panel → 96% grey, table header → 93%, navy heads → 12% (near-black), sky rule → 55%, warning tint → 94% distinguished by its 1.5pt left rule, danger wash → 93% plus a solid left rule and the literal word. Toggle <b>PDF greyscale</b> in Tweaks to check it.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;display:flex;flex-direction:column;gap:20px;">
+        <div style="background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-md);padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <div style="font:700 18px/1.25 'Poppins',sans-serif;color:var(--se-navy);">Smaller calls</div>
+          <div style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);display:flex;flex-direction:column;gap:10px;">
+            <div><b style="color:var(--se-ink);">Poppins weights: 400 / 600 / 700.</b> 500 is dropped so the PDF pipeline bundles three <code style="font-family:var(--se-font-mono);">.ttf</code> files. Eyebrows and buttons use 700, labels and prompts 600, everything else 400. No italics anywhere — hints use size + colour + a leading rule instead.</div>
+            <div><b style="color:var(--se-ink);">Sky is the only interactive hue.</b> Coral stays retired and aliased. Sunshine is decorative only: the login panel dots, the wordmark accent, the dashboard sparkline zero-line. Where yellow must be text it is <code style="font-family:var(--se-font-mono);">--se-sunshine-text</code>.</div>
+            <div><b style="color:var(--se-ink);">Red keeps its meaning.</b> Of the 8 states only <b>Flagged</b> uses danger; Cancelled and Expired are ink + glyph, Submitted is sky, Reviewed is positive. Overdue SLA in the issues report uses weight + a ▲ glyph + the word "overdue", never hue alone.</div>
+            <div><b style="color:var(--se-ink);">Asymmetric card radius</b> (<code style="font-family:var(--se-font-mono);">14 14 18 14</code>) is kept on cards and sheets, but not on inputs, chips or table plates — at 30 rows the odd corner reads as a rendering bug.</div>
+            <div><b style="color:var(--se-ink);">Dark mode:</b> nothing here uses a colour that cannot invert. Sky-as-text flips to <code style="font-family:var(--se-font-mono);">--se-sky-2</code> lighter; navy surfaces lift rather than sink. Toggle <b>Dark component sheet</b> in Tweaks.</div>
+          </div>
+        </div>
+
+        <div style="background:var(--se-linen);border:1px solid var(--se-border-strong);border-radius:var(--se-r-card);padding:24px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font:700 18px/1.25 'Poppins',sans-serif;color:var(--se-navy);">Noted, not moved</div>
+          <div style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);display:flex;flex-direction:column;gap:10px;">
+            <div>IA, routes, columns, field names, status names, role names, property codes and the <b>Closed / Flag</b> verbs are untouched.</div>
+            <div><b style="color:var(--se-ink);">Observation (no change made):</b> the review queue's <i style="font-style:normal;font-weight:600;">Time to complete</i> and <i style="font-style:normal;font-weight:600;">Photo count</i> read as a pair; they are adjacent here but still their own columns. Moving them under one header would be an IA change — your call.</div>
+            <div><b style="color:var(--se-ink);">Gap, not invented:</b> nothing in the data distinguishes "overdue" from "Scheduled" on the phone; 1b sorts Sent back first and shows a due time only where the record carries one. No new field drawn.</div>
+            <div><b style="color:var(--se-ink);">PDF workarounds:</b> no shadows anywhere (borders carry separation), no grid (every page is nested flex rows with fixed <code style="font-family:var(--se-font-mono);">width</code> in pt), header/footer are <code style="font-family:var(--se-font-mono);">fixed</code> children, hint rules and flag markers are 1pt bordered views rather than pseudo-elements, thumbnails are fixed-size image boxes in a wrapping row, and the page-number token is rendered by the renderer's own page callback.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-ink-2);">Part A · phone — 390 × 844 · field staff, one-handed, outdoors</div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;">
+
+      <div id="1b" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1b</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Today — field-staff home</span>
+        </div>
+        <div style="width:390px;height:844px;overflow:hidden;background:var(--se-field-ground);border:1px solid var(--se-border-strong);border-radius:26px;box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;">
+
+          <div style="background:var(--se-navy);padding:14px 20px 18px;display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font:700 20px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:#fff;">Stayable</span>
+                <span style="display:flex;gap:3px;"><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:6px 10px;border-radius:var(--se-r-pill);">LL</span>
+                <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;color:#fff;background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.3);padding:6px 9px;border-radius:var(--se-r-pill);">HK</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="font:700 28px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:#fff;">Good morning, María</div>
+              <div style="font:400 14px/1.55 'Poppins',sans-serif;color:#D8E4F0;">Tuesday, May 26 · 7:12 AM ET · Stayable Lakeland</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.22);border-radius:var(--se-r-md);padding:12px 14px;">
+              <div style="display:flex;flex-direction:column;gap:6px;flex:1 1 auto;">
+                <div style="font:700 14px/1 'Poppins',sans-serif;color:#fff;">4 of 9 done</div>
+                <div style="height:8px;border-radius:999px;background:rgba(255,255,255,0.22);overflow:hidden;"><div style="width:44%;height:8px;background:var(--se-sky);"></div></div>
+              </div>
+              <div style="font:700 12px/1.2 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-sky-soft);text-align:right;">5 left<br>today</div>
+            </div>
+          </div>
+
+          <div style="flex:1 1 auto;overflow:hidden;padding:16px 16px 0;display:flex;flex-direction:column;gap:18px;">
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-danger);">Sent back · fix and resubmit</span>
+                <span style="font:700 12px/1 'Poppins',sans-serif;color:var(--se-ink);background:var(--se-danger-soft);border:1px solid #E2B3AC;padding:4px 14px 4px 0;border-radius:999px;">1</span>
+              </div>
+              <div style="display:flex;background:var(--se-paper);border:1px solid #E2B3AC;border-left:4px solid var(--se-danger);border-radius:var(--se-r-md);box-shadow:var(--se-sh-sm);min-height:72px;">
+                <div style="flex:1 1 auto;padding:12px 14px;display:flex;flex-direction:column;gap:6px;">
+                  <div style="font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">Departure Checklist</div>
+                  <div style="font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink-2);">Rm 118 · LL · sent back 6:58 AM ET</div>
+                  <div style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink);background:var(--se-danger-soft);border-radius:6px;padding:6px 8px;">“Bathroom photo missing — please re-shoot.”</div>
+                </div>
+                <div style="flex:0 0 44px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--se-oat);color:var(--se-navy);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">In progress</span>
+              <div style="display:flex;background:var(--se-paper);border:1px solid var(--se-border-strong);border-left:4px solid var(--se-sky);border-radius:var(--se-r-md);box-shadow:var(--se-sh-sm);min-height:72px;">
+                <div style="flex:1 1 auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                    <div style="font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">Arrival Checklist</div>
+                    <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:#fff;background:var(--se-sky-2);padding:5px 8px;border-radius:999px;">◐ Started</span>
+                  </div>
+                  <div style="font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink-2);">Rm 312 · LL · 12 of 18 answered</div>
+                  <div style="height:6px;border-radius:999px;background:var(--se-linen);overflow:hidden;"><div style="width:66%;height:6px;background:var(--se-sky);"></div></div>
+                </div>
+                <div style="flex:0 0 44px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--se-oat);color:var(--se-navy);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">To do · 4</span>
+              <div style="display:flex;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-md);box-shadow:var(--se-sh-sm);min-height:72px;">
+                <div style="flex:1 1 auto;padding:12px 14px;display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                    <div style="font:600 16px/1.3 'Poppins',sans-serif;color:var(--se-ink);">Lista de limpieza profunda de habitación</div>
+                    <span style="flex:0 0 auto;font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-navy);background:var(--se-linen);border:1px solid var(--se-border-strong);padding:5px 8px;border-radius:999px;">◌ Por hacer</span>
+                  </div>
+                  <div style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">Hab. 204 · LL · programada para 9:00 AM ET</div>
+                </div>
+                <div style="flex:0 0 44px;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--se-oat);color:var(--se-navy);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:0 0 auto;padding:14px 16px 10px;background:var(--se-paper);border-top:1px solid var(--se-border-strong);display:flex;flex-direction:column;gap:10px;">
+            <div style="min-height:52px;display:flex;align-items:center;justify-content:center;background:var(--se-navy);color:#fff;border-radius:var(--se-r-md);font:700 16px/1 'Poppins',sans-serif;">Continue Rm 312 · 6 left</div>
+          </div>
+
+          <div style="flex:0 0 auto;display:flex;background:var(--se-paper);border-top:1px solid var(--se-oat);padding:6px 4px 10px;">
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-navy);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>
+              <span style="font:700 11px/1 'Poppins',sans-serif;">Home</span>
+              <span style="width:18px;height:3px;border-radius:2px;background:var(--se-sky);"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Checklist</span>
+              <span style="width:18px;height:3px;"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0M5.5 12.5a10 10 0 0 1 13 0M9 16.5a5 5 0 0 1 6 0"/><circle cx="12" cy="20" r="1.1" fill="currentColor" stroke="none"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Network</span>
+              <span style="width:18px;height:3px;"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3.5a4.5 4.5 0 0 0 5.5 6L13 17l-3 3-4-4 3-3z"/><path d="M5 19.5 3.5 21"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Maint.</span>
+              <span style="width:18px;height:3px;"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-4 7 4v11M10 21v-5h4v5"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Constr.</span>
+              <span style="width:18px;height:3px;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1c" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1c</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Checklist fill runtime</span>
+        </div>
+        <div style="width:390px;height:844px;overflow:hidden;background:var(--se-field-ground);border:1px solid var(--se-border-strong);border-radius:26px;box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;">
+
+          <div style="flex:0 0 auto;background:var(--se-paper);border-bottom:1px solid var(--se-border-strong);padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:44px;height:44px;margin-left:-8px;display:flex;align-items:center;justify-content:center;color:var(--se-navy);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m14 5-7 7 7 7"/></svg>
+              </div>
+              <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                <div style="font:600 16px/1.35 'Poppins',sans-serif;color:var(--se-ink);padding-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Arrival Checklist</div>
+                <div style="font:400 13px/1.2 'Poppins',sans-serif;color:var(--se-ink-2);">Rm 312 · LL · started 6:41 AM ET</div>
+              </div>
+              <span style="font:700 13px/1 'Poppins',sans-serif;color:var(--se-navy);background:var(--se-linen);border:1px solid var(--se-border-strong);padding:7px 10px;border-radius:999px;">12/18</span>
+            </div>
+            <div style="height:8px;border-radius:999px;background:var(--se-linen);overflow:hidden;"><div style="width:66%;height:8px;background:var(--se-sky);"></div></div>
+          </div>
+
+          <div style="flex:1 1 auto;overflow:hidden;padding:12px 14px 0;display:flex;flex-direction:column;gap:8px;">
+
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-navy);">Bathroom</span>
+              <span style="flex:1 1 auto;height:1px;background:var(--se-border-strong);"></span>
+              <span style="font:600 12px/1 'Poppins',sans-serif;color:var(--se-ink-2);">4 questions</span>
+            </div>
+
+            <div style="background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-md);box-shadow:var(--se-sh-sm);padding:12px;display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="font:600 16px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Tub, tile and grout free of residue<span style="color:var(--se-danger);font-weight:700;"> *</span></div>
+                <div style="display:flex;gap:8px;"><span style="width:2px;background:var(--se-sky);border-radius:2px;"></span><span style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">7:00pm / 10:00pm / End of shift</span></div>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <div style="flex:1 1 0;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="m4 12.5 5 5L20 6.5"/></svg>Yes
+                </div>
+                <div style="flex:1 1 0;min-height:48px;display:flex;align-items:center;justify-content:center;background:var(--se-paper);color:var(--se-ink);border:2px solid var(--se-field-control);border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">No</div>
+              </div>
+            </div>
+
+            <div style="background:var(--se-paper);border:2px solid var(--se-danger);border-radius:var(--se-r-md);box-shadow:var(--se-sh-sm);padding:12px;display:flex;flex-direction:column;gap:10px;">
+              <div style="font:600 16px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Hot water temperature at tap (°F)<span style="color:var(--se-danger);font-weight:700;"> *</span></div>
+              <div style="min-height:48px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);border:2px solid var(--se-danger);border-radius:var(--se-r-sm);font:400 16px/1 'Poppins',sans-serif;color:var(--se-ink-4);">—</div>
+              <div style="display:flex;gap:8px;align-items:flex-start;background:var(--se-danger-soft);border-radius:6px;padding:8px 10px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--se-danger)" stroke-width="2.4" stroke-linecap="round" style="flex:0 0 16px;margin-top:2px;"><path d="M12 7v7M12 17.5v.5"/><circle cx="12" cy="12" r="9.5"/></svg>
+                <span style="font:600 14px/1.4 'Poppins',sans-serif;color:var(--se-ink);">Required — enter a number before submitting</span>
+              </div>
+            </div>
+
+            <div style="background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-md);box-shadow:var(--se-sh-sm);padding:12px;display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="font:600 16px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Photos of any damage found<span style="color:var(--se-danger);font-weight:700;"> *</span></div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div style="width:56px;height:56px;border-radius:var(--se-r-sm);background:var(--se-linen);border:1px solid var(--se-border-strong);display:flex;align-items:flex-end;justify-content:flex-start;padding:6px;">
+                  <span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-ink-2);background:var(--se-paper);border-radius:4px;padding:3px 5px;">1</span>
+                </div>
+                <div style="width:56px;height:56px;border-radius:var(--se-r-sm);background:var(--se-linen);border:1px solid var(--se-border-strong);display:flex;align-items:flex-end;justify-content:flex-start;padding:6px;">
+                  <span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-ink-2);background:var(--se-paper);border-radius:4px;padding:3px 5px;">2</span>
+                </div>
+                <div style="width:56px;height:56px;border-radius:var(--se-r-sm);background:var(--se-paper);border:2px dashed var(--se-field-control);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--se-navy);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h3l1.5-2h7L17 8.5h3v10H4z"/><circle cx="12" cy="13" r="3"/></svg>
+                  <span style="font:700 11px/1 'Poppins',sans-serif;">Take photo</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="min-height:42px;padding:8px 12px;background:var(--se-paper);border:2px solid var(--se-field-control);border-radius:var(--se-r-sm);font:400 14px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Chip on dresser edge, guest side. Not new.</div>
+              </div>
+            </div>
+
+            <div style="background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-md);box-shadow:var(--se-sh-sm);padding:12px;display:flex;flex-direction:column;gap:10px;">
+              <div style="font:600 16px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Linen set used</div>
+              <div style="display:flex;gap:8px;">
+                <div style="flex:1 1 0;min-height:48px;display:flex;align-items:center;gap:8px;padding:0 10px;border:2px solid var(--se-navy);background:var(--se-sky-tint);border-radius:var(--se-r-sm);">
+                  <span style="flex:0 0 18px;width:18px;height:18px;border-radius:999px;border:2px solid var(--se-navy);display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:999px;background:var(--se-navy);"></span></span>
+                  <span style="font:600 15px/1.2 'Poppins',sans-serif;color:var(--se-ink);">Full change</span>
+                </div>
+                <div style="flex:1 1 0;min-height:48px;display:flex;align-items:center;gap:8px;padding:0 10px;border:2px solid var(--se-field-control);background:var(--se-paper);border-radius:var(--se-r-sm);">
+                  <span style="flex:0 0 18px;width:18px;height:18px;border-radius:999px;border:2px solid var(--se-field-control);"></span>
+                  <span style="font:400 15px/1.2 'Poppins',sans-serif;color:var(--se-ink);">Top sheet only</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:0 0 auto;background:var(--se-paper);border-top:1px solid var(--se-border-strong);box-shadow:0 -2px 8px rgba(26,26,26,.06);padding:12px 16px 14px;display:flex;align-items:center;gap:12px;">
+            <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:2px;">
+              <span style="font:700 14px/1.2 'Poppins',sans-serif;color:var(--se-ink);">6 left · 1 needs fixing</span>
+              <span style="font:400 13px/1.2 'Poppins',sans-serif;color:var(--se-ink-2);">Saved 7:12 AM ET</span>
+            </div>
+            <div style="flex:0 0 auto;min-height:48px;min-width:132px;display:flex;align-items:center;justify-content:center;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Submit</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1d" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1d</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Mobile navigation — tab bar + child sheet</span>
+        </div>
+        <div style="width:390px;height:844px;overflow:hidden;background:var(--se-field-ground);border:1px solid var(--se-border-strong);border-radius:26px;box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;">
+
+          <div style="flex:0 0 auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:rgba(11,31,58,0.55);">
+            <div style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:#fff;">Screen behind is dimmed, not blurred</div>
+            <div style="height:1px;background:rgba(255,255,255,0.3);"></div>
+            <div style="font:400 14px/1.4 'Poppins',sans-serif;color:#EDE6DA;">Five tabs, fixed. Each tab is 78px wide at 390 — labels truncate by abbreviation (“Maint.”, “Constr.”), never by horizontal scroll. A tab with children opens a sheet; it never opens a second row of tabs.</div>
+          </div>
+
+          <div style="flex:1 1 auto;background:rgba(11,31,58,0.55);"></div>
+
+          <div style="flex:0 0 auto;background:var(--se-paper);border-top:1px solid var(--se-border-strong);border-radius:18px 18px 0 0;box-shadow:0 -8px 24px rgba(26,26,26,.18);padding:10px 16px 16px;display:flex;flex-direction:column;gap:14px;">
+            <div style="align-self:center;width:44px;height:4px;border-radius:999px;background:var(--se-ink-5);"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font:700 22px/1.25 'Poppins',sans-serif;letter-spacing:-0.02em;color:var(--se-navy);">Network</div>
+              <div style="width:44px;height:44px;margin-right:-8px;display:flex;align-items:center;justify-content:center;color:var(--se-ink);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="min-height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--se-linen);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);">
+                <span style="flex:1 1 auto;font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">Devices</span>
+                <span style="font:700 12px/1 'Poppins',sans-serif;color:var(--se-ink);background:var(--se-paper);border:1px solid var(--se-border-strong);padding:5px 8px;border-radius:999px;">142</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--se-navy)" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+              </div>
+              <div style="min-height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);">
+                <span style="flex:1 1 auto;font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">Speed tests</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--se-navy)" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+              </div>
+              <div style="min-height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);">
+                <span style="flex:1 1 auto;font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">Outages</span>
+                <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:#fff;background:var(--se-danger);padding:5px 8px;border-radius:999px;">⚑ 2 open</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--se-navy)" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+              </div>
+              <div style="min-height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);">
+                <span style="flex:1 1 auto;font:600 16px/1.25 'Poppins',sans-serif;color:var(--se-ink);">Site contacts</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--se-navy)" stroke-width="2.4" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:0 0 auto;display:flex;background:var(--se-paper);border-top:1px solid var(--se-oat);padding:6px 4px 10px;">
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Home</span><span style="width:18px;height:3px;"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Checklist</span><span style="width:18px;height:3px;"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-navy);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0M5.5 12.5a10 10 0 0 1 13 0M9 16.5a5 5 0 0 1 6 0"/><circle cx="12" cy="20" r="1.1" fill="currentColor" stroke="none"/></svg>
+              <span style="font:700 11px/1 'Poppins',sans-serif;">Network</span>
+              <span style="width:18px;height:3px;border-radius:2px;background:var(--se-sky);"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3.5a4.5 4.5 0 0 0 5.5 6L13 17l-3 3-4-4 3-3z"/><path d="M5 19.5 3.5 21"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Maint.</span><span style="width:18px;height:3px;"></span>
+            </div>
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;color:var(--se-ink-2);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-4 7 4v11M10 21v-5h4v5"/></svg>
+              <span style="font:600 11px/1 'Poppins',sans-serif;">Constr.</span><span style="width:18px;height:3px;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-ink-2);">Part A · desktop — 1440 × 900 · managers &amp; corporate, scanning speed first</div>
+    <div style="display:flex;flex-direction:column;gap:32px;">
+
+      <div id="1e" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1e</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Login — editorial split, held back one notch from Elevate</span>
+        </div>
+        <div style="width:1440px;height:900px;overflow:hidden;background:var(--se-cream);border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;">
+          <div style="flex:0 0 560px;background:var(--se-navy);padding:56px 56px 40px;display:flex;flex-direction:column;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font:700 28px/1 'Poppins',sans-serif;letter-spacing:-0.035em;color:#fff;">Stayable</span>
+              <span style="display:flex;gap:4px;"><span style="width:7px;height:7px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:7px;height:7px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:7px;height:7px;border-radius:999px;background:var(--se-sunshine);"></span></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:20px;">
+              <div style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-sky-soft);">Operations</div>
+              <div style="font:700 48px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:#fff;">Eight properties,<br>one shift log.</div>
+              <div style="width:64px;height:4px;background:var(--se-sky);border-radius:2px;"></div>
+              <div style="font:400 18px/1.55 'Poppins',sans-serif;color:#CBD9E8;max-width:380px;">Checklists, dispatch, network and maintenance for Stayable Florida. Internal use only.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">JN</span>
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">JW</span>
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">KE</span>
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">KW</span>
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">LL</span>
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">OR</span>
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">SA</span>
+              <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:#fff;border:1px solid rgba(255,255,255,0.28);padding:7px 10px;border-radius:999px;">DP</span>
+            </div>
+          </div>
+          <div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center;">
+            <div style="width:440px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-md);padding:40px;display:flex;flex-direction:column;gap:24px;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="font:700 28px/1.25 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-navy);">Sign in</div>
+                <div style="font:400 16px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Use your Stayable work email.</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Email</span>
+                <div style="height:48px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:400 16px/1 'Poppins',sans-serif;color:var(--se-ink);">m.reyes@rentstayable.com</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Password</span>
+                <div style="height:48px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-navy);border-radius:var(--se-r-sm);box-shadow:0 0 0 4px rgba(0,156,222,0.18);font:400 18px/1 'Poppins',sans-serif;letter-spacing:0.2em;color:var(--se-ink);">••••••••••</div>
+                <span style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">Focus state shown: navy border + 4px sky halo.</span>
+              </div>
+              <div style="height:48px;display:flex;align-items:center;justify-content:center;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Sign in</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <a href="#1e" style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-sky-2);">Forgot password</a>
+                <span style="font:400 13px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Trouble? Ask your manager.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1f" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1f</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Review queue — fixed column rhythm, no overflow</span>
+        </div>
+        <div style="width:1440px;height:900px;overflow:hidden;background:var(--se-cream);border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;">
+
+          <div style="flex:0 0 auto;height:60px;background:var(--se-navy);display:flex;align-items:center;padding:0 24px;gap:28px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font:700 20px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:#fff;">Stayable</span>
+              <span style="display:flex;gap:3px;"><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;flex:1 1 auto;">
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Dashboard</span>
+              <span style="font:700 14px/1 'Poppins',sans-serif;color:#fff;background:rgba(255,255,255,0.12);border-bottom:2px solid var(--se-sky);padding:8px 12px;">Review</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Dispatch</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Issues</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Network</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Admin</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.08em;color:#fff;border:1px solid rgba(255,255,255,0.3);padding:6px 9px;border-radius:999px;">MANAGER</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:#fff;">m.reyes</span>
+            </div>
+          </div>
+
+          <div style="flex:1 1 auto;padding:28px 32px;display:flex;flex-direction:column;gap:20px;overflow:hidden;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-3);">Checklists</span>
+                <span style="font:700 36px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-navy);">Review queue</span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <div style="height:38px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);">All properties <span style="color:var(--se-ink-3);">▾</span></div>
+                <div style="height:38px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);">May 2026 <span style="color:var(--se-ink-3);">▾</span></div>
+                <div style="height:38px;display:flex;align-items:center;padding:0 14px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Export PDF</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--se-border-strong);">
+              <span style="font:700 14px/1 'Poppins',sans-serif;color:var(--se-navy);border-bottom:3px solid var(--se-sky);padding:10px 14px;">Pending (3)</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);padding:10px 14px;">Flagged (0)</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);padding:10px 14px;">Reviewed (0)</span>
+              <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);padding:10px 14px;">All</span>
+            </div>
+
+            <div style="background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);overflow:hidden;">
+              <div style="display:flex;align-items:center;height:40px;background:var(--se-linen);border-bottom:1px solid var(--se-border-strong);font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-ink-2);">
+                <div style="flex:0 0 128px;padding:0 14px;">Status</div>
+                <div style="flex:1 1 0;min-width:0;padding:0 14px;">Checklist</div>
+                <div style="flex:0 0 196px;padding:0 14px;">User</div>
+                <div style="flex:0 0 150px;padding:0 14px;border-left:1px solid var(--se-col-rule);">Date</div>
+                <div style="flex:0 0 84px;padding:0 14px;border-left:1px solid var(--se-col-rule);">Unit #</div>
+                <div style="flex:0 0 128px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">Time to compl.</div>
+                <div style="flex:0 0 96px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">Photos</div>
+                <div style="flex:0 0 188px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">Actions</div>
+              </div>
+
+              <div style="display:flex;align-items:center;height:56px;background:var(--se-paper);border-bottom:1px solid var(--se-oat);font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink);">
+                <div style="flex:0 0 128px;padding:0 14px;"><span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:#fff;background:var(--se-sky-2);padding:5px 8px;border-radius:999px;">✓ Submitted</span></div>
+                <div style="flex:1 1 0;min-width:0;padding:0 14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Arrival Checklist</div>
+                <div style="flex:0 0 196px;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">María Reyes · HK</div>
+                <div style="flex:0 0 150px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 26 · 5:23 AM ET</div>
+                <div style="flex:0 0 84px;padding:0 14px;border-left:1px solid var(--se-col-rule);font-variant-numeric:tabular-nums;">312</div>
+                <div style="flex:0 0 128px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">41m</div>
+                <div style="flex:0 0 96px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">11/11</div>
+                <div style="flex:0 0 188px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;gap:8px;">
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Closed</span>
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-paper);color:var(--se-navy);border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Flag</span>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;height:56px;background:var(--se-zebra);border-bottom:1px solid var(--se-oat);font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink);">
+                <div style="flex:0 0 128px;padding:0 14px;"><span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:#fff;background:var(--se-sky-2);padding:5px 8px;border-radius:999px;">✓ Submitted</span></div>
+                <div style="flex:1 1 0;min-width:0;padding:0 14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deep Clean — Room Turn</div>
+                <div style="flex:0 0 196px;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">D. Okonkwo · PA</div>
+                <div style="flex:0 0 150px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 26 · 6:02 AM ET</div>
+                <div style="flex:0 0 84px;padding:0 14px;border-left:1px solid var(--se-col-rule);font-variant-numeric:tabular-nums;">204</div>
+                <div style="flex:0 0 128px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">1h 12m</div>
+                <div style="flex:0 0 96px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">
+                  <span style="display:inline-flex;align-items:center;gap:4px;font:700 13px/1 'Poppins',sans-serif;font-variant-numeric:tabular-nums;color:var(--se-sunshine-text);background:var(--se-warning-soft);border:1px solid #E4C689;padding:4px 7px;border-radius:6px;">▲ 9/11</span>
+                </div>
+                <div style="flex:0 0 188px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;gap:8px;">
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Closed</span>
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-paper);color:var(--se-navy);border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Flag</span>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;height:56px;background:var(--se-row-flag);border-bottom:1px solid var(--se-oat);border-left:4px solid var(--se-danger);font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink);">
+                <div style="flex:0 0 124px;padding:0 14px;"><span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:#fff;background:var(--se-danger);padding:5px 8px;border-radius:999px;">⚑ Flagged</span></div>
+                <div style="flex:1 1 0;min-width:0;padding:0 14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Departure Checklist</div>
+                <div style="flex:0 0 196px;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">María Reyes · HK</div>
+                <div style="flex:0 0 150px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 26 · 6:58 AM ET</div>
+                <div style="flex:0 0 84px;padding:0 14px;border-left:1px solid var(--se-col-rule);font-variant-numeric:tabular-nums;">118</div>
+                <div style="flex:0 0 128px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">22m</div>
+                <div style="flex:0 0 96px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">6/8</div>
+                <div style="flex:0 0 188px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;gap:8px;">
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Closed</span>
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-danger-soft);color:var(--se-ink);border:1px solid var(--se-danger);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Flagged</span>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;height:56px;background:var(--se-zebra);border-bottom:1px solid var(--se-oat);font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink);">
+                <div style="flex:0 0 128px;padding:0 14px;"><span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:#fff;background:var(--se-sky-2);padding:5px 8px;border-radius:999px;">✓ Submitted</span></div>
+                <div style="flex:1 1 0;min-width:0;padding:0 14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Preventive Maintenance — HVAC Filter</div>
+                <div style="flex:0 0 196px;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">R. Villanueva · MT</div>
+                <div style="flex:0 0 150px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 25 · 3:47 PM ET</div>
+                <div style="flex:0 0 84px;padding:0 14px;border-left:1px solid var(--se-col-rule);font-variant-numeric:tabular-nums;">221</div>
+                <div style="flex:0 0 128px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">18m</div>
+                <div style="flex:0 0 96px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">3/3</div>
+                <div style="flex:0 0 188px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;gap:8px;">
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Closed</span>
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-paper);color:var(--se-navy);border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Flag</span>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;height:56px;background:var(--se-row-hover);border-bottom:1px solid var(--se-oat);font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink);">
+                <div style="flex:0 0 128px;padding:0 14px;"><span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:var(--se-positive);background:var(--se-positive-soft);border:1px solid #BFD3C5;padding:4px 7px;border-radius:999px;">✓✓ Reviewed</span></div>
+                <div style="flex:1 1 0;min-width:0;padding:0 14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Arrival Checklist <span style="font-weight:400;color:var(--se-ink-2);">— hover row</span></div>
+                <div style="flex:0 0 196px;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">T. Brooks · PA</div>
+                <div style="flex:0 0 150px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 25 · 11:05 AM ET</div>
+                <div style="flex:0 0 84px;padding:0 14px;border-left:1px solid var(--se-col-rule);font-variant-numeric:tabular-nums;">407</div>
+                <div style="flex:0 0 128px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">36m</div>
+                <div style="flex:0 0 96px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">12/12</div>
+                <div style="flex:0 0 188px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;gap:8px;">
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Closed</span>
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-paper);color:var(--se-navy);border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Flag</span>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;height:56px;background:var(--se-paper);font:400 14px/1.25 'Poppins',sans-serif;color:var(--se-ink);">
+                <div style="flex:0 0 128px;padding:0 14px;"><span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:var(--se-ink-2);background:var(--se-linen);border:1px solid var(--se-border-strong);padding:4px 7px;border-radius:999px;">⌛ Expired</span></div>
+                <div style="flex:1 1 0;min-width:0;padding:0 14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Weekly Common-Area Walk</div>
+                <div style="flex:0 0 196px;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Unassigned</div>
+                <div style="flex:0 0 150px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 24 · 11:59 PM ET</div>
+                <div style="flex:0 0 84px;padding:0 14px;border-left:1px solid var(--se-col-rule);">—</div>
+                <div style="flex:0 0 128px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">—</div>
+                <div style="flex:0 0 96px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">—</div>
+                <div style="flex:0 0 188px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;gap:8px;">
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-linen);color:var(--se-ink-4);border:1px solid var(--se-oat);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Closed</span>
+                  <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-linen);color:var(--se-ink-4);border:1px solid var(--se-oat);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Flag</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:16px;align-items:flex-start;background:var(--se-linen);border:1px solid var(--se-oat);border-radius:var(--se-r-sm);padding:14px 16px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-navy);flex:0 0 auto;padding-top:2px;">Column rhythm</span>
+              <span style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Every bounded value is fixed-width (status 128 · user 196 · date 150 · unit 84 · time 128 · photos 96 · actions 188) and only <b>Checklist</b> flexes with <code style="font-family:var(--se-font-mono);">min-width:0</code> + ellipsis — so the action cluster can never be pushed off-screen. Numbers are tabular and right-aligned; vertical rules appear only from Date rightward, where columns are numeric and adjacency causes misreads. Row height 56 at this width; <code style="font-family:var(--se-font-mono);">--se-row-h-dense 38</code> is available for the Issues pipeline.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:32px;">
+
+    <div id="1g" style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1g</span>
+        <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Dashboard — corporate overview</span>
+      </div>
+      <div style="width:1440px;height:900px;overflow:hidden;background:var(--se-cream);border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;">
+        <div style="flex:0 0 auto;height:60px;background:var(--se-navy);display:flex;align-items:center;padding:0 24px;gap:28px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font:700 20px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:#fff;">Stayable</span>
+            <span style="display:flex;gap:3px;"><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex:1 1 auto;">
+            <span style="font:700 14px/1 'Poppins',sans-serif;color:#fff;background:rgba(255,255,255,0.12);border-bottom:2px solid var(--se-sky);padding:8px 12px;">Dashboard</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Review</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Dispatch</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Issues</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Network</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Admin</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.08em;color:#fff;border:1px solid rgba(255,255,255,0.3);padding:6px 9px;border-radius:999px;">CORPORATE</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#fff;">r.beyer</span>
+          </div>
+        </div>
+
+        <div style="flex:1 1 auto;padding:28px 32px;display:flex;flex-direction:column;gap:20px;overflow:hidden;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-3);">Portfolio · 8 properties</span>
+              <span style="font:700 36px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-navy);">Today, May 26 · 7:12 AM ET</span>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <div style="height:38px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);">Today <span style="color:var(--se-ink-3);">▾</span></div>
+              <div style="height:38px;display:flex;align-items:center;padding:0 14px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Completeness report</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:16px;">
+            <div style="flex:1 1 0;background:var(--se-paper);border:1px solid var(--se-oat);border-left:4px solid var(--se-sky);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:20px;display:flex;flex-direction:column;gap:8px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Completion</span>
+              <span style="font:700 48px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-navy);font-variant-numeric:tabular-nums;">82<span style="font-size:28px;">%</span></span>
+              <span style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">148 of 181 scheduled</span>
+            </div>
+            <div style="flex:1 1 0;background:var(--se-paper);border:1px solid var(--se-oat);border-left:4px solid var(--se-warning);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:20px;display:flex;flex-direction:column;gap:8px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Overdue</span>
+              <span style="font:700 48px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-sunshine-text);font-variant-numeric:tabular-nums;">14</span>
+              <span style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">past scheduled window</span>
+            </div>
+            <div style="flex:1 1 0;background:var(--se-paper);border:1px solid var(--se-oat);border-left:4px solid var(--se-danger);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:20px;display:flex;flex-direction:column;gap:8px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Flagged</span>
+              <span style="font:700 48px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-danger);font-variant-numeric:tabular-nums;">6</span>
+              <span style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">awaiting a fix or a verdict</span>
+            </div>
+            <div style="flex:1 1 0;background:var(--se-paper);border:1px solid var(--se-oat);border-left:4px solid var(--se-ink-4);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:20px;display:flex;flex-direction:column;gap:8px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Unassigned</span>
+              <span style="font:700 48px/1.05 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-ink);font-variant-numeric:tabular-nums;">9</span>
+              <span style="font:400 14px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">no user on the record</span>
+            </div>
+          </div>
+
+          <div style="flex:1 1 auto;display:flex;gap:16px;min-height:0;">
+            <div style="flex:1 1 0;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:22px;display:flex;flex-direction:column;gap:14px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                <span style="font:700 18px/1.25 'Poppins',sans-serif;color:var(--se-navy);">Completion by property</span>
+                <span style="font:400 13px/1.4 'Poppins',sans-serif;color:var(--se-ink-2);">done / scheduled today · sorted worst first</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">KW</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:58%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">11/19 · 58%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">OR</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:67%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">16/24 · 67%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">JW</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:76%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">19/25 · 76%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">DP</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:81%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">13/16 · 81%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">LL</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:84%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">21/25 · 84%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">KE</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:88%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">22/25 · 88%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">SA</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:92%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">22/24 · 92%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="flex:0 0 36px;font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:5px 0;border-radius:999px;text-align:center;">JN</span>
+                  <span style="flex:1 1 auto;height:20px;background:var(--se-linen);border-radius:4px;overflow:hidden;display:flex;"><span style="width:98%;background:var(--se-navy);"></span></span>
+                  <span style="flex:0 0 96px;text-align:right;font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);font-variant-numeric:tabular-nums;">23/23 · 100%</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;background:var(--se-linen);border:1px solid var(--se-oat);border-radius:var(--se-r-sm);padding:12px 14px;margin-top:auto;">
+                <span style="font:700 11px/1.4 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-navy);flex:0 0 76px;">Why bars</span>
+                <span style="font:400 13px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">One quantity, eight categories, shared baseline, sorted worst-first — the comparison a corporate reader actually makes. No axis, no gridlines, no second series, and the raw <code style="font-family:var(--se-font-mono);">done/scheduled</code> pair is printed beside every bar, so the chart adds scanning speed but carries no information the text lacks. A donut of "82%" or a 30-day trend line would have been decoration.</span>
+              </div>
+            </div>
+
+            <div style="flex:0 0 400px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:22px;display:flex;flex-direction:column;gap:14px;">
+              <span style="font:700 18px/1.25 'Poppins',sans-serif;color:var(--se-navy);">Recent activity</span>
+              <div style="display:flex;flex-direction:column;">
+                <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--se-oat);">
+                  <span style="flex:0 0 6px;height:6px;margin-top:7px;border-radius:999px;background:var(--se-danger);"></span>
+                  <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 14px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Departure Checklist flagged · LL Rm 118</span><span style="font:400 13px/1.35 'Poppins',sans-serif;color:var(--se-ink-2);">m.reyes → María Reyes · 6:58 AM ET</span></div>
+                </div>
+                <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--se-oat);">
+                  <span style="flex:0 0 6px;height:6px;margin-top:7px;border-radius:999px;background:var(--se-sky);"></span>
+                  <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 14px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Deep Clean submitted · LL Rm 204</span><span style="font:400 13px/1.35 'Poppins',sans-serif;color:var(--se-ink-2);">D. Okonkwo · PA · 6:02 AM ET</span></div>
+                </div>
+                <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--se-oat);">
+                  <span style="flex:0 0 6px;height:6px;margin-top:7px;border-radius:999px;background:var(--se-positive);"></span>
+                  <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 14px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Arrival Checklist reviewed · KE Rm 407</span><span style="font:400 13px/1.35 'Poppins',sans-serif;color:var(--se-ink-2);">a.singh · MANAGER · 5:44 AM ET</span></div>
+                </div>
+                <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--se-oat);">
+                  <span style="flex:0 0 6px;height:6px;margin-top:7px;border-radius:999px;background:var(--se-ink-4);"></span>
+                  <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 14px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Weekly Common-Area Walk expired · OR</span><span style="font:400 13px/1.35 'Poppins',sans-serif;color:var(--se-ink-2);">Unassigned · May 24 · 11:59 PM ET</span></div>
+                </div>
+                <div style="display:flex;gap:12px;padding:12px 0;">
+                  <span style="flex:0 0 6px;height:6px;margin-top:7px;border-radius:999px;background:var(--se-sky);"></span>
+                  <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 14px/1.35 'Poppins',sans-serif;color:var(--se-ink);">HVAC Filter PM submitted · SA Rm 221</span><span style="font:400 13px/1.35 'Poppins',sans-serif;color:var(--se-ink-2);">R. Villanueva · MT · May 25 · 3:47 PM ET</span></div>
+                </div>
+              </div>
+              <a href="#1f" style="margin-top:auto;height:38px;display:flex;align-items:center;justify-content:center;border:1px solid var(--se-navy);border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;color:var(--se-navy);">Open review queue</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1h" style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1h</span>
+        <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Admin → Users — densest surface, expanded Manage panel</span>
+      </div>
+      <div style="width:1440px;height:900px;overflow:hidden;background:var(--se-cream);border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;">
+        <div style="flex:0 0 auto;height:60px;background:var(--se-navy);display:flex;align-items:center;padding:0 24px;gap:28px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font:700 20px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:#fff;">Stayable</span>
+            <span style="display:flex;gap:3px;"><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span><span style="width:5px;height:5px;border-radius:999px;background:var(--se-sunshine);"></span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex:1 1 auto;">
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Dashboard</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Review</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Dispatch</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Issues</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#CBD9E8;padding:8px 12px;">Network</span>
+            <span style="font:700 14px/1 'Poppins',sans-serif;color:#fff;background:rgba(255,255,255,0.12);border-bottom:2px solid var(--se-sky);padding:8px 12px;">Admin</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.08em;color:#fff;border:1px solid rgba(255,255,255,0.3);padding:6px 9px;border-radius:999px;">ADMIN</span>
+            <span style="font:600 14px/1 'Poppins',sans-serif;color:#fff;">it.admin</span>
+          </div>
+        </div>
+
+        <div style="flex:1 1 auto;padding:24px 32px;display:flex;flex-direction:column;gap:16px;overflow:hidden;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-3);">Admin</span>
+              <span style="font:700 28px/1.15 'Poppins',sans-serif;letter-spacing:-0.035em;color:var(--se-navy);">Users <span style="font:400 18px/1 'Poppins',sans-serif;color:var(--se-ink-2);">· 35 accounts</span></span>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <div style="height:36px;width:240px;display:flex;align-items:center;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:400 14px/1 'Poppins',sans-serif;color:var(--se-ink-3);">Search name or email</div>
+              <div style="height:36px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);">Role: All <span style="color:var(--se-ink-3);">▾</span></div>
+              <div style="height:36px;display:flex;align-items:center;padding:0 14px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Add user</div>
+            </div>
+          </div>
+
+          <div style="background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);overflow:hidden;">
+            <div style="display:flex;align-items:center;height:38px;background:var(--se-linen);border-bottom:1px solid var(--se-border-strong);font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-ink-2);">
+              <div style="flex:1 1 0;min-width:0;padding:0 14px;">User</div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);">Role</div>
+              <div style="flex:0 0 148px;padding:0 14px;border-left:1px solid var(--se-col-rule);">Location</div>
+              <div style="flex:0 0 208px;padding:0 14px;border-left:1px solid var(--se-col-rule);">Properties</div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);">Last login</div>
+              <div style="flex:0 0 124px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">Manage</div>
+            </div>
+
+            <div style="display:flex;align-items:center;height:52px;border-bottom:1px solid var(--se-oat);font:400 14px/1.2 'Poppins',sans-serif;color:var(--se-ink);">
+              <div style="flex:1 1 0;min-width:0;padding:0 14px;display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;">María Reyes</span>
+                <span style="color:var(--se-ink-2);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">m.reyes@rentstayable.com</span>
+                <span style="flex:0 0 auto;font:700 10px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-positive);background:var(--se-positive-soft);border:1px solid #BFD3C5;padding:4px 6px;border-radius:999px;">Active</span>
+              </div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">HK <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 148px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">On-site <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 208px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;gap:4px;"><span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:4px 7px;border-radius:999px;">LL</span></div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 26 · 6:41 AM ET</div>
+              <div style="flex:0 0 124px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;"><span style="height:30px;display:flex;align-items:center;padding:0 12px;border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;color:var(--se-navy);">Manage</span></div>
+            </div>
+
+            <div style="display:flex;align-items:center;height:52px;background:var(--se-sky-tint);border-bottom:1px solid var(--se-border-strong);font:400 14px/1.2 'Poppins',sans-serif;color:var(--se-ink);">
+              <div style="flex:1 1 0;min-width:0;padding:0 14px;display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;">Rafael Villanueva</span>
+                <span style="color:var(--se-ink-2);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">r.villanueva@rentstayable.com</span>
+                <span style="flex:0 0 auto;font:700 10px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-positive);background:var(--se-positive-soft);border:1px solid #BFD3C5;padding:4px 6px;border-radius:999px;">Active</span>
+                <span style="flex:0 0 auto;font:700 10px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-sunshine-text);background:var(--se-warning-soft);border:1px solid #E4C689;padding:4px 6px;border-radius:999px;">▲ Temp password</span>
+              </div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-navy);box-shadow:0 0 0 4px rgba(0,156,222,0.18);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">MT <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 148px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">On-site <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 208px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;gap:4px;"><span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:4px 7px;border-radius:999px;">SA</span><span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:4px 7px;border-radius:999px;">DP</span><span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-ink-2);background:var(--se-linen);border:1px solid var(--se-border-strong);padding:4px 7px;border-radius:999px;">+2</span></div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 25 · 3:47 PM ET</div>
+              <div style="flex:0 0 124px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;"><span style="height:30px;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Close <span style="font-size:11px;">▴</span></span></div>
+            </div>
+
+            <div style="background:var(--se-linen);border-bottom:1px solid var(--se-border-strong);padding:20px 24px;display:flex;gap:28px;">
+              <div style="flex:1 1 0;display:flex;flex-direction:column;gap:16px;">
+                <div style="display:flex;gap:14px;align-items:flex-start;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-sm);padding:14px 16px;">
+                  <span style="flex:0 0 44px;width:44px;height:26px;border-radius:999px;background:var(--se-sky-2);border:1px solid var(--se-sky-2);display:flex;align-items:center;justify-content:flex-end;padding:2px;"><span style="width:20px;height:20px;border-radius:999px;background:#fff;"></span></span>
+                  <div style="display:flex;flex-direction:column;gap:4px;">
+                    <span style="font:600 14px/1.25 'Poppins',sans-serif;color:var(--se-ink);">Account active</span>
+                    <span style="font:400 13px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">Turning this off blocks sign-in immediately but keeps every submitted checklist, photo and audit entry attached to this account. Use it when someone leaves; never delete.</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:10px;">
+                  <span style="height:38px;display:flex;align-items:center;padding:0 14px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Save changes</span>
+                  <span style="height:38px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);color:var(--se-navy);border:1px solid var(--se-navy);border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Send reset email</span>
+                  <span style="height:38px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);color:var(--se-danger);border:1px solid var(--se-danger);border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Deactivate account</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;max-width:420px;">
+                  <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Set temporary password</span>
+                  <div style="height:40px;display:flex;align-items:center;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink-3);">At least 10 characters</div>
+                  <span style="font:400 13px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">Shown once, on screen, after saving. The user is asked to change it at next sign-in.</span>
+                </div>
+              </div>
+              <div style="flex:0 0 420px;display:flex;flex-direction:column;gap:10px;">
+                <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Property access · 4 of 8</span>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:999px;font:600 13px/1 'Poppins',sans-serif;color:var(--se-ink-2);"><span style="width:14px;height:14px;border-radius:3px;border:1px solid var(--se-field-control);"></span>JN</span>
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:999px;font:600 13px/1 'Poppins',sans-serif;color:var(--se-ink-2);"><span style="width:14px;height:14px;border-radius:3px;border:1px solid var(--se-field-control);"></span>JW</span>
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-navy);border:1px solid var(--se-navy);border-radius:999px;font:700 13px/1 'Poppins',sans-serif;color:#fff;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m4 12.5 5 5L20 6.5"/></svg>KE</span>
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:999px;font:600 13px/1 'Poppins',sans-serif;color:var(--se-ink-2);"><span style="width:14px;height:14px;border-radius:3px;border:1px solid var(--se-field-control);"></span>KW</span>
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-navy);border:1px solid var(--se-navy);border-radius:999px;font:700 13px/1 'Poppins',sans-serif;color:#fff;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m4 12.5 5 5L20 6.5"/></svg>LL</span>
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:999px;font:600 13px/1 'Poppins',sans-serif;color:var(--se-ink-2);"><span style="width:14px;height:14px;border-radius:3px;border:1px solid var(--se-field-control);"></span>OR</span>
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-navy);border:1px solid var(--se-navy);border-radius:999px;font:700 13px/1 'Poppins',sans-serif;color:#fff;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m4 12.5 5 5L20 6.5"/></svg>SA</span>
+                  <span style="height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--se-navy);border:1px solid var(--se-navy);border-radius:999px;font:700 13px/1 'Poppins',sans-serif;color:#fff;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m4 12.5 5 5L20 6.5"/></svg>DP</span>
+                </div>
+                <span style="font:400 13px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">Access controls which properties' checklists and issues this account can open. A MANAGER with no property selected sees nothing — the save button warns rather than silently allowing it.</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;height:52px;background:var(--se-zebra);border-bottom:1px solid var(--se-oat);font:400 14px/1.2 'Poppins',sans-serif;color:var(--se-ink);">
+              <div style="flex:1 1 0;min-width:0;padding:0 14px;display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;">Amara Singh</span>
+                <span style="color:var(--se-ink-2);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">a.singh@rentstayable.com</span>
+                <span style="flex:0 0 auto;font:700 10px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-positive);background:var(--se-positive-soft);border:1px solid #BFD3C5;padding:4px 6px;border-radius:999px;">Active</span>
+              </div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">MANAGER <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 148px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">On-site <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 208px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;gap:4px;"><span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:4px 7px;border-radius:999px;">KE</span><span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:4px 7px;border-radius:999px;">KW</span></div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 26 · 5:44 AM ET</div>
+              <div style="flex:0 0 124px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;"><span style="height:30px;display:flex;align-items:center;padding:0 12px;border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;color:var(--se-navy);">Manage</span></div>
+            </div>
+
+            <div style="display:flex;align-items:center;height:52px;border-bottom:1px solid var(--se-oat);font:400 14px/1.2 'Poppins',sans-serif;color:var(--se-ink);">
+              <div style="flex:1 1 0;min-width:0;padding:0 14px;display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;">Devon Okonkwo</span>
+                <span style="color:var(--se-ink-2);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">d.okonkwo@rentstayable.com</span>
+                <span style="flex:0 0 auto;font:700 10px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-positive);background:var(--se-positive-soft);border:1px solid #BFD3C5;padding:4px 6px;border-radius:999px;">Active</span>
+              </div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">PA <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 148px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;">On-site <span style="color:var(--se-ink-3);">▾</span></span></div>
+              <div style="flex:0 0 208px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;gap:4px;"><span style="font:700 11px/1 'Poppins',sans-serif;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:4px 7px;border-radius:999px;">LL</span></div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);">May 26 · 6:02 AM ET</div>
+              <div style="flex:0 0 124px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;"><span style="height:30px;display:flex;align-items:center;padding:0 12px;border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;color:var(--se-navy);">Manage</span></div>
+            </div>
+
+            <div style="display:flex;align-items:center;height:52px;background:var(--se-zebra);font:400 14px/1.2 'Poppins',sans-serif;color:var(--se-ink);">
+              <div style="flex:1 1 0;min-width:0;padding:0 14px;display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;">Nate Pelletier</span>
+                <span style="color:var(--se-ink-2);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">n.pelletier@rentstayable.com</span>
+                <span style="flex:0 0 auto;font:700 10px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-ink-2);background:var(--se-linen);border:1px solid var(--se-border-strong);padding:4px 6px;border-radius:999px;">✕ Inactive</span>
+              </div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-linen);border:1px solid var(--se-oat);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;color:var(--se-ink-4);">NETWORK_TECH <span>▾</span></span></div>
+              <div style="flex:0 0 148px;padding:0 14px;border-left:1px solid var(--se-col-rule);"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 10px;background:var(--se-linen);border:1px solid var(--se-oat);border-radius:6px;font:600 13px/1 'Poppins',sans-serif;color:var(--se-ink-4);">Remote <span>▾</span></span></div>
+              <div style="flex:0 0 208px;padding:0 14px;border-left:1px solid var(--se-col-rule);color:var(--se-ink-3);">All 8</div>
+              <div style="flex:0 0 168px;padding:0 14px;border-left:1px solid var(--se-col-rule);color:var(--se-ink-3);">Apr 02 · 9:18 AM ET</div>
+              <div style="flex:0 0 124px;padding:0 14px;border-left:1px solid var(--se-col-rule);display:flex;justify-content:flex-end;"><span style="height:30px;display:flex;align-items:center;padding:0 12px;border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;color:var(--se-navy);">Manage</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;font:400 13px/1 'Poppins',sans-serif;color:var(--se-ink-2);">
+            <span>Showing 5 of 35 · rows 52px (<code style="font-family:var(--se-font-mono);">--se-row-h</code> +8 for the chip row), expanded panel is a full-width detail row inside the same plate</span>
+            <span style="display:flex;gap:6px;align-items:center;"><span style="height:28px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--se-border-strong);border-radius:6px;background:var(--se-paper);font-weight:600;">1</span><span style="height:28px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--se-oat);border-radius:6px;">2</span><span style="height:28px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--se-oat);border-radius:6px;">3</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="1i" style="display:flex;flex-direction:column;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1i</span>
+      <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Component system sheet — every value is a token</span>
+    </div>
+    <div class="{{ sheetClass }}" style="width:1440px;background:var(--se-cream);border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);padding:36px;display:flex;flex-direction:column;gap:28px;">
+
+      <div style="display:flex;flex-wrap:wrap;gap:28px;">
+        <div style="flex:1 1 380px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Buttons</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <span style="height:44px;display:flex;align-items:center;padding:0 18px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Primary</span>
+            <span style="height:44px;display:flex;align-items:center;padding:0 18px;background:transparent;color:var(--se-navy);border:1px solid var(--se-navy);border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Secondary</span>
+            <span style="height:44px;display:flex;align-items:center;padding:0 18px;background:var(--se-paper);color:var(--se-danger);border:1px solid var(--se-danger);border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Deactivate account</span>
+            <span style="height:44px;display:flex;align-items:center;padding:0 18px;background:var(--se-linen);color:var(--se-ink-4);border:1px solid var(--se-oat);border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Disabled</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <span style="height:44px;display:flex;align-items:center;padding:0 18px;background:var(--se-navy-2);color:#fff;border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Hover</span>
+            <span style="height:44px;display:flex;align-items:center;padding:0 18px;background:var(--se-navy);color:#fff;border:1px solid var(--se-navy);box-shadow:0 0 0 4px rgba(0,156,222,0.18);border-radius:var(--se-r-sm);font:700 16px/1 'Poppins',sans-serif;">Focus</span>
+            <span style="height:30px;display:flex;align-items:center;padding:0 12px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Closed</span>
+            <span style="height:30px;display:flex;align-items:center;padding:0 12px;color:var(--se-navy);border:1px solid var(--se-navy);border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Flag</span>
+          </div>
+          <span style="font:400 13px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">Compact row variant is 30px with a 6px radius — the only place the card radius is dropped. Destructive always carries a word; never a bare icon.</span>
+        </div>
+
+        <div style="flex:1 1 380px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Form fields</span>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Unit number</span>
+            <div style="height:44px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:400 16px/1 'Poppins',sans-serif;color:var(--se-ink);">312</div>
+            <span style="font:400 13px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">Numbers only. Matches the unit as printed on the door.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Unit number · focus</span>
+            <div style="height:44px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-navy);box-shadow:0 0 0 4px rgba(0,156,222,0.18);border-radius:var(--se-r-sm);font:400 16px/1 'Poppins',sans-serif;color:var(--se-ink);">312</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Unit number · error</span>
+            <div style="height:44px;display:flex;align-items:center;padding:0 14px;background:var(--se-paper);border:2px solid var(--se-danger);border-radius:var(--se-r-sm);font:400 16px/1 'Poppins',sans-serif;color:var(--se-ink);">3l2</div>
+            <span style="display:flex;gap:6px;align-items:center;font:600 13px/1.5 'Poppins',sans-serif;color:var(--se-ink);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--se-danger)" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v7M12 17.5v.5"/></svg>Not a number on this property.</span>
+          </div>
+        </div>
+
+        <div style="flex:1 1 320px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Select — our own listbox</span>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Role</span>
+            <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);font:600 16px/1 'Poppins',sans-serif;color:var(--se-ink);">MANAGER <span style="color:var(--se-ink-3);">▾</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font:600 12px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Role · open</span>
+            <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:var(--se-paper);border:1px solid var(--se-navy);box-shadow:0 0 0 4px rgba(0,156,222,0.18);border-radius:var(--se-r-sm);font:600 16px/1 'Poppins',sans-serif;color:var(--se-ink);">MANAGER <span style="color:var(--se-navy);">▴</span></div>
+            <div style="background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);box-shadow:var(--se-sh-lg);padding:6px;display:flex;flex-direction:column;">
+              <span style="height:38px;display:flex;align-items:center;padding:0 10px;border-radius:6px;font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink);">HK</span>
+              <span style="height:38px;display:flex;align-items:center;padding:0 10px;border-radius:6px;font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink);">PA</span>
+              <span style="height:38px;display:flex;align-items:center;padding:0 10px;border-radius:6px;font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink);">MT</span>
+              <span style="height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border-radius:6px;background:var(--se-sky-tint);font:600 15px/1 'Poppins',sans-serif;color:var(--se-navy);">MANAGER <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m4 12.5 5 5L20 6.5"/></svg></span>
+              <span style="height:38px;display:flex;align-items:center;padding:0 10px;border-radius:6px;background:var(--se-linen);font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink);">AGENT</span>
+              <span style="height:38px;display:flex;align-items:center;padding:0 10px;border-radius:6px;font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink);">NETWORK_TECH</span>
+              <span style="height:38px;display:flex;align-items:center;padding:0 10px;border-radius:6px;font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink);">CORPORATE</span>
+              <span style="height:38px;display:flex;align-items:center;padding:0 10px;border-radius:6px;font:400 15px/1 'Poppins',sans-serif;color:var(--se-ink);">ADMIN</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:28px;">
+        <div style="flex:1 1 620px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Status chips — 8 checklist states</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:var(--se-ink-2);background:var(--se-linen);border:1px solid var(--se-border-strong);padding:6px 10px;border-radius:999px;">○ Scheduled</span>
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:var(--se-navy);background:var(--se-paper);border:1px solid var(--se-navy);padding:6px 10px;border-radius:999px;">◌ To do</span>
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:6px 10px;border-radius:999px;">◐ Started</span>
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:#fff;background:var(--se-sky-2);padding:6px 10px;border-radius:999px;">✓ Submitted</span>
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:#fff;background:var(--se-positive);padding:6px 10px;border-radius:999px;">✓✓ Reviewed</span>
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:#fff;background:var(--se-danger);padding:6px 10px;border-radius:999px;">⚑ Flagged</span>
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:var(--se-ink-2);background:var(--se-paper);border:1px dashed var(--se-ink-4);padding:6px 10px;border-radius:999px;">✕ Cancelled</span>
+            <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.06em;text-transform:uppercase;color:var(--se-ink-2);background:var(--se-linen);border:1px solid var(--se-ink-5);padding:6px 10px;border-radius:999px;">⌛ Expired</span>
+          </div>
+          <span style="font:400 13px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Each state carries a glyph and a word, so hue is never the only channel — the same chips survive the greyscale check and a photocopy. Danger is spent only on <b>Flagged</b>; Cancelled uses a dashed edge, Expired a heavier neutral edge. Overdue (a derived condition, not a status) borrows the warning treatment shown in <a href="#1f">1f</a>.</span>
+        </div>
+
+        <div style="flex:1 1 320px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Property badge</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">JN</span>
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">JW</span>
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">KE</span>
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">KW</span>
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">LL</span>
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">OR</span>
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">SA</span>
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">DP</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font:700 13px/1 'Poppins',sans-serif;letter-spacing:0.06em;color:var(--se-navy);background:var(--se-sky-soft);border:1px solid #8FCFE8;padding:7px 11px;border-radius:999px;">LL</span>
+            <span style="font:400 13px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">On navy chrome the badge inverts to a 1px white-28% outline, as in <a href="#1b">1b</a>.</span>
+          </div>
+        </div>
+
+        <div style="flex:1 1 380px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Empty state — an invitation</span>
+          <div style="background:var(--se-linen);border:1px dashed var(--se-border-strong);border-radius:var(--se-r-card);padding:28px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
+            <div style="width:40px;height:40px;border-radius:999px;background:var(--se-sky-soft);display:flex;align-items:center;justify-content:center;color:var(--se-navy);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 10h6M9 14h4"/></svg>
+            </div>
+            <span style="font:700 18px/1.25 'Poppins',sans-serif;color:var(--se-navy);">Nothing waiting on you</span>
+            <span style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);">Every submitted checklist at LL has a verdict. Schedule tomorrow's arrivals while it's quiet.</span>
+            <span style="height:40px;display:flex;align-items:center;padding:0 16px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Schedule checklists</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:28px;">
+        <div style="flex:1 1 660px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:14px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Table — header · row · zebra · hover · expanded detail</span>
+          <div style="border:1px solid var(--se-border-strong);border-radius:var(--se-r-sm);overflow:hidden;">
+            <div style="display:flex;height:38px;align-items:center;background:var(--se-linen);border-bottom:1px solid var(--se-border-strong);font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-ink-2);">
+              <div style="flex:1 1 0;padding:0 14px;">Checklist</div><div style="flex:0 0 120px;padding:0 14px;border-left:1px solid var(--se-col-rule);">Unit</div><div style="flex:0 0 140px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;">Photos</div>
+            </div>
+            <div style="display:flex;height:44px;align-items:center;background:var(--se-paper);border-bottom:1px solid var(--se-oat);font:400 14px/1 'Poppins',sans-serif;color:var(--se-ink);"><div style="flex:1 1 0;padding:0 14px;">Row · paper</div><div style="flex:0 0 120px;padding:0 14px;border-left:1px solid var(--se-col-rule);">312</div><div style="flex:0 0 140px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">11/11</div></div>
+            <div style="display:flex;height:44px;align-items:center;background:var(--se-zebra);border-bottom:1px solid var(--se-oat);font:400 14px/1 'Poppins',sans-serif;color:var(--se-ink);"><div style="flex:1 1 0;padding:0 14px;">Row · zebra <code style="font-family:var(--se-font-mono);font-size:12px;">--se-zebra</code></div><div style="flex:0 0 120px;padding:0 14px;border-left:1px solid var(--se-col-rule);">204</div><div style="flex:0 0 140px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">9/11</div></div>
+            <div style="display:flex;height:44px;align-items:center;background:var(--se-row-hover);border-bottom:1px solid var(--se-oat);font:400 14px/1 'Poppins',sans-serif;color:var(--se-ink);"><div style="flex:1 1 0;padding:0 14px;">Row · hover <code style="font-family:var(--se-font-mono);font-size:12px;">--se-row-hover</code></div><div style="flex:0 0 120px;padding:0 14px;border-left:1px solid var(--se-col-rule);">118</div><div style="flex:0 0 140px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">6/8</div></div>
+            <div style="display:flex;height:44px;align-items:center;background:var(--se-sky-tint);border-bottom:1px solid var(--se-border-strong);font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink);"><div style="flex:1 1 0;padding:0 14px;">Row · open</div><div style="flex:0 0 120px;padding:0 14px;border-left:1px solid var(--se-col-rule);">407</div><div style="flex:0 0 140px;padding:0 14px;border-left:1px solid var(--se-col-rule);text-align:right;font-variant-numeric:tabular-nums;">12/12</div></div>
+            <div style="background:var(--se-linen);padding:16px;display:flex;gap:20px;align-items:center;">
+              <span style="font:400 14px/1.55 'Poppins',sans-serif;color:var(--se-ink-2);flex:1 1 auto;">Full-width expanded detail row: same plate, linen ground, one strong hairline above and below so the row it belongs to stays obvious at 30 rows.</span>
+              <span style="height:34px;display:flex;align-items:center;padding:0 14px;background:var(--se-navy);color:#fff;border-radius:6px;font:700 13px/1 'Poppins',sans-serif;">Save changes</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex:1 1 440px;background:var(--se-paper);border:1px solid var(--se-oat);border-radius:var(--se-r-card);box-shadow:var(--se-sh-sm);padding:24px;display:flex;flex-direction:column;gap:12px;">
+          <span style="font:700 11px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-ink-2);">Banners</span>
+          <div style="display:flex;gap:12px;align-items:flex-start;background:var(--se-positive-soft);border:1px solid #BFD3C5;border-left:4px solid var(--se-positive);border-radius:var(--se-r-sm);padding:14px 16px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--se-positive)" stroke-width="2.6" stroke-linecap="round" style="flex:0 0 18px;margin-top:2px;"><path d="m4 12.5 5 5L20 6.5"/></svg>
+            <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 15px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Checklist closed</span><span style="font:400 14px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">LL Rm 312 · reviewed by a.singh at 7:14 AM ET.</span></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;background:var(--se-danger-soft);border:1px solid #E2B3AC;border-left:4px solid var(--se-danger);border-radius:var(--se-r-sm);padding:14px 16px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--se-danger)" stroke-width="2.4" stroke-linecap="round" style="flex:0 0 18px;margin-top:2px;"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v7M12 17.5v.5"/></svg>
+            <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 15px/1.35 'Poppins',sans-serif;color:var(--se-ink);">Couldn't save</span><span style="font:400 14px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">Two required questions are empty. They're marked in the form.</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;background:var(--se-linen);border:1px solid var(--se-border-strong);border-left:4px solid var(--se-sky);border-radius:var(--se-r-sm);padding:14px 16px;">
+            <div style="display:flex;flex-direction:column;gap:2px;"><span style="font:600 15px/1.35 'Poppins',sans-serif;color:var(--se-ink);">One-time password for r.villanueva</span><span style="font:400 14px/1.5 'Poppins',sans-serif;color:var(--se-ink-2);">Shown once. Copy it now and read it to them — it is not emailed.</span></div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <span style="flex:1 1 auto;font:400 18px/1 var(--se-font-mono);letter-spacing:0.08em;color:var(--se-ink);background:var(--se-paper);border:1px solid var(--se-border-strong);border-radius:var(--se-r-xs);padding:12px 14px;">7Kq-482-Dvn</span>
+              <span style="height:42px;display:flex;align-items:center;padding:0 14px;background:var(--se-navy);color:#fff;border-radius:var(--se-r-sm);font:700 14px/1 'Poppins',sans-serif;">Copy</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-ink-2);">Part B · PDFs — US Letter 612 × 792pt, 24pt margin, 1px&nbsp;=&nbsp;1pt · Poppins 400/600/700, no italics, no shadows, flexbox only</div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;filter:{{ pdfFilter }};">
+
+      <div id="1j" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1j</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Checklist submission — page 1 of 4</span>
+        </div>
+        <div style="width:612px;height:792px;background:#FFFFFF;border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;font-family:'Poppins',sans-serif;color:var(--se-print-ink);">
+
+          <div style="flex:0 0 48px;padding:14px 24px 0;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:var(--se-navy);">Stayable</span>
+                <span style="display:flex;gap:2px;"><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span></span>
+                <span style="width:1px;height:11px;background:var(--se-print-rule-2);margin:0 4px;"></span>
+                <span style="font:600 7.5px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-print-ink-2);">Operations</span>
+              </div>
+              <span style="font:600 9px/1 'Poppins',sans-serif;color:var(--se-print-ink);">Arrival Checklist — LL — Rm 312 — May 26, 2026</span>
+            </div>
+            <div style="height:2px;background:var(--se-navy);"></div>
+          </div>
+
+          <div style="flex:1 1 auto;padding:14px 24px 0;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+
+            <div style="background:var(--se-print-panel);border:1px solid var(--se-print-rule);padding:10px 12px;display:flex;flex-wrap:wrap;">
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Property</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">Stayable Lakeland (LL)</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Room</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">312</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Template</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">Arrival Checklist — Standard Suite (v4)</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Assigned to</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">María Reyes · HK</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Scheduled</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">May 26, 2026 · 5:00 AM ET</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Submitted</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">May 26, 2026 · 5:23 AM ET</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Time to complete</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">41m</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Reviewed by</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">Amara Singh · MANAGER<br>May 26, 2026 · 7:14 AM ET</span></div>
+              <div style="width:33.33%;padding:4px 14px 4px 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Outcome</span><span style="font:600 10px/1.3 'Poppins',sans-serif;">Pass with 1 flag</span></div>
+            </div>
+            <span style="font:400 7px/1.3 'Poppins',sans-serif;color:var(--se-print-ink-2);">Label/value pairs sit on a three-up flex row at 33.33% each; a long value wraps inside its own cell (Reviewed by, above) and the row grows — nothing is truncated and no cell is fixed-height.</span>
+
+            <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+              <span style="font:700 9px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:#FFFFFF;background:var(--se-navy);padding:5px 8px;">1 · Entry &amp; Living Area</span>
+              <span style="flex:1 1 auto;height:1px;background:var(--se-navy);"></span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid var(--se-print-rule);">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Entry door, deadbolt and latch operate correctly</span>
+              <div style="display:flex;gap:6px;"><span style="width:1.5px;background:var(--se-sky);"></span><span style="font:400 9px/1.35 'Poppins',sans-serif;color:var(--se-print-ink-2);">7:00pm / 10:00pm / End of shift</span></div>
+              <span style="font:600 10px/1.35 'Poppins',sans-serif;margin-top:2px;">Yes</span>
+            </div>
+
+            <div style="display:flex;">
+              <div style="flex:0 0 14px;display:flex;justify-content:center;padding-top:2px;"><span style="font:700 8px/1 'Poppins',sans-serif;color:#FFFFFF;background:var(--se-danger);padding:2px 3px;">!</span></div>
+              <div style="flex:1 1 auto;border-left:2px solid var(--se-danger);background:#FBF1EF;padding:6px 8px;display:flex;flex-direction:column;gap:2px;">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+                  <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Smoke detector test button sounds</span>
+                  <span style="flex:0 0 auto;font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:#FFFFFF;background:var(--se-danger);padding:3px 5px;">Flagged</span>
+                </div>
+                <div style="display:flex;gap:6px;"><span style="width:1.5px;background:var(--se-sky);"></span><span style="font:400 9px/1.35 'Poppins',sans-serif;color:var(--se-print-ink-2);">Bedroom unit, not the hallway unit</span></div>
+                <span style="font:600 10px/1.35 'Poppins',sans-serif;margin-top:2px;">No</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid var(--se-print-rule);">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Describe the condition of the sofa, chair and case goods</span>
+              <span style="font:400 10px/1.45 'Poppins',sans-serif;margin-top:2px;">Sofa cushions clean, no staining; the right arm has a 4-inch scuff that looks old and does not go through the fabric. Dresser front has a chip on the guest-side edge, photographed below. Desk chair gas lift sinks slowly under weight — not listed as a maintenance item yet, so I left it and noted it here. Everything else in the living area is clean and in place.</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Photos — damage found</span>
+              <div style="display:flex;gap:8px;">
+                <div style="width:120px;display:flex;flex-direction:column;gap:2px;"><div style="width:120px;height:84px;background:var(--se-print-panel);border:1px solid var(--se-print-rule-2);"></div><span style="font:400 7px/1.25 'Poppins',sans-serif;color:var(--se-print-ink-2);">1 · Dresser edge, wide</span></div>
+                <div style="width:120px;display:flex;flex-direction:column;gap:2px;"><div style="width:120px;height:84px;background:var(--se-print-panel);border:1px solid var(--se-print-rule-2);"></div><span style="font:400 7px/1.25 'Poppins',sans-serif;color:var(--se-print-ink-2);">2 · Dresser edge, close</span></div>
+                <div style="width:120px;display:flex;flex-direction:column;gap:2px;"><div style="width:120px;height:84px;background:var(--se-print-panel);border:1px solid var(--se-print-rule-2);"></div><span style="font:400 7px/1.25 'Poppins',sans-serif;color:var(--se-print-ink-2);">3 · Sofa arm scuff</span></div>
+              </div>
+              <div style="display:flex;border:1px solid var(--se-print-rule);border-left:2px solid var(--se-sunshine-deep);background:#FDF8EA;padding:6px 8px;gap:8px;">
+                <span style="flex:0 0 62px;font:600 6.5px/1.3 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-sunshine-text);">Note from<br>María Reyes</span>
+                <span style="flex:1 1 auto;font:400 9.5px/1.4 'Poppins',sans-serif;color:var(--se-print-ink);">Chip on dresser edge is on the guest side and not new — it was there on the last turn too. Sofa arm scuff photographed for the record. Nothing needs to be pulled from service.</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:0 0 28px;padding:0 24px 12px;display:flex;flex-direction:column;">
+            <div style="height:1px;background:var(--se-print-rule-2);margin-bottom:6px;"></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;font:400 7px/1.2 'Poppins',sans-serif;color:var(--se-print-ink-2);">
+              <span style="font-family:var(--se-font-mono);">CL-4645-ARR-20260526-012</span>
+              <span>Generated May 26, 2026 · 7:16 AM ET</span>
+              <span style="font-weight:600;color:var(--se-print-ink);">Page 1 of 4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1k" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1k</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Checklist submission — page 2 of 4 (repeating furniture)</span>
+        </div>
+        <div style="width:612px;height:792px;background:#FFFFFF;border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;font-family:'Poppins',sans-serif;color:var(--se-print-ink);">
+
+          <div style="flex:0 0 48px;padding:14px 24px 0;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:var(--se-navy);">Stayable</span>
+                <span style="display:flex;gap:2px;"><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span></span>
+                <span style="width:1px;height:11px;background:var(--se-print-rule-2);margin:0 4px;"></span>
+                <span style="font:600 7.5px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-print-ink-2);">Operations</span>
+              </div>
+              <span style="font:600 9px/1 'Poppins',sans-serif;color:var(--se-print-ink);">Arrival Checklist — LL — Rm 312 — May 26, 2026</span>
+            </div>
+            <div style="height:2px;background:var(--se-navy);"></div>
+          </div>
+
+          <div style="flex:1 1 auto;padding:14px 24px 0;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font:700 9px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:#FFFFFF;background:var(--se-navy);padding:5px 8px;">2 · Bathroom</span>
+              <span style="flex:1 1 auto;height:1px;background:var(--se-navy);"></span>
+              <span style="font:400 7px/1 'Poppins',sans-serif;color:var(--se-print-ink-2);">continued from page 1</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid var(--se-print-rule);">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Tub, tile and grout free of residue</span>
+              <div style="display:flex;gap:6px;"><span style="width:1.5px;background:var(--se-sky);"></span><span style="font:400 9px/1.35 'Poppins',sans-serif;color:var(--se-print-ink-2);">End of shift</span></div>
+              <span style="font:600 10px/1.35 'Poppins',sans-serif;margin-top:2px;">Yes</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid var(--se-print-rule);">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Hot water temperature at tap (°F)</span>
+              <span style="font:600 10px/1.35 'Poppins',sans-serif;margin-top:2px;">118 °F</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid var(--se-print-rule);">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Linen set used</span>
+              <span style="font:600 10px/1.35 'Poppins',sans-serif;margin-top:2px;">Full change</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Photos — bathroom, after service</span>
+              <div style="display:flex;gap:8px;">
+                <div style="width:120px;display:flex;flex-direction:column;gap:2px;"><div style="width:120px;height:84px;background:var(--se-print-panel);border:1px solid var(--se-print-rule-2);"></div><span style="font:400 7px/1.25 'Poppins',sans-serif;color:var(--se-print-ink-2);">4 · Tub and surround</span></div>
+                <div style="width:120px;display:flex;flex-direction:column;gap:2px;"><div style="width:120px;height:84px;background:var(--se-print-panel);border:1px solid var(--se-print-rule-2);"></div><span style="font:400 7px/1.25 'Poppins',sans-serif;color:var(--se-print-ink-2);">5 · Vanity and mirror</span></div>
+              </div>
+              <div style="display:flex;border:1px solid var(--se-print-rule);border-left:2px solid var(--se-sunshine-deep);background:#FDF8EA;padding:6px 8px;gap:8px;">
+                <span style="flex:0 0 62px;font:600 6.5px/1.3 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-sunshine-text);">Note from<br>María Reyes</span>
+                <span style="flex:1 1 auto;font:400 9.5px/1.4 'Poppins',sans-serif;color:var(--se-print-ink);">Caulk line at the back of the tub is discoloured but sound. Worth a re-caulk on the next deep clean rotation.</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font:700 9px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:#FFFFFF;background:var(--se-navy);padding:5px 8px;">3 · Kitchenette</span>
+              <span style="flex:1 1 auto;height:1px;background:var(--se-navy);"></span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid var(--se-print-rule);">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Refrigerator clean, cold and empty</span>
+              <span style="font:600 10px/1.35 'Poppins',sans-serif;margin-top:2px;">Yes</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid var(--se-print-rule);">
+              <span style="font:600 10.5px/1.35 'Poppins',sans-serif;">Guest welcome packet placed on desk</span>
+              <span style="font:600 10px/1.35 'Poppins',sans-serif;color:var(--se-print-ink-2);background:var(--se-print-panel);border:1px solid var(--se-print-rule);padding:3px 6px;align-self:flex-start;margin-top:2px;">Not answered</span>
+            </div>
+
+            <div style="margin-top:auto;margin-bottom:4px;border:1px solid var(--se-navy);display:flex;flex-direction:column;">
+              <div style="background:var(--se-navy);padding:5px 10px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font:700 9px/1 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:#FFFFFF;">Reviewer verdict</span>
+                <span style="font:700 9px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:#FFFFFF;">Pass · 1 flagged question</span>
+              </div>
+              <div style="padding:10px;display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;flex-wrap:wrap;">
+                  <div style="width:33.33%;padding:0 14px 0 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Reviewed by</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">Amara Singh · MANAGER</span></div>
+                  <div style="width:33.33%;padding:0 14px 0 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Decision</span><span style="font:600 10px/1.3 'Poppins',sans-serif;">Pass</span></div>
+                  <div style="width:33.33%;padding:0 14px 0 0;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Decided</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">May 26, 2026 · 7:14 AM ET</span></div>
+                </div>
+                <div style="border-top:1px solid var(--se-print-rule);padding-top:6px;display:flex;flex-direction:column;gap:2px;">
+                  <span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Reviewer note — required when anything is flagged</span>
+                  <span style="font:400 9.5px/1.4 'Poppins',sans-serif;">Unit released to arrival. Smoke detector in the bedroom did not sound on test — maintenance ticket MT-2291 opened the same morning and the battery was replaced at 8:05 AM ET. Dresser chip pre-existing, no charge to guest. Desk chair gas lift added to the LL punch list.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:0 0 28px;padding:0 24px 12px;display:flex;flex-direction:column;">
+            <div style="height:1px;background:var(--se-print-rule-2);margin-bottom:6px;"></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;font:400 7px/1.2 'Poppins',sans-serif;color:var(--se-print-ink-2);">
+              <span style="font-family:var(--se-font-mono);">CL-4645-ARR-20260526-012</span>
+              <span>Generated May 26, 2026 · 7:16 AM ET</span>
+              <span style="font-weight:600;color:var(--se-print-ink);">Page 2 of 4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1l" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1l</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Completeness report — portrait, 612 × 792pt</span>
+        </div>
+        <div style="width:612px;height:792px;background:#FFFFFF;border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;font-family:'Poppins',sans-serif;color:var(--se-print-ink);">
+
+          <div style="flex:0 0 48px;padding:14px 24px 0;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:var(--se-navy);">Stayable</span>
+                <span style="display:flex;gap:2px;"><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span></span>
+                <span style="width:1px;height:11px;background:var(--se-print-rule-2);margin:0 4px;"></span>
+                <span style="font:600 7.5px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-print-ink-2);">Operations</span>
+              </div>
+              <span style="font:600 9px/1 'Poppins',sans-serif;color:var(--se-print-ink);">Completeness Report — All Properties — May 1–26, 2026</span>
+            </div>
+            <div style="height:2px;background:var(--se-navy);"></div>
+          </div>
+
+          <div style="flex:1 1 auto;padding:14px 24px 0;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+            <div style="background:var(--se-print-panel);border:1px solid var(--se-print-rule);padding:8px 12px;display:flex;flex-wrap:wrap;">
+              <div style="width:25%;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Date range</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">May 1 – 26, 2026</span></div>
+              <div style="width:25%;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Scope</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">8 properties</span></div>
+              <div style="width:25%;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Scheduled</span><span style="font:400 10px/1.3 'Poppins',sans-serif;">4,418</span></div>
+              <div style="width:25%;display:flex;flex-direction:column;gap:1px;"><span style="font:600 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Completion</span><span style="font:600 10px/1.3 'Poppins',sans-serif;">86.4%</span></div>
+            </div>
+
+            <div style="border:1px solid var(--se-print-rule-2);">
+              <div style="display:flex;background:var(--se-print-panel);border-bottom:1px solid var(--se-print-rule-2);">
+                <div style="flex:1 1 0;padding:6px 8px;font:700 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;">Property</div>
+                <div style="flex:0 0 62px;padding:6px 8px;font:700 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;text-align:right;">Sched.</div>
+                <div style="flex:0 0 54px;padding:6px 8px;font:700 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;text-align:right;">Done</div>
+                <div style="flex:0 0 54px;padding:6px 8px;font:700 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;text-align:right;">Missed</div>
+                <div style="flex:0 0 54px;padding:6px 8px;font:700 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;text-align:right;">Flagged</div>
+                <div style="flex:0 0 62px;padding:6px 8px;font:700 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;text-align:right;">Reviewed</div>
+                <div style="flex:0 0 96px;padding:6px 8px;font:700 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;border-left:1px solid var(--se-print-rule);">% done</div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">JN</span> · Jacksonville North</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">612</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">598</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">14</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">9</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">575</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:97.7%;background:var(--se-navy);"></span></span><span style="font:600 9px/1 'Poppins',sans-serif;">97.7</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#FAF8F3;">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">JW</span> · Jacksonville West</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">648</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">551</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">97</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">21</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">498</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:85%;background:var(--se-navy);"></span></span><span style="font:600 9px/1 'Poppins',sans-serif;">85.0</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">KE</span> · Kissimmee East</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">585</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">540</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">45</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">12</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">521</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:92.3%;background:var(--se-navy);"></span></span><span style="font:600 9px/1 'Poppins',sans-serif;">92.3</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#FAF8F3;">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">KW</span> · Kissimmee West</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">497</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">361</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:600 10px/1.3 'Poppins',sans-serif;text-align:right;">136</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">34</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">302</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:72.6%;background:var(--se-navy);"></span></span><span style="font:700 9px/1 'Poppins',sans-serif;">72.6</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">LL</span> · Lakeland</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">640</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">571</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">69</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">18</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">544</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:89.2%;background:var(--se-navy);"></span></span><span style="font:600 9px/1 'Poppins',sans-serif;">89.2</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#FAF8F3;">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">OR</span> · Orlando</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">601</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">489</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:600 10px/1.3 'Poppins',sans-serif;text-align:right;">112</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">27</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">441</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:81.4%;background:var(--se-navy);"></span></span><span style="font:600 9px/1 'Poppins',sans-serif;">81.4</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">SA</span> · St. Augustine</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">452</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">428</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">24</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">7</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">419</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:94.7%;background:var(--se-navy);"></span></span><span style="font:600 9px/1 'Poppins',sans-serif;">94.7</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule-2);background:#FAF8F3;">
+                <div style="flex:1 1 0;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;"><span style="font-weight:600;">DP</span> · Davenport</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">383</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">381</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">2</div>
+                <div style="flex:0 0 54px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">5</div>
+                <div style="flex:0 0 62px;padding:5px 8px;font:400 10px/1.3 'Poppins',sans-serif;text-align:right;">377</div>
+                <div style="flex:0 0 96px;padding:5px 8px;border-left:1px solid var(--se-print-rule);display:flex;align-items:center;gap:5px;"><span style="flex:0 0 48px;height:6px;background:#E6E2D8;display:flex;"><span style="width:99.5%;background:var(--se-navy);"></span></span><span style="font:600 9px/1 'Poppins',sans-serif;">99.5</span></div>
+              </div>
+
+              <div style="display:flex;background:var(--se-print-panel);border-top:1px solid var(--se-print-rule-2);">
+                <div style="flex:1 1 0;padding:6px 8px;font:700 10px/1.3 'Poppins',sans-serif;">Total — 8 properties</div>
+                <div style="flex:0 0 62px;padding:6px 8px;font:700 10px/1.3 'Poppins',sans-serif;text-align:right;">4,418</div>
+                <div style="flex:0 0 54px;padding:6px 8px;font:700 10px/1.3 'Poppins',sans-serif;text-align:right;">3,819</div>
+                <div style="flex:0 0 54px;padding:6px 8px;font:700 10px/1.3 'Poppins',sans-serif;text-align:right;">599</div>
+                <div style="flex:0 0 54px;padding:6px 8px;font:700 10px/1.3 'Poppins',sans-serif;text-align:right;">133</div>
+                <div style="flex:0 0 62px;padding:6px 8px;font:700 10px/1.3 'Poppins',sans-serif;text-align:right;">3,677</div>
+                <div style="flex:0 0 96px;padding:6px 8px;border-left:1px solid var(--se-print-rule-2);font:700 10px/1.3 'Poppins',sans-serif;">86.4%</div>
+              </div>
+            </div>
+
+            <div style="border:1px solid var(--se-print-rule);background:var(--se-print-panel);padding:8px 10px;display:flex;flex-direction:column;gap:4px;">
+              <span style="font:600 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Why portrait, and why the bar stays</span>
+              <span style="font:400 9px/1.45 'Poppins',sans-serif;color:var(--se-print-ink);">Portrait: seven numeric columns and an 8-row body fit inside 564pt of live width with room to spare, and this report is filed and stapled alongside the checklist exports — a landscape sheet in a portrait stack gets turned sideways and lost. Landscape would only earn its place if a per-week column series were added, which the data does not carry. The 48pt bar beside each percentage is the one chart element: same baseline, one quantity, and the number is printed beside it, so the bar adds scanning order and nothing else. In greyscale the fill reads 12% grey on an 88% track — still a length comparison, and the figures carry the precision.</span>
+            </div>
+          </div>
+
+          <div style="flex:0 0 28px;padding:0 24px 12px;display:flex;flex-direction:column;">
+            <div style="height:1px;background:var(--se-print-rule-2);margin-bottom:6px;"></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;font:400 7px/1.2 'Poppins',sans-serif;color:var(--se-print-ink-2);">
+              <span style="font-family:var(--se-font-mono);">RPT-COMP-20260526-004</span>
+              <span>Generated May 26, 2026 · 7:20 AM ET</span>
+              <span style="font-weight:600;color:var(--se-print-ink);">Page 1 of 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1m" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font:700 12px/1 'Poppins',sans-serif;letter-spacing:0.08em;background:var(--se-navy);color:#fff;padding:5px 9px;border-radius:var(--se-r-pill);">1m</span>
+          <span style="font:600 14px/1 'Poppins',sans-serif;color:var(--se-ink-2);">Issues report — 24 rows, greyscale-safe priority</span>
+        </div>
+        <div style="width:612px;height:792px;background:#FFFFFF;border:1px solid var(--se-border-strong);box-shadow:var(--se-sh-lg);display:flex;flex-direction:column;font-family:'Poppins',sans-serif;color:var(--se-print-ink);">
+
+          <div style="flex:0 0 48px;padding:14px 24px 0;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span style="font:700 14px/1 'Poppins',sans-serif;letter-spacing:-0.02em;color:var(--se-navy);">Stayable</span>
+                <span style="display:flex;gap:2px;"><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span><span style="width:3px;height:3px;border-radius:2px;background:var(--se-sunshine-deep);"></span></span>
+                <span style="width:1px;height:11px;background:var(--se-print-rule-2);margin:0 4px;"></span>
+                <span style="font:600 7.5px/1 'Poppins',sans-serif;letter-spacing:0.12em;text-transform:uppercase;color:var(--se-print-ink-2);">Operations</span>
+              </div>
+              <span style="font:600 9px/1 'Poppins',sans-serif;color:var(--se-print-ink);">Open Issues — All Properties — as of May 26, 2026</span>
+            </div>
+            <div style="height:2px;background:var(--se-navy);"></div>
+          </div>
+
+          <div style="flex:1 1 auto;padding:14px 24px 0;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="font:400 9px/1.3 'Poppins',sans-serif;color:var(--se-print-ink-2);flex:1 1 auto;">24 open issues · 6 past SLA · sorted by SLA target, soonest first · 11 rows fit page 1, the remainder continues on page 2</span>
+              <span style="font:600 7px/1.2 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;border:1px solid var(--se-print-rule-2);padding:3px 5px;">▲ = past SLA</span>
+            </div>
+
+            <div style="border:1px solid var(--se-print-rule-2);">
+              <div style="display:flex;background:var(--se-print-panel);border-bottom:1px solid var(--se-print-rule-2);font:700 6.5px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;">
+                <div style="flex:0 0 26px;padding:5px 4px;">Prop</div>
+                <div style="flex:0 0 34px;padding:5px 4px;">Room</div>
+                <div style="flex:1 1 0;padding:5px 6px;">Issue</div>
+                <div style="flex:0 0 52px;padding:5px 4px;border-left:1px solid var(--se-print-rule);">Priority</div>
+                <div style="flex:0 0 56px;padding:5px 4px;border-left:1px solid var(--se-print-rule);">Status</div>
+                <div style="flex:0 0 34px;padding:5px 4px;border-left:1px solid var(--se-print-rule);text-align:right;">Age</div>
+                <div style="flex:0 0 74px;padding:5px 4px;border-left:1px solid var(--se-print-rule);">Assignee</div>
+                <div style="flex:0 0 96px;padding:5px 4px;border-left:1px solid var(--se-print-rule);">SLA target</div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#F7F4EE;">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">KW</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">142</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">No hot water, stack 2</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:#FFFFFF;background:var(--se-print-ink);padding:3px 6px;">Urgent</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">In progress</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">2d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">R. Villanueva</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:700 8.5px/1.2 'Poppins',sans-serif;">▲ May 25 · 5:00 PM ET<br><span style="font-weight:600;font-size:7px;">overdue 14h</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#F7F4EE;">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">OR</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">308</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">A/C not cooling, guest in unit</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:#FFFFFF;background:var(--se-print-ink);padding:3px 6px;">Urgent</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Dispatched</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">1d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Vendor · Cool-Air</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:700 8.5px/1.2 'Poppins',sans-serif;">▲ May 26 · 6:00 AM ET<br><span style="font-weight:600;font-size:7px;">overdue 1h</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">JW</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">221</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Sliding door lock will not engage</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink);border:1px solid var(--se-print-ink);padding:3px 6px;">High</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">In progress</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">3d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">T. Brooks</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">May 26 · 5:00 PM ET</div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#FAF8F3;">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">LL</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">118</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Smoke detector replaced, needs re-test</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink);border:1px solid var(--se-print-ink);padding:3px 6px;">High</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Open</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">4h</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">A. Singh</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">May 26 · 6:00 PM ET</div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#F7F4EE;">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">KE</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">—</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Laundry room dryer 3 out of service</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink);border:1px solid var(--se-print-ink);padding:3px 6px;">High</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Waiting part</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">9d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Vendor · WashCo</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:700 8.5px/1.2 'Poppins',sans-serif;">▲ May 22 · 5:00 PM ET<br><span style="font-weight:600;font-size:7px;">overdue 4d</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">SA</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">407</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Toilet running intermittently</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:600 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink-2);border:1px solid var(--se-print-rule-2);padding:3px 6px;">Med</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">In progress</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">2d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">R. Villanueva</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">May 27 · 12:00 PM ET</div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#FAF8F3;">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">DP</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">214</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Microwave turntable broken</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:600 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink-2);border:1px solid var(--se-print-rule-2);padding:3px 6px;">Med</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Open</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">1d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Unassigned</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">May 27 · 5:00 PM ET</div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">JN</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">102</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Bathroom exhaust fan noisy</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:600 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink-2);border:1px solid var(--se-print-rule-2);padding:3px 6px;">Med</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Open</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">5d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">M. Duarte</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">May 28 · 5:00 PM ET</div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);background:#F7F4EE;">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">KW</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">231</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Ceiling stain, suspected roof leak</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink);border:1px solid var(--se-print-ink);padding:3px 6px;">High</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Escalated</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">6d</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Construction</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:700 8.5px/1.2 'Poppins',sans-serif;">▲ May 24 · 5:00 PM ET<br><span style="font-weight:600;font-size:7px;">overdue 2d</span></div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid var(--se-print-rule);">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">LL</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">312</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Desk chair gas lift sinks</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:400 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink-2);padding:3px 0;">Low</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Open</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">3h</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Unassigned</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Jun 02 · 5:00 PM ET</div>
+              </div>
+
+              <div style="display:flex;">
+                <div style="flex:0 0 26px;padding:4px;font:600 8.5px/1.2 'Poppins',sans-serif;">JN</div>
+                <div style="flex:0 0 34px;padding:4px;font:400 8.5px/1.2 'Poppins',sans-serif;">140</div>
+                <div style="flex:1 1 0;padding:4px 6px;font:400 8.5px/1.2 'Poppins',sans-serif;">Smoke detector chirping, battery</div>
+                <div style="flex:0 0 52px;padding:4px;border-left:1px solid var(--se-print-rule);"><span style="font:700 7.5px/1 'Poppins',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--se-print-ink);border:1px solid var(--se-print-ink);padding:3px 6px;">High</span></div>
+                <div style="flex:0 0 56px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">Dispatched</div>
+                <div style="flex:0 0 34px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;text-align:right;">6h</div>
+                <div style="flex:0 0 74px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">M. Duarte</div>
+                <div style="flex:0 0 96px;padding:4px;border-left:1px solid var(--se-print-rule);font:400 8.5px/1.2 'Poppins',sans-serif;">May 26 · 5:00 PM ET</div>
+              </div>
+            </div>
+
+            <div style="border:1px solid var(--se-print-rule);background:var(--se-print-panel);padding:8px 10px;display:flex;flex-direction:column;gap:4px;">
+              <span style="font:600 7px/1.2 'Poppins',sans-serif;letter-spacing:0.1em;text-transform:uppercase;color:var(--se-print-ink-2);">Density and greyscale</span>
+              <span style="font:400 9px/1.45 'Poppins',sans-serif;">Rows alternate in pairs (plain / #FAF8F3) with urgent-or-overdue rows on the deeper #F7F4EE, so the eye finds trouble by band before reading a word. Priority is a single word in four escalating treatments — Low plain, Med hairline box, High solid box, Urgent reversed — a ladder that survives a photocopy with no hue at all, and overdue SLA is marked three ways: a ▲ glyph, bold weight, and the literal "overdue 4d". This page carries no colour by design; it is the one most likely to be faxed.</span>
+            </div>
+          </div>
+
+          <div style="flex:0 0 28px;padding:0 24px 12px;display:flex;flex-direction:column;">
+            <div style="height:1px;background:var(--se-print-rule-2);margin-bottom:6px;"></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;font:400 7px/1.2 'Poppins',sans-serif;color:var(--se-print-ink-2);">
+              <span style="font-family:var(--se-font-mono);">RPT-ISS-20260526-017</span>
+              <span>Generated May 26, 2026 · 7:22 AM ET</span>
+              <span style="font-weight:600;color:var(--se-print-ink);">Page 1 of 2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;pdfGreyscale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Checks&quot;},&quot;darkSheet&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Checks&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      pdfFilter: (this.props.pdfGreyscale ?? false) ? 'grayscale(1) contrast(1.02)' : 'none',
+      sheetClass: (this.props.darkSheet ?? false) ? 'se-dark' : '',
+      sheetGround: (this.props.darkSheet ?? false) ? '#0F1418' : '#FAF6EE'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,16 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono } from "next/font/google";
+import { Poppins, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
-// Brand font — Nunito, a free rounded-geometric sans that matches the
-// rentstayable.com brand look (the brand's Adobe "Urbane Rounded" is
-// domain-locked and can't load on ops.rentstayable.com). Used for both body
-// and headings; weight carries the hierarchy. Geist Mono kept for code.
-const nunito = Nunito({
+// Brand font — POPPINS, adopted 2026-09-11 to match Stayable Elevate, which is
+// now the canonical Stayable design system (see docs/design/). It replaced
+// Nunito, which was only ever a stand-in: the brand's real face is Adobe
+// "Urbane Rounded", domain-locked and unable to load on ops.rentstayable.com.
+// Elevate had already solved the same problem with Poppins, so the two products
+// now share a typeface instead of each substituting separately.
+//
+// The CSS variable keeps its old name `--font-nunito`. Renaming it would touch
+// globals.css, the @theme font stack and every fallback comment for no visual
+// gain, and the fallback chain in globals.css is load-bearing — an unresolved
+// font variable makes font-family INVALID and Chrome falls back to Times.
+const nunito = Poppins({
   variable: "--font-nunito",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],

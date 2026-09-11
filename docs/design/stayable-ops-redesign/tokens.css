@@ -1,0 +1,134 @@
+/* ============================================================
+   Stayable Operations (StayCheck) — design tokens
+   Source of truth: Stayable Elevate token file.
+   Structured to map 1:1 onto Tailwind v4 @theme entries and onto
+   the `palette` object in lib/pdf/pdf-styles.ts.
+   Every colour / radius / shadow / size used in the artboards is
+   defined here. Ops-only additions are marked [OPS].
+   ============================================================ */
+
+:root {
+  /* ---- Brand core (Elevate, unchanged) ---- */
+  --se-navy:          #0B1F3A;  /* wordmark — headers, primary CTA, section spines */
+  --se-navy-2:        #15335B;
+  --se-sky:           #009CDE;  /* roof — accents, focus rings, active states */
+  --se-sky-2:         #0080B8;  /* sky as TEXT on light: passes AA at 16px+ */
+  --se-sky-soft:      #B8E3F4;
+  --se-sunshine:      #FDDB24;  /* dots — decorative accent ONLY, never text */
+  --se-sunshine-deep: #E4BC0F;
+  --se-sunshine-text: #8C6700;  /* the readable yellow, when yellow must be text */
+  --se-sage:          #7FAA8A;
+  --se-sage-deep:     #4E7A5C;
+
+  /* ---- Surfaces — warm, never gray ---- */
+  --se-cream:         #FAF6EE;  /* page ground */
+  --se-paper:         #FFFDF8;  /* cards */
+  --se-linen:         #F2EADC;  /* inset fill, table headers, meta panels */
+  --se-oat:           #E7DDC9;  /* hairlines */
+  --se-border-strong: #D4C6A6;  /* table outer edge, input borders on field surfaces */
+
+  /* ---- Ink scale — warm grays ---- */
+  --se-ink:   #1A1A1A;
+  --se-ink-2: #3D3A35;
+  --se-ink-3: #6E6960;  /* desk-only secondary text — NOT allowed on field phone screens */
+  --se-ink-4: #9A968C;  /* disabled / non-text only */
+  --se-ink-5: #C7C0B0;
+
+  /* ---- Semantic ---- */
+  --se-positive: #4E7A5C;
+  --se-warning:  #CC8A1C;
+  --se-danger:   #C4473A;
+  /* coral retired 2026-04-25 → aliased to sky. Do not reintroduce. */
+  --se-coral:    var(--se-sky);
+
+  /* Semantic tints (panels / chips / row washes) */
+  --se-positive-soft: #E6EFE8;
+  --se-warning-soft:  #FBF0DB;
+  --se-danger-soft:   #F8E7E4;
+  --se-sky-tint:      #E9F6FC;
+
+  /* ---- [OPS] Field-surface contrast set ----
+     Deviation 1: on phone surfaces used outdoors, secondary text steps up
+     two stops (ink-3 → ink-2) and control borders go to ink-4 minimum. */
+  --se-field-text:        var(--se-ink);
+  --se-field-text-2:      var(--se-ink-2);
+  --se-field-control:     #8A8478;   /* min control border for sunlight legibility */
+  --se-field-ground:      #F6F1E6;   /* one stop deeper than cream: separates card from page */
+  --se-tap-min:           44px;
+
+  /* ---- [OPS] Table density set (deviation 2) ---- */
+  --se-row-h:       44px;
+  --se-row-h-dense: 38px;
+  --se-zebra:       #FCF9F2;   /* 1.2% off paper — reads as rhythm, not stripes */
+  --se-row-hover:   #EFF7FC;   /* sky-derived, so hover never reads as a status */
+  --se-row-flag:    #FCF3F1;
+  --se-col-rule:    #F0E8D8;
+
+  /* ---- [OPS] Print set (deviation 3) ----
+     Cool neutral is kept for large flooded areas so cheap lasers don't band;
+     warm tints are allowed on panels and table headers only. */
+  --se-print-page:      #FFFFFF;
+  --se-print-panel:     #F4F1E9;   /* warm panel, 3% ink — safe on a laser */
+  --se-print-panel-cool:#F4F5F7;   /* legacy cool panel, kept for full-bleed fills */
+  --se-print-rule:      #D9D2C2;
+  --se-print-rule-2:    #B9B1A0;
+  --se-print-ink:       #16181C;
+  --se-print-ink-2:     #4A4740;
+
+  /* ---- Type ---- */
+  --se-font: 'Poppins', system-ui, sans-serif;
+  --se-font-mono: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  --se-t-12: 12px; --se-t-14: 14px; --se-t-16: 16px; --se-t-18: 18px;
+  --se-t-22: 22px; --se-t-28: 28px; --se-t-36: 36px; --se-t-48: 48px; --se-t-64: 64px;
+  --se-lh-tight: 1.05; --se-lh-snug: 1.25; --se-lh-body: 1.55; --se-lh-loose: 1.7;
+  --se-tr-display: -0.035em;   /* sizes >= 28px */
+  --se-tr-eyebrow: 0.12em;
+
+  /* ---- Shape ---- */
+  --se-r-xs: 4px; --se-r-sm: 8px; --se-r-md: 12px; --se-r-lg: 18px;
+  --se-r-xl: 24px; --se-r-pill: 999px;
+  --se-r-card: 14px 14px 18px 14px;  /* deliberately asymmetric */
+
+  /* ---- Shadows — paper-flat ---- */
+  --se-sh-sm:   0 1px 2px rgba(26,26,26,.04);
+  --se-sh-md:   0 2px 8px rgba(26,26,26,.06);
+  --se-sh-lg:   0 8px 24px rgba(26,26,26,.08);
+  --se-sh-lift: 0 12px 36px rgba(11,31,58,.12);
+  --se-ring:    0 0 0 4px rgba(0,156,222,0.18);   /* focus halo, paired with navy border */
+
+  /* ---- Space ---- */
+  --se-s-2: 2px; --se-s-4: 4px; --se-s-6: 6px; --se-s-8: 8px; --se-s-12: 12px;
+  --se-s-16: 16px; --se-s-20: 20px; --se-s-24: 24px; --se-s-32: 32px;
+  --se-s-40: 40px; --se-s-48: 48px; --se-s-64: 64px;
+}
+
+/* ---- Dark mode (Elevate parity) ---- */
+.se-dark {
+  --se-cream: #0F1418;
+  --se-paper: #1A2028;
+  --se-linen: #222932;
+  --se-oat:   #2E3540;
+  --se-border-strong: #3C4552;
+
+  --se-ink:   #F4F1EA;
+  --se-ink-2: #D8D3C8;
+  --se-ink-3: #A7A297;
+  --se-ink-4: #7A756B;
+  --se-ink-5: #4A4B52;
+
+  --se-navy:  #1E3C66;   /* surfaces built on navy need to lift, not sink */
+  --se-navy-2:#2A4C7C;
+  --se-sky:   #37B4E8;
+  --se-sky-2: #6AC8EF;   /* sky-as-text inverts lighter */
+  --se-sky-tint: #16293A;
+
+  --se-positive-soft: #1B2A21;
+  --se-warning-soft:  #2E2517;
+  --se-danger-soft:   #2E1D1B;
+
+  --se-field-ground: #141A20;
+  --se-zebra:        #1E242C;
+  --se-row-hover:    #16293A;
+  --se-row-flag:     #2A1C1A;
+  --se-col-rule:     #262D37;
+}
