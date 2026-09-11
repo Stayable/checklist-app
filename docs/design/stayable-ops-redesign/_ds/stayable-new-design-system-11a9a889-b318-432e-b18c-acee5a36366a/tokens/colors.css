@@ -1,0 +1,86 @@
+:root{
+/* --- Brand base ------------------------------------------------------ */
+--navy-900:#060b16;
+--navy-800:#0a1020; /* brand ink — sampled from the logo lockup panel */
+--navy-700:#131b30;
+--navy-600:#1e2942;
+--navy-500:#2c3a57;
+--navy-400:#4a5875;
+--navy-300:#7d89a3;
+--navy-200:#b6bece;
+--navy-100:#dde2ea;
+--navy-050:#f1f4f8;
+
+--sky-700:#00697a;
+--sky-600:#00a3b8;
+--sky-500:#00c4db;
+--sky-400:#00e5ff; /* BRAND CYAN — rgb(0,229,255), confirmed from the logo artwork */
+--sky-300:#6fefff;
+--sky-200:#abf6ff;
+--sky-100:#defbff;
+
+--white:#ffffff;
+--sand-100:#f7f5f1; /* warm neutral for lifestyle/marketing sections */
+--sand-200:#ece7de;
+
+/* --- Semantic -------------------------------------------------------- */
+--green-600:#2e7d5b;
+--green-100:#e4f2eb;
+--amber-600:#b9791a;
+--amber-100:#fbf0dc;
+--red-600:#b23b3b;
+--red-100:#f8e6e6;
+
+/* --- Aliases: text --------------------------------------------------- */
+--text-strong:var(--navy-800);
+--text-body:var(--navy-600);
+--text-muted:var(--navy-400);
+--text-subtle:var(--navy-300);
+--text-inverse:var(--white);
+--text-inverse-muted:var(--navy-200);
+--text-link:var(--sky-700);
+--text-link-hover:var(--navy-800);
+--text-accent:var(--sky-600);
+
+/* --- Aliases: surface ------------------------------------------------ */
+--surface-page:var(--white);
+--surface-page-alt:var(--navy-050);
+--surface-warm:var(--sand-100);
+--surface-card:var(--white);
+--surface-inverse:var(--navy-800);
+--surface-inverse-alt:var(--navy-700);
+--surface-accent-soft:var(--sky-100);
+--surface-accent:var(--sky-400);
+
+/* --- Aliases: border ------------------------------------------------- */
+--border-subtle:var(--navy-100);
+--border-default:var(--navy-200);
+--border-strong:var(--navy-800);
+--border-inverse:rgba(255,255,255,.18);
+--border-accent:var(--sky-400);
+
+/* --- Aliases: interactive -------------------------------------------- */
+--action-primary:var(--navy-800);
+--action-primary-hover:var(--navy-600);
+--action-primary-press:var(--navy-900);
+--action-accent:var(--sky-400);
+--action-accent-hover:var(--sky-500);
+--action-accent-press:var(--sky-600);
+--action-disabled:var(--navy-100);
+--focus-ring:var(--sky-500);
+
+/* --- Aliases: status ------------------------------------------------- */
+--status-success:var(--green-600);
+--status-success-soft:var(--green-100);
+--status-warning:var(--amber-600);
+--status-warning-soft:var(--amber-100);
+--status-danger:var(--red-600);
+--status-danger-soft:var(--red-100);
+--status-info:var(--sky-700);
+--status-info-soft:var(--sky-100);
+
+/* --- Overlays / scrims ----------------------------------------------- */
+--scrim-image:linear-gradient(180deg,rgba(10,16,32,0) 0%,rgba(10,16,32,.72) 100%); /* @kind color */
+--scrim-hero:linear-gradient(90deg,rgba(10,16,32,.82) 0%,rgba(10,16,32,.35) 60%,rgba(10,16,32,0) 100%); /* @kind color */
+--scrim-flat:rgba(10,16,32,.55); /* @kind color */
+}

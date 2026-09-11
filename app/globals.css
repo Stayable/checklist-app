@@ -21,13 +21,75 @@
     Consolas, "Liberation Mono", monospace;
   --font-heading: var(--font-nunito), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  /* Stayable brand palette (rentstayable.com). Nunito (rounded-geometric, free)
-     stands in for the brand's Adobe "Urbane Rounded", which is domain-locked
-     and can't load on ops.rentstayable.com. */
-  --color-navy: #041e42;
-  --color-brand: #0091f5;
-  --color-sky: #91d1fa;
-  --color-gold: #fdda24;
+  /* ══ STAYABLE ELEVATE PALETTE (adopted 2026-09-11) ═══════════════════════
+     Canonical source: rewards/client/src/tokens.css, by way of the Claude
+     Design pass in docs/design/stayable-ops-redesign/tokens.css. Kyle: "same
+     aesthetic as rewards".
+
+     WHY THE BUILT-IN SCALES ARE OVERRIDDEN BELOW. Redefining only the four
+     brand tokens would have changed almost nothing: the app hard-codes
+     Tailwind's own neutrals in ~1,200 places (text-slate-500 alone appears
+     253 times, bg-white 129, border-slate-200 135). Tailwind v4 lets a theme
+     redefine the built-in palette, so remapping `slate-*` onto Elevate's warm
+     ink/surface ramp and `white` onto paper re-skins every screen at once —
+     without editing a single component, which is what "redesign it without
+     breaking it" actually requires. Components keep their existing class
+     names; only what those names RESOLVE TO changes.
+
+     The ramp is monotonic and keeps its light→dark direction, so contrast
+     relationships that already worked still work. ══════════════════════════ */
+  --color-navy: #0b1f3a;   /* Elevate navy — was #041e42 */
+  --color-brand: #009cde;  /* Elevate sky — was #0091f5 */
+  --color-sky: #b8e3f4;    /* Elevate sky-soft — was #91d1fa */
+  --color-gold: #fddb24;   /* Elevate sunshine — was #fdda24 */
+
+  /* Elevate names, for new work that should not reach for a slate number. */
+  --color-navy-2: #15335b;
+  --color-sky-2: #0080b8;
+  --color-sunshine-text: #8c6700;  /* yellow that may legally be TEXT */
+  --color-cream: #faf6ee;
+  --color-paper: #fffdf8;
+  --color-linen: #f2eadc;
+  --color-oat: #e7ddc9;
+  --color-sage: #7faa8a;
+
+  /* ── Neutral ramp: Tailwind `slate` remapped onto Elevate's warm inks ──
+     Blue-grays out, warm grays in. Left column is what the codebase says;
+     right is what it now renders. */
+  --color-white: #fffdf8;    /* paper — every `bg-white` card warms up */
+  --color-slate-50:  #faf6ee; /* cream  — page grounds, table headers */
+  --color-slate-100: #f2eadc; /* linen  — inset fills */
+  --color-slate-200: #e7ddc9; /* oat    — hairlines */
+  --color-slate-300: #d4c6a6; /* border-strong — input borders, rings */
+  --color-slate-400: #9a968c; /* ink-4  — placeholder, disabled */
+  --color-slate-500: #6e6960; /* ink-3  — secondary text */
+  --color-slate-600: #57534b; /* between ink-3 and ink-2 */
+  --color-slate-700: #3d3a35; /* ink-2  — body text */
+  --color-slate-800: #2a2823;
+  --color-slate-900: #1a1a1a; /* ink    — headings */
+  --color-slate-950: #101010;
+
+  /* ── Semantic accents, warmed to Elevate's values.
+     Meaning is unchanged: emerald still reads positive, amber warning, red
+     danger. Only the hue moves, so no component logic is affected. */
+  --color-emerald-50: #e6efe8;
+  --color-emerald-100: #d5e4d9;
+  --color-emerald-500: #4e7a5c;
+  --color-emerald-600: #4e7a5c;
+  --color-emerald-700: #3f6349;
+  --color-emerald-800: #34523c;
+  --color-amber-50: #fbf0db;
+  --color-amber-100: #f6e4c2;
+  --color-amber-600: #cc8a1c;
+  --color-amber-700: #a86f16;
+  --color-amber-800: #8c6700;  /* = sunshine-text, the readable yellow */
+  --color-red-50: #f8e7e4;
+  --color-red-100: #f2d6d1;
+  --color-red-200: #e6bcb5;
+  --color-red-500: #c4473a;
+  --color-red-600: #c4473a;
+  --color-red-700: #a53a2f;
+  --color-red-800: #882f26;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -67,24 +129,27 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Warmed to Elevate. These drive shadcn primitives; leaving them neutral
+     while the slate ramp went warm would have left a cool-white seam wherever
+     a shadcn component sits next to an app-styled one. */
+  --background: #faf6ee;  /* cream */
+  --foreground: #1a1a1a;  /* ink */
+  --card: #fffdf8;        /* paper */
+  --card-foreground: #1a1a1a;
+  --popover: #fffdf8;
+  --popover-foreground: #1a1a1a;
+  --primary: #0b1f3a;
+  --primary-foreground: #fffdf8;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted: #f2eadc;
+  --muted-foreground: #6e6960;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #e7ddc9;
+  --input: #d4c6a6;
+  --ring: #009cde;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
