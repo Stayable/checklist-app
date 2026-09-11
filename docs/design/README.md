@@ -44,8 +44,20 @@ Only the **token layer**, in `app/globals.css` and `app/layout.tsx`:
 - shadcn base tokens (`--background`, `--card`, `--border`, …) warmed to match
 - Nunito → **Poppins**
 
-**Not yet applied:** the layouts. The artboards re-arrange several screens (the
-review queue's column rhythm, the fill runtime, the admin expand panel, the
-mobile tab bar) and each is a per-screen port, not a token change. The PDF
-redesign is also untouched — `lib/pdf/pdf-styles.ts` still carries the cool ops
-kit palette.
+## What is deliberately NOT applied
+
+**The layouts, and the PDF. Kyle's call, 2026-09-11: "Just the looks is ok. No
+need the completion etc."** This is a decision, not a backlog item — do not
+re-propose it as unfinished work.
+
+So the artboards' structural changes stay on the canvas: the review queue's
+column rhythm, the checklist fill runtime, the admin expand panel, the mobile
+tab bar. Each is a per-screen port that touches real markup, and the point of
+stopping at tokens is that nothing in the app's behaviour had to move.
+
+`lib/pdf/pdf-styles.ts` still carries the cool ops-kit palette (navy `#0F1E33`,
+panel `#F4F5F7`, Helvetica). **The PDF therefore no longer matches the app** —
+the screens are warm Elevate, the exports are cool ops-kit. That divergence is
+accepted for now and is worth knowing before anyone reports it as a bug.
+
+The canvas remains the reference if any of this is ever wanted.
