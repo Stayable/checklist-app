@@ -481,8 +481,17 @@ got the way it is. Only the items below are still **open** — everything else t
 - **Digest `Reviewed` is a SUBSET of `Done`**, kept that way because `bucketOf` and `lib/reports.ts` both
   count done as SUBMITTED+REVIEWED. A disjoint `Awaiting`/`Reviewed` split would need no legend and would
   surface the review backlog directly — bigger change, three places must agree.
-- **Email brand divergence** — navy `#0B1F3A` + Poppins (adopted Elevate template) vs `#041e42` + Nunito
-  (this app). The Rewards values come from a formal design system and may be the more authoritative source.
+- ~~**Email brand divergence**~~ — **SETTLED 2026-09-11 (Kyle): match Rewards.** Stayable **Elevate**
+  is canonical — navy `#0B1F3A`, sky `#009CDE`, sunshine `#FDDB24`, warm cream/paper surfaces, **Poppins**.
+  Source of truth is `rewards/client/src/tokens.css` (NEWER than the canvas output in
+  `rewards/stayable-elevate-design-system/` — coral was retired 2026-04-25 and `--se-sunshine-text`
+  added there, so read the live file, not the canvas). Four palettes were in play: app `#041e42`/Nunito,
+  PDF `#0F1E33`/Helvetica, email `#0B1F3A`/Poppins, Elevate `#0B1F3A`/Poppins. **Nothing is ported yet** —
+  two Claude Design prompts are written and unrun: `docs/DesignPrompt_Portal_RISE8_091126.md` and
+  `docs/DesignPrompt_PDF_RISE8_091126.md`.
+  ⚠ **The port is NOT a token swap.** Most components hard-code `slate-*`/`emerald-*`/`amber-*` Tailwind
+  utilities directly rather than going through `--color-navy`, so redefining tokens changes almost
+  nothing. Expect a token pass AND a utility sweep, screen by screen.
 - **§Q32–34 (UniFi reconciliation)** — devices that vanish from UniFi stay `OFFLINE` forever holding a ticket · Lakeland's console UI and API disagree · ONLINE-WINS hides 44 Orlando cameras a retired recorder calls offline. **None were "fixed"** on purpose.
 
 **Security / ops debt:**
