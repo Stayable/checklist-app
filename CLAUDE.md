@@ -346,6 +346,7 @@ When changing scope or architecture: update the relevant doc and add an entry to
 — it blew past it on 2026-08-25 at 171 KB and stopped loading. Rule: **the newest block in full, plus the
 carry-forward of what is still open.** When you add a block, move the one it supersedes into
 `docs/archive/StatusLog_RISE8_082526.md` (newest first) and fold anything still live into the carry-forward.
+
 **As of:** September 11, 2026, ~5:45 PM (Eastern, derived — the harness clock runs ~12h ahead and flipped
 to 09-12 mid-session; six code comments were written with the wrong date before it was caught)
 
