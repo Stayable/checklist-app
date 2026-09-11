@@ -1,9 +1,13 @@
 /**
  * Make one account assignable for end-to-end testing.
  *
- * Run:  pnpm dotenv -e .env.production.local -- tsx scripts/set-test-assignee.ts [--apply]
+ * Run:  pnpm dotenv -e .env.production.local -- tsx scripts/set-test-assignee.ts <email> [--apply]
  *
- * Two separate things keep Kyle's CORPORATE account out of the batch-create
+ * Takes the target email as an argument (2026-09-12). It was hard-coded to
+ * Kyle's account until Erika needed the same treatment to test a checklist,
+ * and a second copy of this file would have been the alternative.
+ *
+ * Two separate things keep a CORPORATE account out of the batch-create
  * "Assign to" pool, and BOTH have to be dealt with:
  *
  *   1. Role. `isOnSiteAssignable` admits field staff and on-site Property
@@ -23,24 +27,28 @@
 
 import { db } from "../lib/db";
 
-const TARGET_EMAIL = "bke@rentstayable.com";
-
 // Kyle directed this; AuditLog.actorUserId is meant to name a real decider.
 const ACTOR_EMAIL = "bke@rentstayable.com";
 
 async function main() {
   const apply = process.argv.includes("--apply");
+  const targetEmail = process.argv.slice(2).find((a) => a.includes("@"))?.toLowerCase();
+  if (!targetEmail) {
+    throw new Error(
+      "Pass the target email, e.g. tsx scripts/set-test-assignee.ts erika@rentstayable.com --apply",
+    );
+  }
   console.log(apply ? "MODE: apply\n" : "MODE: dry run (nothing will be written)\n");
 
   const user = await db.user.findUnique({
-    where: { email: TARGET_EMAIL },
+    where: { email: targetEmail },
     select: {
       id: true, email: true, name: true, role: true, active: true,
       alwaysAssignable: true,
       properties: { select: { propertyId: true } },
     },
   });
-  if (!user) throw new Error(`${TARGET_EMAIL} not found`);
+  if (!user) throw new Error(`${targetEmail} not found`);
 
   const actor = await db.user.findUnique({
     where: { email: ACTOR_EMAIL },
