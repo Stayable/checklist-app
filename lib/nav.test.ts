@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Role } from "@prisma/client";
-import { canAccessMaintenance, canAccessNetwork, isAdmin, isManagerOrAbove } from "./roles";
+import {
+  canAccessMaintenance,
+  canAccessNetwork,
+  canManageUsers,
+  isManagerOrAbove,
+} from "./roles";
 import {
   isNavItemActive,
   mobileSectionsForRole,
@@ -27,13 +32,27 @@ describe("navSectionsForRole", () => {
     expect(ids(Role.MANAGER)).toEqual(["home", "checklist", "network"]);
   });
 
-  it("corporate adds network, still no admin", () => {
+  // 2026-09-11: CORPORATE gained an Admin section, holding Users ALONE. SLA and
+  // Properties stay ADMIN-only and guard themselves.
+  it("corporate adds network, maintenance, and a Users-only Admin section", () => {
     expect(ids(Role.CORPORATE)).toEqual([
       "home",
       "checklist",
       "network",
       "maintenance",
       "construction",
+      "admin",
+    ]);
+    const admin = navSectionsForRole(Role.CORPORATE).find((s) => s.id === "admin");
+    expect(admin?.children?.map((c) => c.href)).toEqual(["/admin/users"]);
+  });
+
+  it("admin keeps all three Admin children", () => {
+    const admin = navSectionsForRole(Role.ADMIN).find((s) => s.id === "admin");
+    expect(admin?.children?.map((c) => c.href)).toEqual([
+      "/admin/users",
+      "/admin/sla",
+      "/admin/properties",
     ]);
   });
 
@@ -99,7 +118,7 @@ describe("navSectionsForRole", () => {
       expect(visible.has("network")).toBe(canAccessNetwork(role));
       expect(visible.has("maintenance")).toBe(canAccessMaintenance(role));
       expect(visible.has("construction")).toBe(canAccessMaintenance(role));
-      expect(visible.has("admin")).toBe(isAdmin(role));
+      expect(visible.has("admin")).toBe(canManageUsers(role));
       // Home is unconditional.
       expect(visible.has("home")).toBe(true);
     }

@@ -1,11 +1,19 @@
 import { IssuePriority } from "@prisma/client";
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/rbac";
 import { SLA_PLACEHOLDER_HOURS } from "@/lib/review";
 import { SlaForm } from "./SlaForm";
 
-// Admin SLA defaults (Phase 4). Layout already guards ADMIN.
+// Admin SLA defaults (Phase 4).
+//
+// Guards ADMIN itself. It used to lean on the layout, which stopped being
+// ADMIN-only on 2026-09-11 when CORPORATE was let into Admin -> Users; without
+// this line SLA defaults would have gone with it. The actions in ./actions.ts
+// already required ADMIN independently, so the hole was read-only — still a
+// hole.
 
 export default async function SlaPage() {
+  await requireAdmin();
   const rows = await db.slaDefault.findMany();
   const byPriority = Object.fromEntries(rows.map((r) => [r.priority, r.hours]));
 

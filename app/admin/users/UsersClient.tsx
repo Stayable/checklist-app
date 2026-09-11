@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Locale, Role } from "@prisma/client";
 import { formatInET } from "@/lib/datetime";
+import { canAdministerUser, locationAffectsAssignment } from "@/lib/roles";
 
 // Mirror of MIN_PASSWORD_LENGTH in lib/password.ts (kept local so this client
 // bundle doesn't import the server-only crypto module). Server re-validates.
@@ -17,6 +18,8 @@ import {
   setUserActive,
   setUserPassword,
   setUserProperties,
+  setUserRemote,
+  setUserRole,
   unlockUser,
   type ActionResult,
 } from "./actions";
@@ -27,6 +30,8 @@ type AdminUser = {
   email: string;
   role: Role;
   locale: Locale;
+  /** Location: true = Remote, false = On-site (`users.remote`). */
+  remote: boolean;
   active: boolean;
   lastLoginAt: string | null;
   /** Inside an active failed-login lockout as of server render (ADR-008). */
@@ -37,17 +42,43 @@ type AdminUser = {
 
 type Prop = { id: string; shortCode: string; name: string };
 
-const ROLES: Role[] = [Role.HK, Role.PA, Role.MT, Role.MANAGER, Role.CORPORATE, Role.ADMIN];
 const isPortfolio = (r: Role) => r === Role.CORPORATE || r === Role.ADMIN;
+
+// The role list is NOT hard-coded here any more: it arrives as `assignableRoles`
+// from the server, already filtered by what the signed-in actor may grant (a
+// CORPORATE actor never sees ADMIN). The old local list also omitted AGENT and
+// NETWORK_TECH, so those rows had no option matching their own value.
+const LOCATION_LABEL = (remote: boolean) => (remote ? "Remote" : "On-site");
+
+/**
+ * Options for a row's role picker.
+ *
+ * The current role is always present even when the actor may not grant it, so
+ * the select shows what the account actually is rather than silently rendering
+ * its first option. Cannot happen today — an actor who may manage a row may
+ * grant every role that row could hold — but a select whose value is absent
+ * from its options misreports the database, which is the worst failure this
+ * screen has.
+ */
+function roleOptions(current: Role, assignable: Role[]) {
+  const values = assignable.includes(current) ? assignable : [current, ...assignable];
+  return values.map((r) => ({ value: r, label: r }));
+}
 
 export function UsersClient({
   initialUsers,
   properties,
   currentUserId,
+  actorRole,
+  assignableRoles,
 }: {
   initialUsers: AdminUser[];
   properties: Prop[];
   currentUserId: string;
+  /** Role of the signed-in user — decides which rows are actionable. */
+  actorRole: Role;
+  /** Roles this actor may grant. CORPORATE never receives ADMIN. */
+  assignableRoles: Role[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -106,6 +137,7 @@ export function UsersClient({
       {showCreate && (
         <CreateUserForm
           properties={properties}
+          assignableRoles={assignableRoles}
           pending={pending}
           onSubmit={(payload) =>
             run(async () => {
@@ -123,6 +155,7 @@ export function UsersClient({
             <tr>
               <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Location</th>
               <th className="px-4 py-3">Properties</th>
               <th className="px-4 py-3">Last login</th>
               <th className="px-4 py-3">Status</th>
@@ -137,6 +170,11 @@ export function UsersClient({
                 properties={properties}
                 shortCode={shortCode}
                 pending={pending}
+                assignableRoles={assignableRoles}
+                // Server-side truth is canAdministerUser in actions.ts; this is
+                // the same predicate used to avoid offering a button that would
+                // only come back refused.
+                manageable={canAdministerUser(actorRole, u.role)}
                 editing={editing === u.id}
                 settingPw={pwFor === u.id}
                 isSelf={u.id === currentUserId}
@@ -149,6 +187,8 @@ export function UsersClient({
                     return res;
                   })
                 }
+                onSetRole={(role) => run(() => setUserRole({ userId: u.id, role }))}
+                onSetRemote={(remote) => run(() => setUserRemote({ userId: u.id, remote }))}
                 onReset={() => run(() => resetPassword(u.id))}
                 onUnlock={() => run(() => unlockUser(u.id))}
                 onToggleActive={() => run(() => setUserActive(u.id, !u.active))}
@@ -174,16 +214,19 @@ export function UsersClient({
 
 function CreateUserForm({
   properties,
+  assignableRoles,
   pending,
   onSubmit,
 }: {
   properties: Prop[];
+  assignableRoles: Role[];
   pending: boolean;
   onSubmit: (payload: {
     name: string;
     email: string;
     role: Role;
     locale: Locale;
+    remote: boolean;
     propertyIds: string[];
   }) => void;
 }) {
@@ -191,6 +234,10 @@ function CreateUserForm({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>(Role.HK);
   const [locale, setLocale] = useState<Locale>(Locale.en);
+  // On-site by default: the failure mode of a wrong default should be "shows up
+  // in a pick-list they don't belong in", not "a real employee is invisible and
+  // cannot be assigned work" (schema.prisma, users.remote).
+  const [remote, setRemote] = useState(false);
   const [propertyIds, setPropertyIds] = useState<string[]>([]);
 
   const portfolio = isPortfolio(role);
@@ -200,7 +247,7 @@ function CreateUserForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit({ name, email, role, locale, propertyIds });
+        onSubmit({ name, email, role, locale, remote, propertyIds });
       }}
       className="rounded-xl border border-slate-200 bg-white p-4"
     >
@@ -211,7 +258,7 @@ function CreateUserForm({
           ariaLabel="Role"
           value={role}
           onChange={(next) => setRole(next as Role)}
-          options={ROLES.map((r) => ({ value: r, label: r }))}
+          options={assignableRoles.map((r) => ({ value: r, label: r }))}
         />
         <SelectField
           ariaLabel="Language"
@@ -222,7 +269,21 @@ function CreateUserForm({
             { value: Locale.es, label: "Spanish" },
           ]}
         />
+        <SelectField
+          ariaLabel="Location"
+          value={remote ? "remote" : "onsite"}
+          onChange={(next) => setRemote(next === "remote")}
+          options={[
+            { value: "onsite", label: "On-site" },
+            { value: "remote", label: "Remote" },
+          ]}
+        />
       </div>
+      <p className="mt-2 text-xs text-slate-500">
+        {locationAffectsAssignment(role)
+          ? "Location drives the “Assign to” pool — a Remote manager is not offered room-level work."
+          : "Location is recorded for reference. It only changes the “Assign to” pool for MANAGER."}
+      </p>
 
       {portfolio ? (
         <p className="mt-3 text-xs text-slate-500">
@@ -251,12 +312,16 @@ function UserRow({
   properties,
   shortCode,
   pending,
+  assignableRoles,
+  manageable,
   editing,
   settingPw,
   isSelf,
   onToggleEdit,
   onToggleSetPw,
   onSetPw,
+  onSetRole,
+  onSetRemote,
   onReset,
   onUnlock,
   onToggleActive,
@@ -267,12 +332,17 @@ function UserRow({
   properties: Prop[];
   shortCode: (id: string) => string;
   pending: boolean;
+  assignableRoles: Role[];
+  /** False when the actor may not act on this row (CORPORATE vs an ADMIN). */
+  manageable: boolean;
   editing: boolean;
   settingPw: boolean;
   isSelf: boolean;
   onToggleEdit: () => void;
   onToggleSetPw: () => void;
   onSetPw: (password: string) => void;
+  onSetRole: (role: Role) => void;
+  onSetRemote: (remote: boolean) => void;
   onReset: () => void;
   onUnlock: () => void;
   onToggleActive: () => void;
@@ -283,6 +353,9 @@ function UserRow({
   const [pw, setPw] = useState("");
   const portfolio = isPortfolio(user.role);
   const action = "text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40";
+  // Changing your OWN role is refused server-side (an admin demoting themselves
+  // with no second admin account is unrecoverable), so don't offer it either.
+  const roleEditable = manageable && !isSelf;
 
   return (
     <>
@@ -291,7 +364,44 @@ function UserRow({
           <div className="font-medium text-slate-900">{user.name}</div>
           <div className="text-xs text-slate-500">{user.email}</div>
         </td>
-        <td className="px-4 py-3">{user.role}</td>
+        <td className="px-4 py-3">
+          {roleEditable ? (
+            <SelectField
+              ariaLabel={`Role for ${user.email}`}
+              value={user.role}
+              onChange={(next) => {
+                if (next === user.role) return;
+                if (!confirm(`Change ${user.email} from ${user.role} to ${next}?`)) return;
+                onSetRole(next as Role);
+              }}
+              options={roleOptions(user.role, assignableRoles)}
+            />
+          ) : (
+            <span title={isSelf ? "You can't change your own role." : "Only an ADMIN can manage an ADMIN account."}>
+              {user.role}
+            </span>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          {manageable ? (
+            <SelectField
+              ariaLabel={`Location for ${user.email}`}
+              value={user.remote ? "remote" : "onsite"}
+              onChange={(next) => onSetRemote(next === "remote")}
+              options={[
+                { value: "onsite", label: "On-site" },
+                { value: "remote", label: "Remote" },
+              ]}
+            />
+          ) : (
+            <span className="text-xs text-slate-600">{LOCATION_LABEL(user.remote)}</span>
+          )}
+          {!locationAffectsAssignment(user.role) && (
+            // Say so rather than hiding the control: a hidden field is a fact
+            // you cannot correct, but a silently inert one is worse.
+            <div className="mt-0.5 text-[11px] text-slate-400">reference only</div>
+          )}
+        </td>
         <td className="px-4 py-3 text-xs text-slate-600">
           {portfolio ? <span className="text-slate-400">Portfolio</span> : user.propertyIds.map(shortCode).join(", ") || "—"}
         </td>
@@ -314,7 +424,10 @@ function UserRow({
         </td>
         <td className="px-4 py-3 text-right">
           <div className="flex justify-end gap-3">
-            {user.locked && (
+            {!manageable && (
+              <span className="text-xs text-slate-400">Admin only</span>
+            )}
+            {manageable && user.locked && (
               <button
                 className="text-xs font-semibold text-amber-700 hover:text-amber-900 disabled:opacity-40"
                 disabled={pending}
@@ -323,19 +436,25 @@ function UserRow({
                 Unlock
               </button>
             )}
-            <button className={action} disabled={pending} onClick={onReset}>Reset PW</button>
-            <button className={action} disabled={pending} onClick={onToggleSetPw}>
-              {settingPw ? "Close" : "Set PW"}
-            </button>
-            {!portfolio && (
+            {manageable && (
+              <button className={action} disabled={pending} onClick={onReset}>Reset PW</button>
+            )}
+            {manageable && (
+              <button className={action} disabled={pending} onClick={onToggleSetPw}>
+                {settingPw ? "Close" : "Set PW"}
+              </button>
+            )}
+            {manageable && !portfolio && (
               <button className={action} disabled={pending} onClick={onToggleEdit}>
                 {editing ? "Close" : "Properties"}
               </button>
             )}
-            <button className={action} disabled={pending} onClick={onToggleActive}>
-              {user.active ? "Deactivate" : "Reactivate"}
-            </button>
-            {!isSelf && (
+            {manageable && (
+              <button className={action} disabled={pending} onClick={onToggleActive}>
+                {user.active ? "Deactivate" : "Reactivate"}
+              </button>
+            )}
+            {manageable && !isSelf && (
               <button
                 className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-40"
                 disabled={pending}
@@ -349,7 +468,7 @@ function UserRow({
       </tr>
       {editing && !portfolio && (
         <tr>
-          <td colSpan={6} className="bg-slate-50 px-4 py-3">
+          <td colSpan={7} className="bg-slate-50 px-4 py-3">
             <PropertyCheckboxes properties={properties} selected={draft} onChange={setDraft} />
             <button
               className="mt-2 rounded-lg bg-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-50"
@@ -363,7 +482,7 @@ function UserRow({
       )}
       {settingPw && (
         <tr>
-          <td colSpan={6} className="bg-slate-50 px-4 py-3">
+          <td colSpan={7} className="bg-slate-50 px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">
               <input
                 type="text"

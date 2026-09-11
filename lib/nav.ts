@@ -1,5 +1,11 @@
 import { Role } from "@prisma/client";
-import { canAccessMaintenance, canAccessNetwork, isAdmin, isManagerOrAbove } from "./roles";
+import {
+  canAccessMaintenance,
+  canAccessNetwork,
+  canManageUsers,
+  isAdmin,
+  isManagerOrAbove,
+} from "./roles";
 
 // Single source of truth for app navigation.
 //
@@ -76,8 +82,10 @@ const NETWORK_CHILDREN: NavItem[] = [
   { href: "/network/wifi", label: "WiFi", section: "network" },
 ];
 
+const USERS_ITEM: NavItem = { href: "/admin/users", label: "Users", section: "admin" };
+
 const ADMIN_CHILDREN: NavItem[] = [
-  { href: "/admin/users", label: "Users", section: "admin" },
+  USERS_ITEM,
   { href: "/admin/sla", label: "SLA", section: "admin" },
   { href: "/admin/properties", label: "Properties", section: "admin" },
 ];
@@ -133,6 +141,17 @@ const ADMIN: NavSection = {
   children: ADMIN_CHILDREN,
 };
 
+// CORPORATE gained Admin -> Users on 2026-09-11 (Kyle) but NOT SLA or
+// Properties, which stay ADMIN-only and guard themselves. Same section id and
+// label so sectionForPathname and the active-state logic are unchanged; only
+// the child list is narrower.
+const ADMIN_USERS_ONLY: NavSection = {
+  id: "admin",
+  label: "Admin",
+  icon: "Settings",
+  children: [USERS_ITEM],
+};
+
 // Visibility comes from the SAME predicates authorization uses (lib/roles.ts,
 // re-exported by lib/rbac.ts) — no second copy of the rules. This is display
 // only: showing a section is not permission to see a property's rows, which
@@ -151,6 +170,7 @@ export function navSectionsForRole(role: Role): NavSection[] {
   // of Maintenance, and every /maintenance route enforces the same predicate.
   if (canAccessMaintenance(role)) sections.push(MAINTENANCE, CONSTRUCTION);
   if (isAdmin(role)) sections.push(ADMIN);
+  else if (canManageUsers(role)) sections.push(ADMIN_USERS_ONLY);
   return sections;
 }
 
@@ -200,6 +220,10 @@ export function sectionForPathname(pathname: string): SectionId | null {
   return best?.section ?? null;
 }
 
+// ADMIN alone, not ADMIN_USERS_ONLY: this drives sectionForPathname, whose job
+// is "which section owns this URL", not "may you see it". Both variants carry
+// the same id and the narrow one's single href is a subset, so listing it would
+// add a duplicate match and change nothing.
 const ALL_SECTIONS: NavSection[] = [
   HOME,
   CHECKLIST,

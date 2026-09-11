@@ -135,3 +135,81 @@ export function canAccessNetwork(role: Role): boolean {
     role === Role.MANAGER
   );
 }
+
+/**
+ * USER ADMINISTRATION — may this role open Admin → Users at all?
+ *
+ * Widened from ADMIN to ADMIN + CORPORATE on 2026-09-11 (Kyle) so corporate
+ * staff can change a user's role without going through the single admin@
+ * account. It is deliberately NOT isPortfolioRole() even though the membership
+ * is identical today: the two answer different questions, and a future
+ * portfolio role that should not provision accounts must not inherit this by
+ * accident.
+ *
+ * ⚠ This only answers "may they open the section". WHICH users they may act on
+ * is canAdministerUser below, and every action re-checks it server-side —
+ * a hidden button is not a guard.
+ */
+export function canManageUsers(role: Role): boolean {
+  return role === Role.ADMIN || role === Role.CORPORATE;
+}
+
+/**
+ * May `actorRole` act on an account currently holding `targetRole`?
+ *
+ * The escalation floor. CORPORATE gets the full user surface — create,
+ * deactivate, delete, reset/set password, properties, role, location — but
+ * **never on an ADMIN account**. Without this a CORPORATE user could reset the
+ * admin@ password and sign in as ADMIN, which would make the whole distinction
+ * decorative. Pair it with assignableRolesFor: one stops them reaching an
+ * existing admin, the other stops them minting a new one.
+ */
+export function canAdministerUser(actorRole: Role, targetRole: Role): boolean {
+  if (!canManageUsers(actorRole)) return false;
+  if (isAdmin(actorRole)) return true;
+  return !isAdmin(targetRole);
+}
+
+/**
+ * Every role, in the order the Users table and role picker show them: field
+ * staff, then on-property management, then the two portfolio roles last.
+ *
+ * The picker previously hard-coded six of the eight in UsersClient, so an
+ * AGENT or NETWORK_TECH row had no option matching its own value — the reason
+ * this list moved next to the enum it mirrors.
+ */
+export const ROLE_ORDER: readonly Role[] = [
+  Role.HK,
+  Role.PA,
+  Role.MT,
+  Role.MANAGER,
+  Role.AGENT,
+  Role.NETWORK_TECH,
+  Role.CORPORATE,
+  Role.ADMIN,
+];
+
+/** Roles `actorRole` may GRANT. CORPORATE may not mint an ADMIN. */
+export function assignableRolesFor(actorRole: Role): Role[] {
+  if (!canManageUsers(actorRole)) return [];
+  if (isAdmin(actorRole)) return [...ROLE_ORDER];
+  return ROLE_ORDER.filter((r) => r !== Role.ADMIN);
+}
+
+/**
+ * Does a row's Location actually CHANGE anything for this role?
+ *
+ * Location is recorded for everyone — it is a fact about the person, and the
+ * Users table shows it on every row. But it only feeds a decision for MANAGER,
+ * the one role that spans both the 8 on-site Property Managers and the 3 Remote
+ * ones; nothing else in the schema tells those apart (see the column comment in
+ * schema.prisma), and isOnSiteAssignable consults `remote` for MANAGER alone.
+ *
+ * Used to caption the control — "drives the Assign to pool" vs "recorded only"
+ * — so nobody flips a housekeeper to Remote expecting work to stop reaching
+ * them. It must NOT be used to hide the field: a hidden field is a fact you
+ * cannot correct.
+ */
+export function locationAffectsAssignment(role: Role): boolean {
+  return role === Role.MANAGER;
+}

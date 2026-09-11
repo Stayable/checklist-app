@@ -3,13 +3,17 @@ import { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
+  assignableRolesFor,
   canAccessMaintenance,
   canAccessNetwork,
+  canAdministerUser,
+  canManageUsers,
   isAdmin,
   isFieldStaff,
   isManagerOrAbove,
   isOnSiteAssignable,
   isPortfolioRole,
+  locationAffectsAssignment,
 } from "./roles";
 
 // Authorization helpers (ADR-013). One global role per user; portfolio-wide
@@ -20,13 +24,17 @@ import {
 // into the browser bundle) and are re-exported here, so `@/lib/rbac` remains the
 // single place callers look for authorization.
 export {
+  assignableRolesFor,
   canAccessMaintenance,
   canAccessNetwork,
+  canAdministerUser,
+  canManageUsers,
   isAdmin,
   isFieldStaff,
   isManagerOrAbove,
   isOnSiteAssignable,
   isPortfolioRole,
+  locationAffectsAssignment,
 };
 
 export type SessionUser = {
@@ -82,6 +90,20 @@ export async function requireUser(
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await requireUser();
   if (!isAdmin(user.role)) redirect("/");
+  return user;
+}
+
+/**
+ * Require user-administration access (ADMIN or CORPORATE) — Admin → Users.
+ *
+ * Distinct from requireAdmin(), which still guards SLA and Properties. This
+ * only says the caller may open the Users surface; WHICH rows they may act on
+ * is canAdministerUser(actor.role, target.role), checked inside each action
+ * against the target's role read fresh from the database.
+ */
+export async function requireUserAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!canManageUsers(user.role)) redirect("/");
   return user;
 }
 

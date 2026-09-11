@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { Role } from "@prisma/client";
-import { isOnSiteAssignable } from "./roles";
+import {
+  ROLE_ORDER,
+  assignableRolesFor,
+  canAdministerUser,
+  canManageUsers,
+  isOnSiteAssignable,
+  locationAffectsAssignment,
+} from "./roles";
 
 // The rest of lib/roles.ts is covered through lib/rbac.test.ts, which
 // re-exports it. This file exists for isOnSiteAssignable, which answers a
@@ -60,5 +67,64 @@ describe("isOnSiteAssignable", () => {
     expect(decided.filter(([, ok]) => ok).map(([r]) => r).sort()).toEqual(
       [Role.HK, Role.MANAGER, Role.MT, Role.PA].sort(),
     );
+  });
+});
+
+// User administration (2026-09-11). CORPORATE was let into Admin → Users with
+// two limits; these are the limits. They are the only thing standing between a
+// corporate account and ADMIN, so they are tested as a pair.
+describe("user administration", () => {
+  it("only ADMIN and CORPORATE may open Admin → Users", () => {
+    expect(canManageUsers(Role.ADMIN)).toBe(true);
+    expect(canManageUsers(Role.CORPORATE)).toBe(true);
+    for (const role of [Role.HK, Role.PA, Role.MT, Role.MANAGER, Role.AGENT, Role.NETWORK_TECH]) {
+      expect(canManageUsers(role)).toBe(false);
+    }
+  });
+
+  it("CORPORATE may act on every role EXCEPT an ADMIN account", () => {
+    for (const target of Object.values(Role)) {
+      // The whole point: a corporate user must not be able to reset admin@'s
+      // password and sign in as ADMIN.
+      expect(canAdministerUser(Role.CORPORATE, target)).toBe(target !== Role.ADMIN);
+    }
+  });
+
+  it("ADMIN may act on any account, including another ADMIN", () => {
+    for (const target of Object.values(Role)) {
+      expect(canAdministerUser(Role.ADMIN, target)).toBe(true);
+    }
+  });
+
+  it("a role that cannot manage users cannot administer anyone", () => {
+    for (const actor of [Role.HK, Role.PA, Role.MT, Role.MANAGER, Role.AGENT, Role.NETWORK_TECH]) {
+      for (const target of Object.values(Role)) {
+        expect(canAdministerUser(actor, target)).toBe(false);
+      }
+      expect(assignableRolesFor(actor)).toEqual([]);
+    }
+  });
+
+  it("CORPORATE may grant every role except ADMIN; ADMIN may grant all", () => {
+    const corp = assignableRolesFor(Role.CORPORATE);
+    expect(corp).not.toContain(Role.ADMIN);
+    expect(corp.length).toBe(Object.values(Role).length - 1);
+    expect(assignableRolesFor(Role.ADMIN).length).toBe(Object.values(Role).length);
+  });
+
+  it("the picker list covers the whole enum, so a new role has to be placed", () => {
+    // The old hard-coded list in UsersClient omitted AGENT and NETWORK_TECH,
+    // so those rows had no option matching their own value.
+    expect([...ROLE_ORDER].sort()).toEqual(Object.values(Role).sort());
+  });
+
+  it("Location only affects assignment for MANAGER", () => {
+    expect(locationAffectsAssignment(Role.MANAGER)).toBe(true);
+    for (const role of Object.values(Role).filter((r) => r !== Role.MANAGER)) {
+      expect(locationAffectsAssignment(role)).toBe(false);
+      // And the reason it is inert: isOnSiteAssignable ignores the flag for
+      // every other role.
+      expect(isOnSiteAssignable(role, true)).toBe(isOnSiteAssignable(role, false));
+    }
   });
 });

@@ -5,12 +5,25 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { Locale, Prisma, Role } from "@prisma/client";
 import { db } from "@/lib/db";
-import { requireAdmin } from "@/lib/rbac";
+import { assignableRolesFor, canAdministerUser, requireUserAdmin } from "@/lib/rbac";
 import { generateTempPassword, validatePasswordStrength } from "@/lib/password";
 
-// Admin user-management server actions (Phase 2). All require ADMIN and write
-// an audit_log entry. Resend is deferred, so create/reset return a one-time
-// temp password for the admin to convey rather than emailing an activation link.
+// Admin user-management server actions (Phase 2). Every one writes an
+// audit_log entry. Resend is deferred, so create/reset return a one-time temp
+// password for the admin to convey rather than emailing an activation link.
+//
+// AUTHORIZATION (widened 2026-09-11, Kyle). These required ADMIN; they now
+// require ADMIN **or CORPORATE** (requireUserAdmin), with two limits that make
+// the distinction real rather than decorative:
+//
+//   1. CORPORATE may not act on an ADMIN account — canAdministerUser. Without
+//      it, a corporate user could reset admin@'s password and sign in as ADMIN.
+//   2. CORPORATE may not GRANT the ADMIN role — assignableRolesFor. Without it
+//      they could promote themselves and reach (1) the long way round.
+//
+// Both are checked HERE, against the target's role read fresh from the
+// database. An exported server action is a live HTTP endpoint — the client
+// hiding a button proves nothing.
 
 const BCRYPT_COST = 12;
 
@@ -23,8 +36,41 @@ const createSchema = z.object({
   email: z.string().trim().toLowerCase().email("Valid email required"),
   role: z.nativeEnum(Role),
   locale: z.nativeEnum(Locale).default(Locale.en),
+  // Location. Defaults to on-site so a forgotten checkbox leaves a new hire
+  // assignable rather than invisible — same reasoning as the column default in
+  // schema.prisma.
+  remote: z.boolean().default(false),
   propertyIds: z.array(z.string().uuid()).default([]),
 });
+
+/**
+ * Load the target and confirm the actor may touch it.
+ *
+ * Every mutation below funnels through this so the ADMIN-target rule has one
+ * implementation. Returns the row rather than a boolean because callers need
+ * the email for the audit entry anyway, and re-reading it would leave a window
+ * where the role checked is not the role written.
+ */
+async function loadTarget(actorRole: Role, userId: string) {
+  const idOk = z.string().uuid().safeParse(userId);
+  if (!idOk.success) return { ok: false as const, error: "Invalid user." };
+
+  const target = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, role: true, remote: true, active: true },
+  });
+  if (!target) return { ok: false as const, error: "User not found." };
+
+  if (!canAdministerUser(actorRole, target.role)) {
+    // Says what the rule is, not merely that it was refused — the person
+    // hitting this is an authorised corporate user, not an attacker probing.
+    return {
+      ok: false as const,
+      error: "Only an ADMIN can manage an ADMIN account.",
+    };
+  }
+  return { ok: true as const, target };
+}
 
 async function writeAudit(
   actorUserId: string,
@@ -38,12 +84,19 @@ async function writeAudit(
 }
 
 export async function createUser(input: unknown): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await requireUserAdmin();
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { name, email, role, locale, propertyIds } = parsed.data;
+  const { name, email, role, locale, remote, propertyIds } = parsed.data;
+
+  // A CORPORATE creator may not mint an ADMIN — the escalation route that
+  // canAdministerUser alone would not close, since a brand-new account has no
+  // existing role to check.
+  if (!assignableRolesFor(admin.role).includes(role)) {
+    return { ok: false, error: `You can't create an account with the ${role} role.` };
+  }
 
   const existing = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) return { ok: false, error: "A user with that email already exists." };
@@ -63,6 +116,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
       email,
       role,
       locale,
+      remote,
       passwordHash,
       properties: portfolio
         ? undefined
@@ -71,16 +125,18 @@ export async function createUser(input: unknown): Promise<ActionResult> {
     select: { id: true },
   });
 
-  await writeAudit(admin.id, user.id, "create", { email, role });
+  await writeAudit(admin.id, user.id, "create", { email, role, remote });
   revalidatePath("/admin/users");
   return { ok: true, tempPassword, message: `Created ${email}.` };
 }
 
 export async function setUserActive(userId: string, active: boolean): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await requireUserAdmin();
   if (userId === admin.id) {
     return { ok: false, error: "You can't change your own active status." };
   }
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
   await db.user.update({ where: { id: userId }, data: { active } });
   await writeAudit(admin.id, userId, active ? "reactivate" : "deactivate");
   revalidatePath("/admin/users");
@@ -88,7 +144,9 @@ export async function setUserActive(userId: string, active: boolean): Promise<Ac
 }
 
 export async function resetPassword(userId: string): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await requireUserAdmin();
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
   const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_COST);
   // Clear any lockout so the new password works immediately.
@@ -114,15 +172,16 @@ export async function resetPassword(userId: string): Promise<ActionResult> {
  * user's ability to sign in, so a stale page render can't do harm.
  */
 export async function unlockUser(userId: string): Promise<ActionResult> {
-  const admin = await requireAdmin();
-  const idOk = z.string().uuid().safeParse(userId);
-  if (!idOk.success) return { ok: false, error: "Invalid user." };
+  const admin = await requireUserAdmin();
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
 
-  const target = await db.user.findUnique({
-    where: { id: userId },
+  // Re-read for the two lockout columns loadTarget does not select; the role
+  // check above already settled whether this row may be touched at all.
+  const target = await db.user.findUniqueOrThrow({
+    where: { id: found.target.id },
     select: { id: true, email: true, failedLoginAttempts: true, lockedUntil: true },
   });
-  if (!target) return { ok: false, error: "User not found." };
 
   await db.user.update({
     where: { id: target.id },
@@ -144,17 +203,13 @@ export async function setUserPassword(
   userId: string,
   password: string,
 ): Promise<ActionResult> {
-  const admin = await requireAdmin();
-  const idOk = z.string().uuid().safeParse(userId);
-  if (!idOk.success) return { ok: false, error: "Invalid user." };
+  const admin = await requireUserAdmin();
   const weak = validatePasswordStrength(password);
   if (weak) return { ok: false, error: weak };
 
-  const target = await db.user.findUnique({
-    where: { id: userId },
-    select: { id: true, email: true },
-  });
-  if (!target) return { ok: false, error: "User not found." };
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
+  const target = found.target;
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
   // Clear any lockout so the new password works immediately.
@@ -172,8 +227,10 @@ const propsSchema = z.object({
 });
 
 export async function deleteUser(userId: string): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await requireUserAdmin();
   if (admin.id === userId) return { ok: false, error: "You can't delete your own account." };
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
 
   const [auditCount, assigned, reviewed, issues, rules, notifs] = await Promise.all([
     db.auditLog.count({ where: { actorUserId: userId } }),
@@ -188,8 +245,7 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
     return { ok: false, error: "This user has activity history — deactivate them instead of deleting." };
   }
 
-  const target = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
-  if (!target) return { ok: false, error: "User not found." };
+  const target = found.target;
 
   // No history → user_properties cascade-deletes; safe hard delete.
   await db.user.delete({ where: { id: userId } });
@@ -199,14 +255,14 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
 }
 
 export async function setUserProperties(input: unknown): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await requireUserAdmin();
   const parsed = propsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid input" };
   const { userId, propertyIds } = parsed.data;
 
-  const user = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
-  if (!user) return { ok: false, error: "User not found." };
-  const portfolio = user.role === Role.CORPORATE || user.role === Role.ADMIN;
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
+  const portfolio = found.target.role === Role.CORPORATE || found.target.role === Role.ADMIN;
   if (!portfolio && propertyIds.length === 0) {
     return { ok: false, error: "Scoped users need at least one property." };
   }
@@ -221,4 +277,111 @@ export async function setUserProperties(input: unknown): Promise<ActionResult> {
   await writeAudit(admin.id, userId, "set_properties", { propertyIds });
   revalidatePath("/admin/users");
   return { ok: true, message: "Property assignments updated." };
+}
+
+const roleSchema = z.object({
+  userId: z.string().uuid(),
+  role: z.nativeEnum(Role),
+});
+
+/**
+ * Change a user's role (new 2026-09-11, Kyle — there was no role-change path at
+ * all; a wrong role meant deleting and recreating the account, which the
+ * activity-history guard in deleteUser makes impossible once they have worked).
+ *
+ * Three checks, in order, because each closes a different door:
+ *   • loadTarget  — may the actor touch THIS account (not an ADMIN, unless the
+ *                   actor is one)?
+ *   • assignable  — may the actor grant THIS role (CORPORATE cannot grant ADMIN)?
+ *   • self        — an actor may not change their own role. Not a privilege
+ *                   question but a lockout one: an ADMIN demoting themselves
+ *                   with no second admin account leaves nobody who can undo it,
+ *                   and admin@ is the only other ADMIN today.
+ *
+ * Deliberately does NOT touch user_properties. A MANAGER promoted to CORPORATE
+ * keeps their rows — portfolio roles ignore them (isPortfolioRole short-circuits
+ * canAccessProperty), so they are inert, and they are exactly what a demotion
+ * back would need. Clearing them would silently destroy the scope.
+ */
+export async function setUserRole(input: unknown): Promise<ActionResult> {
+  const admin = await requireUserAdmin();
+  const parsed = roleSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const { userId, role } = parsed.data;
+
+  if (userId === admin.id) {
+    return { ok: false, error: "You can't change your own role." };
+  }
+
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
+  const target = found.target;
+
+  if (!assignableRolesFor(admin.role).includes(role)) {
+    return { ok: false, error: `You can't grant the ${role} role.` };
+  }
+  if (target.role === role) {
+    return { ok: true, message: `${target.email} is already ${role}.` };
+  }
+
+  // A scoped role with no properties can see nothing — so refuse the demotion
+  // rather than create an account that silently has no access, and say which
+  // step is missing.
+  const nowScoped = role !== Role.CORPORATE && role !== Role.ADMIN;
+  if (nowScoped) {
+    const props = await db.userProperty.count({ where: { userId } });
+    if (props === 0) {
+      return {
+        ok: false,
+        error: `${role} is property-scoped. Assign at least one property first, then change the role.`,
+      };
+    }
+  }
+
+  await db.user.update({ where: { id: userId }, data: { role } });
+  await writeAudit(admin.id, userId, "set_role", {
+    email: target.email,
+    from: target.role,
+    to: role,
+  });
+  revalidatePath("/admin/users");
+  return { ok: true, message: `${target.email}: ${target.role} → ${role}.` };
+}
+
+const locationSchema = z.object({
+  userId: z.string().uuid(),
+  remote: z.boolean(),
+});
+
+/**
+ * Set a user's Location — Remote or On-site (`users.remote`).
+ *
+ * Recorded for every role, because it is a fact about the person. It only
+ * CHANGES anything for MANAGER, where isOnSiteAssignable consults it to keep
+ * the 3 Remote Property Managers out of the batch wizard's "Assign to" pool;
+ * see locationAffectsAssignment. Field staff are on-site by role and the
+ * predicate ignores the flag for them by design, so a stray Remote on a
+ * housekeeper cannot make a real employee unassignable.
+ */
+export async function setUserRemote(input: unknown): Promise<ActionResult> {
+  const admin = await requireUserAdmin();
+  const parsed = locationSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const { userId, remote } = parsed.data;
+
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
+  const target = found.target;
+  if (target.remote === remote) {
+    return { ok: true, message: `${target.email} is already ${remote ? "Remote" : "On-site"}.` };
+  }
+
+  await db.user.update({ where: { id: userId }, data: { remote } });
+  await writeAudit(admin.id, userId, "set_remote", {
+    email: target.email,
+    before: target.remote,
+    after: remote,
+  });
+  revalidatePath("/admin/users");
+  return { ok: true, message: `${target.email} is now ${remote ? "Remote" : "On-site"}.` };
 }
