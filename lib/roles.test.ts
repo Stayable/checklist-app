@@ -130,7 +130,7 @@ describe("user administration", () => {
   });
 });
 
-// explainAssignability (2026-09-12). The sentence the Users admin shows beside
+// explainAssignability (2026-09-11). The sentence the Users admin shows beside
 // the Always-assignable switch. Pinned to isOnSiteAssignable so the prose
 // cannot drift from the rule the batch wizard's pool query mirrors.
 describe("explainAssignability", () => {

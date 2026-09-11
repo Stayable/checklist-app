@@ -6,7 +6,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { accessiblePropertyIds, requireManager } from "@/lib/rbac";
 
-// Deleting MIS-CREATED checklists (Kyle, 2026-09-12).
+// Deleting MIS-CREATED checklists (Kyle, 2026-09-11).
 //
 // This is deliberately NOT the same thing as ADR-031's close-out. A checklist
 // that stopped being needed is INVALIDATED — it happened, somebody decided it

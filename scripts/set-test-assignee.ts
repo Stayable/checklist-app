@@ -3,7 +3,7 @@
  *
  * Run:  pnpm dotenv -e .env.production.local -- tsx scripts/set-test-assignee.ts <email> [--apply]
  *
- * Takes the target email as an argument (2026-09-12). It was hard-coded to
+ * Takes the target email as an argument (2026-09-11). It was hard-coded to
  * Kyle's account until Erika needed the same treatment to test a checklist,
  * and a second copy of this file would have been the alternative.
  *

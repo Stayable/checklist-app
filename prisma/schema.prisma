@@ -329,7 +329,7 @@ model User {
   // today — Kyle's and Erika's CORPORATE accounts, so each can be handed a
   // checklist and walk it end to end without a second login.
   //
-  // ⚠ Settable from Admin -> Users since 2026-09-12 (Kyle), where it reads
+  // ⚠ Settable from Admin -> Users since 2026-09-11 (Kyle), where it reads
   // "Always assignable". It was script-only before, so the cost of setting it
   // has dropped and the rule above matters more, not less: if this ever needs
   // to be true for a GROUP of people, that group is a missing role or a missing

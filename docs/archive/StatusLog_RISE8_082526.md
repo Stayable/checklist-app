@@ -1,6 +1,56 @@
 # Status Log Archive — RISE8 Operations Platform
 
-**As of:** September 10, 2026 (latest)
+**As of:** September 11, 2026 — morning block (latest)
+
+---
+
+**As of:** September 11, 2026, ~11:45 AM (Eastern, derived — the harness clock runs ~12h ahead on this machine)
+
+**🟢 DEPLOYED. `af29316`, no migration, 1,158 tests, clean typecheck / lint / build.** Small session, three
+things Kyle asked for, one of them a data change already live in production.
+
+**👥 BEA AND ERIKA ARE CORPORATE.** Applied to prod via `scripts/promote-to-corporate.ts --apply` (dry-run
+by default), both with `set_role` audit rows naming Kyle as actor. **Bea came from AGENT**, the role that
+exists to be checklist-ONLY, so hers is the larger jump: both now hold **Maintenance** — every contractor's
+name and phone, and reassign/close on any property's jobs, portfolio-wide because the calendar has no
+per-property scoping — and **Network** across the whole estate. That is the real widening, not the checklist
+part. `user_properties` rows were KEPT (inert at a portfolio role, and exactly what a demotion back needs);
+Erika's `remote: true` was KEPT (still true, just no longer read). CORPORATE is now 8 accounts.
+
+**🔑 CORPORATE CAN NOW ADMINISTER USERS — with two limits that are the only thing between a corporate
+account and ADMIN.** Both enforced server-side against the target's role read fresh from the DB:
+1. **`canAdministerUser`** — CORPORATE may not act on an ADMIN row at all. Without it they could reset
+   `admin@`'s password and sign in as ADMIN.
+2. **`assignableRolesFor`** — CORPORATE may not GRANT ADMIN, or they reach (1) the long way round.
+Nobody may change their own role — an ADMIN demoting themselves with no second admin account is
+unrecoverable, and `admin@` is the only other one. The nav gives CORPORATE an Admin section holding
+**Users alone**; SLA and Properties stay ADMIN-only.
+
+**⚠️ THE `/admin` LAYOUT GUARD IS NO LONGER THE ONLY GUARD.** It widened to ADMIN+CORPORATE, and
+**`app/admin/sla/page.tsx` had been relying on it entirely** — it now calls `requireAdmin()` itself.
+Properties and its geofence editor already did; its actions already did. The hole was read-only and never
+shipped open, but the pattern is the thing to remember: a layout guard that gets widened silently widens
+everything under it.
+
+**🆕 ROLE CHANGES EXIST AT ALL.** There was no path — a wrong role meant deleting and recreating the
+account, which `deleteUser`'s activity-history guard makes impossible once the person has worked. New
+`setUserRole` + a per-row picker. It does **not** touch `user_properties`, and **refuses** a demotion to a
+scoped role with zero properties rather than creating an account that can see nothing. The picker's role
+list moved to `lib/roles.ts` (`ROLE_ORDER`): the hard-coded one in `UsersClient` held **six of the eight
+roles**, so an AGENT or NETWORK_TECH row had no option matching its own value.
+
+**📍 LOCATION (Remote / On-site) IS VISIBLE.** `users.remote` existed since 09-09 but was invisible and
+settable only by a one-off script. Now a column and a control on every row and on create. Shown for **every**
+role because it is a fact about the person, captioned **"reference only"** where it changes nothing — it
+feeds a decision for MANAGER alone, where `isOnSiteAssignable` reads it to keep the Remote PMs out of the
+batch wizard's "Assign to" pool. Hiding it would make it a fact nobody can correct.
+
+**⚠️ NOTHING WAS OPENED IN A BROWSER.** Again. 1,158 tests, clean types/lint/build and a Ready Vercel deploy
+are the entire evidence base for the role picker, the Location column, the "Admin only" row state and the
+CORPORATE nav entry. **Nobody has signed in as Bea or Erika to confirm what they now see.**
+
+---
+
 
 ---
 

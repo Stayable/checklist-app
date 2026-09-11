@@ -395,7 +395,7 @@ const assignableSchema = z.object({
  * Turn the per-user assignment override on or off (`users.always_assignable`).
  *
  * Was settable only by `scripts/set-test-assignee.ts`. Kyle asked for a control
- * on 2026-09-12 after Erika needed it, so it is now ordinary admin work rather
+ * on 2026-09-11 after Erika needed it, so it is now ordinary admin work rather
  * than a deploy-and-run — which is a real change of character for this column,
  * and schema.prisma says so.
  *

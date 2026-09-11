@@ -346,50 +346,66 @@ When changing scope or architecture: update the relevant doc and add an entry to
 — it blew past it on 2026-08-25 at 171 KB and stopped loading. Rule: **the newest block in full, plus the
 carry-forward of what is still open.** When you add a block, move the one it supersedes into
 `docs/archive/StatusLog_RISE8_082526.md` (newest first) and fold anything still live into the carry-forward.
-**As of:** September 11, 2026, ~11:45 AM (Eastern, derived — the harness clock runs ~12h ahead on this machine)
 
-**🟢 DEPLOYED. `af29316`, no migration, 1,158 tests, clean typecheck / lint / build.** Small session, three
-things Kyle asked for, one of them a data change already live in production.
+**As of:** September 11, 2026, ~1:35 PM (Eastern, derived — the harness clock runs ~12h ahead and
+said 09-12; six code comments were written with the wrong date before it was caught and corrected)
 
-**👥 BEA AND ERIKA ARE CORPORATE.** Applied to prod via `scripts/promote-to-corporate.ts --apply` (dry-run
-by default), both with `set_role` audit rows naming Kyle as actor. **Bea came from AGENT**, the role that
-exists to be checklist-ONLY, so hers is the larger jump: both now hold **Maintenance** — every contractor's
-name and phone, and reassign/close on any property's jobs, portfolio-wide because the calendar has no
-per-property scoping — and **Network** across the whole estate. That is the real widening, not the checklist
-part. `user_properties` rows were KEPT (inert at a portfolio role, and exactly what a demotion back needs);
-Erika's `remote: true` was KEPT (still true, just no longer read). CORPORATE is now 8 accounts.
+**🟢 DEPLOYED. Five commits `af29316..f6c00ef`, no migrations, 1,168 tests, clean typecheck / lint /
+build.** One long session, everything Kyle asked for in it, plus two prod data changes already live.
 
-**🔑 CORPORATE CAN NOW ADMINISTER USERS — with two limits that are the only thing between a corporate
-account and ADMIN.** Both enforced server-side against the target's role read fresh from the DB:
-1. **`canAdministerUser`** — CORPORATE may not act on an ADMIN row at all. Without it they could reset
-   `admin@`'s password and sign in as ADMIN.
-2. **`assignableRolesFor`** — CORPORATE may not GRANT ADMIN, or they reach (1) the long way round.
-Nobody may change their own role — an ADMIN demoting themselves with no second admin account is
-unrecoverable, and `admin@` is the only other one. The nav gives CORPORATE an Admin section holding
-**Users alone**; SLA and Properties stay ADMIN-only.
+**👥 BEA AND ERIKA ARE CORPORATE, AND ERIKA IS ASSIGNABLE.** Applied via
+`scripts/promote-to-corporate.ts --apply` and `scripts/set-test-assignee.ts erika@… --apply`, both
+dry-run by default, both with audit rows naming Kyle. **Bea came from AGENT**, the role that exists to
+be checklist-ONLY, so hers is the larger jump: both now hold **Maintenance** — every contractor's name
+and phone, reassign/close on any property's jobs, portfolio-wide because that calendar has no
+per-property scoping — and **Network** across the estate. `user_properties` rows were KEPT (inert at a
+portfolio role, and what a demotion back needs), which is also why Erika needed only the
+`alwaysAssignable` flag and no new property rows. CORPORATE is now 8 accounts.
+⚠ **The assignee pool is 3 people per property**: there are **zero HK, zero PA**, and every MT is an
+inactive contractor placeholder. Fine for Erika's test, a hard blocker for real use.
 
-**⚠️ THE `/admin` LAYOUT GUARD IS NO LONGER THE ONLY GUARD.** It widened to ADMIN+CORPORATE, and
-**`app/admin/sla/page.tsx` had been relying on it entirely** — it now calls `requireAdmin()` itself.
-Properties and its geofence editor already did; its actions already did. The hole was read-only and never
-shipped open, but the pattern is the thing to remember: a layout guard that gets widened silently widens
-everything under it.
+**🔑 CORPORATE CAN ADMINISTER USERS (ADR-038) — two limits are the only thing between a corporate
+account and ADMIN**, both enforced server-side against the target's role read fresh from the DB:
+`canAdministerUser` (may not act on an ADMIN row — else reset `admin@`'s password and become ADMIN)
+and `assignableRolesFor` (may not GRANT ADMIN — else reach the first hole the long way round). Nobody
+changes their own role; `admin@` is the only other ADMIN, so a self-demotion is unrecoverable. Nav
+gives CORPORATE an Admin section holding **Users alone**.
+⚠ **The `/admin` layout guard stopped being sufficient** — `app/admin/sla/page.tsx` had been relying on
+it entirely and now calls `requireAdmin()` itself. Anything added under `/admin` must state its own tier.
 
-**🆕 ROLE CHANGES EXIST AT ALL.** There was no path — a wrong role meant deleting and recreating the
-account, which `deleteUser`'s activity-history guard makes impossible once the person has worked. New
-`setUserRole` + a per-row picker. It does **not** touch `user_properties`, and **refuses** a demotion to a
-scoped role with zero properties rather than creating an account that can see nothing. The picker's role
-list moved to `lib/roles.ts` (`ROLE_ORDER`): the hard-coded one in `UsersClient` held **six of the eight
-roles**, so an AGENT or NETWORK_TECH row had no option matching its own value.
+**🆕 ROLE CHANGES EXIST AT ALL.** There was no path — a wrong role meant deleting the account, which
+`deleteUser`'s activity-history guard blocks once the person has worked. `setUserRole` does not touch
+`user_properties`, and refuses a demotion to a scoped role with zero properties. The picker's list
+moved to `ROLE_ORDER` in `lib/roles.ts`: the hard-coded one held **six of the eight roles**, so an
+AGENT or NETWORK_TECH row had no option matching its own value.
 
-**📍 LOCATION (Remote / On-site) IS VISIBLE.** `users.remote` existed since 09-09 but was invisible and
-settable only by a one-off script. Now a column and a control on every row and on create. Shown for **every**
-role because it is a fact about the person, captioned **"reference only"** where it changes nothing — it
-feeds a decision for MANAGER alone, where `isOnSiteAssignable` reads it to keep the Remote PMs out of the
-batch wizard's "Assign to" pool. Hiding it would make it a fact nobody can correct.
+**📍 LOCATION + ASSIGNABLE ARE BOTH EDITABLE.** `users.remote` and `users.always_assignable` existed
+but were script-only. Location shows for every role (it is a fact about the person) and is captioned
+where it is inert — it feeds a decision for MANAGER alone. The Assignable switch states the CURRENT
+answer first via `explainAssignability`, built on the same predicate the pool query mirrors, and names
+the half people miss: **a portfolio account with the override on but no property rows is invisible
+everywhere**, because the pool requires both.
 
-**⚠️ NOTHING WAS OPENED IN A BROWSER.** Again. 1,158 tests, clean types/lint/build and a Ready Vercel deploy
-are the entire evidence base for the role picker, the Location column, the "Admin only" row state and the
-CORPORATE nav entry. **Nobody has signed in as Bea or Erika to confirm what they now see.**
+**🗑 CHECKLIST DELETE, SINGLE AND BULK.** "Select to delete" on `/checklists`. Deliberately NOT ADR-031's
+close-out — INVALIDATED means it happened and was cancelled; this is for one that should never have
+existed. **The refusal rule is the whole safety model** and is the line
+`scripts/delete-test-checklist.ts` drew: any response, any submission, or **any issue raised from it**
+(refused rather than cascaded because `Issue.sourceInstance` is optional, so Prisma would `SetNull` and
+leave the issue with no idea where it came from). Refusals do not fail the batch and the banner names
+what was kept and why. Scope is applied IN the query, so another property's ids can never reach the
+delete. Every deletion writes an audit row carrying enough to recreate the checklist.
+
+**📐 THE USERS TABLE WAS CUT OFF IN PRODUCTION** — Kyle's screenshot showed the header as `ACTI` and
+Delete as `D`. Six text buttons in an Actions cell plus a seventh column, inside `overflow-hidden`.
+Rebuilt: actions collapse to one **Manage** panel (not a floating menu — the table now scrolls and a
+popup inside a scroll container is clipped by it), status became chips in the User cell, Properties
+collapse to "All 8" and last login to a date. Container is `overflow-x-auto`, so a future column
+scrolls rather than being silently cut.
+
+**⚠️ NOTHING HAS BEEN OPENED IN A BROWSER.** The one thing anyone actually looked at this session was
+the screenshot that proved the table was broken — which is also the only defect found. 1,168 tests and
+a Ready deploy are the entire evidence base for the rebuilt table, the role picker, the Assignable
+switch and the whole delete flow. **Nobody has signed in as Bea or Erika to confirm what they now see.**
 
 ### Carry-forward — still live from earlier sessions (full history: `docs/archive/StatusLog_RISE8_082526.md`)
 
@@ -472,6 +488,12 @@ got the way it is. Only the items below are still **open** — everything else t
 **Security / ops debt:**
 - **No session-revocation path.** `authorize()` re-reads the DB but the `session()` callback reads only the JWT, so deactivating a signed-in user leaves their 30-day cookie valid until expiry.
 - **Starting passwords are derivable from the repo** — `rosterPassword()` = `"Ops"` + capitalised mailbox letters (`bea@` → `OpsBea`), in committed code. `mustChangePassword` + the new-device OTP are the only barriers. P1. **There is no `Stayable<Name>!` scheme; that memory is the admin password `StayableCheck`.** Three schemes exist: admin `StayableCheck`, corporate baseline `ChangeMe!2026`, everyone else `rosterPassword()`. `scripts/print-roster-credentials.ts` prints the real list.
+- **Admin-issued passwords are never forced to change — RAISED AND DISMISSED 2026-09-11** ("no
+  worries on the password let it be the same", Kyle). `resetPassword` and `createUser` in
+  `app/admin/users/actions.ts` do NOT set `mustChangePassword`, so a temp password read aloud over
+  the phone can stay in use forever. Every provisioning SCRIPT does set it, and the column comment
+  in `schema.prisma` says it is for exactly this case — so the UI and the scripts disagree on
+  purpose now. One line in each action if it is ever wanted. **Do not re-raise.**
 - **`prisma/seed.ts:64` RESETS the admin password on every run** — `passwordHash` is in the *update* branch, so a seed silently un-rotates it. The corporate loop three lines below deliberately omits it with a comment saying why; the admin branch never got the same treatment. Raised 09-03, Kyle said "no worries" — recorded, not fixed.
 - **Neon: autosuspend 5 min → 1 min and autoscale max → 0.25 CU are STILL not set** on `stayable-ops-prod`. The deployed cron change saves nothing until autosuspend is shorter than the poll gap ($19.35/mo → ~$10.15/mo). Plan changes happen at console.neon.tech under the **"Stayable"** org, not through Vercel.
 - **Dev DB `ep-falling-moon` has been down since early August** — 0 users, 0 properties, no `contractor_update*` tables — so Preview is unusable and migrations are hand-authored.
