@@ -325,11 +325,20 @@ model User {
   // assigned work". Field staff are on-site by role and never consult it.
   remote              Boolean   @default(false)
   // Force this user into assignment pools regardless of role. An escape hatch,
-  // not a category: today it is set on exactly one row, Kyle's CORPORATE
-  // account, so he can assign himself a checklist and walk it end to end
-  // without a second login. If this ever needs to be true for a GROUP of
-  // people, that group is a missing role or a missing flag — widen the rule in
-  // isOnSiteAssignable instead of ticking rows.
+  // not a category: it is set per person, deliberately, and is true on two rows
+  // today — Kyle's and Erika's CORPORATE accounts, so each can be handed a
+  // checklist and walk it end to end without a second login.
+  //
+  // ⚠ Settable from Admin -> Users since 2026-09-12 (Kyle), where it reads
+  // "Always assignable". It was script-only before, so the cost of setting it
+  // has dropped and the rule above matters more, not less: if this ever needs
+  // to be true for a GROUP of people, that group is a missing role or a missing
+  // rule — widen isOnSiteAssignable instead of ticking rows.
+  //
+  // It is only HALF of being assignable. The batch wizard's pool also requires
+  // a user_properties row at the property in question, so this flag alone
+  // leaves a portfolio account (which reaches properties by ROLE, not through
+  // that table) invisible everywhere. explainAssignability says so in the UI.
   alwaysAssignable    Boolean   @default(false) @map("always_assignable")
   mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
   mfaSecret           String?   @map("mfa_secret")

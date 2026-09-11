@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ChevronRight } from "lucide-react";
 import { InstanceStatus } from "@prisma/client";
 import { requireManager, accessiblePropertyIds } from "@/lib/rbac";
 import { getCurrentPropertyId } from "@/lib/current-property";
@@ -11,6 +10,7 @@ import { formatMinutes, timeToCompleteMinutes } from "@/lib/review";
 import { roomDisplay } from "@/lib/room-label";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { ChecklistFilters } from "./ChecklistFilters";
+import { ChecklistBoard, type BoardDay } from "./ChecklistBoard";
 
 export const metadata: Metadata = {
   title: "Checklists — StayCheck",
@@ -184,14 +184,44 @@ export default async function ChecklistsPage({
 
   const todayYmd = etYMD();
 
-  // Group into days, preserving the query's order.
-  const days: { ymd: string; rows: typeof instances }[] = [];
+  // Group into days, preserving the query's order, and flatten each row into
+  // display strings here. ChecklistBoard is a client component (it owns the
+  // delete-selection state), so everything it renders has to cross the
+  // serialisation boundary anyway — building the view model server-side keeps
+  // every formatting rule in one place rather than shipping the status maps,
+  // roomDisplay and formatMinutes into the browser bundle.
+  const grouped: { ymd: string; rows: typeof instances }[] = [];
   for (const i of instances) {
     const ymd = ymdOfDateOnly(i.scheduledFor);
-    const last = days[days.length - 1];
+    const last = grouped[grouped.length - 1];
     if (last && last.ymd === ymd) last.rows.push(i);
-    else days.push({ ymd, rows: [i] });
+    else grouped.push({ ymd, rows: [i] });
   }
+
+  const days: BoardDay[] = grouped.map(({ ymd, rows }) => ({
+    ymd,
+    heading: dayHeading(ymd, todayYmd),
+    dateLabel: formatDateOnly(new Date(`${ymd}T00:00:00.000Z`), "d MMM yyyy"),
+    // A past day only counts as late if something on it is still open.
+    late: ymd < todayYmd && rows.some((r) => OPEN_SET.has(r.status)),
+    rows: rows.map((i) => ({
+      id: i.id,
+      templateName: i.template.name,
+      subject: roomDisplay(i.room, i.roomLabel) ?? "",
+      propertyShortCode: i.property.shortCode,
+      assigneeLabel: i.assignedUser?.name ?? "Nobody assigned yet",
+      statusWord: STATUS_WORD[i.status],
+      railClass: STATUS_RAIL[i.status],
+      textClass: STATUS_TEXT[i.status],
+      // Only once there is something to report. Before submission there is no
+      // elapsed time, and a dash on every open row would be noise rather than
+      // information. A submitted row that was never opened DOES show the dash —
+      // that is a real gap in the data, not a zero.
+      tookLabel: i.submittedAt
+        ? `Took ${formatMinutes(timeToCompleteMinutes(i.openedAt, i.submittedAt))}`
+        : "",
+    })),
+  }));
 
   const hrefWith = (overrides: Record<string, string | undefined>) => {
     const params = new URLSearchParams();
@@ -258,95 +288,7 @@ export default async function ChecklistsPage({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
-          {days.map(({ ymd, rows }) => {
-            const heading = dayHeading(ymd, todayYmd);
-            // A past day only counts as late if something on it is still open.
-            const late = ymd < todayYmd && rows.some((r) => OPEN_SET.has(r.status));
-            return (
-              <section key={ymd}>
-                <div className="mb-2 flex items-baseline justify-between gap-3">
-                  <h2
-                    className={`text-sm font-bold ${late ? "text-red-600" : "text-slate-900"}`}
-                  >
-                    {heading}
-                    {late && (
-                      <span className="ml-2 font-semibold">— overdue</span>
-                    )}
-                  </h2>
-                  <span className="text-xs text-slate-400">
-                    {formatDateOnly(new Date(`${ymd}T00:00:00.000Z`), "d MMM yyyy")}
-                  </span>
-                </div>
-
-                <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
-                  {rows.map((i) => {
-                    const subject = roomDisplay(i.room, i.roomLabel);
-                    return (
-                      <li key={i.id}>
-                        <Link
-                          href={`/checklists/${i.id}`}
-                          className="flex items-stretch gap-3 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
-                        >
-                          {/* Status as a rail: scannable down the left edge
-                              without adding a column. */}
-                          <span
-                            aria-hidden
-                            className={`w-1 shrink-0 ${STATUS_RAIL[i.status]}`}
-                          />
-                          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 py-3 pr-3">
-                            <span className="min-w-0 flex-1">
-                              <span className="flex flex-wrap items-center gap-2">
-                                <span className="truncate font-semibold text-slate-900">
-                                  {i.template.name}
-                                </span>
-                                {subject && (
-                                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
-                                    {subject}
-                                  </span>
-                                )}
-                                {/* Only when the scope spans properties —
-                                    otherwise every row says the same thing. */}
-                                {showingProperty && (
-                                  <span className="rounded bg-navy/5 px-1.5 py-0.5 text-xs font-semibold text-navy">
-                                    {i.property.shortCode}
-                                  </span>
-                                )}
-                              </span>
-                              <span className="mt-0.5 block truncate text-sm text-slate-500">
-                                {i.assignedUser?.name ?? "Nobody assigned yet"}
-                                {/* Only once there is something to report.
-                                    Before submission there is no elapsed time,
-                                    and a dash on every open row would be noise
-                                    rather than information. A submitted row
-                                    that was never opened DOES show the dash —
-                                    that is a real gap in the data, not a zero. */}
-                                {i.submittedAt && (
-                                  <> · Took {formatMinutes(
-                                    timeToCompleteMinutes(i.openedAt, i.submittedAt),
-                                  )}</>
-                                )}
-                              </span>
-                            </span>
-                            <span
-                              className={`text-sm font-semibold ${STATUS_TEXT[i.status]}`}
-                            >
-                              {STATUS_WORD[i.status]}
-                            </span>
-                            <ChevronRight
-                              aria-hidden
-                              className="size-4 shrink-0 text-slate-300"
-                            />
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
+        <ChecklistBoard days={days} showingProperty={showingProperty} />
       )}
 
       {pageCount > 1 && (

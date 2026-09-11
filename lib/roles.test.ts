@@ -5,6 +5,7 @@ import {
   assignableRolesFor,
   canAdministerUser,
   canManageUsers,
+  explainAssignability,
   isOnSiteAssignable,
   locationAffectsAssignment,
 } from "./roles";
@@ -126,5 +127,51 @@ describe("user administration", () => {
       // every other role.
       expect(isOnSiteAssignable(role, true)).toBe(isOnSiteAssignable(role, false));
     }
+  });
+});
+
+// explainAssignability (2026-09-12). The sentence the Users admin shows beside
+// the Always-assignable switch. Pinned to isOnSiteAssignable so the prose
+// cannot drift from the rule the batch wizard's pool query mirrors.
+describe("explainAssignability", () => {
+  const withProps = (role: Role, remote: boolean, override: boolean) =>
+    explainAssignability(role, remote, override, true);
+
+  it("agrees with isOnSiteAssignable whenever the user holds properties", () => {
+    for (const role of Object.values(Role)) {
+      for (const remote of [true, false]) {
+        for (const override of [true, false]) {
+          expect(withProps(role, remote, override).assignable).toBe(
+            isOnSiteAssignable(role, remote, override),
+          );
+        }
+      }
+    }
+  });
+
+  it("holding no properties beats an eligible role — the trap the script documents", () => {
+    // A CORPORATE account with the override on but no user_properties rows is
+    // invisible in every pool, because the query requires both.
+    const r = explainAssignability(Role.CORPORATE, false, true, false);
+    expect(r.assignable).toBe(false);
+    expect(r.reason).toMatch(/holds no properties/i);
+
+    // Same for a housekeeper who is eligible purely by role.
+    expect(explainAssignability(Role.HK, false, false, false).assignable).toBe(false);
+  });
+
+  it("names the remote-manager case specifically, since it is the common one", () => {
+    expect(withProps(Role.MANAGER, true, false).reason).toMatch(/Remote managers/i);
+    expect(withProps(Role.MANAGER, false, false).reason).toBe("Assignable by role.");
+  });
+
+  it("distinguishes assignable-by-override from assignable-by-role", () => {
+    // Erika: CORPORATE, remote, override on.
+    expect(withProps(Role.CORPORATE, true, true)).toEqual({
+      assignable: true,
+      reason: "Assignable by override, not by role.",
+    });
+    // A housekeeper needs no override and should not be described as having one.
+    expect(withProps(Role.HK, false, false).reason).toBe("Assignable by role.");
   });
 });

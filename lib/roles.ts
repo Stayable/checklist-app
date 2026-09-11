@@ -213,3 +213,55 @@ export function assignableRolesFor(actorRole: Role): Role[] {
 export function locationAffectsAssignment(role: Role): boolean {
   return role === Role.MANAGER;
 }
+
+/**
+ * Why is this person assignable, or why not — the sentence the Users admin
+ * shows next to the Assignable toggle.
+ *
+ * Pure, and derived from the SAME predicate the batch wizard's pool uses, so
+ * the explanation cannot drift from the behaviour it describes. That drift is
+ * a live risk here: the rule exists TWICE, as isOnSiteAssignable and as its
+ * SQL mirror in app/checklists/new/page.tsx, and a third prose copy in JSX
+ * would have been a third thing to keep in step.
+ *
+ * `hasProperties` is the half people miss. The pool query requires a
+ * user_properties row at the active property AND an eligible role — so a
+ * CORPORATE account with the override set but no property rows is still
+ * invisible everywhere, which is exactly the trap scripts/set-test-assignee.ts
+ * was written to document.
+ */
+export function explainAssignability(
+  role: Role,
+  remote: boolean,
+  alwaysAssignable: boolean,
+  hasProperties: boolean,
+): { assignable: boolean; reason: string } {
+  const eligible = isOnSiteAssignable(role, remote, alwaysAssignable);
+
+  if (eligible && !hasProperties) {
+    return {
+      assignable: false,
+      reason:
+        "Eligible by role, but holds no properties — the pool also requires a property assignment, so this account appears nowhere.",
+    };
+  }
+  if (!eligible) {
+    if (role === Role.MANAGER && remote) {
+      return {
+        assignable: false,
+        reason: "Remote managers are not offered room-level work. Turn on Assignable to override.",
+      };
+    }
+    return {
+      assignable: false,
+      reason: `${role} is not offered checklists. Turn on Assignable to override.`,
+    };
+  }
+  if (alwaysAssignable) {
+    return {
+      assignable: true,
+      reason: "Assignable by override, not by role.",
+    };
+  }
+  return { assignable: true, reason: "Assignable by role." };
+}

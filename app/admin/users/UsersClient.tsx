@@ -6,7 +6,7 @@ import { Locale, Role } from "@prisma/client";
 import { ChevronDown } from "lucide-react";
 import { SelectField } from "@/components/ui/select";
 import { formatInET } from "@/lib/datetime";
-import { canAdministerUser, locationAffectsAssignment } from "@/lib/roles";
+import { canAdministerUser, explainAssignability, locationAffectsAssignment } from "@/lib/roles";
 
 // Mirror of MIN_PASSWORD_LENGTH in lib/password.ts (kept local so this client
 // bundle doesn't import the server-only crypto module). Server re-validates.
@@ -16,6 +16,7 @@ import {
   deleteUser,
   resetPassword,
   setUserActive,
+  setUserAssignable,
   setUserPassword,
   setUserProperties,
   setUserRemote,
@@ -32,6 +33,8 @@ type AdminUser = {
   locale: Locale;
   /** Location: true = Remote, false = On-site (`users.remote`). */
   remote: boolean;
+  /** Per-user override forcing this account into the "Assign to" pool. */
+  alwaysAssignable: boolean;
   active: boolean;
   lastLoginAt: string | null;
   /** Inside an active failed-login lockout as of server render (ADR-008). */
@@ -210,6 +213,9 @@ export function UsersClient({
                   })
                 }
                 onSetRole={(role) => run(() => setUserRole({ userId: u.id, role }))}
+                onSetAssignable={(assignable) =>
+                  run(() => setUserAssignable({ userId: u.id, assignable }))
+                }
                 onSetRemote={(remote) => run(() => setUserRemote({ userId: u.id, remote }))}
                 onReset={() => run(() => resetPassword(u.id))}
                 onUnlock={() => run(() => unlockUser(u.id))}
@@ -399,6 +405,7 @@ function UserRow({
   onToggleOpen,
   onSetPw,
   onSetRole,
+  onSetAssignable,
   onSetRemote,
   onReset,
   onUnlock,
@@ -418,6 +425,7 @@ function UserRow({
   onToggleOpen: () => void;
   onSetPw: (password: string) => void;
   onSetRole: (role: Role) => void;
+  onSetAssignable: (assignable: boolean) => void;
   onSetRemote: (remote: boolean) => void;
   onReset: () => void;
   onUnlock: () => void;
@@ -432,6 +440,12 @@ function UserRow({
   // with no second admin account is unrecoverable), so don't offer it either.
   const roleEditable = manageable && !isSelf;
   const locationLive = locationAffectsAssignment(user.role);
+  const assignability = explainAssignability(
+    user.role,
+    user.remote,
+    user.alwaysAssignable,
+    user.propertyIds.length > 0,
+  );
 
   return (
     <>
@@ -443,7 +457,7 @@ function UserRow({
               active one, temporarily unable to sign in. Only the exceptions get
               a chip — an "Active" badge on 35 of 37 rows is noise, and its
               absence is what the greyed row already says. */}
-          {(!user.active || user.locked || isSelf) && (
+          {(!user.active || user.locked || isSelf || user.alwaysAssignable) && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               {!user.active && (
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
@@ -453,6 +467,18 @@ function UserRow({
               {user.locked && (
                 <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                   Locked{user.lockedUntil ? ` until ${formatInET(user.lockedUntil, "h:mm a")}` : ""}
+                </span>
+              )}
+              {user.alwaysAssignable && (
+                // Only the OVERRIDE gets a chip. "Assignable" on every
+                // housekeeper would be noise — the role and location columns
+                // already say that, and the exception is the thing worth
+                // spotting from across the table.
+                <span
+                  className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800"
+                  title={assignability.reason}
+                >
+                  Assignable (override)
                 </span>
               )}
               {isSelf && (
@@ -566,6 +592,36 @@ function UserRow({
         <tr>
           <td colSpan={6} className="border-l-2 border-navy bg-slate-50 px-4 py-4">
             <div className="flex flex-col gap-4">
+              {/* Assignability sits at the top of the panel, and states the
+                  CURRENT answer before offering the switch — the rule has three
+                  inputs (role, location, property membership) and "why isn't
+                  this person in the list" is not answerable from a bare
+                  checkbox. The sentence comes from explainAssignability, which
+                  is built on the same predicate the pool query mirrors. */}
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-700">
+                      Assign to pool:{" "}
+                      <span className={assignability.assignable ? "text-emerald-700" : "text-slate-500"}>
+                        {assignability.assignable ? "included" : "not included"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 max-w-xl text-xs text-slate-500">{assignability.reason}</p>
+                  </div>
+                  <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-navy"
+                      checked={user.alwaysAssignable}
+                      disabled={pending}
+                      onChange={(e) => onSetAssignable(e.target.checked)}
+                    />
+                    Always assignable
+                  </label>
+                </div>
+              </div>
+
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"

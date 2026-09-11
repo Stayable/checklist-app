@@ -385,3 +385,66 @@ export async function setUserRemote(input: unknown): Promise<ActionResult> {
   revalidatePath("/admin/users");
   return { ok: true, message: `${target.email} is now ${remote ? "Remote" : "On-site"}.` };
 }
+
+const assignableSchema = z.object({
+  userId: z.string().uuid(),
+  assignable: z.boolean(),
+});
+
+/**
+ * Turn the per-user assignment override on or off (`users.always_assignable`).
+ *
+ * Was settable only by `scripts/set-test-assignee.ts`. Kyle asked for a control
+ * on 2026-09-12 after Erika needed it, so it is now ordinary admin work rather
+ * than a deploy-and-run — which is a real change of character for this column,
+ * and schema.prisma says so.
+ *
+ * It widens ONE person, never a category. If a whole group needs assigning, the
+ * group is a missing role or a missing rule in isOnSiteAssignable — ticking
+ * rows one at a time would hide that.
+ *
+ * Turning it ON does not by itself put someone in a pool: the batch wizard also
+ * requires a user_properties row at the property being created for. The UI says
+ * so via explainAssignability; this action deliberately does NOT auto-create
+ * those rows, because granting property membership is a separate decision with
+ * its own audit entry.
+ */
+export async function setUserAssignable(input: unknown): Promise<ActionResult> {
+  const admin = await requireUserAdmin();
+  const parsed = assignableSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const { userId, assignable } = parsed.data;
+
+  const found = await loadTarget(admin.role, userId);
+  if (!found.ok) return found;
+  const target = found.target;
+
+  const current = await db.user.findUniqueOrThrow({
+    where: { id: target.id },
+    select: { alwaysAssignable: true, _count: { select: { properties: true } } },
+  });
+  if (current.alwaysAssignable === assignable) {
+    return { ok: true, message: `No change — ${target.email} was already ${assignable ? "on" : "off"}.` };
+  }
+
+  await db.user.update({ where: { id: target.id }, data: { alwaysAssignable: assignable } });
+  await writeAudit(admin.id, target.id, "set_assignable", {
+    email: target.email,
+    role: target.role,
+    before: current.alwaysAssignable,
+    after: assignable,
+  });
+  revalidatePath("/admin/users");
+
+  // The property half is the one people miss, so say it at the moment the
+  // override is switched on rather than leaving them to wonder why the name
+  // still isn't in the list.
+  const warn =
+    assignable && current._count.properties === 0
+      ? " ⚠ They hold no properties, so they still won't appear in any pool — assign properties too."
+      : "";
+  return {
+    ok: true,
+    message: `${target.email} is ${assignable ? "now assignable by override" : "back to the role default"}.${warn}`,
+  };
+}
