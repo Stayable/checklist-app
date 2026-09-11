@@ -18,23 +18,41 @@ import { StyleSheet } from "@react-pdf/renderer";
  *     meta panel carries its facts instead.
  */
 
-/** NAVY [15,30,51] — title bar and table headers. */
-const NAVY = "#0F1E33";
-/** INK [30,30,30] — body text. Warmer than the slate this file used before. */
-const INK = "#1E1E1E";
-/** MUTED [100,105,115] — captions, footer, secondary meta. */
-const MUTED = "#646973";
-/** PANEL_BG [244,245,247] — meta panel and zebra fills. */
-const PANEL_BG = "#F4F5F7";
-/** PANEL_BORDER [210,213,219] — hairlines. */
-const PANEL_BORDER = "#D2D5DB";
-const WHITE = "#FFFFFF";
-/** Stayable gold. Brand accent only — never carries meaning on its own. */
-const GOLD = "#FDDA24";
-/** Amber, matching the on-screen treatment of a submitter note. */
-const NOTE_INK = "#78350F";
+// ⚠ THIS FILE IS THE ONLY PLACE THE PDF GETS ITS COLOURS.
+// @react-pdf/renderer never reads app/globals.css — it has its own StyleSheet —
+// so the 2026-09-11 Elevate re-skin of the web app changed nothing here, and an
+// export looked identical until these constants moved. Repointed 2026-09-11 so
+// the exports stop diverging from the screens.
+//
+// Values come from the print set in docs/design/stayable-ops-redesign/tokens.css,
+// which the designer deliberately made a NARROWER warm palette than the screen
+// one: paper stays pure white and tints are held to panels and table headers,
+// because a flooded cream ground bands on a cheap office laser and these
+// documents genuinely get printed and handed to inspectors.
 
-export const palette = { NAVY, INK, MUTED, PANEL_BG, PANEL_BORDER, WHITE, GOLD, NOTE_INK };
+/** NAVY — title bar and table headers. Elevate navy. */
+const NAVY = "#0B1F3A";
+/** INK — body text. Elevate ink. */
+const INK = "#1A1A1A";
+/** MUTED — captions, footer, secondary meta. Elevate ink-3 (warm, not blue-gray). */
+const MUTED = "#6E6960";
+/** PANEL_BG — meta panel and zebra fills. `--se-print-panel`: a warm tint at
+ *  ~3% ink, chosen to survive a laser rather than the screen's cream. */
+const PANEL_BG = "#F4F1E9";
+/** PANEL_BORDER — hairlines. `--se-print-rule`. */
+const PANEL_BORDER = "#D9D2C2";
+/** Page ground stays PURE WHITE by design — see the note above. */
+const WHITE = "#FFFFFF";
+/** Stayable sunshine. Brand accent only — never carries meaning on its own. */
+const GOLD = "#FDDB24";
+/** The readable yellow (`--se-sunshine-text`), matching the app's amber-800
+ *  treatment of a submitter note. Replaces a red-brown that no longer had a
+ *  counterpart on screen. */
+const NOTE_INK = "#8C6700";
+/** Header subtitle on the navy bar — Elevate sky-soft, was a cool #9FB4D1. */
+const HEADER_SUB = "#B8E3F4";
+
+export const palette = { NAVY, INK, MUTED, PANEL_BG, PANEL_BORDER, WHITE, GOLD, NOTE_INK, HEADER_SUB };
 
 /** MARGIN 24pt, as the ops kit. */
 const MARGIN = 24;
@@ -71,7 +89,7 @@ export const styles = StyleSheet.create({
   wordmark: { color: WHITE, fontSize: 11, fontFamily: "Helvetica-Bold" },
   wordmarkAccent: { color: GOLD, fontSize: 11, fontFamily: "Helvetica-Bold" },
   headerTitle: { color: WHITE, fontSize: 13, fontFamily: "Helvetica-Bold", marginTop: 3 },
-  headerRight: { color: "#9FB4D1", fontSize: 8, textAlign: "right" },
+  headerRight: { color: HEADER_SUB, fontSize: 8, textAlign: "right" },
   // 2pt gold rule under the bar — the one place brand colour appears at size.
   headerRule: {
     position: "absolute",

@@ -2,7 +2,14 @@
  * Render the checklist PDF to a file from fabricated data, to look at the
  * design without needing R2, a database, or a real submission.
  *
- * Run: pnpm tsx scripts/render-sample-checklist-pdf.ts [out.pdf]
+ * Run: pnpm tsx --tsconfig tsconfig.scripts.json scripts/render-sample-checklist-pdf.ts [out.pdf]
+ *
+ * ⚠ The --tsconfig flag is REQUIRED and was missing from this line until
+ * 2026-09-11. The root tsconfig sets "jsx": "preserve" because Next compiles
+ * JSX itself with the automatic runtime; tsx honours that and emits classic
+ * React.createElement into files that never import React, so the documented
+ * command died with "ReferenceError: React is not defined". tsconfig.scripts.json
+ * exists precisely to override it and its own comment says so.
  *
  * Deliberately covers the cases that break a layout rather than a tidy one:
  * long prompts, a section divider, a repeated CHECKPOINT prompt separated only
